@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Dynamic TargetFramework: Defaults to net10.0-windows on .NET 10+ SDK, with automatic net8.0-windows support -->
+    <ChosenTfm Condition="'$(TargetFramework)' != ''">$(TargetFramework)</ChosenTfm>
+    <ChosenTfm Condition="'$(ChosenTfm)' == '' and $([MSBuild]::VersionGreaterThanOrEquals('$(NETCoreSdkVersion)', '10.0'))">net10.0-windows</ChosenTfm>
+    <ChosenTfm Condition="'$(ChosenTfm)' == '' and $([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '9.0'))">net8.0-windows</ChosenTfm>
+    <ChosenTfm Condition="'$(ChosenTfm)' == ''">net10.0-windows</ChosenTfm>
+    <TargetFramework>$(ChosenTfm)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <Version>1.4.2</Version>
+    <AssemblyVersion>1.4.2.0</AssemblyVersion>
+    <FileVersion>1.4.2.0</FileVersion>
+    <Authors>AhBiYout</Authors>
+    <Company>AhBiYout</Company>
+    <Product>K-인증서 코어 라이브러리 (KCert.Core)</Product>
+    <Description>대한민국 NPKI, GPKI, EPKI 전자서명 공인인증서 고유 OID 파싱, 지능형 무결성 탐색, 안전 격리 휴지통 및 USB 감시 순수 창작 C# DLL 라이브러리 (.NET 10.0 / .NET 8.0 지원)</Description>
+    <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="8.0.0" />
+  </ItemGroup>
+</Project>

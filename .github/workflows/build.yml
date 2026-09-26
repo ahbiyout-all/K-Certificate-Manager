@@ -1,0 +1,90 @@
+name: K-Certificate Manager CI Build & Release
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Web & WPF Desktop App
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (for Web Edition)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Web Dependencies
+        run: npm install
+
+      - name: Build Web Edition (Vite)
+        run: npm run build
+
+      - name: Setup .NET SDK (for C# WPF Desktop)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore .NET Solution
+        run: dotnet restore KCertManager.sln
+
+      - name: Build & Publish WPF Desktop App (x64)
+        run: >
+          dotnet publish src-wpf/KCertManager.Wpf/KCertManager.Wpf.csproj
+          -c Release
+          -r win-x64
+          --self-contained false
+          -o release/05_WpfDesktop
+
+      - name: Upload Web Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: KCertManager-Web-Dist
+          path: dist/
+          retention-days: 14
+
+      - name: Upload WPF Desktop Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: KCertManager-WPF-Desktop
+          path: release/05_WpfDesktop/
+          retention-days: 14
+
+      - name: Compress Desktop Release for GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          Compress-Archive -Path release/05_WpfDesktop/* -DestinationPath release/KCertManager-${{ github.ref_name }}-WPF-Desktop.zip
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: K-Certificate Manager ${{ github.ref_name }}
+          body: |
+            ## 🛡️ K-Certificate Manager (K-인증서 매니저) ${{ github.ref_name }}
+            
+            대한민국 공무원 행정전자서명(GPKI/EPKI) 및 금융 공동인증서(NPKI) 자동 탐색·USB 일괄 백업 & PC 역방향 복사 관리 도구
+            
+            ### ✨ 주요 기능 및 업데이트 (v1.4.2)
+            - **C# WPF 모던 일체형 타이틀바 (`WindowChrome`) 적용**
+            - **전역 7대 보안 취약점 하드닝 패치 (화이트리스트 확장자 필터, Path Traversal 방지, SHA-256 무결성 검증)**
+            - **한국어/영어 2종 라이선스 공식 계약서 완비**
+            - **친화적 한국어 예외 안내 시스템 및 8대 테마 시스템**
+            - **.NET 10 / .NET 8 멀티 타깃 자동 감지 빌드**
+            
+            상세 변경 내역은 저장소 내 `docs/PATCHNOTES.md`를 참고해 주시기 바랍니다.
+          files: |
+            release/KCertManager-${{ github.ref_name }}-WPF-Desktop.zip
+
