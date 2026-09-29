@@ -1,0 +1,93 @@
+<Window x:Class="KCertManager.Wpf.Views.BackupHistoryDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="백업 이력 및 무결성 검증 (Backup History &amp; Integrity Verification)"
+        Width="820" Height="580"
+        WindowStartupLocation="CenterOwner"
+        Background="#0F172A"
+        Foreground="#F8FAFC">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#1E293B" CornerRadius="8" Padding="16" Margin="0,0,0,16" BorderBrush="#334155" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Width="48" Height="48" Background="#065F46" CornerRadius="8" Margin="0,0,14,0" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="📜" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="백업 이력 및 SHA-256 무결성 검증" FontSize="18" FontWeight="Bold" Foreground="#F8FAFC"/>
+                    <TextBlock Text="USB 및 외장 드라이브로 복사된 인증서의 전송 상태와 원본 대비 해시 일치 여부를 추적합니다." FontSize="12" Foreground="#94A3B8" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <Button Grid.Column="2" Content="🧹 이력 지우기" Style="{StaticResource SecondaryButton}" Click="BtnClearHistory_Click" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- History DataGrid -->
+        <Border Grid.Row="1" Background="#1E293B" CornerRadius="8" Padding="2" BorderBrush="#334155" BorderThickness="1">
+            <DataGrid x:Name="GridHistory"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      Background="#1E293B"
+                      RowBackground="#1E293B"
+                      AlternatingRowBackground="#0F172A"
+                      Foreground="#F8FAFC"
+                      BorderThickness="0"
+                      GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#334155"
+                      HeadersVisibility="Column"
+                      RowHeight="44">
+                <DataGrid.Resources>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="#0F172A"/>
+                        <Setter Property="Foreground" Value="#94A3B8"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="Padding" Value="10,8"/>
+                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                        <Setter Property="BorderBrush" Value="#334155"/>
+                    </Style>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Background" Value="#1E293B"/>
+                        <Setter Property="Foreground" Value="#F8FAFC"/>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="백업 시각" Binding="{Binding Timestamp, StringFormat='yyyy-MM-dd HH:mm:ss'}" Width="140"/>
+                    <DataGridTextColumn Header="소유자명" Binding="{Binding CertCommonName}" Width="150"/>
+                    <DataGridTextColumn Header="대상 USB" Binding="{Binding TargetDrive}" Width="80"/>
+                    <DataGridTextColumn Header="상태" Binding="{Binding Message}" Width="*"/>
+                    <DataGridTemplateColumn Header="대상 폴더 열기" Width="110">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="📂 폴더 열기" Style="{StaticResource SecondaryButton}" Padding="6,2" Click="BtnOpenFolder_Click" Margin="4"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" Background="#1E293B" CornerRadius="8" Padding="12" Margin="0,16,0,0" BorderBrush="#334155" BorderThickness="1">
+            <Grid>
+                <TextBlock x:Name="TxtHistoryCount" Text="총 0건의 백업 기록" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                <Button Content="닫기" Style="{StaticResource PrimaryButton}" Width="80" HorizontalAlignment="Right" Click="BtnClose_Click"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

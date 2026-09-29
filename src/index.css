@@ -1,0 +1,439 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+    color: #0f172a;
+    background-color: #f8fafc;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Custom scrollbar for dense certificate listings */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ==========================================================================
+   4 THEME STYLES (1. 다크 / 2. 회색 / 3. 화이트 / 4. 베이지)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. [다크 (Dark)] - 깊이감 있고 눈의 피로를 최소화한 다크 차콜 톤
+   -------------------------------------------------------------------------- */
+[data-theme="dark"],
+[data-theme="pastel-black"] {
+  background-color: #0f1219 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] #app-header,
+[data-theme="pastel-black"] #app-header,
+[data-theme="dark"] header,
+[data-theme="pastel-black"] header {
+  background-color: #151922 !important;
+  border-color: #282e3d !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] #app-sidebar,
+[data-theme="pastel-black"] #app-sidebar,
+[data-theme="dark"] aside,
+[data-theme="pastel-black"] aside {
+  background-color: #0a0d13 !important;
+  border-color: #1f2430 !important;
+}
+
+/* Cards & Containers in Dark Theme */
+[data-theme="dark"] .bg-white,
+[data-theme="pastel-black"] .bg-white {
+  background-color: #1a1f2c !important;
+  border-color: #2d3546 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3, [data-theme="dark"] h4, [data-theme="dark"] h5,
+[data-theme="pastel-black"] h1, [data-theme="pastel-black"] h2, [data-theme="pastel-black"] h3, [data-theme="pastel-black"] h4, [data-theme="pastel-black"] h5 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .text-slate-900, [data-theme="dark"] .text-slate-800, [data-theme="dark"] .text-slate-700,
+[data-theme="pastel-black"] .text-slate-900, [data-theme="pastel-black"] .text-slate-800, [data-theme="pastel-black"] .text-slate-700 {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .text-slate-600, [data-theme="dark"] .text-slate-500,
+[data-theme="pastel-black"] .text-slate-600, [data-theme="pastel-black"] .text-slate-500 {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .text-slate-400, [data-theme="dark"] .text-slate-300,
+[data-theme="pastel-black"] .text-slate-400, [data-theme="pastel-black"] .text-slate-300 {
+  color: #a0aec0 !important;
+}
+
+[data-theme="dark"] .border-slate-200, [data-theme="dark"] .border-slate-100,
+[data-theme="pastel-black"] .border-slate-200, [data-theme="pastel-black"] .border-slate-100 {
+  border-color: #2d3546 !important;
+}
+
+[data-theme="dark"] .bg-slate-50, [data-theme="dark"] .bg-slate-100,
+[data-theme="pastel-black"] .bg-slate-50, [data-theme="pastel-black"] .bg-slate-100 {
+  background-color: #222838 !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .bg-slate-200,
+[data-theme="pastel-black"] .bg-slate-200 {
+  background-color: #2d3546 !important;
+}
+
+[data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea,
+[data-theme="pastel-black"] input, [data-theme="pastel-black"] select, [data-theme="pastel-black"] textarea {
+  background-color: #131722 !important;
+  border-color: #374151 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] input::placeholder, [data-theme="pastel-black"] input::placeholder {
+  color: #64748b !important;
+}
+
+[data-theme="dark"] .hover\:bg-slate-50:hover, [data-theme="dark"] .hover\:bg-slate-100:hover,
+[data-theme="pastel-black"] .hover\:bg-slate-50:hover, [data-theme="pastel-black"] .hover\:bg-slate-100:hover {
+  background-color: #262e3f !important;
+}
+
+[data-theme="dark"] button.bg-white,
+[data-theme="pastel-black"] button.bg-white {
+  background-color: #1e2432 !important;
+  border-color: #323d52 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] button.bg-white:hover,
+[data-theme="pastel-black"] button.bg-white:hover {
+  background-color: #283246 !important;
+}
+
+/* High-contrast Pastel Badges in Dark Mode */
+[data-theme="dark"] .bg-blue-50, [data-theme="pastel-black"] .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+  color: #93c5fd !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+[data-theme="dark"] .bg-emerald-50, [data-theme="pastel-black"] .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.2) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+[data-theme="dark"] .bg-amber-50, [data-theme="pastel-black"] .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.2) !important;
+  color: #fcd34d !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+}
+[data-theme="dark"] .bg-rose-50, [data-theme="pastel-black"] .bg-rose-50 {
+  background-color: rgba(244, 63, 94, 0.2) !important;
+  color: #fda4af !important;
+  border-color: rgba(244, 63, 94, 0.4) !important;
+}
+[data-theme="dark"] .bg-indigo-50, [data-theme="pastel-black"] .bg-indigo-50 {
+  background-color: rgba(99, 102, 241, 0.2) !important;
+  color: #a5b4fc !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
+}
+[data-theme="dark"] .bg-sky-50, [data-theme="pastel-black"] .bg-sky-50 {
+  background-color: rgba(14, 165, 233, 0.2) !important;
+  color: #7dd3fc !important;
+  border-color: rgba(14, 165, 233, 0.4) !important;
+}
+[data-theme="dark"] .bg-purple-50, [data-theme="pastel-black"] .bg-purple-50 {
+  background-color: rgba(168, 85, 247, 0.2) !important;
+  color: #d8b4fe !important;
+  border-color: rgba(168, 85, 247, 0.4) !important;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track, [data-theme="pastel-black"] ::-webkit-scrollbar-track {
+  background: #0f1219 !important;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb, [data-theme="pastel-black"] ::-webkit-scrollbar-thumb {
+  background: #2d3546 !important;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover, [data-theme="pastel-black"] ::-webkit-scrollbar-thumb:hover {
+  background: #3f4a62 !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. [회색 (Gray)] - 차분하고 선명한 실버 슬레이트 모노 톤
+   -------------------------------------------------------------------------- */
+[data-theme="gray"],
+[data-theme="pastel-gray"] {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="gray"] #app-header,
+[data-theme="pastel-gray"] #app-header,
+[data-theme="gray"] header,
+[data-theme="pastel-gray"] header {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="gray"] #app-sidebar,
+[data-theme="pastel-gray"] #app-sidebar,
+[data-theme="gray"] aside,
+[data-theme="pastel-gray"] aside {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+/* Cards pop off the gray canvas with distinct slate borders */
+[data-theme="gray"] .bg-white,
+[data-theme="pastel-gray"] .bg-white {
+  background-color: #ffffff !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="gray"] h1, [data-theme="gray"] h2, [data-theme="gray"] h3, [data-theme="gray"] h4,
+[data-theme="pastel-gray"] h1, [data-theme="pastel-gray"] h2, [data-theme="pastel-gray"] h3, [data-theme="pastel-gray"] h4 {
+  color: #0f172a !important;
+}
+
+[data-theme="gray"] .text-slate-900, [data-theme="gray"] .text-slate-800, [data-theme="gray"] .text-slate-700,
+[data-theme="pastel-gray"] .text-slate-900, [data-theme="pastel-gray"] .text-slate-800, [data-theme="pastel-gray"] .text-slate-700 {
+  color: #0f172a !important;
+}
+
+[data-theme="gray"] .text-slate-600, [data-theme="gray"] .text-slate-500,
+[data-theme="pastel-gray"] .text-slate-600, [data-theme="pastel-gray"] .text-slate-500 {
+  color: #334155 !important;
+}
+
+[data-theme="gray"] .text-slate-400, [data-theme="gray"] .text-slate-300,
+[data-theme="pastel-gray"] .text-slate-400, [data-theme="pastel-gray"] .text-slate-300 {
+  color: #475569 !important;
+}
+
+[data-theme="gray"] .bg-slate-50, [data-theme="gray"] .bg-slate-100,
+[data-theme="pastel-gray"] .bg-slate-50, [data-theme="pastel-gray"] .bg-slate-100 {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+}
+
+[data-theme="gray"] .border-slate-200, [data-theme="gray"] .border-slate-100,
+[data-theme="pastel-gray"] .border-slate-200, [data-theme="pastel-gray"] .border-slate-100 {
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="gray"] .hover\:bg-slate-50:hover, [data-theme="gray"] .hover\:bg-slate-100:hover,
+[data-theme="pastel-gray"] .hover\:bg-slate-50:hover, [data-theme="pastel-gray"] .hover\:bg-slate-100:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. [화이트 (White)] - 선명한 우윳빛 순백색 톤 (가독성 최적화)
+   -------------------------------------------------------------------------- */
+[data-theme="white"],
+[data-theme="pastel-white"] {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+[data-theme="white"] #app-header,
+[data-theme="pastel-white"] #app-header,
+[data-theme="white"] header,
+[data-theme="pastel-white"] header {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="white"] #app-sidebar,
+[data-theme="pastel-white"] #app-sidebar,
+[data-theme="white"] aside,
+[data-theme="pastel-white"] aside {
+  background-color: #0f172a !important;
+  border-color: #1e293b !important;
+}
+
+[data-theme="white"] .bg-white,
+[data-theme="pastel-white"] .bg-white {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="white"] .text-slate-900, [data-theme="white"] .text-slate-800, [data-theme="white"] .text-slate-700,
+[data-theme="pastel-white"] .text-slate-900, [data-theme="pastel-white"] .text-slate-800, [data-theme="pastel-white"] .text-slate-700 {
+  color: #0f172a !important;
+}
+
+[data-theme="white"] .text-slate-600, [data-theme="white"] .text-slate-500,
+[data-theme="pastel-white"] .text-slate-600, [data-theme="pastel-white"] .text-slate-500 {
+  color: #334155 !important;
+}
+
+[data-theme="white"] .text-slate-400, [data-theme="white"] .text-slate-300,
+[data-theme="pastel-white"] .text-slate-400, [data-theme="pastel-white"] .text-slate-300 {
+  color: #475569 !important;
+}
+
+[data-theme="white"] .bg-slate-50, [data-theme="white"] .bg-slate-100,
+[data-theme="pastel-white"] .bg-slate-50, [data-theme="pastel-white"] .bg-slate-100 {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+}
+
+[data-theme="white"] .border-slate-200, [data-theme="white"] .border-slate-100,
+[data-theme="pastel-white"] .border-slate-200, [data-theme="pastel-white"] .border-slate-100 {
+  border-color: #cbd5e1 !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. [베이지 (Beige)] - 포근하고 선명한 크림 베이지 톤
+   -------------------------------------------------------------------------- */
+[data-theme="beige"],
+[data-theme="pastel-beige"] {
+  background-color: #f5f2eb !important;
+  color: #292524 !important;
+}
+
+[data-theme="beige"] #app-header,
+[data-theme="pastel-beige"] #app-header,
+[data-theme="beige"] header,
+[data-theme="pastel-beige"] header {
+  background-color: #faf7f2 !important;
+  border-color: #dcd5c7 !important;
+  color: #292524 !important;
+}
+
+[data-theme="beige"] #app-sidebar,
+[data-theme="pastel-beige"] #app-sidebar,
+[data-theme="beige"] aside,
+[data-theme="pastel-beige"] aside {
+  background-color: #292524 !important;
+  border-color: #44403c !important;
+}
+
+[data-theme="beige"] .bg-white,
+[data-theme="pastel-beige"] .bg-white {
+  background-color: #ffffff !important;
+  border-color: #d6cebf !important;
+  color: #292524 !important;
+}
+
+[data-theme="beige"] h1, [data-theme="beige"] h2, [data-theme="beige"] h3, [data-theme="beige"] h4,
+[data-theme="pastel-beige"] h1, [data-theme="pastel-beige"] h2, [data-theme="pastel-beige"] h3, [data-theme="pastel-beige"] h4 {
+  color: #1c1917 !important;
+}
+
+[data-theme="beige"] .text-slate-900, [data-theme="beige"] .text-slate-800, [data-theme="beige"] .text-slate-700,
+[data-theme="pastel-beige"] .text-slate-900, [data-theme="pastel-beige"] .text-slate-800, [data-theme="pastel-beige"] .text-slate-700 {
+  color: #292524 !important;
+}
+
+[data-theme="beige"] .text-slate-600, [data-theme="beige"] .text-slate-500,
+[data-theme="pastel-beige"] .text-slate-600, [data-theme="pastel-beige"] .text-slate-500 {
+  color: #44403c !important;
+}
+
+[data-theme="beige"] .text-slate-400, [data-theme="beige"] .text-slate-300,
+[data-theme="pastel-beige"] .text-slate-400, [data-theme="pastel-beige"] .text-slate-300 {
+  color: #57534e !important;
+}
+
+[data-theme="beige"] .bg-slate-50, [data-theme="beige"] .bg-slate-100,
+[data-theme="pastel-beige"] .bg-slate-50, [data-theme="pastel-beige"] .bg-slate-100 {
+  background-color: #eee9de !important;
+  color: #292524 !important;
+}
+
+[data-theme="beige"] .border-slate-200, [data-theme="beige"] .border-slate-100,
+[data-theme="pastel-beige"] .border-slate-200, [data-theme="pastel-beige"] .border-slate-100 {
+  border-color: #d6cebf !important;
+}
+
+[data-theme="beige"] input, [data-theme="beige"] select, [data-theme="beige"] textarea,
+[data-theme="pastel-beige"] input, [data-theme="pastel-beige"] select, [data-theme="pastel-beige"] textarea {
+  background-color: #fcfbfa !important;
+  border-color: #c8bfaf !important;
+  color: #292524 !important;
+}
+
+[data-theme="beige"] input::placeholder, [data-theme="pastel-beige"] input::placeholder {
+  color: #78716c !important;
+}
+
+[data-theme="beige"] .hover\:bg-slate-50:hover, [data-theme="beige"] .hover\:bg-slate-100:hover,
+[data-theme="pastel-beige"] .hover\:bg-slate-50:hover, [data-theme="pastel-beige"] .hover\:bg-slate-100:hover {
+  background-color: #e8e2d4 !important;
+}
+
+[data-theme="beige"] button.bg-white,
+[data-theme="pastel-beige"] button.bg-white {
+  background-color: #fcfbfa !important;
+  border-color: #c8bfaf !important;
+  color: #292524 !important;
+}
+
+[data-theme="beige"] ::-webkit-scrollbar-track, [data-theme="pastel-beige"] ::-webkit-scrollbar-track {
+  background: #f5f2eb !important;
+}
+[data-theme="beige"] ::-webkit-scrollbar-thumb, [data-theme="pastel-beige"] ::-webkit-scrollbar-thumb {
+  background: #d6cebf !important;
+}
+[data-theme="beige"] ::-webkit-scrollbar-thumb:hover, [data-theme="pastel-beige"] ::-webkit-scrollbar-thumb:hover {
+  background: #bfa893 !important;
+}
+
+/* --------------------------------------------------------------------------
+   Certificate Copy Success Flash Animation (CSS Keyframes)
+   -------------------------------------------------------------------------- */
+@keyframes rowCopiedFlash {
+  0% {
+    background-color: rgba(16, 185, 129, 0.45) !important;
+    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.9), 0 0 14px rgba(16, 185, 129, 0.4);
+    transform: scale(1.006);
+  }
+  25% {
+    background-color: rgba(16, 185, 129, 0.20) !important;
+    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.6), 0 0 8px rgba(16, 185, 129, 0.2);
+    transform: scale(1.002);
+  }
+  50% {
+    background-color: rgba(16, 185, 129, 0.38) !important;
+    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.85), 0 0 12px rgba(16, 185, 129, 0.3);
+    transform: scale(1.004);
+  }
+  75% {
+    background-color: rgba(16, 185, 129, 0.15) !important;
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.5);
+    transform: scale(1.001);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+    transform: scale(1);
+  }
+}
+
+.animate-copied-row {
+  animation: rowCopiedFlash 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  position: relative;
+  z-index: 5;
+}
+
