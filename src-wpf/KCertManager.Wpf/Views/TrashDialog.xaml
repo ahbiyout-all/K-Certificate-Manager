@@ -1,0 +1,143 @@
+<Window x:Class="KCertManager.Wpf.Views.TrashDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="안전 휴지통 및 삭제 복원 (Safety Trash Manager)"
+        Width="880" Height="620"
+        WindowStartupLocation="CenterOwner"
+        Background="#0F172A"
+        Foreground="#F8FAFC">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#1E293B" CornerRadius="8" Padding="16" Margin="0,0,0,12" BorderBrush="#334155" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Width="48" Height="48" Background="#881337" CornerRadius="8" Margin="0,0,14,0" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="🗑️" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="안전 격리 휴지통 (Safety Quarantine Vault)" FontSize="18" FontWeight="Bold" Foreground="#F8FAFC"/>
+                    <TextBlock Text="삭제된 인증서는 즉시 지워지지 않고 격리 보관되며 언제든 전체 선택 또는 개별 선택하여 원클릭으로 복원할 수 있습니다." FontSize="12" Foreground="#94A3B8" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <Button Grid.Column="2" Content="🔥 휴지통 완전히 비우기" Style="{StaticResource SecondaryButton}" Click="BtnEmptyTrash_Click" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- Action Toolbar (Select All / Batch Restore) -->
+        <Border Grid.Row="1" Background="#1E293B" CornerRadius="8" Padding="10,8" Margin="0,0,0,12" BorderBrush="#334155" BorderThickness="1">
+            <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="☑️ 전체 선택" Style="{StaticResource SecondaryButton}" Padding="10,5" Click="BtnSelectAll_Click" Margin="0,0,6,0"/>
+                    <Button Content="선택 해제" Style="{StaticResource SecondaryButton}" Padding="10,5" Click="BtnDeselectAll_Click" Margin="0,0,12,0"/>
+                    <TextBlock x:Name="TxtSelectedCount" Text="0개 선택됨" Foreground="#93C5FD" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button x:Name="BtnRestoreSelected" Content="↩️ 선택 항목 복원" Style="{StaticResource SuccessButton}" Padding="12,5" Click="BtnRestoreSelected_Click" Margin="0,0,8,0" IsEnabled="False"/>
+                    <Button Content="↩️ 휴지통 전체 복원" Style="{StaticResource PrimaryButton}" Padding="12,5" Click="BtnRestoreAll_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- List DataGrid -->
+        <Border Grid.Row="2" Background="#1E293B" CornerRadius="8" Padding="2" BorderBrush="#334155" BorderThickness="1">
+            <DataGrid x:Name="GridTrash"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      IsReadOnly="False"
+                      SelectionMode="Extended"
+                      Background="#1E293B"
+                      RowBackground="#1E293B"
+                      AlternatingRowBackground="#0F172A"
+                      Foreground="#F8FAFC"
+                      BorderThickness="0"
+                      GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#334155"
+                      HeadersVisibility="Column"
+                      RowHeight="48">
+                <DataGrid.Resources>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="#0F172A"/>
+                        <Setter Property="Foreground" Value="#94A3B8"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="Padding" Value="10,8"/>
+                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                        <Setter Property="BorderBrush" Value="#334155"/>
+                    </Style>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Background" Value="#1E293B"/>
+                        <Setter Property="Foreground" Value="#F8FAFC"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#334155"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#1E3A8A"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
+                    <!-- Checkbox Column -->
+                    <DataGridTemplateColumn Width="45">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" 
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          Click="ChkItem_Click"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTextColumn Header="삭제 일시" Binding="{Binding DeletedAt, StringFormat='yyyy-MM-dd HH:mm:ss'}" Width="140" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="인증서 소유자명" Binding="{Binding CertCommonName}" Width="180" IsReadOnly="True" FontWeight="Bold"/>
+                    
+                    <!-- Original Directory Path (Wrap & Tooltip) -->
+                    <DataGridTemplateColumn Header="원래 보관 경로" Width="*" IsReadOnly="True">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding OriginalDirectoryPath}" 
+                                           Foreground="#CBD5E1" 
+                                           FontSize="11" 
+                                           TextWrapping="Wrap" 
+                                           VerticalAlignment="Center"
+                                           ToolTip="{Binding OriginalDirectoryPath}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Header="복원 동작" Width="90" IsReadOnly="True">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="↩️ 복원" Style="{StaticResource SuccessButton}" Padding="8,4" Click="BtnRestoreItem_Click" Margin="4"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- Footer -->
+        <Border Grid.Row="3" Background="#1E293B" CornerRadius="8" Padding="12" Margin="0,12,0,0" BorderBrush="#334155" BorderThickness="1">
+            <Grid>
+                <TextBlock x:Name="TxtTrashCount" Text="격리 보관된 인증서: 0개" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                <Button Content="닫기" Style="{StaticResource PrimaryButton}" Width="80" HorizontalAlignment="Right" Click="BtnClose_Click"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

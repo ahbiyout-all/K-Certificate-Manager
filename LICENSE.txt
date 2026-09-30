@@ -1,0 +1,126 @@
+================================================================================
+K-Certificate Manager (K-인증서 매니저) 소프트웨어 라이선스 계약서
+Software License Agreement (한국어 / English Dual License Definition)
+================================================================================
+
+Version: v1.4.5
+Copyright (c) 2026 AhBiYout (https://ahbiyoutvibe.blogspot.com/)
+Developer: AhBiYout
+Company: CISNet (http://www.cisnet.co.kr/)
+All rights reserved.
+
+본 라이선스 문서는 한국어(Part 1)와 영어(Part 2) 2종류로 정의됩니다.
+This license document is defined in two languages: Korean (Part 1) and English (Part 2).
+
+
+################################################################################
+[Part 1. 한국어 라이선스 정의 (Korean License Definition)]
+################################################################################
+
+본 소프트웨어는 대한민국 공무원, 교직원, 금융 이용자 및 기업 사용자의
+공인/공동인증서(GPKI, EPKI, NPKI) 관리 및 안전한 이동을 위해 무료(Free License)로 제공됩니다.
+
+--------------------------------------------------------------------------------
+제 1 조 (사용 허가 및 권한)
+--------------------------------------------------------------------------------
+1. 본 소프트웨어는 개인, 공공기관, 교육기관, 비영리단체 및 영리 기업을 포함한
+   모든 사용자에게 영구적으로 무료로 배포되며 자유로운 사용이 허가됩니다.
+2. 사용자는 본 소프트웨어를 개인용 또는 업무용 목적으로 제한 없이 복제, 설치,
+   실행 및 사내/외부 배포할 수 있습니다.
+3. 본 소프트웨어의 소스 코드, 실행 바이너리 및 문서에 포함된 저작권 표기(AhBiYout)와
+   본 라이선스 고지문은 임의로 수정하거나 삭제할 수 없습니다.
+
+--------------------------------------------------------------------------------
+제 2 조 (보안 및 개인정보 보호 보장)
+--------------------------------------------------------------------------------
+1. 본 소프트웨어는 100% 순수 오프라인 로컬 환경에서 구동되도록 설계되었으며,
+   사용자의 인증서 파일(signCert.der, signPri.key)이나 비밀번호, 개인정보를
+   외부 원격 서버로 전송하거나 수집하지 않습니다 (Zero-Network / Zero-Telemetry).
+2. 모든 인증서 탐색, 백업, 복사, 복원 및 삭제 작업은 사용자의 명시적인 조작 하에
+   로컬 컴퓨터(PC) 및 지정된 이동식 디스크(USB) 내에서만 안전하게 수행됩니다.
+
+--------------------------------------------------------------------------------
+제 3 조 (오픈소스 소프트웨어 고지)
+--------------------------------------------------------------------------------
+본 소프트웨어는 다음의 오픈소스 라이브러리를 포함하고 있으며,
+각 라이브러리의 고유 라이선스 조항을 준수합니다:
+
+- React 19 (MIT License) - Copyright (c) Meta Platforms, Inc. and affiliates.
+- Vite 6 (MIT License) - Copyright (c) 2019-present Evan You & Vite Contributors.
+- Tailwind CSS v4 (MIT License) - Copyright (c) Tailwind Labs, Inc.
+- Lucide Icons (ISC License) - Copyright (c) Lucide Contributors.
+- JSZip (MIT License / Dual GPLv3) - Copyright (c) Stuart Knightley, David Duponchel.
+- Motion (MIT License) - Copyright (c) Framer B.V.
+- .NET / WPF Runtime Libraries (MIT License) - Copyright (c) .NET Foundation and Contributors.
+
+--------------------------------------------------------------------------------
+제 4 조 (보증의 부인 및 책임의 한계)
+--------------------------------------------------------------------------------
+본 소프트웨어는 상품성, 특정 목적에의 적합성 및 비침해성에 대한 명시적·묵시적 보증을
+포함하되 이에 국한되지 않고 "있는 그대로(AS-IS)" 제공됩니다.
+저작권자 및 개발사는 본 소프트웨어의 사용 또는 사용 불능으로 인하여 발생하는
+어떠한 직접적, 간접적, 부수적, 특별 또는 징벌적 손해에 대해서도 법적 책임을 지지 않습니다.
+인증서 복사, 이동 및 삭제 작업 전 중요 인증서는 반드시 별도의 안전한 매체에 백업할 것을 권장합니다.
+
+
+################################################################################
+[Part 2. English License Definition (영문 라이선스 정의)]
+################################################################################
+
+This software is provided free of charge (Free License) for civil servants, educators,
+financial users, and enterprise professionals in the Republic of Korea to safely manage
+and transfer Accredited/Joint Digital Certificates (GPKI, EPKI, NPKI).
+
+--------------------------------------------------------------------------------
+Article 1 (Grant of License and Permissions)
+--------------------------------------------------------------------------------
+1. This software is permanently distributed free of charge to all users, including
+   individuals, government/public agencies, educational institutions, non-profit
+   organizations, and commercial enterprises, with full permission for free use.
+2. Users may freely copy, install, execute, and distribute this software internally
+   or externally for personal or business purposes without restriction.
+3. The copyright notice (AhBiYout) and this license notice included in the source code,
+   executable binaries, and documentation of this software may not be modified or removed.
+
+--------------------------------------------------------------------------------
+Article 2 (Security and Privacy Protection Guarantee)
+--------------------------------------------------------------------------------
+1. This software is engineered to operate in a 100% offline local environment and never
+   transmits or collects user certificate files (signCert.der, signPri.key), passwords,
+   or personal information to any external server (Zero-Network / Zero-Telemetry).
+2. All certificate scanning, backup, copying, restoration, and deletion operations are
+   performed exclusively within the user's local computer (PC) and designated removable
+   drives (USB) under the user's explicit control.
+
+--------------------------------------------------------------------------------
+Article 3 (Open Source Software Notice)
+--------------------------------------------------------------------------------
+This software incorporates the following open source libraries and complies with
+the respective license terms of each library:
+
+- React 19 (MIT License) - Copyright (c) Meta Platforms, Inc. and affiliates.
+- Vite 6 (MIT License) - Copyright (c) 2019-present Evan You & Vite Contributors.
+- Tailwind CSS v4 (MIT License) - Copyright (c) Tailwind Labs, Inc.
+- Lucide Icons (ISC License) - Copyright (c) Lucide Contributors.
+- JSZip (MIT License / Dual GPLv3) - Copyright (c) Stuart Knightley, David Duponchel.
+- Motion (MIT License) - Copyright (c) Framer B.V.
+- .NET / WPF Runtime Libraries (MIT License) - Copyright (c) .NET Foundation and Contributors.
+
+--------------------------------------------------------------------------------
+Article 4 (Disclaimer of Warranty and Limitation of Liability)
+--------------------------------------------------------------------------------
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR DEVELOPER BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OF OR
+INABILITY TO USE THIS SOFTWARE.
+Users are strongly advised to back up critical certificates to a safe storage medium
+before performing any certificate copy, move, or deletion operations.
+
+================================================================================
+문의 및 개발자 정보 (Contact & Developer Information)
+- 개발자 (Developer): AhBiYout
+- 회사 홈페이지 (Company): http://www.cisnet.co.kr/ (CISNet)
+- 공식 기술 블로그 (Blog): https://ahbivibelog.blogspot.com/
+================================================================================
