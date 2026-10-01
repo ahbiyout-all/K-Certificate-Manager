@@ -1,0 +1,175 @@
+name: K-Certificate Manager CI Build & Release
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & Release WPF Desktop App
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Extract Project Version
+        id: version_step
+        shell: pwsh
+        run: |
+          $ver = "1.4.5"
+          if ("${{ github.ref_name }}".StartsWith("v")) {
+            $ver = "${{ github.ref_name }}".Substring(1)
+          } elseif (Test-Path "package.json") {
+            try {
+              $pkg = Get-Content "package.json" -Raw | ConvertFrom-Json
+              if ($pkg.version) { $ver = $pkg.version }
+            } catch {}
+          }
+          $ver = $ver.Trim()
+          Write-Host "Target Version: $ver"
+          [System.IO.File]::AppendAllText($env:GITHUB_ENV, "APP_VER=$ver`n")
+
+      - name: Setup .NET SDK (for C# WPF Desktop)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore .NET Solution
+        run: dotnet restore KCertManager.sln
+
+      - name: Build KCert.Core DLL
+        run: dotnet build src-wpf/KCert.Core/KCert.Core.csproj -c Release -o release/05_WpfDesktop
+
+      - name: Build & Publish WPF Desktop App (x64 Standalone)
+        shell: pwsh
+        run: |
+          dotnet publish src-wpf/KCertManager.Wpf/KCertManager.Wpf.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:EnableCompressionInSingleFile=true `
+            -o release/05_WpfDesktop
+
+          # Generate version-suffixed executable copies
+          $ver = "${{ env.APP_VER }}"
+          if (Test-Path "release/05_WpfDesktop/KCertManager.exe") {
+            Copy-Item "release/05_WpfDesktop/KCertManager.exe" "release/05_WpfDesktop/KCertManager_v$ver.exe" -Force
+          }
+
+      - name: Build Ultra-Lightweight Edition (Framework-Dependent)
+        shell: pwsh
+        run: |
+          $liteDir = "release/05_WpfLite"
+          New-Item -ItemType Directory -Force -Path $liteDir | Out-Null
+          dotnet publish src-wpf/KCertManager.Wpf/KCertManager.Wpf.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained false `
+            -p:PublishSingleFile=true `
+            -p:EnableCompressionInSingleFile=false `
+            -o $liteDir
+
+          $ver = "${{ env.APP_VER }}"
+          if (Test-Path "$liteDir/KCertManager.exe") {
+            Copy-Item "$liteDir/KCertManager.exe" "release/05_WpfDesktop/KCertManager-Lite_v$ver.exe" -Force
+            Copy-Item "$liteDir/KCertManager.exe" "release/05_WpfDesktop/KCertManager-Lite.exe" -Force
+          }
+          Remove-Item -Recurse -Force $liteDir -ErrorAction SilentlyContinue
+
+      - name: Build Inno Setup Installer (.exe with Version Suffix)
+        shell: pwsh
+        run: |
+          $isccPath = $null
+          if (Get-Command iscc -ErrorAction SilentlyContinue) {
+            $isccPath = "iscc"
+          } elseif (Test-Path "C:\Program Files (x86)\Inno Setup 6\ISCC.exe") {
+            $isccPath = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          } elseif (Test-Path "C:\Program Files\Inno Setup 6\ISCC.exe") {
+            $isccPath = "C:\Program Files\Inno Setup 6\ISCC.exe"
+          } else {
+            Write-Host "Installing Inno Setup via Chocolatey..."
+            choco install innosetup --no-progress -y
+            $isccPath = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          }
+
+          New-Item -ItemType Directory -Force -Path release\07_Installer | Out-Null
+          $ver = "${{ env.APP_VER }}"
+          Write-Host "Compiling Inno Setup installer for version $ver..."
+          & $isccPath "/DMyAppVersion=$ver" installer.iss
+          Write-Host "Installer build finished. Listing release/07_Installer:"
+          Get-ChildItem release\07_Installer
+
+      - name: Clean Up Release Directory (Keep Only 2 Versioned Executables)
+        shell: pwsh
+        run: |
+          $ver = "${{ env.APP_VER }}"
+          # Remove debug symbols, deps, and standalone libraries
+          Remove-Item -Path "release/05_WpfDesktop/*.pdb" -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "release/05_WpfDesktop/*.deps.json" -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "release/05_WpfDesktop/KCert.Core.dll" -Force -ErrorAction SilentlyContinue
+          # Remove duplicate non-versioned executables
+          Remove-Item -Path "release/05_WpfDesktop/KCertManager.exe" -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "release/05_WpfDesktop/KCertManager-Lite.exe" -Force -ErrorAction SilentlyContinue
+          Write-Host "Remaining files in release/05_WpfDesktop (Only 2 versioned executables):"
+          Get-ChildItem release/05_WpfDesktop
+
+      - name: Upload WPF Desktop Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: KCertManager-v${{ env.APP_VER }}-WPF-Desktop
+          path: release/05_WpfDesktop/
+          retention-days: 14
+
+      - name: Upload Installer Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: KCertManager-v${{ env.APP_VER }}-Installer-Setup
+          path: release/07_Installer/
+          retention-days: 14
+
+      - name: Compress Desktop Release for GitHub Release
+        shell: pwsh
+        run: |
+          $ver = "${{ env.APP_VER }}"
+          Compress-Archive -Path release/05_WpfDesktop/* -DestinationPath "release/KCertManager-v$ver-WPF-Desktop.zip" -Force
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.APP_VER }}
+          name: K-Certificate Manager v${{ env.APP_VER }}
+          body: |
+            ## 🛡️ K-Certificate Manager (K-인증서 매니저) v${{ env.APP_VER }}
+            
+            대한민국 공무원 행정전자서명(GPKI/EPKI) 및 금융 공동인증서(NPKI) 자동 탐색·USB 일괄 백업 & PC 역방향 복사 관리 도구
+            
+            ### 📦 배포 파일 목록 (버전 태그 v${{ env.APP_VER }} 적용)
+            1. **`kcert-manager-v${{ env.APP_VER }}-setup.exe`**: 윈도우 정식 설치 프로그램 (바탕화면/시작메뉴 바로가기 등록, 제어판 프로그램 추가/제거 지원)
+            2. **`KCertManager-v${{ env.APP_VER }}-WPF-Desktop.zip`**: 무설치 포터블 압축 파일 (압축 해제 후 더블 클릭 즉시 실행)
+            3. **`KCertManager_v${{ env.APP_VER }}.exe`**: 단독 실행 파일 (독립형 Standalone 실행 바이너리)
+            4. **`KCertManager-Lite_v${{ env.APP_VER }}.exe`**: 초경량 에디션 실행 파일
+            
+            ### ✨ 주요 기능 및 업데이트 (v${{ env.APP_VER }})
+            - **C# WPF 왼쪽 상단 공식 메탈릭 블루 & 실버 K-방패 로고 적용**
+            - **모던 일체형 타이틀바 (`WindowChrome`) 적용**
+            - **전역 7대 보안 취약점 하드닝 패치 (화이트리스트 확장자 필터, Path Traversal 방지, SHA-256 무결성 검증)**
+            - **한국어/영어 2종 라이선스 공식 계약서 완비**
+            - **친화적 한국어 예외 안내 시스템 및 8대 테마 시스템**
+            - **.NET 10 / .NET 8 멀티 타깃 자동 감지 빌드**
+            
+            상세 변경 내역은 저장소 내 `docs/PATCHNOTES.md`를 참고해 주시기 바랍니다.
+          files: |
+            release/07_Installer/*.exe
+            release/KCertManager-v*-WPF-Desktop.zip
+            release/05_WpfDesktop/KCertManager_v*.exe
+            release/05_WpfDesktop/KCertManager-Lite_v*.exe

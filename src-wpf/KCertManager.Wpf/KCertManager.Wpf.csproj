@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- Dynamic TargetFramework: Defaults to net10.0-windows on .NET 10+ SDK, with automatic net8.0-windows support -->
+    <ChosenTfm Condition="'$(TargetFramework)' != ''">$(TargetFramework)</ChosenTfm>
+    <ChosenTfm Condition="'$(ChosenTfm)' == '' and $([MSBuild]::VersionGreaterThanOrEquals('$(NETCoreSdkVersion)', '10.0'))">net10.0-windows</ChosenTfm>
+    <ChosenTfm Condition="'$(ChosenTfm)' == '' and $([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '9.0'))">net8.0-windows</ChosenTfm>
+    <ChosenTfm Condition="'$(ChosenTfm)' == ''">net10.0-windows</ChosenTfm>
+    <TargetFramework>$(ChosenTfm)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <AssemblyName>KCertManager</AssemblyName>
+    <RootNamespace>KCertManager.Wpf</RootNamespace>
+    <AssemblyTitle>K-Certificate Manager (K-인증서 매니저)</AssemblyTitle>
+    <Company>AhBiYout</Company>
+    <Authors>AhBiYout</Authors>
+    <Product>K-Certificate Manager</Product>
+    <Copyright>Copyright (c) 2026 AhBiYout. All rights reserved.</Copyright>
+    <Version>1.4.5</Version>
+    <AssemblyVersion>1.4.5.0</AssemblyVersion>
+    <FileVersion>1.4.5.0</FileVersion>
+    <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
+
+    <!-- High Performance Single-File Compilation & Size Optimization -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract Condition="'$(SelfContained)' == 'true'">true</IncludeNativeLibrariesForSelfExtract>
+    <IncludeAllContentForSelfExtract Condition="'$(SelfContained)' == 'true'">true</IncludeAllContentForSelfExtract>
+    <EnableCompressionInSingleFile Condition="'$(SelfContained)' == 'true'">true</EnableCompressionInSingleFile>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <DebuggerSupport>false</DebuggerSupport>
+    <EventSourceSupport>false</EventSourceSupport>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KCert.Core\KCert.Core.csproj" />
+  </ItemGroup>
+
+</Project>

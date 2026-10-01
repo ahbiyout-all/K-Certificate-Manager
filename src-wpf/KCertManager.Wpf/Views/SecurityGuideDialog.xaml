@@ -1,0 +1,146 @@
+<Window x:Class="KCertManager.Wpf.Views.SecurityGuideDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="보안 가이드 및 KCert.Core 기술 규격 (Security Guide &amp; Core Specs)"
+        Width="780" Height="640"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BgDarkBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}"
+        ResizeMode="CanResizeWithGrip">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="16" Margin="0,0,0,16" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Width="48" Height="48" Background="#1E3A8A" CornerRadius="8" Margin="0,0,14,0" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="🛡️" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="보안 지침 및 KCert.Core 4대 창작 엔진 규격" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <TextBlock Text="행정안전부·국가정보원 공인 전자서명 보안 준수 및 KCert.Core 자체 창작 아키텍처" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Tabs -->
+        <TabControl Grid.Row="1" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+            <TabControl.Resources>
+                <Style TargetType="TabItem">
+                    <Setter Property="Background" Value="#0F172A"/>
+                    <Setter Property="Foreground" Value="#94A3B8"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                    <Setter Property="Padding" Value="16,8"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="TabItem">
+                                <Border x:Name="TabBorder" Background="{TemplateBinding Background}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,1,1,0" CornerRadius="6,6,0,0" Margin="0,0,4,0" Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource BgCardBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
+                                        <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource AccentTextBrush}"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </TabControl.Resources>
+
+            <!-- Tab 1: 10대 보안 수칙 -->
+            <TabItem Header="📋 공공·금융 인증서 10대 보안 수칙">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="14">
+                    <StackPanel>
+                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="1. 개인키(signPri.key) 외부 유출 및 메일 전송 절대 금지" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" FontSize="13"/>
+                                <TextBlock Text="공동/행정 전자서명 개인키 파일은 비밀번호가 걸려 있더라도 이메일, 메신저, 클라우드에 업로드해서는 안 됩니다." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="2. 공용 PC(인터넷 카페, 도서관) 저장 금지 및 사용 후 즉시 영구 삭제" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" FontSize="13"/>
+                                <TextBlock Text="공용 PC 사용이 불가피한 경우 USB로 구동 후 사용 완료 즉시 복구 불가능하게 휴지통 비우기를 수행해야 합니다." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="3. 보관용 백업 시 AES-256 .kcertpack 보안 금고 암호화 필수" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" FontSize="13"/>
+                                <TextBlock Text="평문 폴더 통째로 보관하기보다 KCert 보안 금고(.kcertpack)로 2차 암호화하여 저장할 것을 권장합니다." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="4. 보안 USB 사용 및 보안 이동식 매체 분실 주의" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" FontSize="13"/>
+                                <TextBlock Text="하드웨어 보안 토큰(HSM) 또는 보안 전용 USB에 인증서를 담아 물리적으로 휴대 보관합니다." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="5. 유효기간 만료 전 30일 이내 적시 갱신 및 만료 인증서 정리" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" FontSize="13"/>
+                                <TextBlock Text="만료된 구형 인증서는 혼동을 막기 위해 만료 정리 기능을 통해 안전하게 휴지통으로 격리합니다." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Tab 2: KCert.Core 4대 모듈 규격 -->
+            <TabItem Header="⚙️ KCert.Core 자체 창작 4대 엔진 스펙">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="14">
+                    <StackPanel>
+                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="1. KCert.Core.Parser (ASN.1 X.509 DER 초고속 무결성 파서)" FontWeight="Bold" Foreground="#34D399" FontSize="13"/>
+                                <TextBlock Text="외부 OpenSSL이나 무거운 C++ 네이티브 없이 순수 C# 메모리 기반으로 Subject DN, Issuer, OID(행정/교육/금융), 서명 알고리즘, 유효기간을 1ms 내에 안전 파싱합니다." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="2. KCert.Core.Discovery (안전 재귀 탐색 &amp; 하위 호환 매핑)" FontWeight="Bold" Foreground="#34D399" FontSize="13"/>
+                                <TextBlock Text="시스템 심볼릭 링크 순환 루프를 방어하며 LocalLow, Program Files, GPKI, EPKI, 모든 USB 루트의 NPKI/GPKI 구조를 원자적으로 탐색합니다." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="3. KCert.Core.Vault (AES-256 + PBKDF2 10만회 + Safety Trash)" FontWeight="Bold" Foreground="#34D399" FontSize="13"/>
+                                <TextBlock Text="인증서와 개인키를 단일 .kcertpack 파일로 AES-256 암호화 및 HMAC 무결성 서명하며, 실수 삭제 방지를 위한 전용 격리 휴지통 엔진을 내장합니다." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="4. KCert.Core.HardwareGuard (USB 실시간 핫플러그 감지 &amp; 하드웨어 격리)" FontWeight="Bold" Foreground="#34D399" FontSize="13"/>
+                                <TextBlock Text="Windows WMI/DBT 메시지를 수신하여 USB 탈착 시 50ms 이내에 안전 리프레시하며 네트워크 전송을 원천 차단하는 오프라인 샌드박스를 준수합니다." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="12" Margin="0,16,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+            <Button Content="확인" Style="{StaticResource PrimaryButton}" Width="90" HorizontalAlignment="Right" Click="BtnClose_Click"/>
+        </Border>
+    </Grid>
+</Window>

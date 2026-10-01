@@ -1,0 +1,67 @@
+================================================================================
+[English] K-Certificate Manager Software License Agreement
+================================================================================
+
+Version: v1.4.5
+Copyright (c) 2026 AhBiYout (https://ahbiyoutvibe.blogspot.com/)
+Developer: AhBiYout
+Company: CISNet (http://www.cisnet.co.kr/)
+All rights reserved.
+
+This software is provided free of charge (Free License) for civil servants, educators,
+financial users, and enterprise professionals in the Republic of Korea to safely manage
+and transfer Accredited/Joint Digital Certificates (GPKI, EPKI, NPKI).
+
+--------------------------------------------------------------------------------
+Article 1 (Grant of License and Permissions)
+--------------------------------------------------------------------------------
+1. This software is permanently distributed free of charge to all users, including
+   individuals, government/public agencies, educational institutions, non-profit
+   organizations, and commercial enterprises, with full permission for free use.
+2. Users may freely copy, install, execute, and distribute this software internally
+   or externally for personal or business purposes without restriction.
+3. The copyright notice (AhBiYout) and this license notice included in the source code,
+   executable binaries, and documentation of this software may not be modified or removed.
+
+--------------------------------------------------------------------------------
+Article 2 (Security and Privacy Protection Guarantee)
+--------------------------------------------------------------------------------
+1. This software is engineered to operate in a 100% offline local environment and never
+   transmits or collects user certificate files (signCert.der, signPri.key), passwords,
+   or personal information to any external server (Zero-Network / Zero-Telemetry).
+2. All certificate scanning, backup, copying, restoration, and deletion operations are
+   performed exclusively within the user's local computer (PC) and designated removable
+   drives (USB) under the user's explicit control.
+
+--------------------------------------------------------------------------------
+Article 3 (Open Source Software Notice)
+--------------------------------------------------------------------------------
+This software incorporates the following open source libraries and complies with
+the respective license terms of each library:
+
+- React 19 (MIT License) - Copyright (c) Meta Platforms, Inc. and affiliates.
+- Vite 6 (MIT License) - Copyright (c) 2019-present Evan You & Vite Contributors.
+- Tailwind CSS v4 (MIT License) - Copyright (c) Tailwind Labs, Inc.
+- Lucide Icons (ISC License) - Copyright (c) Lucide Contributors.
+- JSZip (MIT License / Dual GPLv3) - Copyright (c) Stuart Knightley, David Duponchel.
+- Motion (MIT License) - Copyright (c) Framer B.V.
+- .NET / WPF Runtime Libraries (MIT License) - Copyright (c) .NET Foundation and Contributors.
+
+--------------------------------------------------------------------------------
+Article 4 (Disclaimer of Warranty and Limitation of Liability)
+--------------------------------------------------------------------------------
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR DEVELOPER BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OF OR
+INABILITY TO USE THIS SOFTWARE.
+Users are strongly advised to back up critical certificates to a safe storage medium
+before performing any certificate copy, move, or deletion operations.
+
+================================================================================
+Contact & Developer Information
+- Developer: AhBiYout
+- Company Website: http://www.cisnet.co.kr/ (CISNet)
+- Official Tech Blog: https://ahbivibelog.blogspot.com/
+================================================================================
