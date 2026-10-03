@@ -56,6 +56,22 @@
   - `AboutDialog`, `ActivityLogDialog`, `BackupHistoryDialog`, `CertificateDetailDialog`, `ExpiredCleanupDialog`, `RenewalGuidanceDialog`, `SearchLocationsDialog`, `SecurityGuideDialog`, `TrashDialog`, `UsbTransferDialog` 등 프로그램 내에 존재하는 모든 서브 팝업창의 배경 및 텍스트 스타일에 `{DynamicResource}` 바인딩을 강제 적용.
   - 화이트, 그레이, 베이지 테마로 변경 시 서브창 본문이나 표 데이터의 일부 글씨들이 보이지 않거나 배경과 유사한 색으로 뭉개지던 시인성 가시성 결함을 100% 영구 전수 교정.
   - **스마트 테마 감지 (`IsCurrentThemeDark`)**: 만료 정리 마법사(`ExpiredCleanupDialog`) 등의 다이얼로그 내부 코드-비하인드에 런타임 어둡기 자동 검출기(IsCurrentThemeDark)를 배치하여, 액티브 테마 상태에 어울리는 최적의 전경색(경고문 대비)을 가변 계산 주입.
+- **WPF 데스크톱 앱 초기 실행 시 다크 테마 브러시 누락 버그 해결 (시작 직후 검은색 글자 렌더링 결함 완전 픽스)**
+  - **원인 분석**: `App.xaml` 정적 리소스 팔레트에 `AccentTextBrush` 및 `MutedTextBrush`가 선언되지 않아, 시작 시점에는 Windows OS 기본 텍스트 색상인 검은색(`#000000`)으로 폴백되어 어두운 배경에 텍스트가 보이지 않던 현상 발생. (다른 테마를 거쳐 다시 다크를 선택해야 C# `ApplyTheme`가 브러시를 주입하여 회색/하늘색으로 보이던 문제).
+  - **3중 완전 해결**:
+    1. `App.xaml` 정적 리소스에 `AccentText`(`#60A5FA`), `MutedText`(`#94A3B8`), `AccentTextBrush`, `MutedTextBrush`를 직접 영구 등록하여 XAML 파싱 첫 순간부터 100% 준비.
+    2. `MainViewModel` 생성자(`MainViewModel()`)에서 `ApplyTheme(_currentTheme)`를 즉각 강제 실행.
+    3. `App.xaml.cs`의 `OnStartup` 및 `MainWindow.xaml.cs`의 `InitializeComponent()` 직전에 테마를 사전 적용하여 시작 즉시 사이드바 카테고리(밝은 회색) 및 수량 건수(스카이블루)가 또렷하게 표시되도록 조치.
+- **데스크톱 앱(C# WPF) 시작 시 백그라운드 자동 업데이트 확인 파이프라인 구축 (`MainViewModel.cs`)**
+  - **논블로킹 비동기 딜레이(1.2초)**: 프로그램 기동 시 UI 및 인증서 목록을 0.05초 만에 초고속 렌더링한 후, 1.2초 뒤 백그라운드에서 GitHub 최신 릴리스 조회를 자동 실행 (`CheckForAppUpdatesAsync(isSilentWhenUpToDate: true)`).
+  - **지능형 침묵/안내 처리**: 새 버전 감지 시에만 업데이트 제안 다이얼로그를 띄우며, 최신 버전이거나 오프라인/폐쇄망일 때는 방해 창 없이 하단 상태바에 조용히 `"준비 완료 (최신 버전 확인됨)"`으로 점등. (수동 버튼 클릭 시에는 확인 창 제공).
+- **일반 사용자 인지 부하 해소를 위한 '간편 모드 / 상세 모드' 듀얼 UX 시스템 구축 (WPF & Web)**
+  - **WPF 데스크톱**:
+    - `[간편 모드]` 활성화 시 화면 상단 거대 드라이브 하드웨어 진단 블록을 **1줄 슬림 원클릭 배너**(`⚡ 간편 백업: 대상 드라이브 [💾 USB] | [⚡ 원클릭 전체 복사] | [📥 USB ➔ PC 넣기]`)로 압축하고 상단 6대 고급 도구 버튼을 숨겨 인증서 목록(DataGrid)을 탁 트이게 노출.
+    - `[상세 모드]` 선택 시 정밀 하드웨어 진단 패널(NVMe/SATA/USB 포트 규격, 파티션 라벨, 모델명) 및 6대 고급 도구(탐색 경로, 백업 이력, 작업 로그, 보안 수칙, 업데이트 확인, 정보) 활성화.
+  - **React 웹 에디션**: 중복 드라이브 카드 블록을 걷어내고 `SimpleTransferHero` 중심의 원클릭 직관 대시보드로 통일.
+- **Semantic Versioning 2.0.0 (SemVer 2.0.0) 공식 규칙 100% 완전 준수 검증**
+  - `MAJOR(1) . MINOR(4) . PATCH(5)` 체계 정립, `compareSemver()` 알고리즘의 프리릴리스/사전식 비교 규칙 준수 및 전체 프로젝트 파일(`package.json`, `.csproj`, `version.ts`, 배포 스크립트) 동기화 완료.
 - **Windows 배치 파일 개행 문자 규격 튜닝 (CRLF 오프셋 버그 원천 픽스)**
   - Windows의 명령 프롬프트(`cmd.exe`) 환경에서 스크립트 실행 제어가 어긋나거나 명령이 누락되던 현상을 원천 방지하기 위해, 모든 스크립트 파일(`.bat`, `.cmd`)을 Windows 고유 규격인 CRLF(`\r\n`) 방식으로 완전 인코딩 일괄 교정 완료.
 

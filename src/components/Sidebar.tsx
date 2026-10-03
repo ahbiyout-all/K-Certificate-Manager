@@ -47,6 +47,8 @@ interface SidebarProps {
   nonStandardCount?: number;
   selectedCount: number;
   onSelectCategoryFilter?: (filter: string) => void;
+  appViewMode?: 'simple' | 'advanced';
+  onToggleAppViewMode?: (mode: 'simple' | 'advanced') => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -76,6 +78,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   nonStandardCount = 0,
   selectedCount,
   onSelectCategoryFilter,
+  appViewMode = 'simple',
+  onToggleAppViewMode,
 }) => {
   return (
     <aside className="w-64 bg-[#1e293b] text-white flex flex-col shrink-0 border-r border-slate-800">
@@ -106,6 +110,45 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
       </div>
+
+      {/* View Mode Toggle: [간편 모드] vs [상세 모드] */}
+      {onToggleAppViewMode && (
+        <div className="px-4 py-2.5 bg-slate-900/60 border-b border-slate-700/60">
+          <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1.5 font-medium">
+            <span>화면 표시 모드</span>
+            <span className="text-[10px] text-blue-400 font-bold">
+              {appViewMode === 'simple' ? '✨ 간편 모드 (기본)' : '⚙️ 상세 모드'}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 p-0.5 bg-slate-950/80 rounded-lg border border-slate-800">
+            <button
+              type="button"
+              onClick={() => onToggleAppViewMode('simple')}
+              className={`py-1 text-xs font-bold rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                appViewMode === 'simple'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="초보자를 위한 간결한 모드"
+            >
+              <span>간편</span>
+              <span className="text-[9px] px-1 bg-white/20 rounded font-normal">기본</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onToggleAppViewMode('advanced')}
+              className={`py-1 text-xs font-bold rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                appViewMode === 'advanced'
+                  ? 'bg-slate-700 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="하드웨어 VSN/경로/WMI 상세 표시"
+            >
+              <span>상세</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Navigation Items */}
       <nav className="flex-1 p-4 space-y-1.5">

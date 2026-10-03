@@ -428,8 +428,8 @@ export const CertificateList: React.FC<CertificateListProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* 1. Connected Drives Status Bar (Shows ALL connected backup drives: External SSD, Fast USB, Removable USB, Local Data Disk) */}
-      {backupDrivesWithStats.length > 0 && (
+      {/* Connected Drives Bar is managed centrally in App.tsx (SimpleTransferHero / ConnectedDrivesBar) */}
+      {false && backupDrivesWithStats.length > 0 && (
         <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-xl p-3.5 sm:p-4 text-white shadow-sm border border-indigo-900/60 space-y-3.5">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             {/* Left: Title, Badges, and Mode Subtext */}

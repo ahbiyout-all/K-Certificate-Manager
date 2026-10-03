@@ -60,13 +60,20 @@ KCertManager.sln (솔루션 파일)
 1. **모던 일체형 타이틀바 (`WindowChrome`) & 4종 테마**:
    - Windows 기본 흰색 타이틀바를 제거하고, 앱 내부 헤더(`🛡️ K-인증서 매니저 v1.4.5`) 우측에 최소화(`─`), 최대화/복원(`□`/`❐`), 종료(`✕`) 버튼을 일체화.
    - 다크 · 회색 · 화이트 · 베이지 4가지 테마 전환 시 타이틀바부터 하단 상태바까지 완벽 색상 동기화.
-2. **순수 C# X.509 파서 (`System.Security.Cryptography.X509Certificates`)**:
+   - **다크 테마 시작 즉시 시인성 완벽 보장**: `App.xaml` 정적 리소스에 `AccentTextBrush` 및 `MutedTextBrush`를 선언하고 윈도우 인스턴스화 시점에 `ApplyTheme("dark")`를 3중 사전 주입하여 시작 즉시 검은색 글자로 뭉개지는 현상을 영구 차단.
+2. **일반 사용자 친화적 [간편 모드] vs [상세 모드] 듀얼 UX 시스템**:
+   - **간편 모드 (기본)**: 상단에 복잡하던 NVMe/SATA/USB 진단 패널을 **1줄 슬림 원클릭 배너**(`⚡ 간편 백업: 대상 드라이브 [💾 USB] | [⚡ 원클릭 전체 복사] | [📥 USB ➔ PC 넣기]`)로 압축하고, 상단 6대 고급 도구 버튼을 감추어 인증서 목록(DataGrid)을 시원하게 노출.
+   - **상세 모드**: NVMe/SATA/USB 포트 규격, 물리 모델명, 파티션 라벨 및 6대 고급 도구(탐색 경로, 백업 이력, 작업 로그, 보안 수칙, 업데이트 확인, 정보) 활성화.
+3. **앱 시작 시 백그라운드 자동 업데이트 확인 파이프라인**:
+   - 윈도우 UI 렌더링 완료 1.2초 후 비동기 호출 (`CheckForAppUpdatesAsync(isSilentWhenUpToDate: true)`).
+   - 새 버전 감지 시에만 업데이트 팝업을 띄우고, 최신 버전이거나 오프라인/폐쇄망일 때는 방해 창 없이 하단 상태바에 조용히 `"준비 완료 (최신 버전 확인됨)"`으로 점등.
+4. **순수 C# X.509 파서 (`System.Security.Cryptography.X509Certificates`)**:
    - `signCert.der` 바이너리로부터 Subject DN, CN, 발급자(CA), 유효기간, 일련번호, 암호 알고리즘을 네이티브로 직접 추출 (512KB 초과 비정상 파일 DoS 방어 포함).
-3. **화이트리스트 기반 무결성 전송 (SHA-256 & Path Traversal 차단)**:
+5. **화이트리스트 기반 무결성 전송 (SHA-256 & Path Traversal 차단)**:
    - `.der`, `.cer`, `.crt`, `.key`, `.pri`, `.pfx`, `.p12`, `.pem` 확장자만 선별 복사하여 악성 실행파일 동반 복사를 차단하고, `Path.GetFullPath` 정규화로 상위 경로 이탈을 원천 방어.
-4. **실시간 USB 핫플러그 감지 (`System.Management` WMI)**:
+6. **실시간 USB 핫플러그 감지 (`System.Management` WMI)**:
    - `Win32_VolumeChangeEvent`를 구독하여 USB 메모리를 꽂거나 뽑는 즉시 드라이브 콤보박스 및 목록 자동 갱신.
-5. **역방향 가져오기 (USB ➔ PC) 및 안전 휴지통 (`SafetyTrash`)**:
+7. **역방향 가져오기 (USB ➔ PC) 및 안전 휴지통 (`SafetyTrash`)**:
    - USB 내의 `NPKI`, `GPKI`, `EPKI` 폴더를 스캔하여 로컬 PC의 `AppData\LocalLow` 경로로 자동 복원 및 삭제 시 안전 격리/원클릭 복원 지원.
 
 ---

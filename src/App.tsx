@@ -20,6 +20,7 @@ import {
 } from './types';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
+import { SimpleTransferHero } from './components/SimpleTransferHero';
 import { QuickTransferConfigCard } from './components/QuickTransferConfigCard';
 import { ConnectedDrivesBar } from './components/ConnectedDrivesBar';
 import { SearchLocationsPanel } from './components/SearchLocationsPanel';
@@ -61,7 +62,9 @@ import {
   RotateCcw,
   Trash2,
   ExternalLink,
-  FileText
+  FileText,
+  ChevronDown,
+  SlidersHorizontal
 } from 'lucide-react';
 import { APP_VERSION, DEVELOPER_INFO } from './version';
 
@@ -121,6 +124,26 @@ export default function App() {
     }
     return 'beige';
   });
+  const [appViewMode, setAppViewMode] = useState<'simple' | 'advanced'>(() => {
+    try {
+      const saved = localStorage.getItem('kcert_app_view_mode');
+      if (saved === 'simple' || saved === 'advanced') return saved;
+    } catch {
+      // Fallback
+    }
+    return 'simple';
+  });
+  const [isAdvancedBottomExpanded, setIsAdvancedBottomExpanded] = useState<boolean>(false);
+
+  const handleToggleAppViewMode = (mode: 'simple' | 'advanced') => {
+    setAppViewMode(mode);
+    try {
+      localStorage.setItem('kcert_app_view_mode', mode);
+    } catch {
+      // ignore
+    }
+  };
+
   const [trashItems, setTrashItems] = useState<TrashItem[]>(() => {
     try {
       const saved = localStorage.getItem('kcert_trash_items');
@@ -805,9 +828,11 @@ export default function App() {
     if (tab === 'security') {
       setIsSecurityModalOpen(true);
     } else if (tab === 'history') {
-      historyPanelRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setIsAdvancedBottomExpanded(true);
+      setTimeout(() => historyPanelRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
     } else if (tab === 'paths') {
-      pathsPanelRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setIsAdvancedBottomExpanded(true);
+      setTimeout(() => pathsPanelRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
     } else if (tab === 'copy') {
       copyPanelRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
@@ -916,6 +941,8 @@ export default function App() {
           expiredCount={expiredCount}
           nonStandardCount={nonStandardCount}
           selectedCount={selectedIds.length}
+          appViewMode={appViewMode}
+          onToggleAppViewMode={handleToggleAppViewMode}
         />
       </div>
 
@@ -996,6 +1023,11 @@ export default function App() {
               expiredCount={expiredCount}
               nonStandardCount={nonStandardCount}
               selectedCount={selectedIds.length}
+              appViewMode={appViewMode}
+              onToggleAppViewMode={(mode) => {
+                handleToggleAppViewMode(mode);
+                setIsMobileSidebarOpen(false);
+              }}
             />
           </div>
         </div>
@@ -1028,6 +1060,8 @@ export default function App() {
           trashCount={trashItems.length}
           lastScanTime={lastScanTime}
           onToggleMobileMenu={() => setIsMobileSidebarOpen(true)}
+          appViewMode={appViewMode}
+          onToggleAppViewMode={handleToggleAppViewMode}
         />
 
         {/* Content Body */}
@@ -1045,42 +1079,63 @@ export default function App() {
             />
           )}
 
-          {/* Quick Transfer Config Grid (1. Source, 2. Target) */}
-          <QuickTransferConfigCard
-            searchPaths={searchPaths}
+          {/* Simple Transfer Hero Bar: One-Click Reassuring Action & Mode Switcher */}
+          <SimpleTransferHero
+            certificates={certificates}
+            selectedIds={selectedIds}
             availableDrives={availableDrives}
             selectedDriveId={selectedDriveId}
-            onSelectDriveId={setSelectedDriveId}
-            onTogglePathsPanel={() => {
-              pathsPanelRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            onOpenCustomDirectory={() => {
-              pathsPanelRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            onOpenUsbToPcModal={(driveLetter) => {
-              if (driveLetter) {
-                setTargetUsbLetterForModal(driveLetter);
-              }
-              setIsUsbToPcModalOpen(true);
-            }}
-            onSimulateUsbMount={() => {
-              const newDrive = simulateUsbMount();
-              setTargetUsbLetterForModal(newDrive.letter);
-            }}
+            appViewMode={appViewMode}
+            onToggleAppViewMode={handleToggleAppViewMode}
+            onOpenTargetDrivePicker={() => setIsTargetDrivePickerOpen(true)}
+            onStartBackup={() => handleOpenGeneralBackupModal(selectedDriveId)}
+            onOpenUsbToPcModal={() => setIsUsbToPcModalOpen(true)}
+            onSelectAll={handleSelectAll}
           />
 
-          {/* Connected Drives Status Bar (NVMe / SATA / USB distinction with Basic/Advanced mode toggle) */}
-          <ConnectedDrivesBar
-            availableDrives={availableDrives}
-            selectedDriveId={selectedDriveId}
-            onSelectDriveId={setSelectedDriveId}
-            onOpenUsbToPc={(driveLetter) => {
-              if (driveLetter) setTargetUsbLetterForModal(driveLetter);
-              setIsUsbToPcModalOpen(true);
-            }}
-          />
+          {/* Advanced Mode Only: Detailed Transfer Config & Physical Drives Status Bar */}
+          {appViewMode === 'advanced' && (
+            <>
+              {/* Quick Transfer Config Grid (1. Source, 2. Target) */}
+              <QuickTransferConfigCard
+                searchPaths={searchPaths}
+                availableDrives={availableDrives}
+                selectedDriveId={selectedDriveId}
+                onSelectDriveId={setSelectedDriveId}
+                onTogglePathsPanel={() => {
+                  setIsAdvancedBottomExpanded(true);
+                  setTimeout(() => pathsPanelRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
+                }}
+                onOpenCustomDirectory={() => {
+                  setIsAdvancedBottomExpanded(true);
+                  setTimeout(() => pathsPanelRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
+                }}
+                onOpenUsbToPcModal={(driveLetter) => {
+                  if (driveLetter) {
+                    setTargetUsbLetterForModal(driveLetter);
+                  }
+                  setIsUsbToPcModalOpen(true);
+                }}
+                onSimulateUsbMount={() => {
+                  const newDrive = simulateUsbMount();
+                  setTargetUsbLetterForModal(newDrive.letter);
+                }}
+              />
 
-          {/* Certificate Table & List */}
+              {/* Connected Drives Status Bar (NVMe / SATA / USB distinction with Basic/Advanced mode toggle) */}
+              <ConnectedDrivesBar
+                availableDrives={availableDrives}
+                selectedDriveId={selectedDriveId}
+                onSelectDriveId={setSelectedDriveId}
+                onOpenUsbToPc={(driveLetter) => {
+                  if (driveLetter) setTargetUsbLetterForModal(driveLetter);
+                  setIsUsbToPcModalOpen(true);
+                }}
+              />
+            </>
+          )}
+
+          {/* Certificate Table & List (Immediately visible to the user) */}
           <CertificateList
             certificates={certificates}
             selectedIds={selectedIds}
@@ -1120,23 +1175,49 @@ export default function App() {
             onOpenRenewalGuidance={handleOpenRenewalGuidance}
           />
 
-          {/* Search Locations Detailed Panel (Default standard paths & user direct picker) */}
-          <div ref={pathsPanelRef}>
-            <SearchLocationsPanel
-              searchPaths={searchPaths}
-              onTogglePath={handleTogglePath}
-              onAddCustomPath={handleAddCustomPath}
-              onCustomScannedCerts={handleCustomScannedCerts}
-              isScanning={isScanning}
-            />
-          </div>
+          {/* Collapsible Advanced Settings (Paths & History) */}
+          <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setIsAdvancedBottomExpanded(!isAdvancedBottomExpanded)}
+              className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-slate-50 transition-colors cursor-pointer bg-slate-50/50 border-b border-slate-100"
+            >
+              <div className="flex items-center gap-2.5">
+                <SlidersHorizontal className="w-4 h-4 text-slate-600" />
+                <div>
+                  <span className="text-xs sm:text-sm font-bold text-slate-800">
+                    고급 관리 및 추가 설정 (인증서 저장 위치 관리 · 백업 기록 열람)
+                  </span>
+                  <span className="text-[11px] text-slate-500 ml-2 hidden sm:inline">
+                    {isAdvancedBottomExpanded ? '클릭하여 접기' : '필요할 때만 펼쳐서 세부 설정을 확인하세요'}
+                  </span>
+                </div>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isAdvancedBottomExpanded ? 'rotate-180' : ''}`} />
+            </button>
 
-          {/* Backup History Panel */}
-          <div ref={historyPanelRef}>
-            <BackupHistoryPanel
-              history={backupHistory}
-              onClearHistory={() => setBackupHistory([])}
-            />
+            {isAdvancedBottomExpanded && (
+              <div className="p-4 sm:p-6 space-y-6 bg-slate-50/30">
+                {/* Search Locations Detailed Panel (Default standard paths & user direct picker) */}
+                <div ref={pathsPanelRef}>
+                  <SearchLocationsPanel
+                    searchPaths={searchPaths}
+                    onTogglePath={handleTogglePath}
+                    onAddCustomPath={handleAddCustomPath}
+                    onCustomScannedCerts={handleCustomScannedCerts}
+                    isScanning={isScanning}
+                  />
+                </div>
+
+                {/* Backup History Panel */}
+                <div ref={historyPanelRef}>
+                  <BackupHistoryPanel
+                    history={backupHistory}
+                    onClearHistory={() => setBackupHistory([])}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </main>
 

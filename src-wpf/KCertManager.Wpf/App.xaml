@@ -9,16 +9,18 @@
         <common:InverseBoolToVisConverter x:Key="InverseBoolToVis"/>
 
         <!-- Modern Color Palette -->
-        <Color x:Key="BgDark">#0F172A</Color>
-        <Color x:Key="BgCard">#1E293B</Color>
-        <Color x:Key="BgCardHover">#334155</Color>
+        <Color x:Key="BgDark">#0F1219</Color>
+        <Color x:Key="BgCard">#1A1F2C</Color>
+        <Color x:Key="BgCardHover">#262E3F</Color>
         <Color x:Key="AccentBlue">#2563EB</Color>
         <Color x:Key="AccentBlueHover">#1D4ED8</Color>
         <Color x:Key="AccentGreen">#10B981</Color>
         <Color x:Key="AccentRose">#F43F5E</Color>
         <Color x:Key="TextPrimary">#F8FAFC</Color>
-        <Color x:Key="TextSecondary">#94A3B8</Color>
-        <Color x:Key="BorderColor">#334155</Color>
+        <Color x:Key="TextSecondary">#CBD5E1</Color>
+        <Color x:Key="BorderColor">#2D3546</Color>
+        <Color x:Key="AccentText">#60A5FA</Color>
+        <Color x:Key="MutedText">#94A3B8</Color>
 
         <SolidColorBrush x:Key="BgDarkBrush" Color="{StaticResource BgDark}"/>
         <SolidColorBrush x:Key="BgCardBrush" Color="{StaticResource BgCard}"/>
@@ -30,6 +32,8 @@
         <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}"/>
         <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}"/>
         <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
+        <SolidColorBrush x:Key="AccentTextBrush" Color="{StaticResource AccentText}"/>
+        <SolidColorBrush x:Key="MutedTextBrush" Color="{StaticResource MutedText}"/>
 
         <!-- Global Font -->
         <FontFamily x:Key="AppFont">Segoe UI, Malgun Gothic, sans-serif</FontFamily>

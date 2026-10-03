@@ -41,6 +41,7 @@ namespace KCertManager.Wpf.Views
 
         public MainWindow()
         {
+            MainViewModel.ApplyTheme("dark");
             InitializeComponent();
             SafeLoadAssets();
             Loaded += MainWindow_Loaded;

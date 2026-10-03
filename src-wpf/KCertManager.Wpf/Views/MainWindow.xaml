@@ -78,24 +78,20 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- Mode Switch: [간편 모드] vs [상세 모드] -->
+                    <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton GroupName="UIModeGroup" Content="간편 모드" IsChecked="{Binding IsSimpleMode, Mode=TwoWay}"
+                                         Style="{StaticResource ModeToggleRadio}" ToolTip="초보자용 간편 모드: 핵심 복사 기능과 목록에 집중합니다."/>
+                            <RadioButton GroupName="UIModeGroup" Content="상세 모드" IsChecked="{Binding IsAdvancedUIMode, Mode=TwoWay}"
+                                         Style="{StaticResource ModeToggleRadio}" ToolTip="전문가용 상세 모드: 드라이브 상세 정보 및 부가 도구를 모두 표시합니다."/>
+                        </StackPanel>
+                    </Border>
+
                     <Button Command="{Binding RefreshCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="🔄" Margin="0,0,4,0"/>
                             <TextBlock Text="새로고침"/>
-                        </StackPanel>
-                    </Button>
-
-                    <Button Click="OpenSearchLocations_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="📁" Margin="0,0,4,0"/>
-                            <TextBlock Text="탐색 경로"/>
-                        </StackPanel>
-                    </Button>
-
-                    <Button Click="OpenBackupHistory_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="📜" Margin="0,0,4,0"/>
-                            <TextBlock Text="백업 이력"/>
                         </StackPanel>
                     </Button>
 
@@ -106,33 +102,50 @@
                         </StackPanel>
                     </Button>
 
-                    <Button Click="OpenActivityLog_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="📝" Margin="0,0,4,0"/>
-                            <TextBlock Text="작업 로그"/>
-                        </StackPanel>
-                    </Button>
+                    <!-- Advanced Mode Only Quick Tools (reduces cognitive clutter in Simple Mode) -->
+                    <StackPanel Orientation="Horizontal" Visibility="{Binding IsAdvancedUIMode, Converter={StaticResource BoolToVis}}">
+                        <Button Click="OpenSearchLocations_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📁" Margin="0,0,4,0"/>
+                                <TextBlock Text="탐색 경로"/>
+                            </StackPanel>
+                        </Button>
 
-                    <Button Click="OpenSecurityGuide_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🛡️" Margin="0,0,4,0"/>
-                            <TextBlock Text="보안 수칙"/>
-                        </StackPanel>
-                    </Button>
+                        <Button Click="OpenBackupHistory_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📜" Margin="0,0,4,0"/>
+                                <TextBlock Text="백업 이력"/>
+                            </StackPanel>
+                        </Button>
 
-                    <Button Command="{Binding CheckUpdatesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" ToolTip="GitHub 최신 릴리스 및 버전 수동 확인">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="✨" Margin="0,0,4,0"/>
-                            <TextBlock Text="업데이트 확인"/>
-                        </StackPanel>
-                    </Button>
+                        <Button Click="OpenActivityLog_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📝" Margin="0,0,4,0"/>
+                                <TextBlock Text="작업 로그"/>
+                            </StackPanel>
+                        </Button>
 
-                    <Button Click="OpenAbout_Click" Style="{StaticResource SecondaryButton}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="ℹ️" Margin="0,0,4,0"/>
-                            <TextBlock Text="정보"/>
-                        </StackPanel>
-                    </Button>
+                        <Button Click="OpenSecurityGuide_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🛡️" Margin="0,0,4,0"/>
+                                <TextBlock Text="보안 수칙"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Command="{Binding CheckUpdatesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" ToolTip="GitHub 최신 릴리스 및 버전 수동 확인">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="✨" Margin="0,0,4,0"/>
+                                <TextBlock Text="업데이트 확인"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Click="OpenAbout_Click" Style="{StaticResource SecondaryButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="ℹ️" Margin="0,0,4,0"/>
+                                <TextBlock Text="정보"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
 
                     <!-- Divider before Window Caption Buttons -->
                     <Border Width="1" Height="22" Background="{DynamicResource BorderBrush}" Margin="10,0,6,0" VerticalAlignment="Center"/>
@@ -328,8 +341,46 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- Row 1: Connected Drives Status Bar (Shows USB and Internal NVMe/SATA Drives with Basic/Advanced View Modes) -->
-                <Border Grid.Row="1" Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                <!-- Row 1 (Simple Mode): Clean 1-Line Quick Action Banner -->
+                <Border Grid.Row="1" Visibility="{Binding IsSimpleMode, Converter={StaticResource BoolToVis}}"
+                        Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="14,10" Margin="0,0,0,12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="⚡ 간편 백업" FontSize="13" FontWeight="Bold" Foreground="#38BDF8" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="복사 대상: " FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                            <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="8,3" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="💾 " FontSize="11" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding SelectedTargetDrive.DisplayName, TargetNullValue='(연결된 USB 없음)', FallbackValue='(연결된 USB 없음)'}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            <TextBlock Text="{Binding SelectedTargetDrive.FormattedFreeSpace}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Command="{Binding BackupAllCommand}" Style="{StaticResource SuccessButton}" Padding="12,6" Margin="0,0,8,0" ToolTip="전체 인증서를 선택된 대상 드라이브로 즉시 원클릭 일괄 복사합니다.">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="⚡" Margin="0,0,5,0"/>
+                                    <TextBlock Text="원클릭 전체 복사" FontWeight="Bold"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Click="OpenUsbTransfer_Click" Style="{StaticResource SecondaryButton}" Padding="12,6" ToolTip="USB에 있는 인증서를 PC로 안전하게 복사해 넣습니다.">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📥" Margin="0,0,5,0"/>
+                                    <TextBlock Text="USB ➔ PC 넣기" Foreground="#10B981" FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Row 1 (Advanced Mode): Connected Drives Hardware Diagnostic Bar (Shows USB and Internal NVMe/SATA Drives with Basic/Advanced View Modes) -->
+                <Border Grid.Row="1" Visibility="{Binding IsAdvancedUIMode, Converter={StaticResource BoolToVis}}" Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>

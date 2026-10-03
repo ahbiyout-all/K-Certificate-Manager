@@ -24,6 +24,7 @@ namespace KCertManager.Wpf
             try
             {
                 LogStartup("Application starting up...");
+                ViewModels.MainViewModel.ApplyTheme("dark");
                 var mainWindow = new Views.MainWindow();
                 MainWindow = mainWindow;
                 mainWindow.Show();

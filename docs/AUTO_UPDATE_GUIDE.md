@@ -63,6 +63,12 @@
 - **`src-wpf/KCertManager.Wpf/Services/UpdateCheckerService.cs`**:
   - `HttpClient` 기반 비동기 3-Tier REST 호출
   - 첨부 파일(`.zip` / `.exe`) 자동 링크 파싱 및 웹 브라우저 다운로드 연동
+- **`src-wpf/KCertManager.Wpf/ViewModels/MainViewModel.cs`**:
+  - **시작 시 백그라운드 자동 확인**: 프로그램 구동 완료 1.2초 후 비동기 호출 (`CheckForAppUpdatesAsync(isSilentWhenUpToDate: true)`).
+  - **지능형 침묵/안내 처리**: 
+    - 새 버전 감지 시: 즉시 업데이트 다운로드 제안 팝업창 출력.
+    - 최신 버전 또는 오프라인: 작업 방해 방지를 위해 팝업 없이 하단 상태바에 조용히 `"준비 완료 (최신 버전 확인됨)"` 점등.
+    - 수동 확인 시: [업데이트 확인] 버튼을 누를 때는 "현재 최신 버전입니다" 확인 창을 명시적으로 안내.
 
 ---
 

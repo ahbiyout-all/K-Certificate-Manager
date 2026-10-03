@@ -39,6 +39,7 @@ namespace KCertManager.Wpf.ViewModels
         private List<TrashItem> _lastDeletedBatch = new();
         private bool _canUndo;
 
+        private bool _isSimpleMode = true;
         private bool _isDriveAdvancedMode;
         private bool _showAllDrivesInStatus;
         private string _currentTheme = "dark";
@@ -47,6 +48,9 @@ namespace KCertManager.Wpf.ViewModels
 
         public MainViewModel()
         {
+            // 앱 시작 시 초기 테마(다크) 리소스 완전 강제 적용 (시작 시 브러시 누락 방지)
+            ApplyTheme(_currentTheme);
+
             // Commands
             RefreshCommand = new RelayCommand(async () =>
             {
@@ -100,7 +104,7 @@ namespace KCertManager.Wpf.ViewModels
             };
 
             // Asynchronous deferred initialization to ensure lightning-fast window rendering (< 50ms)
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 try
                 {
@@ -119,10 +123,49 @@ namespace KCertManager.Wpf.ViewModels
                     RefreshTrash();
                     _ = RefreshCertificatesAsync();
                 }));
+
+                // 앱 시작 시 백그라운드 자동 업데이트 확인 (UI 멈춤 없이 백그라운드 비동기 체크)
+                try
+                {
+                    await Task.Delay(1200);
+                    await CheckForAppUpdatesAsync(isSilentWhenUpToDate: true);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Startup Auto Update Check] {ex.Message}");
+                }
             });
         }
 
         #region Properties
+
+        public bool IsSimpleMode
+        {
+            get => _isSimpleMode;
+            set
+            {
+                if (SetProperty(ref _isSimpleMode, value))
+                {
+                    OnPropertyChanged(nameof(IsAdvancedUIMode));
+                }
+            }
+        }
+
+        public bool IsAdvancedUIMode
+        {
+            get => !_isSimpleMode;
+            set
+            {
+                if (value)
+                {
+                    IsSimpleMode = false;
+                }
+                else
+                {
+                    IsSimpleMode = true;
+                }
+            }
+        }
 
         public bool IsDriveAdvancedMode
         {
@@ -1183,53 +1226,77 @@ namespace KCertManager.Wpf.ViewModels
             (DeleteSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
-        public async Task CheckForAppUpdatesAsync()
+        public async Task CheckForAppUpdatesAsync(bool isSilentWhenUpToDate = false)
         {
-            StatusMessage = "GitHub 공식 저장소 최신 릴리스 및 버전 확인 중...";
+            if (!isSilentWhenUpToDate)
+            {
+                StatusMessage = "GitHub 공식 저장소 최신 릴리스 및 버전 확인 중...";
+            }
+
             try
             {
                 var info = await UpdateCheckerService.CheckForUpdatesAsync();
                 if (info.HasUpdate)
                 {
                     StatusMessage = $"새 버전(v{info.LatestVersion}) 감지됨";
-                    var res = MessageBox.Show(
-                        $"새로운 K-인증서 매니저 버전(v{info.LatestVersion})이 발견되었습니다!\n\n" +
-                        $"• 현재 버전: v{info.CurrentVersion}\n" +
-                        $"• 최신 버전: v{info.LatestVersion}\n" +
-                        $"• 배포 제목: {info.ReleaseName}\n\n" +
-                        "지금 GitHub 릴리스 페이지로 이동하여 새 버전을 다운로드하시겠습니까?",
-                        "K-인증서 매니저 업데이트 알림",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Information);
 
-                    if (res == MessageBoxResult.Yes)
+                    Application.Current?.Dispatcher?.Invoke(() =>
                     {
-                        try
+                        var res = MessageBox.Show(
+                            $"새로운 K-인증서 매니저 버전(v{info.LatestVersion})이 발견되었습니다!\n\n" +
+                            $"• 현재 버전: v{info.CurrentVersion}\n" +
+                            $"• 최신 버전: v{info.LatestVersion}\n" +
+                            $"• 배포 제목: {info.ReleaseName}\n\n" +
+                            "지금 GitHub 릴리스 페이지로 이동하여 새 버전을 다운로드하시겠습니까?",
+                            "K-인증서 매니저 업데이트 알림",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Information);
+
+                        if (res == MessageBoxResult.Yes)
                         {
-                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            try
                             {
-                                FileName = info.ReleaseUrl,
-                                UseShellExecute = true
-                            });
+                                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                                {
+                                    FileName = info.ReleaseUrl,
+                                    UseShellExecute = true
+                                });
+                            }
+                            catch { }
                         }
-                        catch { }
-                    }
+                    });
                 }
                 else
                 {
-                    StatusMessage = $"현재 버전(v{info.CurrentVersion})이 최신 버전입니다.";
-                    MessageBox.Show(
-                        $"현재 설치된 K-인증서 매니저(v{info.CurrentVersion})가 가장 최신 버전입니다.\n\n" +
-                        "모든 최신 규격과 보안 패치가 완벽하게 적용되어 있습니다.",
-                        "최신 버전 확인 완료",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                    if (!isSilentWhenUpToDate)
+                    {
+                        StatusMessage = $"현재 버전(v{info.CurrentVersion})이 최신 버전입니다.";
+                        Application.Current?.Dispatcher?.Invoke(() =>
+                        {
+                            MessageBox.Show(
+                                $"현재 설치된 K-인증서 매니저(v{info.CurrentVersion})가 가장 최신 버전입니다.\n\n" +
+                                "모든 최신 규격과 보안 패치가 완벽하게 적용되어 있습니다.",
+                                "최신 버전 확인 완료",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+                        });
+                    }
+                    else
+                    {
+                        StatusMessage = "준비 완료 (최신 버전 확인됨)";
+                    }
                 }
             }
             catch (Exception ex)
             {
-                StatusMessage = "업데이트 확인 실패";
-                MessageBox.Show($"업데이트 확인 중 오류가 발생했습니다:\n{ex.Message}", "업데이트 확인", MessageBoxButton.OK, MessageBoxImage.Warning);
+                if (!isSilentWhenUpToDate)
+                {
+                    StatusMessage = "업데이트 확인 실패";
+                    Application.Current?.Dispatcher?.Invoke(() =>
+                    {
+                        MessageBox.Show($"업데이트 확인 중 오류가 발생했습니다:\n{ex.Message}", "업데이트 확인", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    });
+                }
             }
         }
 
