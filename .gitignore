@@ -1,0 +1,76 @@
+# ==============================================================================
+#  K-Certificate Manager - Comprehensive .gitignore
+#  Prevents build artifacts, IDE caches, installer outputs & sensitive data leaks
+# ==============================================================================
+
+# 1. Node & Web Build
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+bun.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 2. .NET / C# WPF Build & Release Artifacts (Prevents GitHub 100MB file limit errors)
+release/
+deploy/
+bin/
+obj/
+/KCert.Core.dll
+/*.ico
+/scripts/
+/AI_INSTRUCTIONS.md
+**/bin/
+**/obj/
+TestResults/
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+*_wpftmp*
+*.pdb
+*.tmp
+*.cache
+PublishProfiles/
+
+# 3. Inno Setup Installer Build Output
+Output/
+_Output/
+
+# 4. IDEs & Editors
+.vs/
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.bak
+*.orig
+
+# 5. Operating System Junk
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# 6. Environment & Security (Prevent leaking private keys, real certs, or secrets)
+.env*
+!.env.example
+*.log
+# Strictly prevent accidental committing of user's personal/real digital certificates or keys
+*.pfx
+*.p12
+*.key
+*.pri
+*.der
+*.cer
+*.pem
+# Exception for mock assets if needed (assets folder only)
+!src/data/**
+
+# 7. Local Git Credentials and User Data
+*.credential
+*.credentials

@@ -1,0 +1,127 @@
+<Window x:Class="KCertManager.Wpf.Views.StartupWorkflowDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="🚀 K-인증서 매니저 시작 작업 선택" 
+        Height="560" Width="760"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="{DynamicResource BgDarkBrush}"
+        TextElement.Foreground="{DynamicResource TextPrimaryBrush}">
+
+    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Margin="10">
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header Section -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <Border Background="#1E3A8A" CornerRadius="6" Padding="8,4" Margin="0,0,8,0">
+                        <TextBlock Text="🚀 K-WORKFLOW" FontSize="11" FontWeight="Bold" Foreground="#60A5FA"/>
+                    </Border>
+                    <TextBlock Text="시작 작업 선택 및 가이드 모션" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Text="진행하실 작업을 선택하시면 순서에 따라 단계별 포커스 가이드 모션이 실행됩니다." FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+            </StackPanel>
+
+            <Separator Grid.Row="1" Background="{DynamicResource BorderBrush}" Margin="0,0,0,20"/>
+
+            <!-- 3 Main Workflow Selection Cards -->
+            <Grid Grid.Row="2" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Card 1: PC -> USB Backup -->
+                <Border Grid.Column="0" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1.5" CornerRadius="10" Padding="16" Cursor="Hand" MouseLeftButtonDown="CardPcToUsb_Click">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Width="44" Height="44" CornerRadius="22" Background="#1E3A8A" HorizontalAlignment="Left" Margin="0,0,0,12">
+                            <TextBlock Text="💻 ➔ 💾" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <TextBlock Grid.Row="1" Text="PC ➔ USB 복사하기" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                        <TextBlock Grid.Row="2" Text="PC(내 컴퓨터)에 저장된 공인/행정 인증서를 이동식 USB 메모리로 안전하게 백업 복사합니다." FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
+
+                        <Border Grid.Row="3" Background="#0F172A" CornerRadius="6" Padding="8,6" Margin="0,12,0,0">
+                            <TextBlock Text="⚡ 3단계 가이드 모션 실행" FontSize="11" FontWeight="SemiBold" Foreground="#60A5FA" HorizontalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Card 2: USB -> PC Import -->
+                <Border Grid.Column="2" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1.5" CornerRadius="10" Padding="16" Cursor="Hand" MouseLeftButtonDown="CardUsbToPc_Click">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Width="44" Height="44" CornerRadius="22" Background="#065F46" HorizontalAlignment="Left" Margin="0,0,0,12">
+                            <TextBlock Text="💾 ➔ 💻" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <TextBlock Grid.Row="1" Text="USB ➔ PC 가져오기" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                        <TextBlock Grid.Row="2" Text="USB에 저장된 인증서를 내 컴퓨터의 표준 로컬 보관함(AppData\LocalLow)으로 원클릭 가져오기합니다." FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
+
+                        <Border Grid.Row="3" Background="#0F172A" CornerRadius="6" Padding="8,6" Margin="0,12,0,0">
+                            <TextBlock Text="📥 원클릭 가져오기 마법사" FontSize="11" FontWeight="SemiBold" Foreground="#34D399" HorizontalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Card 3: Main Dashboard -->
+                <Border Grid.Column="4" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1.5" CornerRadius="10" Padding="16" Cursor="Hand" MouseLeftButtonDown="CardMainDashboard_Click">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Width="44" Height="44" CornerRadius="22" Background="#581C87" HorizontalAlignment="Left" Margin="0,0,0,12">
+                            <TextBlock Text="🖥️" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <TextBlock Grid.Row="1" Text="메인 대시보드 진입" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                        <TextBlock Grid.Row="2" Text="전체 인증서 목록, 만료일 현황, 연결 드라이브 탐색 및 관리 메인 화면으로 바로 이동합니다." FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
+
+                        <Border Grid.Row="3" Background="#0F172A" CornerRadius="6" Padding="8,6" Margin="0,12,0,0">
+                            <TextBlock Text="📊 대시보드 직접 진입" FontSize="11" FontWeight="SemiBold" Foreground="#A78BFA" HorizontalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- Bottom Actions -->
+            <Grid Grid.Row="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <CheckBox x:Name="AlwaysShowCheckBox" IsChecked="True" Content="시작할 때 항상 이 작업 선택 창 표시" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+
+                <Button Grid.Column="1" Click="Close_Click" Style="{StaticResource SecondaryButton}" Padding="20,8" Content="닫기"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

@@ -1,0 +1,8 @@
+{
+  "name": "K-인증서 매니저 (공무원·은행 인증서 디스크 복사/백업)",
+  "description": "대한민국 공무원 인증서(GPKI/EPKI)와 은행 공동인증서(NPKI)를 자동 탐색하고 이동식 디스크(USB) 및 원하는 드라이브로 안전하게 일괄 복사·선택 백업하는 보안 관리 도구",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
