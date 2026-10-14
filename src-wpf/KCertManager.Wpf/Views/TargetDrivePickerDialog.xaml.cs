@@ -103,14 +103,16 @@ namespace KCertManager.Wpf.Views
             {
                 string targetRoot = (drive.Name ?? "").TrimEnd('\\').ToUpperInvariant() + "\\";
 
-                // Check self copy: are all selected certs already on this target root?
+                // Check self copy: are all selected certs already in the EXACT target destination directory?
                 bool isSelfCopy = _certsToCopy.Count > 0 && _certsToCopy.All(c =>
                 {
                     if (string.IsNullOrWhiteSpace(c?.DirectoryPath)) return false;
                     try
                     {
-                        string srcRoot = (Path.GetPathRoot(c.DirectoryPath) ?? "").TrimEnd('\\').ToUpperInvariant() + "\\";
-                        return string.Equals(srcRoot, targetRoot, StringComparison.OrdinalIgnoreCase);
+                        string safeRel = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(c.DirectoryPath);
+                        string expectedDstDir = Path.GetFullPath(Path.Combine(targetRoot, safeRel)).TrimEnd('\\');
+                        string currentSrcDir = Path.GetFullPath(c.DirectoryPath).TrimEnd('\\');
+                        return string.Equals(currentSrcDir, expectedDstDir, StringComparison.OrdinalIgnoreCase);
                     }
                     catch
                     {
@@ -300,8 +302,10 @@ namespace KCertManager.Wpf.Views
                             if (string.IsNullOrWhiteSpace(c?.DirectoryPath)) return false;
                             try
                             {
-                                string srcRoot = (Path.GetPathRoot(c.DirectoryPath) ?? "").TrimEnd('\\').ToUpperInvariant() + "\\";
-                                return string.Equals(srcRoot, targetRoot, StringComparison.OrdinalIgnoreCase);
+                                string safeRel = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(c.DirectoryPath);
+                                string expectedDstDir = Path.GetFullPath(Path.Combine(targetRoot, safeRel)).TrimEnd('\\');
+                                string currentSrcDir = Path.GetFullPath(c.DirectoryPath).TrimEnd('\\');
+                                return string.Equals(currentSrcDir, expectedDstDir, StringComparison.OrdinalIgnoreCase);
                             }
                             catch
                             {
@@ -316,6 +320,12 @@ namespace KCertManager.Wpf.Views
                         }
                     }
                 }
+            }
+
+            if (SelectedDrive == null)
+            {
+                TxtSelectionStatus.Text = "선택 가능한 외부 목적지 드라이브가 없습니다. 이동식 USB 메모리를 PC에 연결해 주세요.";
+                TxtConfirmBtnText.Text = "USB 메모리를 연결해 주세요";
             }
         }
 

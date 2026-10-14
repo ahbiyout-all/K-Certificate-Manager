@@ -16,7 +16,11 @@ namespace KCert.Core.Vault
         public string DestinationDirectory { get; init; } = string.Empty;
         public string DerSha256 { get; init; } = string.Empty;
         public string Message { get; init; } = string.Empty;
+        public long TotalBytesCopied { get; init; }
+        public List<CopiedFileInfo> CopiedFiles { get; init; } = new();
     }
+
+    public record CopiedFileInfo(string FileName, string FilePath, long FileSizeBytes);
 
     /// <summary>
     /// 표준 폴더 구조를 보존하며 원자적 파일 복사 및 SHA-256 무결성 검증을 수행하는 전송 엔진
@@ -119,10 +123,33 @@ namespace KCert.Core.Vault
                     tempFiles.Add((srcFile, tmpFile, dstFile, hash));
                 }
 
-                // 2. 임시 파일을 최종 목적지로 교체 이동
+                // 2. 임시 파일을 최종 목적지로 교체 이동 (읽기 전용 속성 강제 해제 적용)
                 foreach (var item in tempFiles)
                 {
-                    if (File.Exists(item.dst)) File.Delete(item.dst);
+                    if (File.Exists(item.dst))
+                    {
+                        try
+                        {
+                            var dstAttr = File.GetAttributes(item.dst);
+                            if ((dstAttr & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                            {
+                                File.SetAttributes(item.dst, FileAttributes.Normal);
+                            }
+                        }
+                        catch { }
+                        File.Delete(item.dst);
+                    }
+
+                    try
+                    {
+                        var tmpAttr = File.GetAttributes(item.tmp);
+                        if ((tmpAttr & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                        {
+                            File.SetAttributes(item.tmp, FileAttributes.Normal);
+                        }
+                    }
+                    catch { }
+
                     File.Move(item.tmp, item.dst);
                 }
 
@@ -135,9 +162,34 @@ namespace KCert.Core.Vault
                         // 롤백 (복사 취소)
                         foreach (var rollback in tempFiles)
                         {
-                            try { if (File.Exists(rollback.dst)) File.Delete(rollback.dst); } catch { }
+                            try 
+                            { 
+                                if (File.Exists(rollback.dst)) 
+                                {
+                                    File.SetAttributes(rollback.dst, FileAttributes.Normal);
+                                    File.Delete(rollback.dst); 
+                                }
+                            } 
+                            catch { }
                         }
                         return result with { IsSuccess = false, Message = $"파일({Path.GetFileName(item.dst)})의 무결성 검증(SHA-256)에 실패하여 안전을 위해 전송을 취소했습니다." };
+                    }
+                }
+
+                var copiedInfoList = new List<CopiedFileInfo>();
+                long totalBytes = 0;
+                foreach (var item in tempFiles)
+                {
+                    try
+                    {
+                        var fi = new FileInfo(item.dst);
+                        long size = fi.Exists ? fi.Length : 0;
+                        totalBytes += size;
+                        copiedInfoList.Add(new CopiedFileInfo(Path.GetFileName(item.dst), item.dst, size));
+                    }
+                    catch
+                    {
+                        copiedInfoList.Add(new CopiedFileInfo(Path.GetFileName(item.dst), item.dst, 0));
                     }
                 }
 
@@ -145,6 +197,8 @@ namespace KCert.Core.Vault
                 {
                     IsSuccess = true,
                     DerSha256 = primaryDerHash,
+                    TotalBytesCopied = totalBytes,
+                    CopiedFiles = copiedInfoList,
                     Message = $"인증서 파일 {tempFiles.Count}개 안전 전송 및 SHA-256 무결성 검증 완료"
                 };
             }

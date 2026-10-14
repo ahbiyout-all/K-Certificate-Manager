@@ -339,6 +339,14 @@
                             </StackPanel>
                         </Button>
 
+                        <Button Command="{Binding ToggleCertificateDetailSidebarCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
+                                ToolTip="인증서의 모든 규격, 정책 OID, 일련번호, 지문을 가로/세로 스크롤로 확인하는 사이드바를 열거나 닫습니다.">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📑" Margin="0,0,4,0"/>
+                                <TextBlock Text="상세 사이드바"/>
+                            </StackPanel>
+                        </Button>
+
                         <Button Command="{Binding CleanExpiredCommand}" Style="{StaticResource SecondaryButton}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="🧹" Margin="0,0,4,0"/>
@@ -588,236 +596,493 @@
                     </Grid>
                 </Border>
 
-                <!-- Row 2: DataGrid Certificate List (With Double Click Inspector) -->
-                <Border Grid.Row="2" Background="{DynamicResource BgCardBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" ClipToBounds="True">
-                    <DataGrid x:Name="CertDataGrid" 
-                              ItemsSource="{Binding FilteredCertificates}" 
-                              SelectedItem="{Binding SelectedCertificate, Mode=TwoWay}"
-                              AutoGenerateColumns="False" 
-                              CanUserAddRows="False" 
-                              IsReadOnly="True" 
-                              SelectionMode="Single"
-                              GridLinesVisibility="Horizontal" 
-                              HorizontalGridLinesBrush="{DynamicResource BorderBrush}" 
-                              Background="{DynamicResource BgCardBrush}" 
-                              RowBackground="{DynamicResource BgCardBrush}" 
-                              AlternatingRowBackground="{DynamicResource BgDarkBrush}" 
-                              Foreground="{DynamicResource TextPrimaryBrush}" 
-                              BorderThickness="0" 
-                              HeadersVisibility="Column"
-                              MouseDoubleClick="CertDataGrid_MouseDoubleClick"
-                              PreviewMouseRightButtonDown="CertDataGrid_PreviewMouseRightButtonDown"
-                              Sorting="CertDataGrid_Sorting">
-                        <DataGrid.ContextMenu>
-                            <ContextMenu Background="{DynamicResource BgCardBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource BorderBrush}">
-                                <MenuItem Header="💾 대상 디스크 선택 및 복사... (Target Drive Picker)" Click="ContextMenuCopy_Click" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                <Separator Background="{DynamicResource BorderBrush}"/>
-                                <MenuItem Header="🔍 인증서 상세 정보" Click="ContextMenuDetail_Click" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                <MenuItem Header="📋 전체 경로 클립보드 복사" Click="ContextMenuCopyPath_Click" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                <Separator Background="{DynamicResource BorderBrush}"/>
-                                <MenuItem Header="🗑️ 휴지통으로 안전 삭제" Click="ContextMenuDelete_Click" Foreground="#F87171"/>
-                            </ContextMenu>
-                        </DataGrid.ContextMenu>
-                        <DataGrid.Resources>
-                            <!-- Override system highlight brushes so DataGrid selection never turns white/system default -->
-                            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#2563EB"/>
-                            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#FFFFFF"/>
-                            <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#1D4ED8"/>
-                            <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#FFFFFF"/>
+                <!-- Row 2: DataGrid Certificate List & Certificate Details Sidebar (With Horizontal & Vertical Scrollbars) -->
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="380"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="410" MinWidth="300" MaxWidth="680"/>
+                    </Grid.ColumnDefinitions>
 
-                            <Style TargetType="DataGridColumnHeader">
-                                <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
-                                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-                                <Setter Property="FontWeight" Value="SemiBold"/>
-                                <Setter Property="Padding" Value="12,10"/>
-                                <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
-                            </Style>
-                            <Style TargetType="DataGridCell">
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                                <Setter Property="Padding" Value="10,8"/>
-                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="DataGridCell">
-                                            <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderThickness="0">
-                                                <ContentPresenter VerticalAlignment="Center"/>
+                    <!-- Column 0: Main Certificate DataGrid (With Horizontal & Vertical Scrollbars) -->
+                    <Border Grid.Column="0" Background="{DynamicResource BgCardBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" ClipToBounds="True">
+                        <DataGrid x:Name="CertDataGrid" 
+                                  ItemsSource="{Binding FilteredCertificates}" 
+                                  SelectedItem="{Binding SelectedCertificate, Mode=TwoWay}"
+                                  AutoGenerateColumns="False" 
+                                  CanUserAddRows="False" 
+                                  IsReadOnly="True" 
+                                  SelectionMode="Single"
+                                  SelectionChanged="CertDataGrid_SelectionChanged"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  ScrollViewer.CanContentScroll="True"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto"
+                                  GridLinesVisibility="Horizontal" 
+                                  HorizontalGridLinesBrush="{DynamicResource BorderBrush}" 
+                                  Background="{DynamicResource BgCardBrush}" 
+                                  RowBackground="{DynamicResource BgCardBrush}" 
+                                  AlternatingRowBackground="{DynamicResource BgDarkBrush}" 
+                                  Foreground="{DynamicResource TextPrimaryBrush}" 
+                                  BorderThickness="0" 
+                                  HeadersVisibility="Column"
+                                  MouseDoubleClick="CertDataGrid_MouseDoubleClick"
+                                  PreviewMouseRightButtonDown="CertDataGrid_PreviewMouseRightButtonDown"
+                                  Sorting="CertDataGrid_Sorting">
+                            <DataGrid.ContextMenu>
+                                <ContextMenu Background="{DynamicResource BgCardBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource BorderBrush}">
+                                    <MenuItem Header="💾 대상 디스크 선택 및 복사... (Target Drive Picker)" Click="ContextMenuCopy_Click" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <Separator Background="{DynamicResource BorderBrush}"/>
+                                    <MenuItem Header="🔍 인증서 상세 정보" Click="ContextMenuDetail_Click" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <MenuItem Header="📋 전체 경로 클립보드 복사" Click="ContextMenuCopyPath_Click" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <Separator Background="{DynamicResource BorderBrush}"/>
+                                    <MenuItem Header="🗑️ 휴지통으로 안전 삭제" Click="ContextMenuDelete_Click" Foreground="#F87171"/>
+                                </ContextMenu>
+                            </DataGrid.ContextMenu>
+                            <DataGrid.Resources>
+                                <!-- Override system highlight brushes so DataGrid selection never turns white/system default -->
+                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#2563EB"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#1D4ED8"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#FFFFFF"/>
+
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                    <Setter Property="Padding" Value="12,10"/>
+                                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                </Style>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Padding" Value="10,8"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="DataGridCell">
+                                                <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderThickness="0">
+                                                    <ContentPresenter VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="#2563EB"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                                <Style TargetType="DataGridRow">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsRecentlyCopied}" Value="True">
+                                            <Setter Property="Background" Value="#065F46"/>
+                                            <Setter Property="Foreground" Value="#E6FFFA"/>
+                                        </DataTrigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="#2563EB"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource BgCardHoverBrush}"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.Resources>
+
+                            <DataGrid.Columns>
+                                <!-- Selection Checkbox -->
+                                <DataGridTemplateColumn Width="45" CanUserSort="False">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" 
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <!-- Category Badge -->
+                                <DataGridTemplateColumn Header="구분" Width="125" SortMemberPath="CategoryBadgeText" CanUserSort="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#1E3A8A" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left">
+                                                <TextBlock Text="{Binding CategoryBadgeText}" FontSize="11" Foreground="#93C5FD" FontWeight="SemiBold"/>
                                             </Border>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <Trigger Property="IsSelected" Value="True">
-                                        <Setter Property="Background" Value="#2563EB"/>
-                                        <Setter Property="Foreground" Value="White"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                            <Style TargetType="DataGridRow">
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-                                <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
-                                <Style.Triggers>
-                                    <Trigger Property="IsSelected" Value="True">
-                                        <Setter Property="Background" Value="#2563EB"/>
-                                        <Setter Property="Foreground" Value="White"/>
-                                    </Trigger>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="{DynamicResource BgCardHoverBrush}"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </DataGrid.Resources>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
 
-                        <DataGrid.Columns>
-                            <!-- Selection Checkbox -->
-                            <DataGridTemplateColumn Width="45" CanUserSort="False">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" 
-                                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
+                                <!-- Storage Location Badge [USB/컴퓨터 with distinct drive colors C, D, E, F, G, H, I, J...] -->
+                                <DataGridTemplateColumn Header="저장 위치" Width="135" SortMemberPath="StorageLocationBadge" CanUserSort="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border CornerRadius="5" Padding="7,3" HorizontalAlignment="Left"
+                                                    Background="{Binding StorageLocationBgColorHex}"
+                                                    BorderBrush="{Binding StorageLocationBorderColorHex}"
+                                                    BorderThickness="1"
+                                                    ToolTip="{Binding LocationNoticeText}">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding StorageLocationIcon}" FontSize="11" Margin="0,0,5,0" VerticalAlignment="Center" Foreground="#FFFFFF"/>
+                                                    <TextBlock Text="{Binding StorageLocationType}" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                    <Border Background="{Binding StorageLocationTagBgHex}" CornerRadius="3" Padding="4,1"
+                                                            BorderBrush="{Binding StorageLocationBorderColorHex}" BorderThickness="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding DriveLetter}" FontSize="10" FontWeight="ExtraBold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
 
-                            <!-- Category Badge -->
-                            <DataGridTemplateColumn Header="구분" Width="125" SortMemberPath="CategoryBadgeText" CanUserSort="True">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Border Background="#1E3A8A" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left">
-                                            <TextBlock Text="{Binding CategoryBadgeText}" FontSize="11" Foreground="#93C5FD" FontWeight="SemiBold"/>
-                                        </Border>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-
-                            <!-- Storage Location Badge [USB/컴퓨터 with distinct drive colors C, D, E, F, G, H, I, J...] -->
-                            <DataGridTemplateColumn Header="저장 위치" Width="135" SortMemberPath="StorageLocationBadge" CanUserSort="True">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Border CornerRadius="5" Padding="7,3" HorizontalAlignment="Left"
-                                                Background="{Binding StorageLocationBgColorHex}"
-                                                BorderBrush="{Binding StorageLocationBorderColorHex}"
-                                                BorderThickness="1"
-                                                ToolTip="{Binding LocationNoticeText}">
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding StorageLocationIcon}" FontSize="11" Margin="0,0,5,0" VerticalAlignment="Center" Foreground="#FFFFFF"/>
-                                                <TextBlock Text="{Binding StorageLocationType}" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                                <Border Background="{Binding StorageLocationTagBgHex}" CornerRadius="3" Padding="4,1"
-                                                        BorderBrush="{Binding StorageLocationBorderColorHex}" BorderThickness="1" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding DriveLetter}" FontSize="10" FontWeight="ExtraBold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
-                                                </Border>
+                                <!-- CN / Name -->
+                                <DataGridTemplateColumn Header="인증서 명칭 (CN) 및 경로 상태" Width="*" SortMemberPath="CommonName" CanUserSort="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding CommonName}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" Margin="0,0,6,0"/>
+                                                    <!-- Non-Standard Path Badge -->
+                                                    <Border Visibility="{Binding IsCustomPath, Converter={StaticResource BoolToVis}}" 
+                                                            Background="#78350F" BorderBrush="#D97706" BorderThickness="1" CornerRadius="3" Padding="5,1" VerticalAlignment="Center"
+                                                            ToolTip="{Binding LocationNoticeText}">
+                                                        <TextBlock Text="⚠️ 비표준 위치 (미인식)" FontSize="10" Foreground="#FDE68A" FontWeight="Bold"/>
+                                                    </Border>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding DirectoryPath}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap" ToolTip="{Binding DirectoryPath}"/>
                                             </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
 
-                            <!-- CN / Name -->
-                            <DataGridTemplateColumn Header="인증서 명칭 (CN) 및 경로 상태" Width="*" SortMemberPath="CommonName" CanUserSort="True">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <StackPanel VerticalAlignment="Center">
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding CommonName}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" Margin="0,0,6,0"/>
-                                                <!-- Non-Standard Path Badge -->
-                                                <Border Visibility="{Binding IsCustomPath, Converter={StaticResource BoolToVis}}" 
-                                                        Background="#78350F" BorderBrush="#D97706" BorderThickness="1" CornerRadius="3" Padding="5,1" VerticalAlignment="Center"
-                                                        ToolTip="{Binding LocationNoticeText}">
-                                                    <TextBlock Text="⚠️ 비표준 위치 (미인식)" FontSize="10" Foreground="#FDE68A" FontWeight="Bold"/>
-                                                </Border>
-                                            </StackPanel>
-                                            <TextBlock Text="{Binding DirectoryPath}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap" ToolTip="{Binding DirectoryPath}"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
+                                <!-- Issuer -->
+                                <DataGridTemplateColumn Header="발급기관" Width="140" SortMemberPath="IssuerName" CanUserSort="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding IssuerName}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
 
-                            <!-- Issuer -->
-                            <DataGridTemplateColumn Header="발급기관" Width="140" SortMemberPath="IssuerName" CanUserSort="True">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding IssuerName}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
+                                <!-- Expiration Date -->
+                                <DataGridTemplateColumn Header="만료일자" Width="110" SortMemberPath="NotAfter" CanUserSort="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding NotAfter, StringFormat='{}{0:yyyy-MM-dd}'}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
 
-                            <!-- Expiration Date -->
-                            <DataGridTemplateColumn Header="만료일자" Width="110" SortMemberPath="NotAfter" CanUserSort="True">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding NotAfter, StringFormat='{}{0:yyyy-MM-dd}'}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-
-                            <!-- Status -->
-                            <DataGridTemplateColumn Header="상태" Width="120" SortMemberPath="StatusDisplayText" CanUserSort="True">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left">
-                                            <Border.Style>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="Background" Value="#064E3B"/>
-                                                    <Setter Property="BorderBrush" Value="#059669"/>
-                                                    <Setter Property="BorderThickness" Value="1"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Status}" Value="Expired">
-                                                            <Setter Property="Background" Value="#881337"/>
-                                                            <Setter Property="BorderBrush" Value="#E11D48"/>
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Status}" Value="ExpiringSoon">
-                                                            <Setter Property="Background" Value="#78350F"/>
-                                                            <Setter Property="BorderBrush" Value="#D97706"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Border.Style>
-                                            <TextBlock Text="{Binding StatusDisplayText}" FontSize="11" FontWeight="Bold">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Foreground" Value="#34D399"/>
+                                <!-- Status -->
+                                <DataGridTemplateColumn Header="상태" Width="120" SortMemberPath="StatusDisplayText" CanUserSort="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="#064E3B"/>
+                                                        <Setter Property="BorderBrush" Value="#059669"/>
+                                                        <Setter Property="BorderThickness" Value="1"/>
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding Status}" Value="Expired">
-                                                                <Setter Property="Foreground" Value="#F87171"/>
+                                                                <Setter Property="Background" Value="#881337"/>
+                                                                <Setter Property="BorderBrush" Value="#E11D48"/>
                                                             </DataTrigger>
                                                             <DataTrigger Binding="{Binding Status}" Value="ExpiringSoon">
-                                                                <Setter Property="Foreground" Value="#FBBF24"/>
+                                                                <Setter Property="Background" Value="#78350F"/>
+                                                                <Setter Property="BorderBrush" Value="#D97706"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
+                                                </Border.Style>
+                                                <TextBlock Text="{Binding StatusDisplayText}" FontSize="11" FontWeight="Bold">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#34D399"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Status}" Value="Expired">
+                                                                    <Setter Property="Foreground" Value="#F87171"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Status}" Value="ExpiringSoon">
+                                                                    <Setter Property="Foreground" Value="#FBBF24"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <!-- Key Status -->
+                                <DataGridTemplateColumn Header="비밀키" Width="75">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="🔑 보유" FontSize="11" Foreground="#10B981" HorizontalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <!-- Quick Action Buttons: 복사 & 상세보기 -->
+                                <DataGridTemplateColumn Header="작업 / 복사" Width="145">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                <Button Content="💾 복사" Style="{StaticResource PrimaryButton}" Padding="7,2" Margin="0,0,5,0" Click="BtnRowCopy_Click" ToolTip="이 인증서의 복사 대상 디스크(USB · 로컬 디스크) 선택 팝업을 열고 복사합니다."/>
+                                                <Button Content="🔍 상세" Style="{StaticResource SecondaryButton}" Padding="7,2" Click="BtnRowDetail_Click" ToolTip="인증서 세부 정보를 확인합니다."/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+
+                    <!-- Column 1: Resizable Splitter between Table and Detail Sidebar -->
+                    <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                                  Background="{DynamicResource BorderBrush}" Cursor="SizeWE" Margin="2,0"
+                                  Visibility="{Binding IsCertificateDetailSidebarVisible, Converter={StaticResource BoolToVis}}"/>
+
+                    <!-- Column 2: Certificate Full Details Sidebar (With Dedicated Horizontal & Vertical Scrollbars) -->
+                    <Border Grid.Column="2" Background="{DynamicResource BgCardBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                            Visibility="{Binding IsCertificateDetailSidebarVisible, Converter={StaticResource BoolToVis}}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Sidebar Header -->
+                            <Border Grid.Row="0" Background="{DynamicResource BgDarkBrush}" CornerRadius="8,8,0,0" Padding="14,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="📑" FontSize="15" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="인증서 상세 내용" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Command="{Binding CopySelectedCertDetailsCommand}" Style="{StaticResource SecondaryButton}" Padding="8,3" Margin="0,0,6,0" ToolTip="인증서의 전체 상세 텍스트를 클립보드에 복사합니다.">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="📋" Margin="0,0,3,0"/>
+                                                <TextBlock Text="전체 복사" FontSize="11"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Command="{Binding CloseCertificateDetailSidebarCommand}" Style="{StaticResource SecondaryButton}" Padding="7,3" Content="✕" ToolTip="사이드바 닫기"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Scrollable Content with Horizontal and Vertical Scrollbars -->
+                            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Padding="14,12">
+                                <Grid>
+                                    <!-- If Certificate Selected -->
+                                    <StackPanel Visibility="{Binding SelectedCertificate, Converter={StaticResource NotNullToVis}}">
+                                        <!-- 1. Top Certificate Card Header -->
+                                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="8" Padding="14,12" Margin="0,0,0,12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                            <StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                                    <Border Background="#1E3A8A" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                                                        <TextBlock Text="{Binding SelectedCertificate.CategoryBadgeText}" FontSize="11" FontWeight="Bold" Foreground="#93C5FD"/>
+                                                    </Border>
+                                                    <Border CornerRadius="4" Padding="6,2"
+                                                            Background="{Binding SelectedCertificate.StorageLocationBgColorHex}"
+                                                            BorderBrush="{Binding SelectedCertificate.StorageLocationBorderColorHex}" BorderThickness="1">
+                                                        <TextBlock Text="{Binding SelectedCertificate.StorageLocationBadge}" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                                    </Border>
+                                                </StackPanel>
+
+                                                <TextBlock Text="{Binding SelectedCertificate.CommonName}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" Margin="0,0,0,6"/>
+
+                                                <!-- Status Tag & Countdown -->
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Background="#064E3B" BorderBrush="#059669" BorderThickness="1" CornerRadius="4" Padding="8,3" Margin="0,0,8,0">
+                                                        <TextBlock Text="{Binding SelectedCertificate.StatusDisplayText}" FontSize="11.5" FontWeight="Bold" Foreground="#34D399"/>
+                                                    </Border>
+                                                    <TextBlock Text="{Binding SelectedCertificate.RemainingDays, StringFormat='{}만료까지 {0}일'}" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </StackPanel>
                                         </Border>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
 
-                            <!-- Key Status -->
-                            <DataGridTemplateColumn Header="비밀키" Width="75">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="🔑 보유" FontSize="11" Foreground="#10B981" HorizontalAlignment="Center"/>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
+                                        <!-- 2. Detailed Specs Grid (소유자, 발급자, 일련번호 등) -->
+                                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="8" Padding="14,12" Margin="0,0,0,12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                            <StackPanel>
+                                                <TextBlock Text="📋 소유자 및 발급자 식별 정보" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,0,10"/>
 
-                            <!-- Quick Action Buttons: 복사 & 상세보기 -->
-                            <DataGridTemplateColumn Header="작업 / 복사" Width="145">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <Button Content="💾 복사" Style="{StaticResource PrimaryButton}" Padding="7,2" Margin="0,0,5,0" Click="BtnRowCopy_Click" ToolTip="이 인증서의 복사 대상 디스크(USB · 로컬 디스크) 선택 팝업을 열고 복사합니다."/>
-                                            <Button Content="🔍 상세" Style="{StaticResource SecondaryButton}" Padding="7,2" Click="BtnRowDetail_Click" ToolTip="인증서 세부 정보를 확인합니다."/>
+                                                <!-- Common Name -->
+                                                <TextBlock Text="인증서 명칭 (CN):" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Text="{Binding SelectedCertificate.CommonName}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,8" TextWrapping="Wrap"/>
+
+                                                <!-- Issuer -->
+                                                <TextBlock Text="발급기관 (Issuer):" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Text="{Binding SelectedCertificate.IssuerName}" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,8" TextWrapping="Wrap"/>
+
+                                                <!-- Subject DN with Copy Button -->
+                                                <Grid Margin="0,0,0,8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock Text="소유자 전체 식별명 (User DN):" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                        <TextBlock Text="{Binding SelectedCertificate.SubjectDn}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" Click="CopyField_Click" Tag="{Binding SelectedCertificate.SubjectDn}" Style="{StaticResource SecondaryButton}" Padding="6,2" VerticalAlignment="Top" ToolTip="소유자 DN 복사">
+                                                        <TextBlock Text="📋 복사" FontSize="10.5"/>
+                                                    </Button>
+                                                </Grid>
+
+                                                <!-- Serial Number with Copy Button -->
+                                                <Grid Margin="0,0,0,4">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock Text="일련번호 (Serial Number):" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                        <TextBlock Text="{Binding SelectedCertificate.SerialNumber}" FontSize="11" FontFamily="Consolas" Foreground="#38BDF8" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" Click="CopyField_Click" Tag="{Binding SelectedCertificate.SerialNumber}" Style="{StaticResource SecondaryButton}" Padding="6,2" VerticalAlignment="Top" ToolTip="일련번호 복사">
+                                                        <TextBlock Text="📋 복사" FontSize="10.5"/>
+                                                    </Button>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- 3. Validity Period -->
+                                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="8" Padding="14,12" Margin="0,0,0,12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                            <StackPanel>
+                                                <TextBlock Text="⏳ 유효기간 현황" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,0,8"/>
+
+                                                <Grid Margin="0,0,0,4">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Text="발급 일자:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                        <TextBlock Text="{Binding SelectedCertificate.NotBefore, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock Text="만료 일자:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                        <TextBlock Text="{Binding SelectedCertificate.NotAfter, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" FontSize="11.5" FontWeight="Bold" Foreground="#F43F5E" Margin="0,2,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- 4. Security & Cryptographic Specs -->
+                                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="8" Padding="14,12" Margin="0,0,0,12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                            <StackPanel>
+                                                <TextBlock Text="🛡️ 암호화 규격 및 정책" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,0,10"/>
+
+                                                <TextBlock Text="전자서명 알고리즘:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Text="{Binding SelectedCertificate.SignatureAlgorithm}" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,8"/>
+
+                                                <!-- Policy OID -->
+                                                <Grid Margin="0,0,0,8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock Text="정책 OID 및 용도:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                        <TextBlock Text="{Binding SelectedCertificate.PolicyOid}" FontSize="11" FontFamily="Consolas" Foreground="#A78BFA" Margin="0,2,0,0"/>
+                                                        <TextBlock Text="{Binding SelectedCertificate.PolicyUsage}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" Click="CopyField_Click" Tag="{Binding SelectedCertificate.PolicyOid}" Style="{StaticResource SecondaryButton}" Padding="6,2" VerticalAlignment="Top" ToolTip="정책 OID 복사">
+                                                        <TextBlock Text="📋 복사" FontSize="10.5"/>
+                                                    </Button>
+                                                </Grid>
+
+                                                <!-- Key status -->
+                                                <TextBlock Text="개인키(signPri.key) 상태:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                    <TextBlock Text="🔑 개인키 보유 완료 (정상 페어 무결성 통과)" FontSize="11.5" FontWeight="SemiBold" Foreground="#10B981"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- 5. Storage Directory & Files -->
+                                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="8" Padding="14,12" Margin="0,0,0,12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                            <StackPanel>
+                                                <TextBlock Text="📁 저장 경로 및 보관 상태" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,0,10"/>
+
+                                                <!-- Standard Location Badge -->
+                                                <Border CornerRadius="4" Padding="6,3" Margin="0,0,0,8" HorizontalAlignment="Left"
+                                                        Background="#1E293B" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                                    <TextBlock Text="{Binding SelectedCertificate.StandardLocationBadgeText}" FontSize="11" FontWeight="Bold" Foreground="#38BDF8"/>
+                                                </Border>
+
+                                                <!-- Full Directory Path with Copy & Open Buttons -->
+                                                <TextBlock Text="폴더 전체 경로:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Text="{Binding SelectedCertificate.DirectoryPath}" FontSize="11" FontFamily="Consolas" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" Margin="0,2,0,8"/>
+
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                    <Button Click="CopyField_Click" Tag="{Binding SelectedCertificate.DirectoryPath}" Style="{StaticResource SecondaryButton}" Padding="8,4" Margin="0,0,6,0">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="📋" Margin="0,0,4,0"/>
+                                                            <TextBlock Text="경로 복사" FontSize="11"/>
+                                                        </StackPanel>
+                                                    </Button>
+                                                    <Button Command="{Binding OpenSelectedCertDirectoryCommand}" Style="{StaticResource SecondaryButton}" Padding="8,4">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="📂" Margin="0,0,4,0"/>
+                                                            <TextBlock Text="폴더 열기" FontSize="11"/>
+                                                        </StackPanel>
+                                                    </Button>
+                                                </StackPanel>
+
+                                                <!-- File details -->
+                                                <TextBlock Text="인증서 파일 (signCert.der):" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Text="{Binding SelectedCertificate.DerFileSize, StringFormat='{}{0:N0} bytes'}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,1,0,4"/>
+
+                                                <TextBlock Text="개인키 파일 (signPri.key):" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Text="{Binding SelectedCertificate.KeyFileSize, StringFormat='{}{0:N0} bytes'}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,1,0,0"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- 6. Quick Action Buttons inside Sidebar -->
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="0,0,0,8">
+                                            <Button Click="ContextMenuCopy_Click" Style="{StaticResource PrimaryButton}" Padding="12,8" Margin="0,0,8,0" HorizontalAlignment="Stretch">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="💾" Margin="0,0,5,0"/>
+                                                    <TextBlock Text="이 인증서 복사" FontWeight="Bold"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <Button Click="ContextMenuDetail_Click" Style="{StaticResource SecondaryButton}" Padding="12,8">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="🔍" Margin="0,0,5,0"/>
+                                                    <TextBlock Text="전문 규격 팝업"/>
+                                                </StackPanel>
+                                            </Button>
                                         </StackPanel>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </Border>
+                                    </StackPanel>
+
+                                    <!-- If NO Certificate Selected -->
+                                    <StackPanel Visibility="{Binding SelectedCertificate, Converter={StaticResource NullToVis}}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,60,0,0">
+                                        <TextBlock Text="🔍" FontSize="36" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                                        <TextBlock Text="인증서를 선택하세요" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                        <TextBlock Text="목록에서 인증서를 클릭하시면&#x0a;모든 상세 규격, 정책 OID, 일련번호가&#x0a;가로/세로 스크롤로 실시간 표시됩니다."
+                                                   FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+                </Grid>
 
                 <!-- Row 3: Bottom Action Controls (Includes USB ➔ PC 넣기 at the bottom) -->
                 <Border Grid.Row="3" Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="14" Margin="0,14,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
@@ -925,30 +1190,39 @@
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Command="{Binding PrevGuidedStepCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" Content="◀ 이전"/>
+                    <Button Command="{Binding GuidedExecuteCopyCommand}" Style="{StaticResource SuccessButton}" Margin="0,0,6,0" Content="⚡ 대상 USB로 복사 시작"/>
                     <Button Command="{Binding NextGuidedStepCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,6,0" Content="다음 단계 ➔"/>
                     <Button Command="{Binding EndGuidedWorkflowCommand}" Style="{StaticResource SecondaryButton}" Content="가이드 종료 ✕"/>
                 </StackPanel>
             </Grid>
         </Border>
 
-        <!-- Floating Interactive Toast Notification Bar with SHA-256 Integrity Badge -->
+        <!-- Floating Interactive Toast Notification Bar with SHA-256 Integrity Badge & File Size/Path Info -->
         <Border Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Right" Panel.ZIndex="100"
                 Margin="0,16,24,0" Background="#0F172A" BorderBrush="#38BDF8" BorderThickness="1.5" CornerRadius="10" Padding="16,12"
                 Visibility="{Binding IsToastVisible, Converter={StaticResource BoolToVis}}">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="⚡" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding ToastMessage}" FontSize="13" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                
-                <!-- Integrity Badge -->
-                <Border Visibility="{Binding ToastHasIntegrityBadge, Converter={StaticResource BoolToVis}}"
-                        Background="#065F46" BorderBrush="#34D399" BorderThickness="1" CornerRadius="6" Padding="8,4" Margin="0,0,12,0" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="🛡️" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="무결성 확인 완료 (SHA-256)" FontSize="11" FontWeight="Bold" Foreground="#A7F3D0" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Border>
+            <StackPanel Orientation="Vertical">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="⚡" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding ToastMessage}" FontSize="13" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    
+                    <!-- Integrity Badge -->
+                    <Border Visibility="{Binding ToastHasIntegrityBadge, Converter={StaticResource BoolToVis}}"
+                            Background="#065F46" BorderBrush="#34D399" BorderThickness="1" CornerRadius="6" Padding="8,4" Margin="0,0,12,0" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🛡️" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="무결성 확인 완료 (SHA-256)" FontSize="11" FontWeight="Bold" Foreground="#A7F3D0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
 
-                <Button Command="{Binding CloseToastCommand}" Style="{StaticResource SecondaryButton}" Padding="6,2" Content="✕" VerticalAlignment="Center"/>
+                    <Button Command="{Binding CloseToastCommand}" Style="{StaticResource SecondaryButton}" Padding="6,2" Content="✕" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Detailed File Path & Size Subtext -->
+                <StackPanel Margin="24,6,0,0" Visibility="{Binding ToastFilePath, Converter={StaticResource NotNullToVis}}">
+                    <TextBlock Text="{Binding ToastFilePath, StringFormat='📂 저장 경로: {0}'}" FontSize="11" FontFamily="Consolas" Foreground="#38BDF8"/>
+                    <TextBlock Text="{Binding ToastFileSize, StringFormat='📊 파일 크기: {0}'}" FontSize="11" Foreground="#94A3B8" Margin="0,1,0,0"/>
+                </StackPanel>
             </StackPanel>
         </Border>
     </Grid>

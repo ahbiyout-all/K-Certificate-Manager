@@ -152,10 +152,50 @@ namespace KCertManager.Wpf.Views
                 var helper = new WindowInteropHelper(this);
                 var source = HwndSource.FromHwnd(helper.Handle);
                 source?.AddHook(HwndMessageHook);
+
+                if (ViewModel != null)
+                {
+                    ViewModel.RequestOpenTargetDrivePicker += (targets) =>
+                    {
+                        Dispatcher.Invoke(() => OpenTargetDrivePickerForCertificates(targets));
+                    };
+                }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[HwndSource Hook Error] {ex.Message}");
+            }
+        }
+
+        private void CertDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CertDataGrid.SelectedItem is CertificateItem cert && ViewModel != null)
+            {
+                ViewModel.SelectedCertificate = cert;
+                if (ViewModel.IsGuidedWorkflowActive && ViewModel.GuidedWorkflowStep == 1)
+                {
+                    foreach (var c in ViewModel.FilteredCertificates)
+                    {
+                        c.IsSelected = (c == cert);
+                    }
+                }
+            }
+        }
+
+        private void CopyField_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag != null)
+            {
+                var text = btn.Tag.ToString();
+                if (!string.IsNullOrEmpty(text))
+                {
+                    try
+                    {
+                        Clipboard.SetText(text);
+                        ViewModel?.ShowToast($"📋 클립보드에 복사되었습니다");
+                    }
+                    catch { }
+                }
             }
         }
 

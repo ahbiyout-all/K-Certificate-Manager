@@ -7,6 +7,8 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <common:InverseBooleanConverter x:Key="InverseBoolConverter"/>
         <common:InverseBoolToVisConverter x:Key="InverseBoolToVis"/>
+        <common:NullToVisConverter x:Key="NullToVis"/>
+        <common:NotNullToVisConverter x:Key="NotNullToVis"/>
 
         <!-- Modern Color Palette -->
         <Color x:Key="BgDark">#0F1219</Color>
@@ -419,6 +421,31 @@
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Global Modern DataGrid Header & Cell Defaults (Prevents Windows White Aero Clashes) -->
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridColumnHeader">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"/>
+                        </Border>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>

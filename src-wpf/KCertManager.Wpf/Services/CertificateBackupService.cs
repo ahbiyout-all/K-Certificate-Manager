@@ -46,6 +46,15 @@ namespace KCertManager.Wpf.Services
                 result.IsSuccess = transfer.IsSuccess;
                 result.Sha256Hash = transfer.DerSha256;
                 result.Message = transfer.Message;
+                result.TotalBytesCopied = transfer.TotalBytesCopied;
+                if (transfer.CopiedFiles.Count > 0)
+                {
+                    result.FileSizeDetails = string.Join(", ", transfer.CopiedFiles.Select(f => $"{f.FileName} ({f.FileSizeBytes:N0} bytes)"));
+                }
+                else
+                {
+                    result.FileSizeDetails = $"{transfer.TotalBytesCopied:N0} bytes";
+                }
             }
             catch (Exception ex)
             {

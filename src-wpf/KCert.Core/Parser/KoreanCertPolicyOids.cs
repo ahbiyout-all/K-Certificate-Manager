@@ -287,7 +287,7 @@ namespace KCert.Core.Parser
             if (issuer.Contains("TradeSign", StringComparison.OrdinalIgnoreCase) || issuer.Contains("한국무역정보통신", StringComparison.OrdinalIgnoreCase))
                 return new CertPolicyInfo { IssuerOrg = "한국무역정보통신 (TradeSign)", UsageDescription = "무역/전자상거래용", SystemType = CertSystemType.NPKI };
 
-            return new CertPolicyInfo { IssuerOrg = cert.Issuer, UsageDescription = "일반 공동인증서", SystemType = CertSystemType.NPKI };
+            return new CertPolicyInfo { IssuerOrg = cert.Issuer, UsageDescription = "미확인 외부/시스템 인증서", SystemType = CertSystemType.Unknown };
         }
     }
 }

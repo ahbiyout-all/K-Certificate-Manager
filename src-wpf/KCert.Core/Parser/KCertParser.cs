@@ -85,6 +85,19 @@ namespace KCert.Core.Parser
                 var derBytes = File.ReadAllBytes(derPath);
                 using var cert = new X509Certificate2(derBytes);
 
+                // Windows OEM, Windows Phone, Microsoft 내부 테스트/OS 시스템 인증서 원천 제외
+                var issuerUpper = (cert.Issuer ?? "").ToUpperInvariant();
+                var subjectUpper = (cert.Subject ?? "").ToUpperInvariant();
+                if (issuerUpper.Contains("WINDOWS OEM") || issuerUpper.Contains("WINDOWS PHONE") ||
+                    subjectUpper.Contains("WINDOWS OEM") || subjectUpper.Contains("WINDOWS PHONE") ||
+                    issuerUpper.Contains("OEM TEST") || subjectUpper.Contains("OEM TEST") ||
+                    subjectUpper.Contains("TEST ONLY") || issuerUpper.Contains("TEST ONLY") ||
+                    issuerUpper.Contains("MICROSOFT TESTING") || issuerUpper.Contains("WINDOWS KITS") ||
+                    subjectUpper.Contains("MICROSOFT TESTING"))
+                {
+                    return null;
+                }
+
                 // 개인키 탐색
                 string keyPath = string.Empty;
                 foreach (var kCand in KeyCandidates)
@@ -132,7 +145,17 @@ namespace KCert.Core.Parser
                 }
                 else if (policyInfo.SystemType == CertSystemType.Unknown)
                 {
-                    policyInfo = policyInfo with { SystemType = CertSystemType.NPKI };
+                    // OID도 없고 한국 CA 발급자도 아닌 경우, 폴더명이나 Issuer/Subject에 한국 공인인증 키워드가 없으면 제외
+                    bool isKoreanFolder = upperDir.Contains("NPKI") || upperDir.Contains("GPKI") || upperDir.Contains("EPKI") ||
+                                          upperDir.Contains("공인인증") || upperDir.Contains("인증서");
+                    bool hasKoreanText = Regex.IsMatch(cert.Subject ?? "", @"[가-힣]") || Regex.IsMatch(cert.Issuer ?? "", @"[가-힣]");
+
+                    if (!isKoreanFolder && !hasKoreanText)
+                    {
+                        return null; // 한국 공인/행정 인증서가 아닌 일반 시스템 파일 제외
+                    }
+
+                    policyInfo = policyInfo with { SystemType = CertSystemType.NPKI, UsageDescription = "기타 공동인증서" };
                 }
 
                 string rootDrive = Path.GetPathRoot(derPath) ?? string.Empty;

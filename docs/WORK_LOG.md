@@ -17,6 +17,52 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 74] 시작가이드 복사/선택 오류 교정 및 인증서 전체 내용 조회용 가로/세로 스크롤 사이드바 구축
+- **작업 일시**: 2026-10-14 19:40 KST
+- **요청 사항**:
+  1. 시작가이드로 진행 시 복사 오류 및 선택 오류 발생 문제 해결.
+  2. 인증서 내용을 모두 보기 위한 가로/세로 사이드바 생성.
+- **수행 내용**:
+  1. **시작가이드 복사 및 선택 오류 근본 교정 (`MainViewModel.cs`, `MainWindow.xaml.cs`, `TargetDrivePickerDialog.xaml.cs`, `CertTransferEngine.cs`)**:
+     - **선택 오류 해결**:
+       - `StartGuidedWorkflow("pc_to_usb")` 실행 시 로컬 PC 인증서를 우선 검색하여 자동 선택하도록 개선.
+       - `CertDataGrid`의 `SelectionChanged` 이벤트 핸들러를 연결하여 행 클릭 시 `SelectedCertificate` 갱신 및 가이드 1단계 체크박스 상태가 완벽히 동기화되도록 연동.
+       - 1단계에서 인증서 미선택 상태로 다음 단계 진행 시 경고 또는 기본 유효 인증서를 안전하게 자동 지정.
+     - **복사 오류 해결**:
+       - 가이드 2단계 진입 시 복사 대상 선택 다이얼로그(`TargetDrivePickerDialog`)를 즉시 실행하고, 가이드 배너에 `[⚡ 지금 대상 USB로 복사 시작]` 버튼을 직접 제공하여 사용자가 복사를 즉각 실행할 수 있도록 보완.
+       - **자가 복사(Self-Copy) 오판별 버그 수정**: 기존에 드라이브 문자(루트 `C:\ == C:\`)만 비교하여 동일 드라이브 내 복사(AppData ➔ C:\NPKI)까지 자가 복사로 오인하여 복사가 강제 건너뛰기되던 결함을 실제 대상 폴더 전체 경로(`expectedDstDir == currentSrcDir`) 비교로 정밀 교정.
+       - **파일 속성(ReadOnly) 예외 방지 (`CertTransferEngine.cs`)**: 대상 파일 또는 임시 파일에 Windows 읽기 전용 속성이 부여된 경우 `UnauthorizedAccessException` 오류로 복사가 중단되던 현상을 방지하기 위해 파일 덮어쓰기/삭제 전 `FileAttributes.Normal`로 자동 전환.
+  2. **인증서 전체 규격 및 상세 조회용 가로/세로 스크롤 사이드바 구축 (`MainWindow.xaml`, `MainViewModel.cs`, `App.xaml`, `Converters.cs`)**:
+     - **메인 DataGrid 가로/세로 스크롤바 활성화**: 컬럼이 잘리지 않고 스크롤할 수 있도록 `ScrollViewer.HorizontalScrollBarVisibility="Auto"` 및 `ScrollViewer.VerticalScrollBarVisibility="Auto"`, `CanContentScroll="True"` 설정.
+     - **우측 리사이즈 가능 상세 사이드바(Certificate Details Sidebar)** 구축:
+       - 드래그 리사이즈가 가능한 `GridSplitter` 및 전용 가로/세로 독립 스크롤뷰어 탑재.
+       - 소유자 명칭(CN), 구분 체계(NPKI/GPKI/EPKI), 저장 위치(USB/PC 및 드라이브 배지), 상태/D-Day 만료 카운트다운 표시.
+       - 소유자 전체 식별명(Subject DN), 발급기관 전체 식별명(Issuer DN), 일련번호(Serial Number), 전자서명 알고리즘, 정책 OID 및 용도(Policy Usage), 개인키(signPri.key) 보유 및 페어 무결성, SHA-256 지문, 폴더 전체 경로 등 15개 이상의 핵심 규격을 누락 없이 한눈에 확인 가능.
+       - 항목별 원클릭 클립보드 복사 버튼(`[📋 복사]`), `[📂 탐색기에서 열기]`, `[💾 이 인증서 복사]`, `[🔍 전문 규격 팝업]` 원클릭 액션 버튼 지원.
+       - 상단 툴바에 `[📑 상세 사이드바]` 토글 버튼을 추가하여 필요 시 사이드바를 즉각 열고 닫을 수 있도록 편의성 극대화.
+  3. **컴파일 및 정적 타입 검증**:
+     - `compile_applet` (Vite 웹 빌드) 100% 성공.
+     - `lint_applet` (TypeScript strict noEmit) 결함 0건 완벽 통과.
+
+### 📝 [작업 차수 73] USB 가져오기 다이얼로그 헤더 글자 미표시 교정, USB 미연결 시 로컬 디스크 미노출 처리 및 Windows OEM 테스트 인증서 검출 차단
+- **작업 일시**: 2026-10-14 19:10 KST
+- **요청 사항**:
+  1. 글자 보이지 않음 (테이블 헤더 텍스트가 흰색 바탕에 흰색 글자로 보이지 않던 결함).
+  2. Windows 관련 이상한 것이 검출됨 (Windows OEM Test Platform Key Cert, Windows Phone OEM 등 비한국계 OS/개발자 인증서 검출).
+  3. USB가 컴퓨터에 없을 경우에 디스크가 보이지 않도록 하기 (로컬 디스크 C:\ 등이 USB 가져오기 창에 노출되지 않도록 차단).
+- **수행 내용**:
+  1. **DataGrid 헤더 스타일 완벽 복원 (`App.xaml`, `UsbTransferDialog.xaml`)**:
+     - Windows 기본 에어로 테마가 적용될 때 컬럼 헤더가 흰색 배경으로 오버라이드되어 흰색 글자가 보이지 않던 결함을 해결.
+     - `App.xaml` 전역 및 `UsbTransferDialog.xaml`에 어두운 테마 전용 `DataGridColumnHeader` 템플릿(`BgDarkBrush`, `TextSecondaryBrush`, `SemiBold`)을 명시하여 글자가 또렷하고 선명하게 표시되도록 교정.
+  2. **USB 미연결 시 로컬 디스크(`C:\` 등) 완전 차단 (`UsbTransferViewModel.cs`, `UsbTransferDialog.xaml`)**:
+     - 'USB ➔ PC 가져오기' 창에서 고정 하드디스크(`C:\`, `D:\`)를 원천 제외하고, 오직 실제 연결된 이동식 드라이브(`IsRemovable == true`)만 조회하도록 필터링.
+     - USB가 PC에 연결되어 있지 않은 경우 드롭다운에 로컬 디스크가 나타나지 않으며, 전용 빈 상태 안내 배너("연결된 USB 이동식 드라이브가 없습니다. USB를 PC에 연결해 주세요")와 함께 [🔄 드라이브 갱신] 버튼을 제공.
+  3. **Windows OEM / 시스템 테스트 인증서 원천 제외 (`KCertParser.cs`, `KoreanCertPolicyOids.cs`, `CertLocationScanner.cs`, `UsbTransferViewModel.cs`)**:
+     - `Windows OEM`, `Windows Phone`, `Microsoft Testing`, `OEM Test`, `Test Only` 등 비한국계 OS/테스트 인증서를 파서 및 스캐너 엔진 레벨에서 원천 필터링(`return null`).
+     - 한국 공인/행정 인증서(1.2.410.* OID 및 공인 CA 발급자)만 정상 감지되도록 보장.
+  4. **컴파일 및 타입 검증**:
+     - `compile_applet` (Vite 빌드) 성공 및 `lint_applet` (TypeScript 정적 검사) 0건 오류 통과.
+
 ### 📝 [작업 차수 72] 깃허브 푸시 시 필수 핵심 파일만 엄선 반영되도록 `.gitignore` 및 자동 푸시 스크립트 최적화
 - **작업 일시**: 2026-10-14 07:15 KST
 - **요청 사항**: 깃허브에 푸시할 때 꼭 필요한 파일들만 올리세요 (`깃허브에 푸시할때 꼭 필요한 파일들만 올리세요.`).

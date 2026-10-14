@@ -23,6 +23,7 @@ namespace KCertManager.Wpf.ViewModels
         private string _targetUsername = Environment.UserName;
         private string _targetCategory = "NPKI";
         private bool _isBusy;
+        private bool _hasUsbDrives;
         private string _statusMessage = "USB 드라이브를 선택하세요.";
 
         public event Action? TransferCompleted;
@@ -37,10 +38,16 @@ namespace KCertManager.Wpf.ViewModels
         public UsbTransferViewModel(string? initialDriveLetter)
         {
             RefreshDrivesCommand = new RelayCommand(() => RefreshDrives());
-            ScanDriveCommand = new RelayCommand(async () => await ScanDriveAsync(), () => SelectedSourceDrive != null);
+            ScanDriveCommand = new RelayCommand(async () => await ScanDriveAsync(), () => SelectedSourceDrive != null && SelectedSourceDrive.IsRemovable);
             TransferToPcCommand = new RelayCommand(async () => await TransferToPcAsync(), () => FoundUsbCertificates.Any(x => x.IsSelected));
 
             RefreshDrives(initialDriveLetter);
+        }
+
+        public bool HasUsbDrives
+        {
+            get => _hasUsbDrives;
+            set => SetProperty(ref _hasUsbDrives, value);
         }
 
         public ObservableCollection<DriveItem> AvailableDrives
@@ -57,7 +64,7 @@ namespace KCertManager.Wpf.ViewModels
                 if (SetProperty(ref _selectedSourceDrive, value))
                 {
                     (ScanDriveCommand as RelayCommand)?.RaiseCanExecuteChanged();
-                    if (value != null)
+                    if (value != null && value.IsRemovable)
                     {
                         _ = ScanDriveAsync();
                     }
@@ -103,16 +110,23 @@ namespace KCertManager.Wpf.ViewModels
         {
             try
             {
-                var allDrives = UsbDriveWatcher.GetAvailableDrives().Where(d => !d.IsCdRom && d.IsReady).ToList();
-                // USB 이동식 드라이브를 최우선 상단에 배치하고, 로컬 보조 디스크(D: 등)도 선택할 수 있도록 지원
-                var drives = allDrives.OrderByDescending(d => d.IsRemovable).ThenBy(d => d.Name).ToList();
-                AvailableDrives = new ObservableCollection<DriveItem>(drives);
+                // 사용자 요청: USB가 컴퓨터에 없을 경우에 로컬 디스크(C: 등)가 보이지 않도록 하기!
+                // USB ➔ PC 가져오기 창은 오직 실제 연결된 '이동식 USB 메모리(Removable)'만 필터링합니다.
+                var usbDrives = UsbDriveWatcher.GetAvailableDrives()
+                    .Where(d => d.IsRemovable && !d.IsCdRom && d.IsReady)
+                    .OrderBy(d => d.Name)
+                    .ToList();
 
-                if (AvailableDrives.Count == 0)
+                AvailableDrives = new ObservableCollection<DriveItem>(usbDrives);
+                HasUsbDrives = AvailableDrives.Count > 0;
+
+                if (!HasUsbDrives)
                 {
                     SelectedSourceDrive = null;
-                    StatusMessage = "가져올 수 있는 드라이브(USB 메모리 또는 디스크)를 찾을 수 없습니다. 장치 연결 후 [🔄 드라이브 갱신]을 눌러주세요.";
+                    StatusMessage = "연결된 USB 이동식 드라이브가 없습니다. USB 메모리를 PC에 연결한 후 [🔄 드라이브 갱신]을 눌러주세요.";
                     FoundUsbCertificates.Clear();
+                    (ScanDriveCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                    (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
                     return;
                 }
 
@@ -128,21 +142,23 @@ namespace KCertManager.Wpf.ViewModels
                     }
                 }
 
-                SelectedSourceDrive = AvailableDrives.FirstOrDefault(d => d.IsReady) ?? AvailableDrives.FirstOrDefault();
+                SelectedSourceDrive = AvailableDrives.FirstOrDefault();
             }
             catch (Exception ex)
             {
-                StatusMessage = $"드라이브 목록 조회 중 오류: {ex.Message}";
+                HasUsbDrives = false;
+                StatusMessage = $"USB 드라이브 목록 조회 중 오류: {ex.Message}";
                 System.Diagnostics.Debug.WriteLine($"[UsbTransfer RefreshDrives Error] {ex.Message}");
             }
         }
 
         public async Task ScanDriveAsync()
         {
-            if (SelectedSourceDrive == null)
+            if (SelectedSourceDrive == null || !SelectedSourceDrive.IsRemovable)
             {
-                StatusMessage = "연결된 USB 이동식 드라이브가 없습니다. USB를 PC에 연결해 주세요.";
+                StatusMessage = "연결된 USB 이동식 드라이브가 없습니다. USB 메모리를 PC에 연결해 주세요.";
                 FoundUsbCertificates.Clear();
+                (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
                 return;
             }
 
@@ -180,15 +196,38 @@ namespace KCertManager.Wpf.ViewModels
                     };
 
                     var certs = _scannerService.ScanCertificates(paths);
-                    foreach (var c in certs)
+                    var validCerts = certs.Where(c =>
+                    {
+                        var cn = (c.CommonName ?? "").ToUpperInvariant();
+                        var issuer = (c.IssuerName ?? "").ToUpperInvariant();
+                        if (cn.Contains("WINDOWS OEM") || cn.Contains("WINDOWS PHONE") ||
+                            issuer.Contains("WINDOWS OEM") || issuer.Contains("WINDOWS PHONE") ||
+                            cn.Contains("OEM TEST") || cn.Contains("TEST ONLY"))
+                        {
+                            return false;
+                        }
+                        return true;
+                    }).ToList();
+
+                    foreach (var c in validCerts)
                     {
                         c.IsRemovableMedia = true;
                         c.IsSelected = true;
+                        c.PropertyChanged += (s, e) =>
+                        {
+                            if (e.PropertyName == nameof(CertificateItem.IsSelected))
+                            {
+                                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                                {
+                                    (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                                }));
+                            }
+                        };
                     }
 
                     Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                     {
-                        FoundUsbCertificates = new ObservableCollection<CertificateItem>(certs);
+                        FoundUsbCertificates = new ObservableCollection<CertificateItem>(validCerts);
                         if (FoundUsbCertificates.Count == 0)
                         {
                             StatusMessage = $"{driveRoot} 드라이브에 복사 가능한 인증서(NPKI, GPKI, EPKI)가 없습니다.";

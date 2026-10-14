@@ -19,7 +19,8 @@ namespace KCert.Core.Discovery
         private static readonly string[] SystemExcludeDirs = { 
             "System Volume Information", "$RECYCLE.BIN", "Windows", "node_modules", ".git", ".vs",
             "CA", "root", "Root", "CRL", "crl", "Government of Korea", "ldap",
-            "Temp", "tmp", "PerfLogs", "$SysReset", "Recovery", "Package Cache"
+            "Temp", "tmp", "PerfLogs", "$SysReset", "Recovery", "Package Cache",
+            "CatRoot", "Windows Kits", "WindowsPhone", "OEM", "ESD"
         };
         private static readonly string[] CertFilePatterns = { "signCert.der", "signcert.der", "sigCert.der", "sigcert.der", "envCert.der", "user.der", "signCert.cer", "sigCert.cer", "SignCert.der", "SigCert.der" };
 

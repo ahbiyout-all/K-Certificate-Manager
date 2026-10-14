@@ -49,6 +49,8 @@ namespace KCertManager.Wpf.ViewModels
         private bool _isToastVisible;
         private string _toastMessage = string.Empty;
         private bool _toastHasIntegrityBadge;
+        private string _toastFilePath = string.Empty;
+        private string _toastFileSize = string.Empty;
         private System.Threading.CancellationTokenSource? _toastCts;
 
         private bool _isGuidedWorkflowActive;
@@ -86,6 +88,12 @@ namespace KCertManager.Wpf.ViewModels
             NextGuidedStepCommand = new RelayCommand(NextGuidedStep);
             PrevGuidedStepCommand = new RelayCommand(PrevGuidedStep);
             EndGuidedWorkflowCommand = new RelayCommand(EndGuidedWorkflow);
+            GuidedExecuteCopyCommand = new RelayCommand(ExecuteGuidedCopy);
+
+            ToggleCertificateDetailSidebarCommand = new RelayCommand(() => IsCertificateDetailSidebarVisible = !IsCertificateDetailSidebarVisible);
+            CloseCertificateDetailSidebarCommand = new RelayCommand(() => IsCertificateDetailSidebarVisible = false);
+            CopySelectedCertDetailsCommand = new RelayCommand(CopySelectedCertDetails);
+            OpenSelectedCertDirectoryCommand = new RelayCommand(OpenSelectedCertDirectory);
 
             // Drive Watcher with debounced and safe event handling
             Action onDrivesChangedAction = () =>
@@ -260,6 +268,21 @@ namespace KCertManager.Wpf.ViewModels
         public ICommand NextGuidedStepCommand { get; }
         public ICommand PrevGuidedStepCommand { get; }
         public ICommand EndGuidedWorkflowCommand { get; }
+        public ICommand GuidedExecuteCopyCommand { get; }
+
+        public ICommand ToggleCertificateDetailSidebarCommand { get; }
+        public ICommand CloseCertificateDetailSidebarCommand { get; }
+        public ICommand CopySelectedCertDetailsCommand { get; }
+        public ICommand OpenSelectedCertDirectoryCommand { get; }
+
+        public event Action<IList<CertificateItem>>? RequestOpenTargetDrivePicker;
+
+        private bool _isCertificateDetailSidebarVisible = true;
+        public bool IsCertificateDetailSidebarVisible
+        {
+            get => _isCertificateDetailSidebarVisible;
+            set => SetProperty(ref _isCertificateDetailSidebarVisible, value);
+        }
 
         public bool IsToastVisible
         {
@@ -315,7 +338,19 @@ namespace KCertManager.Wpf.ViewModels
             set => SetProperty(ref _guidedWorkflowStepDescription, value);
         }
 
-        public void ShowToast(string message, bool hasIntegrityBadge = false)
+        public string ToastFilePath
+        {
+            get => _toastFilePath;
+            set => SetProperty(ref _toastFilePath, value);
+        }
+
+        public string ToastFileSize
+        {
+            get => _toastFileSize;
+            set => SetProperty(ref _toastFileSize, value);
+        }
+
+        public void ShowToast(string message, bool hasIntegrityBadge = false, string filePath = "", string fileSize = "")
         {
             _toastCts?.Cancel();
             _toastCts = new System.Threading.CancellationTokenSource();
@@ -323,9 +358,11 @@ namespace KCertManager.Wpf.ViewModels
 
             ToastMessage = message;
             ToastHasIntegrityBadge = hasIntegrityBadge;
+            ToastFilePath = filePath;
+            ToastFileSize = fileSize;
             IsToastVisible = true;
 
-            Task.Delay(6000, token).ContinueWith(t =>
+            Task.Delay(7000, token).ContinueWith(t =>
             {
                 if (!t.IsCanceled)
                 {
@@ -371,18 +408,26 @@ namespace KCertManager.Wpf.ViewModels
 
             if (GuidedWorkflowType == "pc_to_usb")
             {
-                GuidedWorkflowTitle = "🚀 PC ➔ USB 백업 가이드 모션";
-                GuidedWorkflowStepTitle = "1단계: 복사할 인증서 선택";
-                GuidedWorkflowStepDescription = "목록에서 USB로 복사할 인증서를 선택(체크)해 주세요.";
+                GuidedWorkflowTitle = "🚀 시작가이드: PC ➔ USB 백업";
+                GuidedWorkflowStepTitle = "1단계: 복사할 PC 인증서 선택";
+                GuidedWorkflowStepDescription = "목록에서 USB로 복사할 인증서를 클릭하거나 체크박스를 선택하세요. [다음: USB 복사 진행 ➔]을 클릭하시면 복사 창이 열립니다.";
 
-                if (SelectedCertificatesCount == 0 && FilteredCertificates.Count > 0)
+                // PC 로컬 인증서 우선 자동 선택
+                var pcCert = FilteredCertificates.FirstOrDefault(c => !c.IsRemovableMedia) ?? FilteredCertificates.FirstOrDefault();
+                if (pcCert != null)
                 {
-                    FilteredCertificates[0].IsSelected = true;
+                    foreach (var c in FilteredCertificates)
+                    {
+                        c.IsSelected = (c == pcCert);
+                    }
+                    SelectedCertificate = pcCert;
+                    OnPropertyChanged(nameof(SelectedCertificatesCount));
+                    (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
                 }
             }
             else
             {
-                GuidedWorkflowTitle = "🚀 USB ➔ PC 가져오기 가이드 모션";
+                GuidedWorkflowTitle = "🚀 시작가이드: USB ➔ PC 가져오기";
                 GuidedWorkflowStepTitle = "1단계: 가져올 USB 드라이브 및 인증서 선택";
                 GuidedWorkflowStepDescription = "USB 이동식 메모리의 인증서를 확인하고 가져오기를 진행합니다.";
 
@@ -405,20 +450,143 @@ namespace KCertManager.Wpf.ViewModels
 
             if (GuidedWorkflowStep == 1)
             {
+                var selected = FilteredCertificates.Where(x => x.IsSelected).ToList();
+                if (!selected.Any())
+                {
+                    if (SelectedCertificate != null)
+                    {
+                        SelectedCertificate.IsSelected = true;
+                        selected.Add(SelectedCertificate);
+                    }
+                    else if (FilteredCertificates.Any())
+                    {
+                        var pick = FilteredCertificates.FirstOrDefault(c => !c.IsRemovableMedia) ?? FilteredCertificates[0];
+                        pick.IsSelected = true;
+                        SelectedCertificate = pick;
+                        selected.Add(pick);
+                    }
+                    else
+                    {
+                        UserFriendlyMessageHelper.ShowWarning(
+                            "복사할 인증서가 목록에 없습니다. 먼저 PC에 저장된 인증서를 확인해 주세요.",
+                            "인증서 선택 필요");
+                        return;
+                    }
+                }
+
                 GuidedWorkflowStep = 2;
-                GuidedWorkflowStepTitle = "2단계: 백업 대상 USB 지정 및 복사 실행";
-                GuidedWorkflowStepDescription = "하단 또는 상단 드라이브 바에서 대상 USB를 지정 후 [백업/복사] 버튼을 누르세요.";
+                GuidedWorkflowStepTitle = "2단계: 대상 USB 지정 및 복사 실행";
+                GuidedWorkflowStepDescription = $"선택된 인증서({selected.Count}건)를 저장할 대상 USB 드라이브를 지정합니다. 복사 창에서 대상 드라이브를 선택 후 [복사 시작]을 누르세요.";
+
+                // Step 2로 진입 시 즉시 복사 창 실행!
+                ExecuteGuidedCopy();
             }
             else if (GuidedWorkflowStep == 2)
             {
-                GuidedWorkflowStep = 3;
-                GuidedWorkflowStepTitle = "3단계: 복사 완료 및 SHA-256 무결성 검증 대조";
-                GuidedWorkflowStepDescription = "원물 파일과 복제본 간의 체크섬 비교가 완벽히 통과되었습니다.";
-                ShowToast("⚡ PC ➔ USB 인증서 복사 및 SHA-256 무결성 검증 완료!", hasIntegrityBadge: true);
+                ExecuteGuidedCopy();
             }
             else
             {
                 EndGuidedWorkflow();
+            }
+        }
+
+        public void ExecuteGuidedCopy()
+        {
+            var selected = FilteredCertificates.Where(x => x.IsSelected).ToList();
+            if (!selected.Any())
+            {
+                if (SelectedCertificate != null)
+                {
+                    SelectedCertificate.IsSelected = true;
+                    selected.Add(SelectedCertificate);
+                }
+                else if (FilteredCertificates.Any())
+                {
+                    var pick = FilteredCertificates.FirstOrDefault(c => !c.IsRemovableMedia) ?? FilteredCertificates[0];
+                    pick.IsSelected = true;
+                    SelectedCertificate = pick;
+                    selected.Add(pick);
+                }
+            }
+
+            if (!selected.Any())
+            {
+                UserFriendlyMessageHelper.ShowWarning(
+                    "복사할 인증서가 선택되지 않았습니다. 목록에서 복사할 인증서를 먼저 선택해 주세요.",
+                    "선택 오류 안내");
+                return;
+            }
+
+            RequestOpenTargetDrivePicker?.Invoke(selected);
+        }
+
+        public void CopySelectedCertDetails()
+        {
+            var cert = SelectedCertificate;
+            if (cert == null) return;
+
+            try
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("=== K-인증서 매니저 인증서 상세 정보 ===");
+                sb.AppendLine($"인증서 명칭 (CN): {cert.CommonName}");
+                sb.AppendLine($"구분 / 체계: {cert.CategoryBadgeText}");
+                sb.AppendLine($"저장 위치: {cert.StorageLocationBadge} ({cert.StorageMediumName})");
+                sb.AppendLine($"발급기관: {cert.IssuerName}");
+                sb.AppendLine($"유효기간: {cert.NotBefore:yyyy-MM-dd HH:mm:ss} ~ {cert.NotAfter:yyyy-MM-dd HH:mm:ss}");
+                sb.AppendLine($"상태: {cert.StatusDisplayText}");
+                sb.AppendLine($"일련번호: {cert.SerialNumber}");
+                sb.AppendLine($"전자서명 알고리즘: {cert.SignatureAlgorithm}");
+                sb.AppendLine($"정책 OID: {cert.PolicyOid} ({cert.PolicyUsage})");
+                sb.AppendLine($"소유자 DN: {cert.SubjectDn}");
+                sb.AppendLine($"발급자 DN: {cert.IssuerName}");
+                sb.AppendLine($"개인키 보유: {(cert.HasPrivateKey ? "보유 (정상)" : "개인키 없음")}");
+                sb.AppendLine($"저장 디렉터리 경로: {cert.DirectoryPath}");
+                if (!string.IsNullOrEmpty(cert.DerFilePath))
+                {
+                    sb.AppendLine($"인증서 파일 (DER): {cert.DerFilePath} ({cert.DerFileSize} bytes)");
+                }
+                if (!string.IsNullOrEmpty(cert.KeyFilePath))
+                {
+                    sb.AppendLine($"개인키 파일 (KEY): {cert.KeyFilePath} ({cert.KeyFileSize} bytes)");
+                }
+
+                Clipboard.SetText(sb.ToString());
+                ShowToast("📋 인증서 상세 전체 정보가 클립보드에 복사되었습니다.");
+            }
+            catch (Exception ex)
+            {
+                UserFriendlyMessageHelper.ShowWarning($"클립보드 복사 중 알림: {ex.Message}", "복사 안내");
+            }
+        }
+
+        public void OpenSelectedCertDirectory()
+        {
+            var cert = SelectedCertificate;
+            if (cert == null || string.IsNullOrWhiteSpace(cert.DirectoryPath)) return;
+
+            try
+            {
+                if (Directory.Exists(cert.DirectoryPath))
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "explorer.exe",
+                        Arguments = $"\"{cert.DirectoryPath}\"",
+                        UseShellExecute = true
+                    });
+                }
+                else
+                {
+                    UserFriendlyMessageHelper.ShowWarning(
+                        $"인증서 폴더가 존재하지 않거나 현재 연결 해제된 드라이브입니다:\n\n{cert.DirectoryPath}",
+                        "폴더 열기 불가");
+                }
+            }
+            catch (Exception ex)
+            {
+                UserFriendlyMessageHelper.ShowWarning($"탐색기 실행 중 알림: {ex.Message}", "폴더 열기 안내");
             }
         }
 
@@ -1171,10 +1339,11 @@ namespace KCertManager.Wpf.ViewModels
                             (false, false) => "디스크 ➔ 디스크 복사"
                         };
 
-                        // 동일 드라이브 및 동일 경로 복사 방지
-                        string srcRoot = (Path.GetPathRoot(cert.DirectoryPath) ?? "").TrimEnd('\\').ToUpperInvariant() + "\\";
-                        if (string.Equals(srcRoot, targetRoot, StringComparison.OrdinalIgnoreCase) &&
-                            cert.DirectoryPath.StartsWith(targetRoot, StringComparison.OrdinalIgnoreCase))
+                        // 동일 경로 복사 방지 (대상 폴더와 원본 폴더가 완전히 동일할 때만 자가 복사 생략)
+                        string safeRel = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
+                        string expectedDstDir = Path.GetFullPath(Path.Combine(targetRoot, safeRel)).TrimEnd('\\');
+                        string currentSrcDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd('\\');
+                        if (string.Equals(currentSrcDir, expectedDstDir, StringComparison.OrdinalIgnoreCase))
                         {
                             var sameResult = new BackupHistoryItem
                             {
@@ -1183,7 +1352,7 @@ namespace KCertManager.Wpf.ViewModels
                                 TargetDrive = targetDriveName,
                                 DestinationPath = cert.DirectoryPath,
                                 IsSuccess = true,
-                                Message = $"이미 대상 드라이브({targetDriveName})에 보관 중인 원본입니다 (자가 복사 생략)."
+                                Message = $"이미 대상 드라이브({targetDriveName})의 동일한 폴더에 보관 중인 원본입니다 (자가 복사 생략)."
                             };
                             Application.Current?.Dispatcher?.BeginInvoke(new Action(() => _backupHistory.Insert(0, sameResult)));
                             success++;
@@ -1240,14 +1409,41 @@ namespace KCertManager.Wpf.ViewModels
             string targetTypeName = isTargetUsb ? "이동식 USB" : "로컬 디스크";
             if (success > 0)
             {
-                try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+                try 
+                { 
+                    System.Media.SystemSounds.Asterisk.Play(); 
+                } 
+                catch { }
+
+                // 1.8초간 복사된 행에 반짝이는 강조 효과(Highlight Animation) 적용
+                foreach (var cert in selected)
+                {
+                    cert.IsRecentlyCopied = true;
+                }
+                Task.Delay(1800).ContinueWith(_ =>
+                {
+                    Application.Current?.Dispatcher?.Invoke(() =>
+                    {
+                        foreach (var cert in selected)
+                        {
+                            cert.IsRecentlyCopied = false;
+                        }
+                    });
+                }, TaskScheduler.Default);
                 
-                // 복사 성공 시 SHA-256 무결성 검증 완료 배지 토스트 알림 표시
-                ShowToast($"⚡ {targetDriveName}로 인증서 {success}건 복사 완료", hasIntegrityBadge: true);
+                // 마지막 성공 결과에서 대상 경로와 파일 사이즈 정보 추출
+                var lastSuccessItem = _backupHistory.FirstOrDefault(h => h.IsSuccess && !string.IsNullOrEmpty(h.DestinationPath));
+                string toastPath = lastSuccessItem?.DestinationPath ?? $"{targetDriveName}\\";
+                string toastSize = lastSuccessItem?.FileSizeDetails ?? "";
+
+                // 복사 성공 시 SHA-256 무결성 검증 완료 배지 및 정확한 경로/사이즈 토스트 알림 표시
+                ShowToast($"⚡ {targetDriveName}로 인증서 {success}건 복사 완료", hasIntegrityBadge: true, filePath: toastPath, fileSize: toastSize);
 
                 if (IsGuidedWorkflowActive && GuidedWorkflowStep == 2)
                 {
-                    NextGuidedStep();
+                    GuidedWorkflowStep = 3;
+                    GuidedWorkflowStepTitle = "3단계: 복사 완료 및 무결성 검증 완료";
+                    GuidedWorkflowStepDescription = $"선택한 인증서가 대상 드라이브({targetDriveName})로 안전하게 복사되었습니다. 우측 사이드바에서 복사된 인증서의 상세 경로와 SHA-256 무결성을 확인하실 수 있습니다.";
                 }
             }
 

@@ -23,6 +23,20 @@ namespace KCertManager.Wpf.Models
     public class CertificateItem : INotifyPropertyChanged
     {
         private bool _isSelected;
+        private bool _isRecentlyCopied;
+
+        public bool IsRecentlyCopied
+        {
+            get => _isRecentlyCopied;
+            set
+            {
+                if (_isRecentlyCopied != value)
+                {
+                    _isRecentlyCopied = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         public event PropertyChangedEventHandler? PropertyChanged;
 

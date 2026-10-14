@@ -15,6 +15,12 @@ namespace KCertManager.Wpf.Models
         public bool IsSuccess { get; set; }
         public string Sha256Hash { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
+        public long TotalBytesCopied { get; set; }
+        public string FileSizeDetails { get; set; } = string.Empty;
+
+        public string FormattedTotalSize => TotalBytesCopied > 1024 
+            ? $"{(TotalBytesCopied / 1024.0):F1} KB" 
+            : $"{TotalBytesCopied} B";
     }
 
     public class TrashItem : INotifyPropertyChanged
