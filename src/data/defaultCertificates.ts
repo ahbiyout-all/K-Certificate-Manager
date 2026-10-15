@@ -537,7 +537,7 @@ export const INITIAL_CERTIFICATES: CertificateItem[] = [
   },
   {
     id: 'cert-11',
-    name: '행정안전부 (기관용)',
+    name: '행정안전부',
     subjectDn: 'cn=001행정안전부001,ou=행정안전부,ou=중앙행정기관,o=Government of Korea,c=kr',
     category: 'GPKI_GOV',
     issuer: '행정전자서명인증센터 (행정기관용 CA134)',
@@ -565,7 +565,7 @@ export const INITIAL_CERTIFICATES: CertificateItem[] = [
   },
   {
     id: 'cert-12',
-    name: '행정전자서명 행정기관용 중계CA (CA134040001)',
+    name: '행정전자서명 행정기관용 중계CA',
     subjectDn: 'cn=CA134040001,ou=행정안전부,o=Government of Korea,c=kr',
     category: 'GPKI_GOV',
     issuer: '행정전자서명 최상위인증센터 (GPKIRootCA)',
@@ -591,7 +591,7 @@ export const INITIAL_CERTIFICATES: CertificateItem[] = [
   },
   {
     id: 'cert-13',
-    name: '경상북도교육감 (전자관인)',
+    name: '경상북도교육감',
     subjectDn: 'cn=경상북도교육감001,ou=경상북도교육청,ou=교육행정기관,o=Korea Education,c=kr',
     category: 'EPKI_EDU',
     issuer: '교육부전자서명인증센터 (EPKI CA974)',
