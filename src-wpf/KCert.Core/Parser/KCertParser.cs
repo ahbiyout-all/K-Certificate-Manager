@@ -286,8 +286,8 @@ namespace KCert.Core.Parser
             string rawCn,
             string rawO,
             List<string> ous,
-            string rawIssuerDn,
-            string subjectDn,
+            string? rawIssuerDn,
+            string? subjectDn,
             CertPolicyInfo policy,
             string dirPath,
             bool isSystemCa,
@@ -515,14 +515,14 @@ namespace KCert.Core.Parser
             return (cleanName, cleanOrg, cleanIssuer, caSignatureName, isInstitutional);
         }
 
-        private static string? ParseDnAttribute(string dn, string attribute)
+        private static string? ParseDnAttribute(string? dn, string attribute)
         {
             if (string.IsNullOrEmpty(dn)) return null;
             var match = Regex.Match(dn, $@"(?:^|[,\s]+){Regex.Escape(attribute)}=([^,]*)", RegexOptions.IgnoreCase);
             return match.Success ? match.Groups[1].Value.Trim() : null;
         }
 
-        private static List<string> ParseAllDnAttributes(string dn, string attribute)
+        private static List<string> ParseAllDnAttributes(string? dn, string attribute)
         {
             var list = new List<string>();
             if (string.IsNullOrEmpty(dn)) return list;

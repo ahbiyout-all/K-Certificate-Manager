@@ -1420,7 +1420,7 @@ namespace KCertManager.Wpf.ViewModels
                 {
                     cert.IsRecentlyCopied = true;
                 }
-                Task.Delay(1800).ContinueWith(_ =>
+                _ = Task.Delay(1800).ContinueWith(_ =>
                 {
                     Application.Current?.Dispatcher?.Invoke(() =>
                     {
