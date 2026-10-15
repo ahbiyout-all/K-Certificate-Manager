@@ -298,6 +298,45 @@ namespace KCert.Core.Parser
             bool isInstitutional = false;
             string caSignatureName = string.Empty;
 
+            // 추가 DN 속성(UID, SERIALNUMBER, GN, SURNAME 등)을 통한 명칭 폴백 보강
+            string uid = ParseDnAttribute(subjectDn, "UID") ?? ParseDnAttribute(subjectDn, "USERID") ?? string.Empty;
+            string sn = ParseDnAttribute(subjectDn, "SERIALNUMBER") ?? ParseDnAttribute(subjectDn, "SN") ?? string.Empty;
+            string gn = ParseDnAttribute(subjectDn, "GN") ?? ParseDnAttribute(subjectDn, "GIVENNAME") ?? string.Empty;
+            string surname = ParseDnAttribute(subjectDn, "SURNAME") ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(cleanName) || Regex.IsMatch(cleanName, @"^\d+$"))
+            {
+                if (!string.IsNullOrWhiteSpace(gn) || !string.IsNullOrWhiteSpace(surname))
+                {
+                    cleanName = $"{surname}{gn}".Trim();
+                    if (string.IsNullOrEmpty(cleanName)) cleanName = !string.IsNullOrWhiteSpace(gn) ? gn : surname;
+                }
+                else if (!string.IsNullOrWhiteSpace(uid) && !Regex.IsMatch(uid, @"^\d+$"))
+                {
+                    cleanName = uid;
+                }
+                else if (!string.IsNullOrWhiteSpace(sn) && !Regex.IsMatch(sn, @"^\d+$"))
+                {
+                    cleanName = sn;
+                }
+                else
+                {
+                    foreach (var ou in ous)
+                    {
+                        if (!string.IsNullOrWhiteSpace(ou) && 
+                            !ou.Equals("personal4IB", StringComparison.OrdinalIgnoreCase) &&
+                            !ou.Equals("server", StringComparison.OrdinalIgnoreCase) &&
+                            !ou.Equals("class1", StringComparison.OrdinalIgnoreCase) &&
+                            !ou.Equals("GPKI", StringComparison.OrdinalIgnoreCase) &&
+                            !ou.Equals("EPKI", StringComparison.OrdinalIgnoreCase))
+                        {
+                            cleanName = ou;
+                            break;
+                        }
+                    }
+                }
+            }
+
             // 1. 발급기관(Issuer) 및 기관 서명 이름(caSignatureName) 정제
             string cleanIssuer = ParseDnAttribute(rawIssuerDn, "CN") ?? ParseDnAttribute(rawIssuerDn, "O") ?? rawIssuerDn;
             if (rawIssuerDn.Contains("GPKI", StringComparison.OrdinalIgnoreCase) || rawIssuerDn.Contains("Government of Korea", StringComparison.OrdinalIgnoreCase))
