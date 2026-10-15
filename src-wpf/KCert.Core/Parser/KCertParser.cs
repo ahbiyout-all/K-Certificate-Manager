@@ -472,39 +472,17 @@ namespace KCert.Core.Parser
             {
                 isInstitutional = true;
                 cleanName = strippedName;
-                if (!cleanName.Contains("기관") && !cleanName.Contains("관인") && !cleanName.Contains("용") && !cleanName.Contains("(") &&
-                    (cleanName.EndsWith("감") || cleanName.EndsWith("장") || cleanName.EndsWith("사")))
-                {
-                    cleanName = $"{cleanName} (전자관인)";
-                }
-                else if (!cleanName.Contains("(") && !cleanName.Contains("용") && !cleanName.Contains("관인"))
-                {
-                    cleanName = $"{cleanName} (기관용)";
-                }
             }
             else
             {
-                // 4. 일반 개인(공무원/교원/시민) 이름 정제
-                // 예: 홍길동(Hong Gildong)0000001004 -> 홍길동 (Hong Gildong)
-                // 예: 홍길동()0000001004 -> 홍길동
-                // 예: (주)한국테크-김철수0000009876 -> (주)한국테크 - 김철수
+                // 4. 일반 개인(공무원/교원/시민) 이름 정제 (오직 사용자 이름만 추출)
                 var personMatch = Regex.Match(cleanName, @"^([가-힣A-Za-z0-9_\-\(\)]+?)(?:\(([^\)]*)\))?(?:[0-9]{4,})?$");
                 if (personMatch.Success)
                 {
                     var baseName = personMatch.Groups[1].Value.Trim();
-                    var engName = personMatch.Groups[2].Success ? personMatch.Groups[2].Value.Trim() : "";
-
                     // 불필요한 숫자 접미사 제거
                     baseName = Regex.Replace(baseName, @"\d{4,}$", "").Trim();
-
-                    if (!string.IsNullOrEmpty(engName))
-                    {
-                        cleanName = $"{baseName} ({engName})";
-                    }
-                    else
-                    {
-                        cleanName = baseName;
-                    }
+                    cleanName = baseName;
                 }
             }
 
