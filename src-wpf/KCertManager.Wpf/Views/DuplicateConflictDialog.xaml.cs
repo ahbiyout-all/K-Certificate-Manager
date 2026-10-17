@@ -19,11 +19,11 @@ namespace KCertManager.Wpf.Views
     public partial class DuplicateConflictDialog : Window
     {
         private readonly List<DuplicateConflictEntry> _conflicts;
-        private readonly DriveItem _targetDrive;
+        private readonly DriveItem? _targetDrive;
 
         public string SelectedAction { get; private set; } = "overwrite";
 
-        public DuplicateConflictDialog(List<DuplicateConflictEntry> conflicts, DriveItem targetDrive)
+        public DuplicateConflictDialog(List<DuplicateConflictEntry> conflicts, DriveItem? targetDrive)
         {
             InitializeComponent();
             _conflicts = conflicts ?? new List<DuplicateConflictEntry>();

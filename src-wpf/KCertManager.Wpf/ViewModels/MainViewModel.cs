@@ -1365,7 +1365,7 @@ namespace KCertManager.Wpf.ViewModels
                 // 또는 현재 로드된 인증서 목록 중 대상 드라이브에 동일한 CN/발급자 인증서가 이미 보관 중인 경우
                 bool matchInLoadedCerts = _allCertificates.Any(c =>
                     !string.Equals(c.DirectoryPath, cert.DirectoryPath, StringComparison.OrdinalIgnoreCase) &&
-                    (c.DriveLetter?.TrimEnd('\\').ToUpperInvariant() == cleanTarget || c.SourceLocation?.ToUpperInvariant().StartsWith(cleanTarget) == true) &&
+                    (c.DriveLetter?.TrimEnd('\\').ToUpperInvariant() == cleanTarget || c.DirectoryPath?.ToUpperInvariant().StartsWith(cleanTarget) == true) &&
                     (string.Equals(c.CommonName, cert.CommonName, StringComparison.OrdinalIgnoreCase) ||
                      string.Equals(c.DirectoryPath?.TrimEnd('\\'), expectedDstDir, StringComparison.OrdinalIgnoreCase)));
 

@@ -17,6 +17,19 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 79] GitHub Actions 빌드 오류(CS0103, CS1061, CS8618) 해결 및 WPF 네이티브 컴파일 정합성 완료
+- **작업 일시**: 2026-10-17 17:08 KST
+- **요청 사항**: GitHub Actions CI/CD `dotnet publish` 빌드 실패 오류 해결.
+- **원인 분석**:
+  1. `MainWindow.xaml.cs`: 마우스 휠 가로 스크롤에 사용된 `VisualTreeHelper` 참조 네임스페이스(`using System.Windows.Media;`) 누락 (CS0103).
+  2. `MainViewModel.cs`: 사전 중복 탐지 루프에서 WPF 모델(`CertificateItem`)에 존재하지 않는 `SourceLocation` 속성 참조 (CS1061) ➔ 실제 WPF 속성은 `DirectoryPath`.
+  3. `DuplicateConflictDialog.xaml.cs`: `_targetDrive` 필드가 non-nullable로 선언되어 생성자 경고 발생 (CS8618).
+- **수행 내용**:
+  1. `MainWindow.xaml.cs` 상단에 `using System.Windows.Media;` 추가하여 `VisualTreeHelper` 컴파일 에러 완전 해소.
+  2. `MainViewModel.cs`의 중복 검사 로직에서 `c.SourceLocation`을 C# WPF 정규 속성인 `c.DirectoryPath`로 교정하여 CS1061 에러 해소.
+  3. `DuplicateConflictDialog.xaml.cs`의 `_targetDrive`를 `DriveItem?` nullable로 선언하여 컴파일러 경고(CS8618) 제거.
+  4. 로컬 Git 커밋 갱신 및 무결성 검증 완료.
+
 ### 📝 [작업 차수 78] GitHub 업로드 제외 목록(.gitignore) 정밀화 및 필수 소스·설정 선별 푸시 체계 구축
 - **작업 일시**: 2026-10-17 16:10 KST
 - **요청 사항**: github에 꼭 필요 소스와 폴더, 파일을 제외하고 나머지는 제외목록에 넣어서 푸시하도록 구성.
