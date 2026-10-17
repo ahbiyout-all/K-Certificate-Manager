@@ -511,6 +511,51 @@ namespace KCertManager.Wpf.Views
             catch { }
         }
 
+        private void CertListHorizontalScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+            {
+                ScrollViewer? sv = sender as ScrollViewer;
+                if (sv == null && sender is DependencyObject dep)
+                {
+                    sv = FindVisualChild<ScrollViewer>(dep);
+                }
+
+                if (sv != null)
+                {
+                    if (e.Delta < 0)
+                    {
+                        sv.LineRight();
+                    }
+                    else
+                    {
+                        sv.LineLeft();
+                    }
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            if (parent == null) return null;
+            int childCount = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < childCount; i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T typedChild)
+                {
+                    return typedChild;
+                }
+                T? childOfChild = FindVisualChild<T>(child);
+                if (childOfChild != null)
+                {
+                    return childOfChild;
+                }
+            }
+            return null;
+        }
+
         private void BtnRowDetail_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.DataContext is CertificateItem item)

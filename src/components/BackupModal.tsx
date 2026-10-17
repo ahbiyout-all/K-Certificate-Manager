@@ -472,25 +472,25 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl overflow-hidden relative">
-        {/* Duplicate Folder Overwrite / Conflict Confirmation Dialog Overlay */}
+        {/* Duplicate Prevention Check Modal Overlay ('중복 방지 체크' 및 덮어쓰기 여부 확인) */}
         {showDuplicateModal && duplicateResult && (
-          <div className="absolute inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
-            <div className="bg-white rounded-2xl shadow-2xl border border-amber-300 w-full max-w-xl overflow-hidden animate-scaleIn flex flex-col max-h-[90%]">
+          <div className="absolute inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+            <div className="bg-white rounded-2xl shadow-2xl border-2 border-amber-400 w-full max-w-xl overflow-hidden animate-scaleIn flex flex-col max-h-[90%]">
               {/* Dialog Header */}
-              <div className="px-5 py-4 bg-gradient-to-r from-amber-600 to-amber-700 text-white flex items-center justify-between shrink-0">
+              <div className="px-5 py-4 bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 text-white flex items-center justify-between shrink-0 shadow-sm">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-lg bg-white/20 border border-white/30 flex items-center justify-center text-white shrink-0">
-                    <AlertTriangle className="w-5 h-5 text-amber-100" />
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/30 border border-white/30 flex items-center justify-center text-white shrink-0 shadow-inner">
+                    <ShieldAlert className="w-5 h-5 text-amber-100" />
                   </div>
                   <div>
                     <h4 className="text-sm sm:text-base font-bold flex items-center gap-2">
-                      <span>동일한 인증서 폴더 중복 감지</span>
-                      <span className="px-2 py-0.5 bg-amber-900/60 rounded-full text-xs font-semibold">
-                        {duplicateResult.conflicts.length}건 중복
+                      <span>중복 방지 체크 (동일 인증서 덮어쓰기 확인)</span>
+                      <span className="px-2.5 py-0.5 bg-amber-950/70 border border-amber-300/40 rounded-full text-xs font-semibold text-amber-200">
+                        {duplicateResult.conflicts.length}건 감지
                       </span>
                     </h4>
-                    <p className="text-[11px] text-amber-100">
-                      대상 드라이브 <strong>{targetDrive.letter} ({targetDrive.name})</strong>에 이미 동일한 이름의 인증서가 존재합니다.
+                    <p className="text-[11px] text-amber-100/90 mt-0.5">
+                      이미 복사된 대상 드라이브 <strong>{targetDrive.letter} ({targetDrive.name})</strong>에서 원본과 동일한 인증서가 감지되었습니다.
                     </p>
                   </div>
                 </div>
@@ -498,6 +498,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   type="button"
                   onClick={() => setShowDuplicateModal(false)}
                   className="text-amber-200 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                  title="닫기 (취소)"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -506,14 +507,14 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               {/* Dialog Content */}
               <div className="p-5 space-y-4 overflow-y-auto flex-1 text-xs">
                 {/* Notice text */}
-                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-950 flex items-start gap-2.5">
+                <div className="p-3.5 bg-amber-50/90 rounded-xl border border-amber-200/90 text-amber-950 flex items-start gap-2.5 shadow-2xs">
                   <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
                   <div className="space-y-1">
-                    <p className="font-semibold text-amber-900">
-                      기존 인증서 파일을 어떻게 처리할지 선택해 주세요.
+                    <p className="font-bold text-amber-900 text-xs">
+                      기존 인증서 덮어쓰기 여부를 선택해 주세요.
                     </p>
                     <p className="text-[11px] text-amber-800 leading-relaxed">
-                      은행 또는 기관에서 인증서를 갱신 발급받은 경우 <strong>[덮어쓰기]</strong>를 권장하며, 구버전 인증서 보존이 필요하면 <strong>[백업 보존]</strong>을 선택하세요.
+                      대상 드라이브에 이미 동일한 이름과 경로의 인증서가 존재합니다. 실수로 인한 데이터 유실을 방지하기 위해 <strong>[덮어쓰기]</strong>, <strong>[중복 건너뛰기]</strong>, 또는 <strong>[기존 백업 보존]</strong> 중 원하는 방식을 선택해 진행하세요.
                     </p>
                   </div>
                 </div>
@@ -1148,7 +1149,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                             : selfCopyCount > 0
                             ? `선택한 인증서 중 ${selfCopyCount}건은 이미 ${targetDrive.letter}에 존재하여 복사 대상에서 자동 제외됩니다.`
                             : currentDriveDuplicates > 0
-                            ? `복사 시작 시 기존 ${currentDriveDuplicates}건에 대한 덮어쓰기/스킵/백업보존 확인 다이얼로그가 표시됩니다.`
+                            ? `복사 시작 시 기존 ${currentDriveDuplicates}건에 대한 덮어쓰기 여부를 묻는 '중복 방지 체크' 모달이 실행됩니다.`
                             : `${targetDrive.letter} (${targetDrive.name}) - I/O 임시 프로브 및 신규 폴더 생성 준비 완료`}
                         </p>
                       </div>
@@ -1159,10 +1160,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setShowDuplicateModal(true)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold rounded-lg border border-amber-300 shadow-2xs transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold rounded-lg border border-amber-300 shadow-2xs transition-colors cursor-pointer"
                         >
-                          <CopyCheck className="w-3.5 h-3.5 text-amber-600" />
-                          <span>중복 처리 설정</span>
+                          <CopyCheck className="w-4 h-4 text-amber-600" />
+                          <span>🛡️ 중복 방지 체크 ({currentDriveDuplicates}건)</span>
                         </button>
                       )}
 

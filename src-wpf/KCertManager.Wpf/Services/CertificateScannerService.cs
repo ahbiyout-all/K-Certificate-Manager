@@ -150,15 +150,34 @@ namespace KCertManager.Wpf.Services
                 var meta = KCertParser.Parse(derFilePath);
                 if (meta == null) return null;
 
-                // \GPKI\CA\ 또는 \EPKI\CA\ 등 시스템 CA 전용 폴더에 있는 단순 체인 검증용 무키 인증서만 제외하고,
-                // class1 폴더 또는 사용자/기관 관리 폴더에 위치한 시스템 CA 및 기관용 공용 인증서는 모두 정상 등록
+                // 사용자 관리 인증서 목록에는 실제 사용자 이름(개인) 또는 기관이름(법인/공공기관)이 유효한 인증서만 표시합니다.
+                // 인증서 발급 대행 회사 정보(INIPASS CA, yessignCA, SignKorea CA, CrossCertCA, signGATE CA, KISA RootCA 등)의 무키 CA/중계/루트 인증서는
+                // 사용자가 소유한 인증서가 아니므로 목록에서 완전히 제외합니다.
                 var dirUpper = meta.DirectoryPath.ToUpperInvariant();
                 bool isDedicatedCaFolder = dirUpper.EndsWith(@"\CA") || dirUpper.EndsWith(@"/CA") ||
                                            dirUpper.Contains(@"\GPKI\CA\") || dirUpper.Contains(@"/GPKI/CA/") ||
                                            dirUpper.Contains(@"\EPKI\CA\") || dirUpper.Contains(@"/EPKI/CA/") ||
                                            dirUpper.EndsWith(@"\ROOT") || dirUpper.EndsWith(@"/ROOT");
 
-                if (meta.IsSystemCa && isDedicatedCaFolder && !meta.HasPrivateKey)
+                bool isCaVendorCompanyCert = meta.IsSystemCa ||
+                                            meta.CommonName.StartsWith("INIPASS", StringComparison.OrdinalIgnoreCase) ||
+                                            meta.CommonName.StartsWith("yessign", StringComparison.OrdinalIgnoreCase) ||
+                                            meta.CommonName.StartsWith("SignKorea", StringComparison.OrdinalIgnoreCase) ||
+                                            meta.CommonName.StartsWith("CrossCert", StringComparison.OrdinalIgnoreCase) ||
+                                            meta.CommonName.StartsWith("signGATE", StringComparison.OrdinalIgnoreCase) ||
+                                            meta.CommonName.StartsWith("KICA", StringComparison.OrdinalIgnoreCase) ||
+                                            meta.CommonName.StartsWith("TradeSign", StringComparison.OrdinalIgnoreCase) ||
+                                            meta.CommonName.StartsWith("CertRSA", StringComparison.OrdinalIgnoreCase) ||
+                                            meta.CommonName.StartsWith("KISA Root", StringComparison.OrdinalIgnoreCase) ||
+                                            meta.CommonName.StartsWith("GPKIRoot", StringComparison.OrdinalIgnoreCase) ||
+                                            meta.CommonName.StartsWith("EPKIRoot", StringComparison.OrdinalIgnoreCase) ||
+                                            meta.CommonName.StartsWith("CA134", StringComparison.OrdinalIgnoreCase) ||
+                                            meta.CommonName.StartsWith("CA974", StringComparison.OrdinalIgnoreCase) ||
+                                            meta.CommonName.StartsWith("CA128", StringComparison.OrdinalIgnoreCase) ||
+                                            meta.SubjectDn.Contains("OU=LicensedCA", StringComparison.OrdinalIgnoreCase) ||
+                                            (meta.Issuer.Contains("KISA RootCA", StringComparison.OrdinalIgnoreCase) && !meta.HasPrivateKey);
+
+                if (!meta.HasPrivateKey && (isCaVendorCompanyCert || isDedicatedCaFolder))
                 {
                     return null;
                 }

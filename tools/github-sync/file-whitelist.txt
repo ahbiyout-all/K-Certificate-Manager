@@ -30,11 +30,13 @@ installer.iss
 
 # [5] 윈도우 원클릭 빌드 및 실행 스크립트
 build.bat
+build.cmd
 build.ps1
 run-web.cmd
 launch-web.vbs
 push_to_github.bat
 push_to_github.ps1
+tools/
 
 # [6] 공식 기술 문서 및 한국어/영어 라이선스 전문
 docs/

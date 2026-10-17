@@ -412,18 +412,28 @@ namespace KCertManager.Wpf.ViewModels
                 GuidedWorkflowStepTitle = "1단계: 복사할 PC 인증서 선택";
                 GuidedWorkflowStepDescription = "목록에서 USB로 복사할 인증서를 클릭하거나 체크박스를 선택하세요. [다음: USB 복사 진행 ➔]을 클릭하시면 복사 창이 열립니다.";
 
-                // PC 로컬 인증서 우선 자동 선택
-                var pcCert = FilteredCertificates.FirstOrDefault(c => !c.IsRemovableMedia) ?? FilteredCertificates.FirstOrDefault();
-                if (pcCert != null)
+                // PC 로컬 보관 인증서(복사 원본) 전체 자동 선택 체크
+                var pcCerts = FilteredCertificates.Where(c => !c.IsRemovableMedia).ToList();
+                if (pcCerts.Any())
                 {
                     foreach (var c in FilteredCertificates)
                     {
-                        c.IsSelected = (c == pcCert);
+                        // PC 원본 인증서들을 모두 체크하여 한 번에 백업할 수 있도록 지원
+                        c.IsSelected = !c.IsRemovableMedia;
                     }
-                    SelectedCertificate = pcCert;
-                    OnPropertyChanged(nameof(SelectedCertificatesCount));
-                    (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                    SelectedCertificate = pcCerts.FirstOrDefault(c => c.Status != ExpiryStatus.Expired) ?? pcCerts.First();
+                    GuidedWorkflowStepDescription = $"PC에 보관된 복사 원본 인증서 {pcCerts.Count}개가 모두 선택되었습니다. [대상 USB로 복사 시작 ➔]을 클릭하시면 즉시 복사 창이 열립니다.";
                 }
+                else if (FilteredCertificates.Any())
+                {
+                    foreach (var c in FilteredCertificates)
+                    {
+                        c.IsSelected = true;
+                    }
+                    SelectedCertificate = FilteredCertificates.First();
+                }
+                OnPropertyChanged(nameof(SelectedCertificatesCount));
+                (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
             }
             else
             {
@@ -1316,13 +1326,95 @@ namespace KCertManager.Wpf.ViewModels
         {
             if (targetDrive == null || !selected.Any()) return;
 
-            IsBusy = true;
-            StatusMessage = $"선택한 {selected.Count}개 인증서를 {targetDrive.Name}로 복사 중...";
-
-            int success = 0;
             var targetDriveName = targetDrive.Name;
             bool isTargetUsb = targetDrive.IsRemovable;
             string targetRoot = targetDriveName.TrimEnd('\\').ToUpperInvariant() + "\\";
+
+            string cleanTarget = targetDriveName.TrimEnd('\\').ToUpperInvariant();
+            string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\').ToUpperInvariant();
+            string defaultDestRoot = targetDriveName;
+            if (string.Equals(cleanTarget, sysRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                defaultDestRoot = Path.Combine(userProfile, "AppData", "LocalLow");
+            }
+
+            // 1. 복사 대상 드라이브에 원본과 동일한 인증서가 이미 존재하는지 '중복 방지 체크' 사전 검사
+            var duplicateConflicts = new List<Views.DuplicateConflictEntry>();
+            var conflictCertPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var cert in selected)
+            {
+                if (string.IsNullOrWhiteSpace(cert?.DirectoryPath)) continue;
+
+                string safeRel = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
+                string expectedDstDir = Path.GetFullPath(Path.Combine(defaultDestRoot, safeRel)).TrimEnd('\\');
+                string currentSrcDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd('\\');
+
+                // 동일 폴더 자가 복사(Self-Copy)는 별도 처리되므로 중복 체크 제외
+                if (string.Equals(currentSrcDir, expectedDstDir, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                // 대상 폴더가 이미 물리적으로 존재하고 내부에 인증서 파일(.der, .cer, .key)이 들어있는 경우
+                bool targetDirExists = Directory.Exists(expectedDstDir);
+                bool hasCertFiles = targetDirExists && Directory.GetFiles(expectedDstDir)
+                    .Any(f => f.EndsWith(".der", StringComparison.OrdinalIgnoreCase) || 
+                              f.EndsWith(".cer", StringComparison.OrdinalIgnoreCase) || 
+                              f.EndsWith(".key", StringComparison.OrdinalIgnoreCase));
+
+                // 또는 현재 로드된 인증서 목록 중 대상 드라이브에 동일한 CN/발급자 인증서가 이미 보관 중인 경우
+                bool matchInLoadedCerts = _allCertificates.Any(c =>
+                    !string.Equals(c.DirectoryPath, cert.DirectoryPath, StringComparison.OrdinalIgnoreCase) &&
+                    (c.DriveLetter?.TrimEnd('\\').ToUpperInvariant() == cleanTarget || c.SourceLocation?.ToUpperInvariant().StartsWith(cleanTarget) == true) &&
+                    (string.Equals(c.CommonName, cert.CommonName, StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(c.DirectoryPath?.TrimEnd('\\'), expectedDstDir, StringComparison.OrdinalIgnoreCase)));
+
+                if (hasCertFiles || matchInLoadedCerts)
+                {
+                    duplicateConflicts.Add(new Views.DuplicateConflictEntry
+                    {
+                        SourceCert = cert,
+                        TargetDirectoryPath = expectedDstDir,
+                        TargetDriveLetter = targetDriveName
+                    });
+                    conflictCertPaths.Add(cert.DirectoryPath);
+                }
+            }
+
+            string actualConflictOption = conflictOption;
+
+            // 2. 이미 복사된 대상 드라이브에서 원본과 동일한 인증서가 감지될 경우, 덮어쓰기 여부를 묻는 '중복 방지 체크' 모달 호출
+            if (duplicateConflicts.Any())
+            {
+                Views.DuplicateConflictDialog? dupDialog = null;
+                Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    dupDialog = new Views.DuplicateConflictDialog(duplicateConflicts, targetDrive)
+                    {
+                        Owner = Application.Current.MainWindow
+                    };
+                });
+
+                bool? dupRes = null;
+                Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    dupRes = dupDialog?.ShowDialog();
+                });
+
+                if (dupRes != true || dupDialog == null)
+                {
+                    StatusMessage = $"[복사 취소] 대상 드라이브({targetDriveName})의 '중복 방지 체크'에서 사용자가 작업을 취소했습니다.";
+                    return;
+                }
+
+                actualConflictOption = dupDialog.SelectedAction; // "overwrite" | "rename" | "skip"
+            }
+
+            IsBusy = true;
+            StatusMessage = $"선택한 {selected.Count}개 인증서를 {targetDrive.Name}로 복사 중... (처리 방식: {actualConflictOption})";
+
+            int success = 0;
+            int skippedCount = 0;
 
             await Task.Run(() =>
             {
@@ -1341,7 +1433,7 @@ namespace KCertManager.Wpf.ViewModels
 
                         // 동일 경로 복사 방지 (대상 폴더와 원본 폴더가 완전히 동일할 때만 자가 복사 생략)
                         string safeRel = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
-                        string expectedDstDir = Path.GetFullPath(Path.Combine(targetRoot, safeRel)).TrimEnd('\\');
+                        string expectedDstDir = Path.GetFullPath(Path.Combine(defaultDestRoot, safeRel)).TrimEnd('\\');
                         string currentSrcDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd('\\');
                         if (string.Equals(currentSrcDir, expectedDstDir, StringComparison.OrdinalIgnoreCase))
                         {
@@ -1359,15 +1451,69 @@ namespace KCertManager.Wpf.ViewModels
                             continue;
                         }
 
+                        bool isConflictCert = conflictCertPaths.Contains(cert.DirectoryPath);
+
+                        // [중복 처리 1: 건너뛰기(skip)]
+                        if (isConflictCert && actualConflictOption == "skip")
+                        {
+                            skippedCount++;
+                            var skipResult = new BackupHistoryItem
+                            {
+                                CertCommonName = cert.CommonName,
+                                SourcePath = cert.DirectoryPath,
+                                TargetDrive = targetDriveName,
+                                DestinationPath = expectedDstDir,
+                                IsSuccess = true,
+                                Message = $"[중복 방지 건너뜀] 대상 드라이브에 이미 동일한 인증서가 존재하여 복사를 건너뛰었습니다."
+                            };
+                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() => _backupHistory.Insert(0, skipResult)));
+                            ActivityLogService.Instance.Log(
+                                LogCategory.BACKUP,
+                                LogLevel.INFO,
+                                $"인증서 복사 건너뜀 (중복 보존)",
+                                $"소유자: {cert.CommonName}, 대상: {expectedDstDir}",
+                                cert.DirectoryPath,
+                                expectedDstDir);
+                            continue;
+                        }
+
+                        // [중복 처리 2: 이름 변경 보존(rename)]
+                        if (isConflictCert && actualConflictOption == "rename" && Directory.Exists(expectedDstDir))
+                        {
+                            try
+                            {
+                                string backupDir = $"{expectedDstDir}_backup_{DateTime.Now:yyyyMMdd_HHmmss}";
+                                if (!Directory.Exists(backupDir))
+                                {
+                                    Directory.Move(expectedDstDir, backupDir);
+                                    ActivityLogService.Instance.Log(
+                                        LogCategory.BACKUP,
+                                        LogLevel.INFO,
+                                        $"기존 인증서 백업 폴더 보존",
+                                        $"기존 폴더를 안전하게 '{Path.GetFileName(backupDir)}'로 보존 후 최신 인증서를 복사합니다.",
+                                        expectedDstDir,
+                                        backupDir);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"[Rename Backup Error] {ex.Message}");
+                            }
+                        }
+
+                        // [중복 처리 3: 덮어쓰기(overwrite)]
                         var result = _backupService.BackupCertificateToDrive(cert, targetDriveName);
                         Application.Current?.Dispatcher?.BeginInvoke(new Action(() => _backupHistory.Insert(0, result)));
                         if (result.IsSuccess)
                         {
                             success++;
+                            string detailNote = isConflictCert && actualConflictOption == "overwrite" 
+                                ? " (기존 동일 인증서 덮어쓰기 갱신 완료)"
+                                : "";
                             ActivityLogService.Instance.Log(
                                 LogCategory.BACKUP,
                                 LogLevel.SUCCESS,
-                                $"인증서 {opName} 완료 (옵션: {conflictOption})",
+                                $"인증서 {opName} 완료{detailNote}",
                                 $"소유자: {cert.CommonName}, SHA-256: {result.Sha256Hash}",
                                 cert.DirectoryPath,
                                 result.DestinationPath);

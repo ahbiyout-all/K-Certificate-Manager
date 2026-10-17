@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 #  K-Certificate Manager (K-인증서 매니저) - PowerShell Unified Build Tool
 #  Developer: AhBiYout (GitHub: AhBiYout-all)
 #  Official Blog: https://ahbiyoutvibe.blogspot.com/
@@ -13,8 +13,18 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-if ($scriptDir) { Set-Location $scriptDir }
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+$scriptDir = if ($PSScriptRoot) { 
+    $PSScriptRoot 
+} elseif ($MyInvocation.MyCommand -and $MyInvocation.MyCommand.Path) { 
+    Split-Path -Parent $MyInvocation.MyCommand.Path 
+} elseif ($MyInvocation.MyCommand -and $MyInvocation.MyCommand.Definition -and (Test-Path -LiteralPath $MyInvocation.MyCommand.Definition -ErrorAction SilentlyContinue)) { 
+    Split-Path -Parent $MyInvocation.MyCommand.Definition 
+} else { 
+    (Get-Location).Path 
+}
+if ($scriptDir -and (Test-Path -LiteralPath $scriptDir -ErrorAction SilentlyContinue)) { Set-Location -LiteralPath $scriptDir }
 
 Write-Host "==============================================================================" -ForegroundColor Cyan
 Write-Host "  K-Certificate Manager (K-인증서 매니저) - PowerShell Unified Build Tool" -ForegroundColor Green
@@ -170,20 +180,11 @@ if ($dotnetCmd -and (-not $SkipWpf)) {
 }
 
 # ------------------------------------------------------------------------------
-# Step 6: Unpacked Multi-File Assembly
-# ------------------------------------------------------------------------------
-Write-Host ""
-Write-Host "[6/7] 배포용 폴더 풀림 [Unpacked Multi-File] 구조 조립 중..." -ForegroundColor Cyan
-$dir06Unpacked = "$releaseBase\06_UnpackedApp"
-if (-not (Test-Path $dir06Unpacked)) { New-Item -ItemType Directory -Path $dir06Unpacked | Out-Null }
-
-$artifactName = "kcert-manager-v$appVersion"
-
-# ------------------------------------------------------------------------------
 # Step 6: Unpacked Multi-File Assembly (Clean, no dev/debug leftovers)
 # ------------------------------------------------------------------------------
 Write-Host ""
 Write-Host "[6/7] 배포용 폴더 풀림 [Unpacked Multi-File] 구조 조립 중..." -ForegroundColor Cyan
+$artifactName = "kcert-manager-v$appVersion"
 $dir06Unpacked = "$releaseBase\06_UnpackedApp"
 if (Test-Path $dir06Unpacked) { Remove-Item -Recurse -Force $dir06Unpacked }
 New-Item -ItemType Directory -Path $dir06Unpacked | Out-Null
@@ -290,43 +291,43 @@ Write-Host ""
 
 while ($true) {
     Write-Host "------------------------------------------------------------------------------" -ForegroundColor DarkGray
-    Write-Host "  원하시는 작업을 선택하세요:" -ForegroundColor Yellow
+    Write-Host "  [작업 선택 / Next Actions]:" -ForegroundColor Yellow
     Write-Host "------------------------------------------------------------------------------" -ForegroundColor DarkGray
-    Write-Host "  [1] 배포 결과물(release) 폴더 탐색기로 열기" -ForegroundColor White
+    Write-Host "  [1] release 배포 결과물 폴더 열기 (Explorer)" -ForegroundColor White
     if (Test-Path "$dir05Wpf\KCertManager.exe") {
-        Write-Host "  [2] C# WPF 데스크톱 앱 실행 (KCertManager.exe)" -ForegroundColor White
+        Write-Host "  [2] KCertManager.exe WPF 데스크톱 앱 실행" -ForegroundColor White
     }
     Write-Host "  [3] 웹 브라우저 에디션 열기 (dist\index.html)" -ForegroundColor White
     Write-Host "  [4] 로컬 웹 서버 구동 (Vite Preview / 포트 3000)" -ForegroundColor White
     Write-Host "  [5] 무설치 패키지 폴더 열기 (06_UnpackedApp)" -ForegroundColor White
-    Write-Host "  [Q] 종료" -ForegroundColor White
+    Write-Host "  [Q] 종료 (Quit)" -ForegroundColor White
     Write-Host "==============================================================================" -ForegroundColor Cyan
     
-    $opt = Read-Host "선택 (1-5 또는 Q, 기본값: 1)"
+    $opt = Read-Host "선택 [1-5 또는 Q, 기본값: 1]"
     if ([string]::IsNullOrWhiteSpace($opt)) { $opt = "1" }
     
     if ($opt -match '^(q|Q)$') {
-        Write-Host "빌드 도구를 종료합니다." -ForegroundColor Green
+        Write-Host " [INFO] Build Tool Exited (빌드 도구 종료) " -ForegroundColor Green
         break
     } elseif ($opt -eq "1") {
         Invoke-Item $releaseBase
-        Write-Host " [OK] release 폴더를 열었습니다." -ForegroundColor Green
+        Write-Host " [OK] Release folder opened (배포 폴더 열림) " -ForegroundColor Green
     } elseif ($opt -eq "2" -and (Test-Path "$dir05Wpf\KCertManager.exe")) {
         Start-Process "$dir05Wpf\KCertManager.exe"
-        Write-Host " [OK] WPF 데스크톱 앱을 실행했습니다." -ForegroundColor Green
+        Write-Host " [OK] WPF Desktop App started (데스크톱 앱 실행) " -ForegroundColor Green
     } elseif ($opt -eq "3") {
         $targetHtml = if (Test-Path "$dir04Web\index.html") { "$dir04Web\index.html" } else { "$scriptDir\dist\index.html" }
         if (Test-Path $targetHtml) {
             Start-Process $targetHtml
-            Write-Host " [OK] 기본 브라우저에서 웹 에디션을 열었습니다." -ForegroundColor Green
+            Write-Host " [OK] Web Edition opened (웹 브라우저 열림) " -ForegroundColor Green
         }
     } elseif ($opt -eq "4") {
-        Write-Host " [INFO] 로컬 웹 서버를 구동합니다 (종료: Ctrl+C)..." -ForegroundColor Yellow
+        Write-Host " [INFO] Local Web Server started (종료: Ctrl+C) " -ForegroundColor Yellow
         npx vite preview --port 3000 --host 0.0.0.0
     } elseif ($opt -eq "5") {
         if (Test-Path $dir06Unpacked) {
             Invoke-Item $dir06Unpacked
-            Write-Host " [OK] 06_UnpackedApp 폴더를 열었습니다." -ForegroundColor Green
+            Write-Host " [OK] 06_UnpackedApp folder opened (무설치 폴더 열림) " -ForegroundColor Green
         }
     }
 }

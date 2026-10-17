@@ -199,11 +199,18 @@ namespace KCert.Core.Parser
                                 cn.StartsWith("CA134", StringComparison.OrdinalIgnoreCase) ||
                                 cn.StartsWith("CA974", StringComparison.OrdinalIgnoreCase) ||
                                 cn.StartsWith("CA128", StringComparison.OrdinalIgnoreCase) ||
-                                cn.StartsWith("KICA CA", StringComparison.OrdinalIgnoreCase) ||
-                                cn.StartsWith("SignKorea CA", StringComparison.OrdinalIgnoreCase) ||
-                                cn.StartsWith("CrossCert CA", StringComparison.OrdinalIgnoreCase) ||
-                                cn.StartsWith("yessignCA", StringComparison.OrdinalIgnoreCase) ||
-                                cn.StartsWith("TradeSign CA", StringComparison.OrdinalIgnoreCase);
+                                cn.StartsWith("KICA", StringComparison.OrdinalIgnoreCase) ||
+                                cn.StartsWith("signGATE", StringComparison.OrdinalIgnoreCase) ||
+                                cn.StartsWith("SignKorea", StringComparison.OrdinalIgnoreCase) ||
+                                cn.StartsWith("CrossCert", StringComparison.OrdinalIgnoreCase) ||
+                                cn.StartsWith("yessign", StringComparison.OrdinalIgnoreCase) ||
+                                cn.StartsWith("INIPASS", StringComparison.OrdinalIgnoreCase) ||
+                                cn.StartsWith("TradeSign", StringComparison.OrdinalIgnoreCase) ||
+                                cn.StartsWith("CertRSA", StringComparison.OrdinalIgnoreCase) ||
+                                cn.StartsWith("KISA Root", StringComparison.OrdinalIgnoreCase) ||
+                                cn.StartsWith("KISA", StringComparison.OrdinalIgnoreCase) ||
+                                (cert.Subject != null && cert.Subject.Contains("OU=LicensedCA", StringComparison.OrdinalIgnoreCase)) ||
+                                (cert.Issuer != null && cert.Issuer.Contains("KISA RootCA", StringComparison.OrdinalIgnoreCase) && !hasKey);
 
                 bool isInSystemCaFolder = dirName == "ca" || dirName == "root" || dirName == "crl" ||
                                           dirPath.IndexOf(@"\GPKI\CA", StringComparison.OrdinalIgnoreCase) >= 0 ||
@@ -220,7 +227,7 @@ namespace KCert.Core.Parser
                 bool isSystemCa = false;
                 if (isCaExtension || isCaName || isInSystemCaFolder)
                 {
-                    // 전용 CA 폴더에 있거나, 확장 필드가 CA이면서 개인키가 없는 경우 시스템 CA로 판정
+                    // 전용 CA 폴더에 있거나, 확장 필드가 CA이거나, 발급사 CA 명칭이면서 개인키가 없는 경우 시스템 CA로 판정
                     if (isInSystemCaFolder || (isCaExtension && !hasKey) || (isCaName && !hasKey && !isClass1))
                     {
                         isSystemCa = true;
@@ -246,7 +253,7 @@ namespace KCert.Core.Parser
                     KeyFilePath = hasKey ? keyPath : string.Empty,
                     DriveRoot = rootDrive,
                     IsOnRemovableMedia = isRemovable,
-                    SubjectDn = cert.Subject,
+                    SubjectDn = cert.Subject ?? string.Empty,
                     Issuer = formattedIssuer,
                     CaSignatureName = caSignatureName,
                     SerialNumber = cert.SerialNumber,
@@ -338,8 +345,8 @@ namespace KCert.Core.Parser
             }
 
             // 1. 발급기관(Issuer) 및 기관 서명 이름(caSignatureName) 정제
-            string cleanIssuer = ParseDnAttribute(rawIssuerDn, "CN") ?? ParseDnAttribute(rawIssuerDn, "O") ?? rawIssuerDn;
-            if (rawIssuerDn.Contains("GPKI", StringComparison.OrdinalIgnoreCase) || rawIssuerDn.Contains("Government of Korea", StringComparison.OrdinalIgnoreCase))
+            string cleanIssuer = ParseDnAttribute(rawIssuerDn, "CN") ?? ParseDnAttribute(rawIssuerDn, "O") ?? rawIssuerDn ?? string.Empty;
+            if (rawIssuerDn != null && (rawIssuerDn.Contains("GPKI", StringComparison.OrdinalIgnoreCase) || rawIssuerDn.Contains("Government of Korea", StringComparison.OrdinalIgnoreCase)))
             {
                 if (cleanIssuer.StartsWith("CA134040001", StringComparison.OrdinalIgnoreCase))
                 {
@@ -372,7 +379,7 @@ namespace KCert.Core.Parser
                     caSignatureName = "행정전자서명인증센터 (GPKI)";
                 }
             }
-            else if (rawIssuerDn.Contains("EPKI", StringComparison.OrdinalIgnoreCase) || rawIssuerDn.Contains("Korea Education", StringComparison.OrdinalIgnoreCase))
+            else if (rawIssuerDn != null && (rawIssuerDn.Contains("EPKI", StringComparison.OrdinalIgnoreCase) || rawIssuerDn.Contains("Korea Education", StringComparison.OrdinalIgnoreCase)))
             {
                 if (cleanIssuer.StartsWith("CA974", StringComparison.OrdinalIgnoreCase))
                 {
@@ -395,27 +402,27 @@ namespace KCert.Core.Parser
                     caSignatureName = "교육부전자서명인증센터 (EPKI)";
                 }
             }
-            else if (rawIssuerDn.Contains("yessign", StringComparison.OrdinalIgnoreCase))
+            else if (rawIssuerDn != null && rawIssuerDn.Contains("yessign", StringComparison.OrdinalIgnoreCase))
             {
                 cleanIssuer = "금융결제원 (yessign)";
                 caSignatureName = "금융결제원 전자인증센터 (yessignCA Class 1)";
             }
-            else if (rawIssuerDn.Contains("SignKorea", StringComparison.OrdinalIgnoreCase) || rawIssuerDn.Contains("KOSCOM", StringComparison.OrdinalIgnoreCase))
+            else if (rawIssuerDn != null && (rawIssuerDn.Contains("SignKorea", StringComparison.OrdinalIgnoreCase) || rawIssuerDn.Contains("KOSCOM", StringComparison.OrdinalIgnoreCase)))
             {
                 cleanIssuer = "코스콤 (SignKorea)";
                 caSignatureName = "코스콤 공인인증센터 (SignKorea CA)";
             }
-            else if (rawIssuerDn.Contains("KICA", StringComparison.OrdinalIgnoreCase) || rawIssuerDn.Contains("한국정보인증", StringComparison.OrdinalIgnoreCase))
+            else if (rawIssuerDn != null && (rawIssuerDn.Contains("KICA", StringComparison.OrdinalIgnoreCase) || rawIssuerDn.Contains("한국정보인증", StringComparison.OrdinalIgnoreCase)))
             {
                 cleanIssuer = "한국정보인증 (KICA)";
                 caSignatureName = "한국정보인증 공인인증센터 (KICA CA)";
             }
-            else if (rawIssuerDn.Contains("CrossCert", StringComparison.OrdinalIgnoreCase) || rawIssuerDn.Contains("한국전자인증", StringComparison.OrdinalIgnoreCase))
+            else if (rawIssuerDn != null && (rawIssuerDn.Contains("CrossCert", StringComparison.OrdinalIgnoreCase) || rawIssuerDn.Contains("한국전자인증", StringComparison.OrdinalIgnoreCase)))
             {
                 cleanIssuer = "한국전자인증 (CrossCert)";
                 caSignatureName = "한국전자인증 공인인증센터 (CrossCert CA)";
             }
-            else if (rawIssuerDn.Contains("TradeSign", StringComparison.OrdinalIgnoreCase) || rawIssuerDn.Contains("한국무역정보통신", StringComparison.OrdinalIgnoreCase))
+            else if (rawIssuerDn != null && (rawIssuerDn.Contains("TradeSign", StringComparison.OrdinalIgnoreCase) || rawIssuerDn.Contains("한국무역정보통신", StringComparison.OrdinalIgnoreCase)))
             {
                 cleanIssuer = "한국무역정보통신 (TradeSign)";
                 caSignatureName = "한국무역정보통신 무역인증센터 (TradeSign CA)";
@@ -472,17 +479,39 @@ namespace KCert.Core.Parser
             {
                 isInstitutional = true;
                 cleanName = strippedName;
+                if (!cleanName.Contains("기관") && !cleanName.Contains("관인") && !cleanName.Contains("용") && !cleanName.Contains("(") &&
+                    (cleanName.EndsWith("감") || cleanName.EndsWith("장") || cleanName.EndsWith("사")))
+                {
+                    cleanName = $"{cleanName} (전자관인)";
+                }
+                else if (!cleanName.Contains("(") && !cleanName.Contains("용") && !cleanName.Contains("관인"))
+                {
+                    cleanName = $"{cleanName} (기관용)";
+                }
             }
             else
             {
-                // 4. 일반 개인(공무원/교원/시민) 이름 정제 (오직 사용자 이름만 추출)
+                // 4. 일반 개인(공무원/교원/시민) 이름 정제
+                // 예: 홍길동(Hong Gildong)0000001004 -> 홍길동 (Hong Gildong)
+                // 예: 홍길동()0000001004 -> 홍길동
+                // 예: (주)한국테크-김철수0000009876 -> (주)한국테크 - 김철수
                 var personMatch = Regex.Match(cleanName, @"^([가-힣A-Za-z0-9_\-\(\)]+?)(?:\(([^\)]*)\))?(?:[0-9]{4,})?$");
                 if (personMatch.Success)
                 {
                     var baseName = personMatch.Groups[1].Value.Trim();
+                    var engName = personMatch.Groups[2].Success ? personMatch.Groups[2].Value.Trim() : "";
+
                     // 불필요한 숫자 접미사 제거
                     baseName = Regex.Replace(baseName, @"\d{4,}$", "").Trim();
-                    cleanName = baseName;
+
+                    if (!string.IsNullOrEmpty(engName))
+                    {
+                        cleanName = $"{baseName} ({engName})";
+                    }
+                    else
+                    {
+                        cleanName = baseName;
+                    }
                 }
             }
 

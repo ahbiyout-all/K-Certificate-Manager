@@ -48,14 +48,15 @@ Write-Host "[INFO] Git 계정 설정 ($GIT_USERNAME / $GIT_EMAIL)..." -Foregroun
 & git config user.name "$GIT_USERNAME"
 & git config user.email "$GIT_EMAIL"
 
-# 4. 대용량 빌드 파일 추적 해제
-Write-Host "[2/5] 대용량 빌드 폴더 Git 추적 제외 처리 중..." -ForegroundColor Green
+# 4. 대용량 빌드 파일, 압축/포터블 파일 및 임시 파일 추적 해제
+Write-Host "[2/5] 대용량 빌드 폴더, 압축/포터블 및 임시 파일 Git 추적 제외 처리 중..." -ForegroundColor Green
 $untrackTargets = @(
     "release", "dist", "node_modules", "deploy", ".vs", "Output", "_Output",
     "src-wpf/KCert.Core/bin", "src-wpf/KCert.Core/obj",
     "src-wpf/KCertManager.Wpf/bin", "src-wpf/KCertManager.Wpf/obj",
     "bun.lock", "app-icon.ico", "app.ico", "favicon.ico", "KCert.Core.dll",
-    "AI_INSTRUCTIONS.md", "scripts",
+    "AI_INSTRUCTIONS.md", "scripts", "portable", "Portable",
+    "*.zip", "*.7z", "*.rar", "*.exe", "*.dll", "*.msi",
     "K-인증서 매니저-메인.png", "K-인증서 매니저-시트.png"
 )
 foreach ($target in $untrackTargets) {

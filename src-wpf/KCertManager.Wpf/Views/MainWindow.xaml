@@ -604,7 +604,7 @@
                         <ColumnDefinition Width="410" MinWidth="300" MaxWidth="680"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- Column 0: Main Certificate DataGrid (With Horizontal & Vertical Scrollbars) -->
+                    <!-- Column 0: Main Certificate DataGrid (With Native Horizontal & Vertical Scrollbars) -->
                     <Border Grid.Column="0" Background="{DynamicResource BgCardBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" ClipToBounds="True">
                         <DataGrid x:Name="CertDataGrid" 
                                   ItemsSource="{Binding FilteredCertificates}" 
@@ -617,19 +617,20 @@
                                   ScrollViewer.HorizontalScrollBarVisibility="Auto"
                                   ScrollViewer.VerticalScrollBarVisibility="Auto"
                                   ScrollViewer.CanContentScroll="True"
-                                  HorizontalScrollBarVisibility="Auto"
-                                  VerticalScrollBarVisibility="Auto"
-                                  GridLinesVisibility="Horizontal" 
-                                  HorizontalGridLinesBrush="{DynamicResource BorderBrush}" 
-                                  Background="{DynamicResource BgCardBrush}" 
-                                  RowBackground="{DynamicResource BgCardBrush}" 
-                                  AlternatingRowBackground="{DynamicResource BgDarkBrush}" 
-                                  Foreground="{DynamicResource TextPrimaryBrush}" 
-                                  BorderThickness="0" 
-                                  HeadersVisibility="Column"
-                                  MouseDoubleClick="CertDataGrid_MouseDoubleClick"
-                                  PreviewMouseRightButtonDown="CertDataGrid_PreviewMouseRightButtonDown"
-                                  Sorting="CertDataGrid_Sorting">
+                                  PreviewMouseWheel="CertListHorizontalScrollViewer_PreviewMouseWheel"
+                                      GridLinesVisibility="Horizontal" 
+                                      HorizontalGridLinesBrush="{DynamicResource BorderBrush}" 
+                                      Background="{DynamicResource BgCardBrush}" 
+                                      RowBackground="{DynamicResource BgCardBrush}" 
+                                      AlternatingRowBackground="{DynamicResource BgDarkBrush}" 
+                                      Foreground="{DynamicResource TextPrimaryBrush}" 
+                                      BorderThickness="0" 
+                                      HeadersVisibility="Column"
+                                      MinRowHeight="46"
+                                      RowHeight="48"
+                                      MouseDoubleClick="CertDataGrid_MouseDoubleClick"
+                                      PreviewMouseRightButtonDown="CertDataGrid_PreviewMouseRightButtonDown"
+                                      Sorting="CertDataGrid_Sorting">
                             <DataGrid.ContextMenu>
                                 <ContextMenu Background="{DynamicResource BgCardBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource BorderBrush}">
                                     <MenuItem Header="💾 대상 디스크 선택 및 복사... (Target Drive Picker)" Click="ContextMenuCopy_Click" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -641,11 +642,11 @@
                                 </ContextMenu>
                             </DataGrid.ContextMenu>
                             <DataGrid.Resources>
-                                <!-- Override system highlight brushes so DataGrid selection never turns white/system default -->
-                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#2563EB"/>
+                                <!-- Subtle navy highlight brushes for clean, organized row selection without blinding blue fill -->
+                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#1E3A8A"/>
                                 <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#FFFFFF"/>
-                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#1D4ED8"/>
-                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#172554"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#E2E8F0"/>
 
                                 <Style TargetType="DataGridColumnHeader">
                                     <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
@@ -658,20 +659,20 @@
                                 <Style TargetType="DataGridCell">
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="BorderThickness" Value="0"/>
-                                    <Setter Property="Padding" Value="10,8"/>
+                                    <Setter Property="Padding" Value="10,6"/>
                                     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                                     <Setter Property="Template">
                                         <Setter.Value>
-                                            <ControlTemplate TargetType="DataGridCell">
-                                                <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderThickness="0">
-                                                    <ContentPresenter VerticalAlignment="Center"/>
-                                                </Border>
-                                            </ControlTemplate>
+                                             <ControlTemplate TargetType="DataGridCell">
+                                                 <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderThickness="0">
+                                                     <ContentPresenter VerticalAlignment="Center"/>
+                                                 </Border>
+                                             </ControlTemplate>
                                         </Setter.Value>
                                     </Setter>
                                     <Style.Triggers>
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter Property="Background" Value="#2563EB"/>
+                                            <Setter Property="Background" Value="Transparent"/>
                                             <Setter Property="Foreground" Value="White"/>
                                         </Trigger>
                                     </Style.Triggers>
@@ -687,7 +688,7 @@
                                             <Setter Property="Foreground" Value="#E6FFFA"/>
                                         </DataTrigger>
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter Property="Background" Value="#2563EB"/>
+                                            <Setter Property="Background" Value="#1E3A8A"/>
                                             <Setter Property="Foreground" Value="White"/>
                                         </Trigger>
                                         <Trigger Property="IsMouseOver" Value="True">
@@ -742,7 +743,7 @@
                                 </DataGridTemplateColumn>
 
                                 <!-- CN / Name -->
-                                <DataGridTemplateColumn Header="인증서 명칭 (CN) 및 경로 상태" Width="*" SortMemberPath="CommonName" CanUserSort="True">
+                                <DataGridTemplateColumn Header="인증서 명칭 (CN) 및 경로 상태" Width="360" SortMemberPath="CommonName" CanUserSort="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel VerticalAlignment="Center">
@@ -755,14 +756,14 @@
                                                         <TextBlock Text="⚠️ 비표준 위치 (미인식)" FontSize="10" Foreground="#FDE68A" FontWeight="Bold"/>
                                                     </Border>
                                                 </StackPanel>
-                                                <TextBlock Text="{Binding DirectoryPath}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap" ToolTip="{Binding DirectoryPath}"/>
+                                                <TextBlock Text="{Binding DirectoryPath}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextTrimming="CharacterEllipsis" MaxHeight="16" ToolTip="{Binding DirectoryPath}"/>
                                             </StackPanel>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
 
                                 <!-- Issuer -->
-                                <DataGridTemplateColumn Header="발급기관" Width="140" SortMemberPath="IssuerName" CanUserSort="True">
+                                <DataGridTemplateColumn Header="발급기관" Width="175" SortMemberPath="IssuerName" CanUserSort="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding IssuerName}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
@@ -831,7 +832,7 @@
                                 </DataGridTemplateColumn>
 
                                 <!-- Quick Action Buttons: 복사 & 상세보기 -->
-                                <DataGridTemplateColumn Header="작업 / 복사" Width="145">
+                                <DataGridTemplateColumn Header="작업 / 복사" Width="160">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -845,10 +846,19 @@
                         </DataGrid>
                     </Border>
 
-                    <!-- Column 1: Resizable Splitter between Table and Detail Sidebar -->
-                    <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch"
-                                  Background="{DynamicResource BorderBrush}" Cursor="SizeWE" Margin="2,0"
-                                  Visibility="{Binding IsCertificateDetailSidebarVisible, Converter={StaticResource BoolToVis}}"/>
+                    <!-- Column 1: Resizable Splitter between Table and Detail Sidebar (가로 구분 사이드바) -->
+                    <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                                  Background="Transparent" Cursor="SizeWE" Margin="1,0"
+                                  ToolTip="드래그하여 테이블과 상세 정보 사이드바의 너비를 조절할 수 있습니다."
+                                  Visibility="{Binding IsCertificateDetailSidebarVisible, Converter={StaticResource BoolToVis}}">
+                        <GridSplitter.Template>
+                            <ControlTemplate TargetType="GridSplitter">
+                                <Border Background="Transparent" Width="8" HorizontalAlignment="Center">
+                                    <Border Width="2" Background="{DynamicResource BorderBrush}" HorizontalAlignment="Center" CornerRadius="1"/>
+                                </Border>
+                            </ControlTemplate>
+                        </GridSplitter.Template>
+                    </GridSplitter>
 
                     <!-- Column 2: Certificate Full Details Sidebar (With Dedicated Horizontal & Vertical Scrollbars) -->
                     <Border Grid.Column="2" Background="{DynamicResource BgCardBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"

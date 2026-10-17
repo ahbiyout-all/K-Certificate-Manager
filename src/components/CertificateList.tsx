@@ -1206,7 +1206,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
         </div>
 
         {/* Table Content */}
-        <div className="overflow-x-auto overflow-y-auto max-h-[460px]">
+        <div className="overflow-x-auto overflow-y-auto max-h-[460px] pb-2">
           {sortedFilteredCerts.length === 0 ? (
             <div className="py-14 text-center">
               <FileKey className="w-12 h-12 text-slate-300 mx-auto mb-3" />
@@ -1216,7 +1216,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
               </p>
             </div>
           ) : (
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[980px]">
               <thead className="sticky top-0 bg-slate-100/90 border-b border-slate-200 text-[12px] text-slate-700 uppercase font-bold tracking-wider z-10">
                 <tr>
                   <th className="p-4 w-12 text-center">

@@ -17,6 +17,73 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 78] GitHub 업로드 제외 목록(.gitignore) 정밀화 및 필수 소스·설정 선별 푸시 체계 구축
+- **작업 일시**: 2026-10-17 16:10 KST
+- **요청 사항**: github에 꼭 필요 소스와 폴더, 파일을 제외하고 나머지는 제외목록에 넣어서 푸시하도록 구성.
+- **수행 내용**:
+  1. **`.gitignore` 제외 목록 전면 개편 및 엄격한 필터링 규칙 적용**:
+     - **빌드 산출물 차단**: `dist/`, `node_modules/`, `build/`, `release/`, `deploy/`, `Output/`, `_Output/`, `coverage/`, `.vite/`, `bun.lock` 완벽 배제.
+     - **컴파일 바이너리 차단**: `.NET` 빌드 임시 폴더(`bin/`, `obj/`, `**/bin/`, `**/obj/`), 디버깅 심볼(`*.pdb`), 컴파일 결과물(`*.dll`, `*.exe`, `*.msi`, `KCert.Core.dll`), 캐시 및 임시 파일(`*_wpftmp*`, `*.tmp`, `*.cache`) 원천 배제.
+     - **포터블/압축 파일 차단**: `portable/`, `Portable/`, `*.zip`, `*.7z`, `*.rar`, `*.tar`, `*.tar.gz`, `*.iso`, `*.cab` 등 불필요한 아카이브 파일 배제.
+     - **보안 및 개인 인증서 보호**: `*.pfx`, `*.p12`, `*.key`, `*.pri`, `*.der`, `*.cer`, `*.pem`, `*.crt`, `*.credential`, `*.credentials`, `.env*` 철저 차단.
+     - **IDE 및 운영체제 잡파일 차단**: `.vs/`, `.idea/`, `.vscode/*`, `.DS_Store`, `Thumbs.db`, `desktop.ini`, `~$*` 배제.
+  2. **푸시 스크립트 연동 강화 (`push_to_github.bat`, `push_to_github.ps1`, `tools/github-sync/file-whitelist.txt`)**:
+     - Git 스테이징 전 대용량 바이너리 및 아카이브(`portable`, `*.zip`, `*.7z`, `*.exe`, `*.dll` 등)를 자동 추적 해제(`git rm --cached`)하는 방어 루틴 추가.
+     - `tools/github-sync/file-whitelist.txt`에 신규 스크립트 및 도구 폴더 최신화.
+  3. **깃 스테이징 및 무결성 검증**:
+     - `git status` 확인 결과, 100% 필수 소스코드(`src/`, `src-wpf/`, `public/`, `docs/`, `build.*`, `package.json`, `installer.iss`, `.github/` 등)만 스테이징되고 모든 임시/바이너리 파일은 `.gitignore`에 의해 완벽 제외됨을 확인.
+     - `compile_applet` 및 `lint_applet` 통과 확인.
+
+### 📝 [작업 차수 77] 대상 드라이브 동일 인증서 감지 시 덮어쓰기 여부를 묻는 '중복 방지 체크' 모달 연동 및 백업 로직 탑재
+- **작업 일시**: 2026-10-17 16:05 KST
+- **요청 사항**: 이미 복사된 대상 드라이브에서 원본과 동일한 인증서가 감지될 경우, 덮어쓰기 여부를 묻는 '중복 방지 체크' 모달을 백업 로직에 추가.
+- **수행 내용**:
+  1. **데스크톱용 앱(WPF) 백업 로직 내 '중복 방지 체크' 모달(`DuplicateConflictDialog`) 통합 (`MainViewModel.cs`, `DuplicateConflictDialog.xaml`)**:
+     - `ExecuteBackupWithConflictOptionAsync` 진입 시 대상 드라이브의 실제 디렉터리 경로 및 등록된 인증서 메타데이터를 전수 검사하여, 대상 드라이브에 이미 동일한 이름(CN) 또는 동일 인증서 파일이 존재하는지 사전 탐지.
+     - 중복 감지 시 복사 루프를 즉시 시작하지 않고, 전용 **'중복 방지 체크 (동일 인증서 덮어쓰기 확인)' 모달**(`DuplicateConflictDialog`)을 띄워 사용자에게 덮어쓰기 여부 선택 요청.
+     - 3대 처리 모드 지원:
+       - **⚡ 덮어쓰기 (`overwrite`)**: 최신 원본 인증서 파일로 기존 파일을 원자적 교체하고 SHA-256 무결성 검증 완료.
+       - **📁 이름 변경 보존 (`rename`)**: 기존 디스크 폴더를 `_backup_yyyyMMdd_HHmmss`로 안전 보존 후 새 인증서를 복사.
+       - **⏭️ 건너뛰기 (`skip`)**: 기존 인증서를 보존하고 중복 항목은 안전하게 스킵.
+     - 창 타이틀(`Title="⚠️ [중복 방지 체크] 동일 인증서 감지 및 덮어쓰기 확인"`) 및 헤더를 직관적으로 개선하고 취소 시 안전 롤백 처리.
+  2. **웹 관리 콘솔(Web) 백업 로직 내 '중복 방지 체크' 모달 및 드라이브 선택 배지 강화 (`BackupModal.tsx`, `TargetDrivePickerModal.tsx`, `App.tsx`)**:
+     - `BackupModal.tsx`의 중복 감지 오버레이를 명시적 **'중복 방지 체크 (동일 인증서 덮어쓰기 확인)'** 모달로 개편.
+     - `TargetDrivePickerModal.tsx`에 `existingCertificates`를 전달하여 목적지 디스크 선택 목록 카드에서 이미 복사된 동일 인증서가 감지될 경우 `[🛡️ 중복 방지 체크 (N건)]` 배지를 즉시 표시.
+     - 백업 실행 전 중복 감지 시 자동으로 '중복 방지 체크' 모달이 팝업되어 덮어쓰기/건너뛰기/백업보존 일괄 또는 개별 선택 보장.
+  3. **빌드 및 컴파일 무결성 검증**:
+     - `compile_applet` 및 `lint_applet` 통과 확인.
+
+### 📝 [작업 차수 76] 데스크탑용 앱(WPF) DataGrid 내장 네이티브 가로 스크롤바(가로바) 활성화 및 컬럼 너비 구조 정상화
+- **작업 일시**: 2026-10-17 12:45 KST
+- **요청 사항**: 데스크탑용 앱에 인증서 보관함 목록 오류 및 가로바 생성 안됨 문제 해결.
+- **원인 분석**:
+  1. 기존에 `DataGrid` 외부에 별도 `ScrollViewer`를 씌우고 `DataGrid`의 내장 가로 스크롤바를 비활성화(`Disabled`)해 두어, WPF 가상화 구조와 `Width="*"` 컬럼 사이에서 테이블 실제 너비가 컨테이너 너비로 축소되어 가로 스크롤바가 트리거되지 않음.
+  2. 또한 `Width="*"` 컬럼(`인증서 명칭`)이 공간에 맞춰 자동 축소되면서 우측 컬럼(`발급기관`, `만료일자`, `상태`, `비밀키`, `작업 / 복사`)들이 화면 바깥으로 밀려나가거나 잘리는 현상 발생.
+- **수행 내용**:
+  1. **DataGrid 내장 네이티브 가로 스크롤바 직접 활성화 (`MainWindow.xaml`)**:
+     - 외장 ScrollViewer 래핑을 제거하고, `DataGrid` 자체의 `ScrollViewer.HorizontalScrollBarVisibility="Auto"`, `ScrollViewer.VerticalScrollBarVisibility="Auto"`, `ScrollViewer.CanContentScroll="True"` 설정으로 변경.
+     - 가상화(Virtualization)와 헤더/셀 동기화가 WPF 엔진 레벨에서 일체형으로 정확하게 작동하도록 개선.
+  2. **컬럼 너비 구조 안정화**:
+     - `인증서 명칭 (CN)` 컬럼을 가변 `Width="*"`에서 명시적 고정 너비 `Width="360"`으로 지정.
+     - 전체 8개 컬럼의 총 너비가 약 1,180px로 안정화되어, 창 너비가 좁아지거나 우측 [상세 사이드바]가 열릴 때 목록 하단에 즉시 가로 스크롤바(가로바)가 생성되고 모든 내용 및 버튼을 완벽하게 스크롤 조회 가능.
+  3. **VisualTree 기반 Shift + 마우스 휠 가로 스크롤 핸들러 보강 (`MainWindow.xaml.cs`)**:
+     - `FindVisualChild<ScrollViewer>`를 구현하여 DataGrid 내부 ScrollViewer를 찾아 `Shift + 마우스 휠` 회전 시 좌우로 부드럽게 스크롤되도록 지원.
+  4. **무결성 검증 완료**:
+     - 웹 컴파일 및 정적 타입 검사 0건 통과.
+
+### 📝 [작업 차수 75] 데스크탑용 앱(WPF) 인증서 보관함 목록 하단 가로 스크롤바(가로바) 구축 및 가려진 컬럼 조회 보장
+- **작업 일시**: 2026-10-17 12:25 KST
+- **요청 사항**: 데스크탑용 앱 인증서 보관함 목록 아래쪽에 가로바를 생성해서 가려진 내용도 볼 수 있도록 합니다.
+- **수행 내용**:
+  1. **데스크탑 WPF 앱 메인 인증서 DataGrid 가로 스크롤바(`CertListHorizontalScrollViewer`) 구축 (`MainWindow.xaml`, `MainWindow.xaml.cs`)**:
+     - 상세 사이드바가 열려 있거나 창 너비가 좁아질 때 DataGrid 우측 끝의 `작업 / 복사`(`[💾 복사]`, `[🔍 상세]`) 버튼 및 발급기관 정보가 잘리던 문제 해결.
+     - `CertDataGrid`를 전용 가로 스크롤뷰어(`ScrollViewer x:Name="CertListHorizontalScrollViewer" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"`)로 감싸고, `MinWidth="{Binding ActualWidth, ElementName=CertListHorizontalScrollViewer}"`를 부여.
+     - 창이 넓을 때는 기존처럼 반응형으로 채워지고, 창이 좁거나 사이드바가 열려 테이블 내용이 가려질 때는 목록 바로 아래쪽에 선명한 가로 스크롤바(가로바)가 즉시 활성화되어 가려진 모든 컬럼을 부드럽게 스크롤 조회할 수 있도록 개선.
+     - `Shift + 마우스 휠` 가로 스크롤 이벤트 핸들러(`CertListHorizontalScrollViewer_PreviewMouseWheel`) 탑재로 휠 조작 편의성 강화.
+     - `발급기관` 컬럼 너비(140 ➔ 175) 및 `작업 / 복사` 컬럼 너비(145 ➔ 160)를 넉넉하게 확장하여 글자 잘림 완전 해소.
+  2. **빌드 및 타입 검증**:
+     - `compile_applet` (웹 번들 빌드) 및 `lint_applet` (TypeScript 정적 검사) 무결성 통과.
+
 ### 📝 [작업 차수 74] 시작가이드 복사/선택 오류 교정 및 인증서 전체 내용 조회용 가로/세로 스크롤 사이드바 구축
 - **작업 일시**: 2026-10-14 19:40 KST
 - **요청 사항**:

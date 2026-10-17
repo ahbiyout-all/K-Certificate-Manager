@@ -53,8 +53,8 @@ echo [INFO] Git 보안 프로필 설정 중 (개인 이메일 비공개 보호).
 git config user.name "%GIT_USER%"
 git config user.email "%GIT_MAIL%"
 
-echo [2/5] 대용량 빌드 산출물 및 민감 파일 Git 추적 제외 처리 중...
-git rm -rf --cached --ignore-unmatch release dist node_modules deploy .vs Output _Output src-wpf/KCert.Core/bin src-wpf/KCert.Core/obj src-wpf/KCertManager.Wpf/bin src-wpf/KCertManager.Wpf/obj bun.lock app-icon.ico app.ico favicon.ico KCert.Core.dll AI_INSTRUCTIONS.md scripts "K-인증서 매니저-메인.png" "K-인증서 매니저-시트.png" *.pfx *.p12 *.key *.pri *.der *.cer >nul 2>&1
+echo [2/5] 대용량 빌드 산출물, 압축/포터블 파일 및 민감 파일 Git 추적 제외 처리 중...
+git rm -rf --cached --ignore-unmatch release dist node_modules deploy .vs Output _Output src-wpf/KCert.Core/bin src-wpf/KCert.Core/obj src-wpf/KCertManager.Wpf/bin src-wpf/KCertManager.Wpf/obj bun.lock app-icon.ico app.ico favicon.ico KCert.Core.dll AI_INSTRUCTIONS.md scripts portable Portable *.zip *.7z *.rar *.exe *.dll *.msi "K-인증서 매니저-메인.png" "K-인증서 매니저-시트.png" *.pfx *.p12 *.key *.pri *.der *.cer >nul 2>&1
 
 echo [3/5] 소스코드 스테이징 및 커밋 생성 중 (v%APP_VER%)...
 git add .

@@ -1,9 +1,10 @@
 # ==============================================================================
 #  K-Certificate Manager - Comprehensive .gitignore
-#  Prevents build artifacts, IDE caches, installer outputs & sensitive data leaks
+#  Prevents build artifacts, binaries, portable files, IDE caches & sensitive leaks
+#  Only essential project source codes, assets, and build configs are allowed.
 # ==============================================================================
 
-# 1. Node & Web Build
+# 1. Node & Web Build Artifacts
 node_modules/
 dist/
 build/
@@ -15,17 +16,14 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# 2. .NET / C# WPF Build & Release Artifacts (Prevents GitHub 100MB file limit errors)
+# 2. .NET / C# WPF Build & Compiled Binaries (Prevents GitHub 100MB file limit errors)
 release/
 deploy/
 bin/
 obj/
-/KCert.Core.dll
-/*.ico
-/scripts/
-/AI_INSTRUCTIONS.md
 **/bin/
 **/obj/
+PublishProfiles/
 TestResults/
 *.user
 *.userosscache
@@ -35,28 +33,45 @@ TestResults/
 *.pdb
 *.tmp
 *.cache
-PublishProfiles/
+*.dll
+*.exe
+*.msi
+KCert.Core.dll
 
-# 3. Inno Setup Installer Build Output
+# 3. Inno Setup & Installer Build Outputs
 Output/
 _Output/
+*.iss.tmp
 
-# 4. IDEs & Editors
+# 4. Portable Packages & Archives (Unpacked Multi-File 설치 대상 아님)
+portable/
+Portable/
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.iso
+*.cab
+
+# 5. IDEs, Editors & AI Workspace
 .vs/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+.aistudio/
 *.swp
 *.bak
 *.orig
+~$*
 
-# 5. Operating System Junk
+# 6. Operating System Junk
 .DS_Store
 Thumbs.db
 ehthumbs.db
 desktop.ini
 
-# 6. Environment & Security (Prevent leaking private keys, real certs, or secrets)
+# 7. Environment & Security (Prevent leaking private keys, real certs, or secrets)
 .env*
 !.env.example
 *.log
@@ -68,9 +83,17 @@ desktop.ini
 *.der
 *.cer
 *.pem
+*.crt
 # Exception for mock assets if needed (assets folder only)
 !src/data/**
 
-# 7. Local Git Credentials and User Data
+# 8. Unnecessary Root Artifacts & Temporary Scripts
+/scripts/
+/AI_INSTRUCTIONS.md
+/*.ico
+K-인증서 매니저-메인.png
+K-인증서 매니저-시트.png
+
+# 9. Local Git Credentials and User Data
 *.credential
 *.credentials

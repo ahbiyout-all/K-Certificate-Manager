@@ -16,12 +16,15 @@ import {
 import { DiskDrive, CertificateItem } from '../types';
 import { filterPhysicalDrivesOnly, isSameDriveSelfCopy } from '../utils/driveFilter';
 import { getDriveColorInfo } from '../utils/driveColors';
+import { detectDuplicateCertificates } from '../utils/backupService';
+import { ShieldAlert } from 'lucide-react';
 
 interface TargetDrivePickerModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedCerts: CertificateItem[];
   availableDrives: DiskDrive[];
+  existingCertificates?: CertificateItem[];
   onConfirmTargetDrive: (driveId: string) => void;
 }
 
@@ -30,6 +33,7 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
   onClose,
   selectedCerts,
   availableDrives,
+  existingCertificates = [],
   onConfirmTargetDrive,
 }) => {
   // Physical drives only (exclude virtual, CD-ROM, cloud drives)
@@ -145,6 +149,9 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
               const isSelected = drive.id === selectedId;
               const isRemovable = drive.type === 'removable' || drive.busType === 'USB';
               const isDriveSelfCopy = selectedCerts.length > 0 && selectedCerts.every(c => isSameDriveSelfCopy(c, drive));
+              const dupCheck = !isDriveSelfCopy && existingCertificates.length > 0
+                ? detectDuplicateCertificates(selectedCerts, existingCertificates, drive)
+                : { hasDuplicates: false, conflicts: [] };
 
               let badgeColor = 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
               let badgeLabel = drive.deviceKindLabel || (isRemovable ? '이동식 USB' : '내장 디스크');
@@ -224,6 +231,13 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
                       <span className="px-2 py-0.5 bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800 text-[10px] font-extrabold rounded-md flex items-center gap-1">
                         <AlertCircle className="w-3 h-3 text-rose-600" />
                         <span>자가 복사 금지</span>
+                      </span>
+                    )}
+
+                    {!isDriveSelfCopy && dupCheck.hasDuplicates && (
+                      <span className="px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800 text-[10px] font-extrabold rounded-md flex items-center gap-1 shadow-2xs" title="원본과 동일한 인증서가 감지되어 복사 시 '중복 방지 체크' 모달이 실행됩니다.">
+                        <ShieldAlert className="w-3 h-3 text-amber-600" />
+                        <span>중복 방지 체크 ({dupCheck.conflicts.length}건)</span>
                       </span>
                     )}
 

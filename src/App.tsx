@@ -86,6 +86,7 @@ export default function App() {
   const [searchPaths, setSearchPaths] = useState<SearchPath[]>(INITIAL_SEARCH_PATHS);
   const [availableDrives, setAvailableDrives] = useState<DiskDrive[]>(INITIAL_DRIVES);
   const [selectedIds, setSelectedIds] = useState<string[]>(['cert-1', 'cert-2']);
+  const [explicitBackupCerts, setExplicitBackupCerts] = useState<CertificateItem[] | null>(null);
   const [selectedDriveId, setSelectedDriveId] = useState<string>('drive-e');
   const [activeNavTab, setActiveNavTab] = useState<'copy' | 'history' | 'paths' | 'security'>('copy');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -138,7 +139,13 @@ export default function App() {
     setActiveWorkflow(type);
 
     if (type === 'pc_to_usb') {
-      showToast('💻 [PC ➔ USB 가이드 모션 실행] 1단계: 컴퓨터에 보관된 인증서를 선택하세요.');
+      const pcCertIds = certificates.filter(c => !c.isRemovableMedia).map(c => c.id);
+      if (pcCertIds.length > 0) {
+        setSelectedIds(pcCertIds);
+        showToast(`💻 [PC ➔ USB 가이드 모션 실행] PC에 보관된 복사 원본 인증서 ${pcCertIds.length}개가 모두 선택되었습니다.`);
+      } else {
+        showToast('💻 [PC ➔ USB 가이드 모션 실행] 1단계: 컴퓨터에 보관된 인증서를 선택하세요.');
+      }
     } else if (type === 'usb_to_pc') {
       showToast('💾 [USB ➔ PC 가이드 모션 실행] 1단계: 연결된 USB 메모리의 인증서를 선택하세요.');
       setIsUsbToPcModalOpen(true);
@@ -581,7 +588,19 @@ export default function App() {
     }
   };
 
-  const handleOpenGeneralBackupModal = (driveId?: string) => {
+  const handleOpenGeneralBackupModal = (driveId?: string, certsOverride?: CertificateItem[]) => {
+    if (certsOverride && certsOverride.length > 0) {
+      setExplicitBackupCerts(certsOverride);
+      setSelectedIds(certsOverride.map(c => c.id));
+    } else {
+      const selected = certificates.filter(c => selectedIds.includes(c.id));
+      if (selected.length > 0) {
+        setExplicitBackupCerts(selected);
+      } else {
+        setExplicitBackupCerts(certificates);
+        setSelectedIds(certificates.map(c => c.id));
+      }
+    }
     if (driveId) {
       setSelectedDriveId(driveId);
       setIsBackupModalOpen(true);
@@ -598,7 +617,8 @@ export default function App() {
 
   const handleQuickBackupSingle = (cert: CertificateItem) => {
     setSelectedIds([cert.id]);
-    handleOpenGeneralBackupModal();
+    setExplicitBackupCerts([cert]);
+    handleOpenGeneralBackupModal(undefined, [cert]);
   };
 
   const handleOpenCleanupModal = (mode: CleanupModalMode) => {
@@ -922,8 +942,11 @@ export default function App() {
   const removableDrivesCount = availableDrives.filter(d => d.type === 'removable').length;
 
   const selectedCertificates = useMemo(() => {
+    if (explicitBackupCerts !== null) {
+      return explicitBackupCerts;
+    }
     return certificates.filter(c => selectedIds.includes(c.id));
-  }, [certificates, selectedIds]);
+  }, [certificates, selectedIds, explicitBackupCerts]);
 
   return (
     <div 
@@ -1244,12 +1267,23 @@ export default function App() {
             onSelectFilteredIds={(ids) => setSelectedIds(ids)}
             onClearSelection={handleClearSelection}
             onSelectCategory={handleSelectCategory}
-            onOpenBackupModal={() => handleOpenGeneralBackupModal()}
-            onSelectTargetDriveAndBackup={(driveId) => {
-              if (selectedIds.length === 0) {
-                handleSelectAll();
+            onOpenBackupModal={() => {
+              let targets = certificates.filter(c => selectedIds.includes(c.id));
+              if (targets.length === 0) {
+                targets = certificates;
+                setSelectedIds(certificates.map(c => c.id));
               }
-              handleOpenGeneralBackupModal(driveId);
+              setExplicitBackupCerts(targets);
+              handleOpenGeneralBackupModal(undefined, targets);
+            }}
+            onSelectTargetDriveAndBackup={(driveId) => {
+              let targets = certificates.filter(c => selectedIds.includes(c.id));
+              if (targets.length === 0) {
+                targets = certificates;
+                setSelectedIds(certificates.map(c => c.id));
+              }
+              setExplicitBackupCerts(targets);
+              handleOpenGeneralBackupModal(driveId, targets);
             }}
             onOpenDetailModal={(cert) => setSelectedCertForDetail(cert)}
             onQuickBackupSingle={handleQuickBackupSingle}
@@ -1410,15 +1444,22 @@ export default function App() {
 
       <TargetDrivePickerModal
         isOpen={isTargetDrivePickerOpen}
-        onClose={() => setIsTargetDrivePickerOpen(false)}
+        onClose={() => {
+          setIsTargetDrivePickerOpen(false);
+          setExplicitBackupCerts(null);
+        }}
         selectedCerts={selectedCertificates}
         availableDrives={availableDrives}
+        existingCertificates={certificates}
         onConfirmTargetDrive={handleConfirmTargetDriveFromPicker}
       />
 
       <BackupModal
         isOpen={isBackupModalOpen}
-        onClose={() => setIsBackupModalOpen(false)}
+        onClose={() => {
+          setIsBackupModalOpen(false);
+          setExplicitBackupCerts(null);
+        }}
         selectedCerts={selectedCertificates}
         availableDrives={availableDrives}
         existingCertificates={certificates}
