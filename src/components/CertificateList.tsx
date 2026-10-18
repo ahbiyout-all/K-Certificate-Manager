@@ -1313,7 +1313,8 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                   return (
                     <tr
                       key={cert.id}
-                      className={`transition-all duration-300 ${
+                      onClick={() => onToggleSelect(cert.id)}
+                      className={`cursor-pointer transition-all duration-300 ${
                         isRecentlyCopied
                           ? 'animate-copied-row bg-emerald-100/70 border-l-4 border-l-emerald-500 shadow-xs'
                           : isNonStandard
@@ -1468,7 +1469,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
-                            onClick={() => onOpenDetailModal(cert)}
+                            onClick={(e) => { e.stopPropagation(); onOpenDetailModal(cert); }}
                             className="p-1.5 px-2.5 text-xs text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded font-medium transition-colors cursor-pointer"
                             title="상세 정보 보기"
                           >
@@ -1477,7 +1478,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                           {onOpenRenewalGuidance && (
                             <button
                               type="button"
-                              onClick={() => onOpenRenewalGuidance([cert])}
+                              onClick={(e) => { e.stopPropagation(); onOpenRenewalGuidance([cert]); }}
                               className={`p-1.5 px-2 text-xs rounded font-medium transition-colors cursor-pointer border flex items-center gap-1 ${
                                 cert.status === 'expiring' || cert.status === 'expired'
                                   ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
@@ -1491,7 +1492,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                           )}
                           <button
                             type="button"
-                            onClick={() => onQuickBackupSingle(cert)}
+                            onClick={(e) => { e.stopPropagation(); onQuickBackupSingle(cert); }}
                             className="p-1.5 px-2.5 text-xs text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded font-medium border border-blue-200 transition-colors cursor-pointer"
                             title="이 인증서만 단독 복사"
                           >
@@ -1499,7 +1500,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                           </button>
                           <button
                             type="button"
-                            onClick={() => onRequestDeleteSingle(cert)}
+                            onClick={(e) => { e.stopPropagation(); onRequestDeleteSingle(cert); }}
                             className="p-1.5 px-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer border border-transparent hover:border-rose-200"
                             title="이 인증서 영구 삭제"
                           >

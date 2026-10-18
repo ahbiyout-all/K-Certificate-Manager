@@ -97,3 +97,9 @@ K-인증서 매니저-시트.png
 # 9. Local Git Credentials and User Data
 *.credential
 *.credentials
+
+# 10. Local GitHub Push Scripts & Tools (원격 깃허브 업로드 제외 대상 - 로컬 전용)
+push_to_github.bat
+push_to_github.ps1
+tools/
+/tools/

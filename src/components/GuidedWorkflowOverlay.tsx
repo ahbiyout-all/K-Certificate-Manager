@@ -199,6 +199,15 @@ export const GuidedWorkflowOverlay: React.FC<GuidedWorkflowOverlayProps> = ({
 
             {/* Quick Helper Action Buttons inside Controller */}
             <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+              <button
+                type="button"
+                onClick={onCloseWorkflow}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-colors border border-slate-700 cursor-pointer"
+                title="가이드 모션 종료"
+              >
+                닫기
+              </button>
+
               {currentStep === 1 && isPcToUsb && (
                 <button
                   type="button"

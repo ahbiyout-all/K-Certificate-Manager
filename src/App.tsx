@@ -85,7 +85,7 @@ export default function App() {
   const [certificates, setCertificates] = useState<CertificateItem[]>(INITIAL_CERTIFICATES);
   const [searchPaths, setSearchPaths] = useState<SearchPath[]>(INITIAL_SEARCH_PATHS);
   const [availableDrives, setAvailableDrives] = useState<DiskDrive[]>(INITIAL_DRIVES);
-  const [selectedIds, setSelectedIds] = useState<string[]>(['cert-1', 'cert-2']);
+  const [selectedIds, setSelectedIds] = useState<string[]>(() => INITIAL_CERTIFICATES.map(c => c.id));
   const [explicitBackupCerts, setExplicitBackupCerts] = useState<CertificateItem[] | null>(null);
   const [selectedDriveId, setSelectedDriveId] = useState<string>('drive-e');
   const [activeNavTab, setActiveNavTab] = useState<'copy' | 'history' | 'paths' | 'security'>('copy');

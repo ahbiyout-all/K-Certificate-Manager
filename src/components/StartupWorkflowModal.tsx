@@ -200,17 +200,26 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
               <span>모든 복사 작업은 **SHA-256 바이트 무결성 대조**가 자동 수행됩니다.</span>
             </div>
 
-            {onToggleDontShowAgain && (
-              <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-700 select-none">
-                <input
-                  type="checkbox"
-                  checked={dontShowAgain}
-                  onChange={(e) => onToggleDontShowAgain(e.target.checked)}
-                  className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
-                />
-                <span>시작 시 이 안내창 다시 보지 않기</span>
-              </label>
-            )}
+            <div className="flex items-center gap-3">
+              {onToggleDontShowAgain && (
+                <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-700 select-none">
+                  <input
+                    type="checkbox"
+                    checked={dontShowAgain}
+                    onChange={(e) => onToggleDontShowAgain(e.target.checked)}
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
+                  />
+                  <span>시작 시 이 안내창 다시 보지 않기</span>
+                </label>
+              )}
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold transition-colors cursor-pointer shadow-2xs"
+              >
+                닫기
+              </button>
+            </div>
           </div>
         </div>
       </div>
