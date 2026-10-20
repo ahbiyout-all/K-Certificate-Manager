@@ -1601,10 +1601,43 @@ namespace KCertManager.Wpf.ViewModels
             }
             else
             {
+                var failedItems = _backupHistory.Take(selected.Count).Where(h => !h.IsSuccess).ToList();
+                var firstFailMsg = failedItems.FirstOrDefault()?.Message ?? string.Empty;
+
+                string errorCategoryTitle = "인증서 복사 오류 안내";
+                string detailedTip = "• 대상 디스크/USB의 남은 용량이 충분한지 확인해 주세요.\n• USB의 경우 '쓰기 금지(Lock)' 스위치가 꺼져 있는지 확인해 주세요.\n• 권한 문제가 지속될 경우 관리자 권한으로 실행해 보세요.";
+
+                if (firstFailMsg.IndexOf("write-protected", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    firstFailMsg.IndexOf("쓰기 금지", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    firstFailMsg.IndexOf("read-only", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    errorCategoryTitle = "USB 드라이브 쓰기 금지(Write-Protected) 감지";
+                    detailedTip = "1. USB 메모리 측면의 물리 LOCK 스위치를 UNLOCK 방향으로 전환하세요.\n" +
+                                  "2. Windows 파일 탐색기에서 대상 드라이브 속성 > [읽기 전용] 체크를 해제하세요.\n" +
+                                  "3. 관리자 권한 명령 프롬프트에서 diskpart 실행 후 attributes disk clear readonly를 수행하세요.\n" +
+                                  "4. 사내 보안 DLP(USB 쓰기 통제) 솔루션의 예외 승인을 요청하세요.";
+                }
+                else if (firstFailMsg.IndexOf("space", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         firstFailMsg.IndexOf("공간이 부족", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         firstFailMsg.IndexOf("disk full", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    errorCategoryTitle = "대상 디스크 저장 공간 부족 (Disk Full)";
+                    detailedTip = "1. 대상 드라이브의 휴지통을 비우거나 불필요한 대용량 파일을 정리하여 여유 공간을 확보하세요.\n" +
+                                  "2. 다른 충분한 여유 공간이 있는 USB 드라이브를 선택하여 복사하세요.";
+                }
+                else if (firstFailMsg.IndexOf("access", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         firstFailMsg.IndexOf("권한", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         firstFailMsg.IndexOf("denied", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    errorCategoryTitle = "드라이브 쓰기 권한 부족 (Permission Denied)";
+                    detailedTip = "1. 프로그램을 [관리자 권한으로 실행]해 보세요.\n" +
+                                  "2. 대상 폴더에 대한 쓰기 권한을 확인하고 보안 프로그램(DLP/백신)의 차단 여부를 점검하세요.";
+                }
+
                 UserFriendlyMessageHelper.ShowWarning(
-                    $"인증서 {selected.Count}개 중 {success}개 성공, {selected.Count - success}개 실패하였습니다.\n\n인증서 목록이 자동으로 새로고침되었습니다.",
-                    "인증서 복사 결과 안내",
-                    "• 대상 디스크/USB의 남은 용량이 충분한지 확인해 주세요.\n• USB의 경우 '쓰기 금지(Lock)' 스위치가 꺼져 있는지 확인해 주세요.\n• 권한 문제가 지속될 경우 관리자 권한으로 실행해 보세요.");
+                    $"인증서 {selected.Count}개 중 {success}개 성공, {selected.Count - success}개 복사 차단됨 ({targetDriveName}).\n\n[오류 원인 요약]\n{(string.IsNullOrEmpty(firstFailMsg) ? "드라이브 I/O 또는 쓰기 권한 오류" : firstFailMsg)}",
+                    errorCategoryTitle,
+                    detailedTip);
             }
         }
 

@@ -290,6 +290,49 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       return;
     }
 
+    // 디스크 공간 부족(Disk Full) 사전 검사
+    const freeSpaceStr = targetDrive.freeSpace || '';
+    const isZeroSpace = freeSpaceStr.startsWith('0 ') || freeSpaceStr.startsWith('0.0') || freeSpaceStr.includes('0 MB') || freeSpaceStr.includes('0 바이트');
+    if (isZeroSpace) {
+      setCopyErrorModalInfo({
+        title: '대상 디스크 저장 공간 부족 (Disk Full)',
+        summary: `${targetDrive.letter} (${targetDrive.name}) 드라이브의 여유 공간이 부족하여(${freeSpaceStr}) 인증서 파일(signCert.der / signPri.key)을 기록할 수 없습니다.`,
+        category: 'DISK_FULL',
+        solutions: [
+          '대상 드라이브의 휴지통을 비우거나 불필요한 파일을 정리하여 최소 10MB 이상의 여유 공간을 확보하세요.',
+          '다른 충분한 여유 공간이 있는 외장 드라이브 또는 USB를 선택하세요.',
+          '불필요한 구버전 인증서 또는 임시 백업 파일을 정리하세요.',
+        ],
+        driveLetter: targetDrive?.letter,
+        driveName: targetDrive?.name,
+        direction: 'PC_TO_USB',
+        failedCount: selectedCerts.length,
+        certNames: selectedCerts.map(c => c.name),
+        technicalDetail: `DiskError: E_DISK_FULL (0x80070070 - Not enough disk space. Free: ${freeSpaceStr})`,
+      });
+      return;
+    }
+
+    // 광학 미디어(CD/DVD-ROM) 쓰기 차단 검사
+    if (targetDrive.type === 'cdrom' || targetDrive.isCdRom) {
+      setCopyErrorModalInfo({
+        title: '광학 미디어(CD/DVD-ROM) 쓰기 불가 오류',
+        summary: `${targetDrive.letter} 드라이브는 읽기 전용 광학 미디어(CD/DVD-ROM)로 인식되어 파일을 직접 기록할 수 없습니다.`,
+        category: 'WRITE_PROTECTED',
+        solutions: [
+          '일반 USB 메모리 또는 외장 SSD를 컴퓨터에 연결한 후 다시 시도하세요.',
+          '컴퓨터의 쓰기 가능한 일반 로컬 디스크(D:\\ 등)를 선택하세요.',
+        ],
+        driveLetter: targetDrive?.letter,
+        driveName: targetDrive?.name,
+        direction: 'PC_TO_USB',
+        failedCount: selectedCerts.length,
+        certNames: selectedCerts.map(c => c.name),
+        technicalDetail: 'DeviceError: MEDIA_TYPE_OPTICAL_READONLY (0x80070013)',
+      });
+      return;
+    }
+
     setIsProcessing(true);
     setProgress(10);
     setCurrentAttempt(1);
@@ -1513,34 +1556,91 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                         <span>{simulateTransientError ? '⚡ 1회 오류 시뮬레이션 ON' : '재시도 시뮬레이션'}</span>
                       </button>
 
-                      {/* Error Modal Test Button */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCopyErrorModalInfo({
-                            title: 'USB 드라이브 쓰기 금지(Write-Protected) 감지',
-                            summary: `${targetDrive.letter} (${targetDrive.name}) 드라이브가 '쓰기 금지(Read-Only Lock)' 상태로 보호되어 있어 인증서 저장이 차단되었습니다.`,
-                            category: 'WRITE_PROTECTED',
-                            solutions: [
-                              'USB 메모리 측면의 물리 LOCK 스위치를 UNLOCK 방향으로 밀어주세요.',
-                              'Windows 파일 탐색기에서 대상 드라이브 우클릭 > [속성] > [읽기 전용] 체크를 해제하세요.',
-                              '관리자 권한 명령 프롬프트(cmd)에서 diskpart 실행 후 attributes disk clear readonly를 수행하세요.',
-                              '사내 보안 DLP(USB 쓰기 통제) 솔루션의 예외 승인을 요청하세요.',
-                            ],
-                            driveLetter: targetDrive.letter,
-                            driveName: targetDrive.name,
-                            direction: 'PC_TO_USB',
-                            failedCount: selectedCerts.length,
-                            certNames: selectedCerts.map(c => c.name),
-                            technicalDetail: 'DiskError: E_DISK_WRITE_PROTECTED (0x80070013 - The media is write protected)',
-                          });
-                        }}
-                        title="쓰기 금지 및 권한 오류 알림 모달을 시뮬레이션하여 안내창을 확인합니다."
-                        className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-800 transition-all shrink-0 cursor-pointer flex items-center gap-1.5 shadow-2xs"
-                      >
-                        <AlertOctagon className="w-3.5 h-3.5 text-rose-600" />
-                        <span>에러 알림 모달 테스트</span>
-                      </button>
+                      {/* Interactive Error Modal Simulator with distinct error categories */}
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCopyErrorModalInfo({
+                              title: 'USB 드라이브 쓰기 금지(Write-Protected) 감지',
+                              summary: `${targetDrive.letter} (${targetDrive.name}) 드라이브가 '쓰기 금지(Read-Only Lock)' 상태로 보호되어 있어 인증서 저장이 차단되었습니다.`,
+                              category: 'WRITE_PROTECTED',
+                              solutions: [
+                                'USB 메모리 측면의 물리 LOCK 스위치를 UNLOCK 방향으로 밀어주세요.',
+                                'Windows 파일 탐색기에서 대상 드라이브 우클릭 > [속성] > [읽기 전용] 체크를 해제하세요.',
+                                '관리자 권한 명령 프롬프트(cmd)에서 diskpart 실행 후 attributes disk clear readonly를 수행하세요.',
+                                '사내 보안 DLP(USB 쓰기 통제) 솔루션의 예외 승인을 요청하세요.',
+                              ],
+                              driveLetter: targetDrive.letter,
+                              driveName: targetDrive.name,
+                              direction: 'PC_TO_USB',
+                              failedCount: selectedCerts.length,
+                              certNames: selectedCerts.map(c => c.name),
+                              technicalDetail: 'DiskError: E_DISK_WRITE_PROTECTED (0x80070013 - The media is write protected)',
+                            });
+                          }}
+                          title="쓰기 금지(Write-Protected) 에러 알림 모달을 확인합니다."
+                          className="px-2 py-1.5 rounded-lg text-[10px] font-semibold border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-800 transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-2xs"
+                        >
+                          <Lock className="w-3 h-3 text-rose-600" />
+                          <span>🔒 쓰기금지</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCopyErrorModalInfo({
+                              title: '드라이브/폴더 파일 쓰기 권한 거부 (Permission Denied)',
+                              summary: `브라우저 보안 샌드박스 또는 Windows 운영체제 보안 정책으로 인해 ${targetDrive.letter} 드라이브 대상 폴더 생성 및 쓰기 권한이 거부되었습니다.`,
+                              category: 'PERMISSION_DENIED',
+                              solutions: [
+                                '웹 브라우저 주소창 좌측의 [사이트 설정] 아이콘을 누르고 [파일 수정 권한]을 "허용"으로 변경하세요.',
+                                '프로그램 또는 웹 브라우저를 [관리자 권한으로 실행]해 보세요.',
+                                '사내 보안 솔루션(DLP, 매체제어)이 USB 쓰기 권한을 차단하고 있는지 보안 관리팀에 확인하세요.',
+                                '다른 일반 저장 폴더 또는 다른 USB 드라이브를 선택하여 복사하세요.',
+                              ],
+                              driveLetter: targetDrive.letter,
+                              driveName: targetDrive.name,
+                              direction: 'PC_TO_USB',
+                              failedCount: selectedCerts.length,
+                              certNames: selectedCerts.map(c => c.name),
+                              technicalDetail: 'DOMException: NotAllowedError: The request is not allowed by the user agent or the platform in the current context.',
+                            });
+                          }}
+                          title="접근 권한 거부(Permission Denied) 에러 알림 모달을 확인합니다."
+                          className="px-2 py-1.5 rounded-lg text-[10px] font-semibold border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-2xs"
+                        >
+                          <ShieldAlert className="w-3 h-3 text-amber-600" />
+                          <span>🛡️ 권한거부</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCopyErrorModalInfo({
+                              title: '대상 디스크 저장 공간 부족 (Disk Full)',
+                              summary: `${targetDrive.letter} (${targetDrive.name}) 드라이브의 남은 용량이 부족하여 인증서 파일(signCert.der / signPri.key)을 기록할 수 없습니다.`,
+                              category: 'DISK_FULL',
+                              solutions: [
+                                '대상 드라이브의 휴지통을 비우거나 불필요한 파일을 정리하여 최소 10MB 이상의 여유 공간을 확보하세요.',
+                                '다른 충분한 여유 공간이 있는 USB 드라이브를 선택하여 복사하세요.',
+                                '불필요한 구버전 인증서 또는 임시 백업 파일을 정리하세요.',
+                              ],
+                              driveLetter: targetDrive.letter,
+                              driveName: targetDrive.name,
+                              direction: 'PC_TO_USB',
+                              failedCount: selectedCerts.length,
+                              certNames: selectedCerts.map(c => c.name),
+                              technicalDetail: 'DiskError: E_DISK_FULL (0x80070070 - There is not enough space on the disk. QuotaExceededError)',
+                            });
+                          }}
+                          title="저장 공간 부족(Disk Full) 에러 알림 모달을 확인합니다."
+                          className="px-2 py-1.5 rounded-lg text-[10px] font-semibold border border-orange-300 bg-orange-50 hover:bg-orange-100 text-orange-900 transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-2xs"
+                        >
+                          <HardDrive className="w-3 h-3 text-orange-600" />
+                          <span>💾 공간부족</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

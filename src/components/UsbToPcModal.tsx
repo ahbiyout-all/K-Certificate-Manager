@@ -917,16 +917,65 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
 
               {/* Error Message */}
               {errorMessage && (
-                <div className="p-3 bg-rose-50 text-rose-800 rounded-lg text-xs border border-rose-200 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>{errorMessage}</span>
+                <div className="p-3 bg-rose-50 text-rose-900 rounded-xl text-xs border border-rose-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span className="font-medium whitespace-pre-line">{errorMessage}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const errInfo = parseUserFriendlyError(new Error(errorMessage), '인증서 컴퓨터 복사');
+                      setCopyErrorModalInfo({
+                        title: errInfo.title,
+                        summary: errInfo.summary,
+                        category: errInfo.category,
+                        solutions: errInfo.solutions,
+                        technicalDetail: errInfo.technicalDetail || errorMessage,
+                        driveLetter: selectedUsbDrive !== 'ALL' ? `${selectedUsbDrive}:\\` : 'USB 이동식 매체',
+                        driveName: 'USB ➔ PC 로컬 저장소',
+                        direction: 'USB_TO_PC',
+                        failedCount: selectedCertIds.length,
+                        certNames: selectedCerts.map(c => c.name),
+                      });
+                    }}
+                    className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold shrink-0 text-[11px] cursor-pointer shadow-xs self-end sm:self-auto"
+                  >
+                    조치 가이드 보기
+                  </button>
                 </div>
               )}
 
               {/* Footer Actions */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200">
-                <div className="text-xs text-slate-500">
-                  * 무결성 SHA-256 자동 검증 및 연결 오류 시 최대 3회 자동 재시도가 적용됩니다.
+                <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
+                  <span>* 무결성 SHA-256 자동 검증 및 연결 오류 시 최대 3회 자동 재시도</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCopyErrorModalInfo({
+                        title: '컴퓨터 로컬 보관함 쓰기 권한 거부 (Permission Denied)',
+                        summary: `내 컴퓨터 C:\\Users\\${targetUsername}\\AppData\\LocalLow\\NPKI 폴더에 대한 파일 생성 및 쓰기 권한이 거부되었습니다.`,
+                        category: 'PERMISSION_DENIED',
+                        solutions: [
+                          '브라우저에서 [파일 시스템 권한] 허용 여부를 확인해 주세요.',
+                          'Windows 관리자 계정으로 로그인되어 있는지 확인해 주세요.',
+                          '사내 PC 보안 정책 또는 백신 프로그램(V3, 알약 등)의 실시간 감시가 AppData 쓰기를 차단하는지 확인해 주세요.',
+                          `C:\\Users\\${targetUsername}\\AppData\\LocalLow 폴더가 [읽기 전용]으로 잠겨 있지 않은지 확인해 주세요.`,
+                        ],
+                        driveLetter: 'C:\\',
+                        driveName: '내 컴퓨터 (로컬 C: 드라이브)',
+                        direction: 'USB_TO_PC',
+                        failedCount: selectedCertIds.length,
+                        certNames: selectedCerts.map(c => c.name),
+                        technicalDetail: 'DOMException: NotAllowedError: The request is not allowed by the user agent or platform context.',
+                      });
+                    }}
+                    className="text-[10px] text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-0.5 rounded cursor-pointer transition-colors font-medium"
+                    title="쓰기 권한 거부(Permission Denied) 알림 모달을 테스트합니다."
+                  >
+                    에러 알림 테스트
+                  </button>
                 </div>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto justify-end">

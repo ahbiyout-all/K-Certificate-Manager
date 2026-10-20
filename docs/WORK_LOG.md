@@ -17,6 +17,23 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 84] 인증서 복사 중 쓰기/권한 오류(Disk Full, Permission Denied 등) 대응 '복사 에러 경고 모달' 고도화 및 네이티브 WPF 동기화
+- **작업 일시**: 2026-10-20 09:26 KST
+- **요청 사항**: 인증서 복사 프로세스 중 드라이브 쓰기 오류(Disk Full, Permission Denied 등)가 발생할 경우, 사용자에게 정확한 오류 원인과 조치 방법을 안내하는 '복사 에러 경고 모달' 추가 및 강화.
+- **수행 내용**:
+  1. **복사 에러 경고 모달(`CopyErrorAlertModal.tsx`) 오류 카테고리별 정밀 대응**:
+     - 💾 **저장 공간 부족(Disk Full)**: 대상 디스크 잔여 용량 0 또는 부족 사전 감지 시 즉시 차단 및 휴지통 비우기/여유 공간 10MB 확보 가이드 팝업.
+     - 🛡️ **접근 권한 거부(Permission Denied)**: 브라우저 파일 수정 권한 허용 및 관리자 권한 실행 가이드 제공.
+     - 🔒 **쓰기 금지(Write-Protected)**: 물리 LOCK 스위치 해제 및 diskpart attributes clear readonly 안내.
+     - 🔌 **장치 연결 단절(I/O Disconnected)**: 케이블 접촉 상태 점검 및 본체 직접 연결 안내.
+     - 💿 **광학 미디어(CD/DVD-ROM) 쓰기 차단**: 읽기 전용 가상/물리 광학 드라이브 선택 시 쓰기 불가 사전 차단.
+  2. **모달 내 원클릭 에러 시뮬레이션 버튼 그룹 탑재**:
+     - `BackupModal.tsx` 스텝 2.2 영역에 `[🔒 쓰기금지]`, `[🛡️ 권한거부]`, `[💾 공간부족]` 전용 테스트 버튼을 배치하여 사용자가 언제든 각 에러 모달의 상세 디자인과 체크리스트를 확인 가능.
+  3. **USB ➔ PC 복사 모달(`UsbToPcModal.tsx`) 연동 강화**:
+     - 컴퓨터 로컬 폴더(`AppData\LocalLow`) 쓰기 실패 시 에러 배너 내 `[조치 가이드 보기]` 버튼 및 사전 테스트 버튼 연동.
+  4. **C# .NET WPF 네이티브 데스크톱 앱 동기화 (`MainViewModel.cs`)**:
+     - `ExecuteBackupWithConflictOptionAsync` 완료 시 오류 발생 건에 대해 `Disk Full`, `Write-Protected`, `Permission Denied`를 정밀 분류하여 번호순 단계별 해결 방법을 담은 커스텀 경고 대화상자 표시.
+
 ### 📝 [작업 차수 83] 자아성찰(Self-Reflection & Deep Audit) 전수 감사 및 프로젝트 버전·환경 정합성 완전 동기화
 - **작업 일시**: 2026-10-20 09:12 KST
 - **요청 사항**: 자아성찰(Self-Reflection & Deep Audit)을 통한 프로젝트 전반의 미비점, 불일치 및 품질 감사 수행.
