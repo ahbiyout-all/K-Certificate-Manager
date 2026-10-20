@@ -1,4 +1,4 @@
-﻿# ==============================================================================
+# ==============================================================================
 #  K-Certificate Manager (K-인증서 매니저) - PowerShell Unified Build Tool
 #  Developer: AhBiYout (GitHub: AhBiYout-all)
 #  Official Blog: https://ahbiyoutvibe.blogspot.com/
@@ -56,13 +56,13 @@ Write-Host " [OK] Node.js: $nodeVer, NPM: $npmVer" -ForegroundColor Green
 # ------------------------------------------------------------------------------
 Write-Host ""
 Write-Host "[2/7] package.json 버전 정보 확인 중..." -ForegroundColor Cyan
-$appVersion = "1.5.0"
+$appVersion = "1.6.2"
 if (Test-Path "$scriptDir\package.json") {
     try {
         $pkgJson = Get-Content "$scriptDir\package.json" -Raw | ConvertFrom-Json
         if ($pkgJson.version) { $appVersion = $pkgJson.version }
     } catch {
-        Write-Host " [NOTICE] package.json 파싱 실패. 기본 버전(1.5.0) 사용" -ForegroundColor Yellow
+        Write-Host " [NOTICE] package.json 파싱 실패. 기본 버전(1.6.2) 사용" -ForegroundColor Yellow
     }
 }
 Write-Host " [OK] 대상 버전: v$appVersion" -ForegroundColor Green

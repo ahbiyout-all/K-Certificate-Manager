@@ -7,8 +7,7 @@
 ## 📌 프로젝트 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v1.5.0` (Semantic Versioning: `1.5.0`)
+- **현재 버전**: `v1.6.2` (Semantic Versioning: `1.6.2`)
 - **개발자**: AhBiYout
 - **소속**: [http://www.cisnet.co.kr/](http://www.cisnet.co.kr/) (CISNet)
 - **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
@@ -22,12 +21,12 @@
 | 파일명 | 설명 |
 | :--- | :--- |
 | [`VERSIONING_POLICY.md`](./VERSIONING_POLICY.md) | **버전 관리 표준 정책**: SemVer 2.0.0 (MAJOR.MINOR.PATCH) 3단계 분류 및 코드 수정 시 동기화 체크리스트 |
-| [`PATCHNOTES.md`](./PATCHNOTES.md) | **버전 릴리스 패치노트**: v1.0.0부터 v1.5.0까지의 상세 기능 변경, 보안 패치 및 릴리스 히스토리 |
+| [`PATCHNOTES.md`](./PATCHNOTES.md) | **버전 릴리스 패치노트**: v1.0.0부터 v1.6.2까지의 상세 기능 변경, 보안 패치 및 릴리스 히스토리 |
 | [`BLOG_v1.5.0.md`](./BLOG_v1.5.0.md) | **공식 구글 블로그 배포 문서**: v1.5.0 공식 구글 블로그(Blogger) 게시용 10단계 표준 마크다운 원고 |
 | [`AI_INSTRUCTIONS.md`](../AI_INSTRUCTIONS.md) | **AI 개발 행동 강령 & 유지보수 가이드**: 자아검증 수칙, 듀얼 아키텍처, 보안 하드닝, 빌드/배포 자동화 파이프라인 명세 |
 | [`LICENSE.md`](./LICENSE.md) | **소프트웨어 라이선스 & 법적 고지**: 한국어(`LICENSE_KR.txt`)·영어(`LICENSE_EN.txt`) 2종 라이선스 정의, 무상 이용 조건 및 보증 부인 |
 | [`USER_GUIDE.md`](./USER_GUIDE.md) | **사용자 매뉴얼**: 모던 일체형 타이틀바, 4종 테마, 인증서 탐색, USB 백업, USB➔PC 복사, 만료/타인 정리 및 휴지통 가이드 |
-| [`BUILD_GUIDE.md`](./BUILD_GUIDE.md) | **빌드 및 배포 가이드**: .NET 10 / .NET 8 자동 감지 빌드(`build.bat`), Inno Setup 단일 설치파일(`kcert-manager-v1.5.0-setup.exe`), GitHub 업로드(`push_to_github.bat`) 안내 |
+| [`BUILD_GUIDE.md`](./BUILD_GUIDE.md) | **빌드 및 배포 가이드**: .NET 10 / .NET 8 자동 감지 빌드(`build.bat`), Inno Setup 단일 설치파일(`kcert-manager-v1.6.2-setup.exe`), GitHub 업로드(`push_to_github.bat`) 안내 |
 | [`AUTO_UPDATE_GUIDE.md`](./AUTO_UPDATE_GUIDE.md) | **자동 업데이트 가이드**: GitHub Releases REST API 기반 실시간 버전 확인, SemVer 비교, 커스텀 업데이트 알림 팝업창(`UpdateNotificationDialog`) 및 릴리스 배포 파이프라인 |
 | [`WPF_NATIVE_GUIDE.md`](./WPF_NATIVE_GUIDE.md) | **C# WPF 데스크톱 개발 가이드**: MVVM 아키텍처, 모던 일체형 타이틀바(`WindowChrome`), 드롭다운 테마 선택기, 4대 테마 시스템 안내 |
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | **시스템 아키텍처**: 인증서 파일 쌍 규격, 경로 매핑, 양방향 전송 파이프라인, 5대 서브시스템 및 7대 보안 하드닝 설계 원칙 |
@@ -76,4 +75,9 @@
     - `/SILENT` 및 `/VERYSILENT` 무인 설치 지원 및 기존 설치 감지 시 클린 설치/덮어쓰기 선택 대화상자 제공
 14. **GitHub Actions CI/CD 최신화 및 릴리스 배포 정제 (v1.5.0)**
     - Node.js 20 EOL 대응 최신 **Node.js 24** 런타임 적용 및 릴리스에 인스톨러(`release/07_Installer/*.exe`)만 단독 첨부 배포
+15. **인증서 복사 완료 알림음 볼륨 조절 및 환경 설정 패널 연동 (v1.6.1)**
+    - Web Audio API 기반 하모닉 완료음(Eb5-G5-C6)의 ON/OFF 토글, 0~100% 볼륨 조절 슬라이더, 소리 미리듣기 테스트 및 `localStorage` 영구 설정
+16. **드라이브 쓰기 오류 및 권한 문제 시 명확한 에러 알림 모달 구축 (v1.6.2)**
+    - USB 쓰기 금지(Write-Protected), 브라우저/시스템 파일 접근 권한 거부(Permission Denied), 저장 공간 부족(Disk Full), 장치 연결 해제(I/O 오류) 발생 시 전용 `CopyErrorAlertModal` 팝업
+    - 단계별 조치 체크리스트, 기술 진단 로그 원클릭 복사, `[🔄 다시 시도]`, `[📁 다른 드라이브 선택]` 지원
 

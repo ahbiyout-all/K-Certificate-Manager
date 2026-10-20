@@ -1152,7 +1152,7 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding AppVersion, TargetNullValue='v1.5.0', FallbackValue='v1.5.0'}" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding AppVersion, TargetNullValue='v1.6.2', FallbackValue='v1.6.2'}" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" Margin="0,0,8,0" VerticalAlignment="Center"/>
                     <TextBlock Text="|" FontSize="11" Foreground="{DynamicResource BorderBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                 </StackPanel>

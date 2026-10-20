@@ -7,7 +7,7 @@
 ## 📌 프로젝트 기본 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v1.5.0` (Semantic Versioning 2.0.0)
+- **현재 버전**: `v1.6.2` (Semantic Versioning 2.0.0)
 - **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
 - **구글 공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **공식 홈페이지**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr) ((주)씨아이에스넷 CISNet)
@@ -16,6 +16,58 @@
 ---
 
 ## 📅 작업 기록 상세 내역
+
+### 📝 [작업 차수 83] 자아성찰(Self-Reflection & Deep Audit) 전수 감사 및 프로젝트 버전·환경 정합성 완전 동기화
+- **작업 일시**: 2026-10-20 09:12 KST
+- **요청 사항**: 자아성찰(Self-Reflection & Deep Audit)을 통한 프로젝트 전반의 미비점, 불일치 및 품질 감사 수행.
+- **감사 결과 및 조치 내역**:
+  1. **Inno Setup 인스톨러 버전 불일치 교정 (`installer.iss`)**:
+     - 기존 `#define MyAppVersion "1.5.0"`으로 잔류하던 설치 스크립트 상수를 최신 `1.6.2`로 일괄 정규화.
+  2. **C# .NET WPF 데스크톱 솔루션 버전 전수 동기화 (`src-wpf`)**:
+     - `KCert.Core.csproj`: `<Version>1.6.2</Version>`, `<AssemblyVersion>1.6.2.0</AssemblyVersion>` 동기화.
+     - `KCertManager.Wpf.csproj`: `<Version>1.6.2</Version>`, `<AssemblyVersion>1.6.2.0</AssemblyVersion>` 동기화.
+     - `UpdateCheckerService.cs`: `CURRENT_VERSION = "1.6.2"` 및 `CurrentVersion/LatestVersion` 기본값 1.6.2 갱신.
+     - `MainWindow.xaml`: 상태바 FallbackValue 및 TargetNullValue `v1.6.2` 갱신.
+     - `UpdateNotificationDialog.xaml`: 최신 버전 뱃지 표시 `v1.6.2` 갱신.
+  3. **CI/CD 및 빌드 스크립트 기본값 동기화**:
+     - `.github/workflows/build.yml`: SemVer 폴백 기본값 `1.6.2` 갱신.
+     - `build.ps1`: 패키지 파싱 실패 시 폴백 기본값 `1.6.2` 갱신.
+  4. **문서군 전수 감사 및 중복 라인 교정 (`docs/README.md`, `docs/LICENSE.md`, `AI_INSTRUCTIONS.md`)**:
+     - `docs/README.md` 내 '소프트웨어 명칭' 중복 라인 제거 및 15, 16대 최신 기능 추가.
+     - `docs/LICENSE.md` 버전 표기 `v1.6.2` 일치화.
+     - 프로젝트 루트에 `AI_INSTRUCTIONS.md` 공식 지침서 영구 구축.
+
+### 📝 [작업 차수 82] 깃허브(GitHub) 버전 자동 연동 및 배포 스크립트(push_to_github.bat / ps1) 구축
+- **작업 일시**: 2026-10-20 09:02 KST
+- **요청 사항**: 깃허브에 코드를 푸시할 때, 계속 수정되어 변하는 버전 정보가 Git 커밋, 릴리스 태그, GitHub Actions와 함께 자동 연동되도록 구성.
+- **수행 내용**:
+  1. `push_to_github.bat` 및 `push_to_github.ps1` 구축: `package.json`의 버전(`v1.6.2`)을 동적으로 자동 추출하여 커밋 메시지, `git tag v1.6.2` 생성 및 강제 푸시를 원스톱으로 처리.
+  2. `.gitattributes`에 `*.bat text eol=crlf`, `*.ps1 text eol=crlf`, `*.iss text eol=crlf` 규칙 영구 적용하여 Windows 명령 프롬프트 개행 문자 오프셋 오류 방어.
+  3. GitHub Actions CI/CD(`.github/workflows/build.yml`)와 연계하여 푸시된 태그 버전으로 인스톨러(`kcert-manager-v1.6.2-setup.exe`) 자동 릴리스 배포 파이프라인 가동.
+
+### 📝 [작업 차수 81] 인증서 복사 중 드라이브 쓰기 오류 및 권한 문제 알림 모달 구축 (v1.6.2)
+- **작업 일시**: 2026-10-20 04:32 KST
+- **요청 사항**: 인증서 복사 중 드라이브 쓰기 오류나 권한 문제가 발생할 경우 사용자에게 명확히 알리는 에러 알림 모달 추가.
+- **수행 내용**:
+  1. **전용 에러 알림 모달 컴포넌트 신설 (`src/components/CopyErrorAlertModal.tsx`)**:
+     - 4대 핵심 오류 카테고리(쓰기 금지 `WRITE_PROTECTED`, 권한 부족 `PERMISSION_DENIED`, 용량 부족 `DISK_FULL`, 연결 해제 `DISCONNECTED`)별 전용 시각 배지 및 헤더 스타일링.
+     - 대상 드라이브(E:\ 등), 작업 방향(PC➔USB, USB➔PC), 실패 영향 인증서 건수 명확 노출.
+     - 단계별 조치 체크리스트(물리 Lock 해제, 브라우저 권한 허용, diskpart 속성 해제 등) 및 기술 진단 로그 원클릭 복사 기능 탑재.
+     - `[🔄 다시 시도]`, `[📁 다른 드라이브 선택]`, `[닫기]` 액션 지원.
+  2. **복사 엔진 및 모달 연동 (`BackupModal.tsx`, `UsbToPcModal.tsx`, `userFriendlyError.ts`)**:
+     - 쓰기 금지 드라이브 사전 감지 시 즉시 에러 알림 모달 팝업.
+     - 3회 자동 재시도 실패 및 예외 발생 시 에러 알림 모달 자동 호출.
+     - 백업 옵션 화면에 `[⚠️ 에러 알림 모달 테스트]` 버튼을 탑재하여 언제든 에러 화면 및 조치 가이드 사전 확인 지원.
+  3. 버전 `1.6.2` 패치 릴리스 적용.
+
+### 📝 [작업 차수 80] 인증서 복사 완료 알림음(SuccessChime) 제어 및 환경 설정 패널 연동 (v1.6.1)
+- **작업 일시**: 2026-10-20 04:00 KST
+- **요청 사항**: 인증서 복사 완료 알림음 제어 기능(ON/OFF 토글, 볼륨 조절 슬라이더, 미리듣기 테스트) 추가.
+- **수행 내용**:
+  1. `src/utils/audioFeedback.ts`: Web Audio API 하모닉 완료음의 실시간 마스터 볼륨 계수(`volume / 100`) 곱셈 연산 적용, ON/OFF 설정 상태 분기.
+  2. `src/components/SettingsModal.tsx`: 소리 켜기/끄기 토글 스위치, 0~100% 정밀 볼륨 슬라이더, `[소리 미리듣기]` 테스트 버튼, 볼륨 프리셋(무음, 30%, 70%, 100%) 제공.
+  3. 설정값을 브라우저 `localStorage`에 영구 보존하여 재접속 시에도 사용자 설정 유지.
+  4. 버전 `1.6.1` 마이너 릴리스 적용.
 
 ### 📝 [작업 차수 79] GitHub Actions 빌드 오류(CS0103, CS1061, CS8618) 해결 및 WPF 네이티브 컴파일 정합성 완료
 - **작업 일시**: 2026-10-17 17:08 KST
