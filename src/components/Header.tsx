@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ShieldCheck, HardDrive, RefreshCw, FileKey, Menu, Trash2, Tag, ArrowDownLeft, FileText, Scale, Cpu, Usb, Activity, Palette, Check, Monitor, Globe, Sparkles } from 'lucide-react';
+import { ShieldCheck, HardDrive, RefreshCw, FileKey, Menu, Trash2, Tag, ArrowDownLeft, FileText, Scale, Cpu, Usb, Activity, Palette, Check, Monitor, Globe, Sparkles, Sliders } from 'lucide-react';
 import { AppTheme } from '../types';
 import { THEME_OPTIONS } from '../data/themes';
 import { BRANDING_ASSETS } from '../data/brandingAssets';
@@ -32,6 +32,7 @@ interface HeaderProps {
   appViewMode?: 'simple' | 'advanced';
   onToggleAppViewMode?: (mode: 'simple' | 'advanced') => void;
   onOpenStartupWorkflow?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -61,6 +62,7 @@ export const Header: React.FC<HeaderProps> = ({
   appViewMode = 'simple',
   onToggleAppViewMode,
   onOpenStartupWorkflow,
+  onOpenSettings,
 }) => {
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const themeMenuRef = useRef<HTMLDivElement>(null);
@@ -333,6 +335,18 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
           </>
+        )}
+
+        {onOpenSettings && (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-700 hover:text-blue-600 rounded-md text-xs font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
+            title="환경 설정: 복사 성공 알림음(SuccessChime) ON/OFF, 볼륨 조절 슬라이더 및 앱 환경설정"
+          >
+            <Sliders className="w-3.5 h-3.5 text-slate-600" />
+            <span className="hidden sm:inline">설정</span>
+          </button>
         )}
 
         <button

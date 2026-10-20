@@ -33,10 +33,12 @@ import {
   Zap,
   RotateCw,
   Activity,
-  WifiOff
+  WifiOff,
+  AlertOctagon
 } from 'lucide-react';
 import { CertificateItem, DiskDrive } from '../types';
 import { BRANDING_ASSETS } from '../data/brandingAssets';
+import { CopyErrorAlertModal, CopyErrorContext } from './CopyErrorAlertModal';
 import { 
   copyCertificatesToDisk, 
   writeCertificatesToDirectoryHandle, 
@@ -112,6 +114,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const [simulateTransientError, setSimulateTransientError] = useState<boolean>(false);
   const [retryHistory, setRetryHistory] = useState<{ attempt: number; reason: string; delayMs: number }[]>([]);
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
+  const [copyErrorModalInfo, setCopyErrorModalInfo] = useState<CopyErrorContext | null>(null);
 
   // Sync drive selection when modal opens or available drives change
   useEffect(() => {
@@ -266,6 +269,27 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       return;
     }
 
+    if (isCurrentTargetLocked) {
+      setCopyErrorModalInfo({
+        title: 'USB 드라이브 쓰기 금지(Write-Protected) 감지',
+        summary: `${targetDrive.letter} (${targetDrive.name}) 드라이브가 '쓰기 금지(잠금)' 상태로 보호되어 있어 인증서를 복사할 수 없습니다.`,
+        category: 'WRITE_PROTECTED',
+        solutions: [
+          'USB 메모리 측면의 물리 LOCK 스위치가 잠금 위치인지 확인하고 UNLOCK으로 전환하세요.',
+          '윈도우 탐색기에서 USB 드라이브 우클릭 ➔ [속성] ➔ [읽기 전용] 체크를 해제하세요.',
+          '사내 보안 DLP(USB 쓰기 차단) 소프트웨어 사용 시 관리자에게 쓰기 권한 승인을 요청하세요.',
+          '다른 잠기지 않은 정상 USB 드라이브를 선택하여 복사하세요.',
+        ],
+        driveLetter: targetDrive?.letter,
+        driveName: targetDrive?.name,
+        direction: 'PC_TO_USB',
+        failedCount: selectedCerts.length,
+        certNames: selectedCerts.map(c => c.name),
+        technicalDetail: writeProtectionError?.message || 'Drive status: WRITE_PROTECTED',
+      });
+      return;
+    }
+
     setIsProcessing(true);
     setProgress(10);
     setCurrentAttempt(1);
@@ -415,11 +439,35 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           `[조치 가이드] ${errorDetail.actionTip.replace(/\n/g, ' ')}`,
         ]);
         setDirectWriteError(errorDetail.fullDisplay);
+        setCopyErrorModalInfo({
+          title: errorDetail.title,
+          summary: errorDetail.summary,
+          category: errorDetail.category,
+          solutions: errorDetail.solutions,
+          technicalDetail: errorDetail.technicalDetail || errorDetail.fullDisplay,
+          driveLetter: targetDrive?.letter,
+          driveName: targetDrive?.name,
+          direction: 'PC_TO_USB',
+          failedCount: selectedCerts.length - skippedCertIds.length,
+          certNames: selectedCerts.map(c => c.name),
+        });
       }
     } catch (err: any) {
       const errorDetail = parseUserFriendlyError(err, 'USB 인증서 백업');
       setLogs(prev => [...prev, `[오류 발생] ${errorDetail.summary}`]);
       setDirectWriteError(errorDetail.fullDisplay);
+      setCopyErrorModalInfo({
+        title: errorDetail.title,
+        summary: errorDetail.summary,
+        category: errorDetail.category,
+        solutions: errorDetail.solutions,
+        technicalDetail: errorDetail.technicalDetail || errorDetail.fullDisplay,
+        driveLetter: targetDrive?.letter,
+        driveName: targetDrive?.name,
+        direction: 'PC_TO_USB',
+        failedCount: selectedCerts.length - skippedCertIds.length,
+        certNames: selectedCerts.map(c => c.name),
+      });
     } finally {
       setIsProcessing(false);
       setIsRetrying(false);
@@ -435,6 +483,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     setLogs([]);
     setWriteProtectionError(null);
     setDirectWriteError(null);
+    setCopyErrorModalInfo(null);
     setShowDuplicateModal(false);
     setCurrentAttempt(1);
     setIsRetrying(false);
@@ -1448,20 +1497,51 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Transient simulation toggle button for testing */}
-                    <button
-                      type="button"
-                      onClick={() => setSimulateTransientError(!simulateTransientError)}
-                      title="1회 I/O 지연 발생 후 2회차에 자동 복구되는 시나리오를 테스트합니다."
-                      className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
-                        simulateTransientError
-                          ? 'bg-amber-100 text-amber-900 border-amber-300 ring-2 ring-amber-400/30 font-bold'
-                          : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
-                      }`}
-                    >
-                      <RotateCw className={`w-3 h-3 ${simulateTransientError ? 'text-amber-700 animate-spin' : 'text-slate-500'}`} />
-                      <span>{simulateTransientError ? '⚡ 1회 오류 시뮬레이션 ON' : '재시도 테스트 시뮬레이션'}</span>
-                    </button>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {/* Transient simulation toggle button for testing */}
+                      <button
+                        type="button"
+                        onClick={() => setSimulateTransientError(!simulateTransientError)}
+                        title="1회 I/O 지연 발생 후 2회차에 자동 복구되는 시나리오를 테스트합니다."
+                        className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                          simulateTransientError
+                            ? 'bg-amber-100 text-amber-900 border-amber-300 ring-2 ring-amber-400/30 font-bold'
+                            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                        }`}
+                      >
+                        <RotateCw className={`w-3 h-3 ${simulateTransientError ? 'text-amber-700 animate-spin' : 'text-slate-500'}`} />
+                        <span>{simulateTransientError ? '⚡ 1회 오류 시뮬레이션 ON' : '재시도 시뮬레이션'}</span>
+                      </button>
+
+                      {/* Error Modal Test Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCopyErrorModalInfo({
+                            title: 'USB 드라이브 쓰기 금지(Write-Protected) 감지',
+                            summary: `${targetDrive.letter} (${targetDrive.name}) 드라이브가 '쓰기 금지(Read-Only Lock)' 상태로 보호되어 있어 인증서 저장이 차단되었습니다.`,
+                            category: 'WRITE_PROTECTED',
+                            solutions: [
+                              'USB 메모리 측면의 물리 LOCK 스위치를 UNLOCK 방향으로 밀어주세요.',
+                              'Windows 파일 탐색기에서 대상 드라이브 우클릭 > [속성] > [읽기 전용] 체크를 해제하세요.',
+                              '관리자 권한 명령 프롬프트(cmd)에서 diskpart 실행 후 attributes disk clear readonly를 수행하세요.',
+                              '사내 보안 DLP(USB 쓰기 통제) 솔루션의 예외 승인을 요청하세요.',
+                            ],
+                            driveLetter: targetDrive.letter,
+                            driveName: targetDrive.name,
+                            direction: 'PC_TO_USB',
+                            failedCount: selectedCerts.length,
+                            certNames: selectedCerts.map(c => c.name),
+                            technicalDetail: 'DiskError: E_DISK_WRITE_PROTECTED (0x80070013 - The media is write protected)',
+                          });
+                        }}
+                        title="쓰기 금지 및 권한 오류 알림 모달을 시뮬레이션하여 안내창을 확인합니다."
+                        className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-800 transition-all shrink-0 cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                      >
+                        <AlertOctagon className="w-3.5 h-3.5 text-rose-600" />
+                        <span>에러 알림 모달 테스트</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1609,6 +1689,21 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* Drive Write Error & Permission Alert Modal */}
+      <CopyErrorAlertModal
+        isOpen={!!copyErrorModalInfo}
+        onClose={() => setCopyErrorModalInfo(null)}
+        errorInfo={copyErrorModalInfo}
+        onRetry={() => {
+          setCopyErrorModalInfo(null);
+          handleStartBackup(false);
+        }}
+        onChangeTargetDrive={() => {
+          setCopyErrorModalInfo(null);
+          handleReset();
+        }}
+      />
     </div>
   );
 };

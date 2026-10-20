@@ -34,6 +34,7 @@ import {
 import { formatUserErrorMessage, parseUserFriendlyError } from '../utils/userFriendlyError';
 import { playSuccessChime } from '../utils/audioFeedback';
 import { SuccessCelebration } from './SuccessCelebration';
+import { CopyErrorAlertModal, CopyErrorContext } from './CopyErrorAlertModal';
 
 interface UsbToPcModalProps {
   isOpen: boolean;
@@ -70,6 +71,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
   const [importResult, setImportResult] = useState<UsbImportResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [copyErrorModalInfo, setCopyErrorModalInfo] = useState<CopyErrorContext | null>(null);
 
   // Analyze all connected removable drives and sort with priority (drives with certs first)
   const usbDrivesWithStats = useMemo(() => {
@@ -256,7 +258,20 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
         `${certsToCopy.length}명의 인증서가 내 컴퓨터(C:\\Users\\${targetUsername}\\AppData\\LocalLow)로 안전하게 복사되었습니다.`
       );
     } catch (err: any) {
-      setErrorMessage(formatUserErrorMessage(err, '인증서 컴퓨터 복사'));
+      const errInfo = parseUserFriendlyError(err, '인증서 컴퓨터 복사');
+      setErrorMessage(errInfo.fullDisplay);
+      setCopyErrorModalInfo({
+        title: errInfo.title,
+        summary: errInfo.summary,
+        category: errInfo.category,
+        solutions: errInfo.solutions,
+        technicalDetail: errInfo.technicalDetail || errInfo.fullDisplay,
+        driveLetter: selectedUsbDrive !== 'ALL' ? `${selectedUsbDrive}:\\` : 'USB 이동식 매체',
+        driveName: 'USB 드라이브 ➔ PC 로컬 저장소',
+        direction: 'USB_TO_PC',
+        failedCount: certsToCopy.length,
+        certNames: certsToCopy.map(c => c.name),
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -268,6 +283,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
     setProgress(0);
     setLogs([]);
     setErrorMessage(null);
+    setCopyErrorModalInfo(null);
     const initialUsb = getAvailableUsbCertificates(availableDrives);
     setDetectedCerts(initialUsb);
     setSelectedCertIds(initialUsb.map(c => c.id));
@@ -947,6 +963,17 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* Drive Write Error & Permission Alert Modal */}
+      <CopyErrorAlertModal
+        isOpen={!!copyErrorModalInfo}
+        onClose={() => setCopyErrorModalInfo(null)}
+        errorInfo={copyErrorModalInfo}
+        onRetry={() => {
+          setCopyErrorModalInfo(null);
+          handleStartImport();
+        }}
+      />
     </div>
   );
 };

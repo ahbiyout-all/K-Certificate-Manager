@@ -50,6 +50,7 @@ interface SidebarProps {
   appViewMode?: 'simple' | 'advanced';
   onToggleAppViewMode?: (mode: 'simple' | 'advanced') => void;
   onOpenStartupWorkflow?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -82,6 +83,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   appViewMode = 'simple',
   onToggleAppViewMode,
   onOpenStartupWorkflow,
+  onOpenSettings,
 }) => {
   return (
     <aside className="w-64 bg-[#1e293b] text-white flex flex-col shrink-0 border-r border-slate-800">
@@ -389,6 +391,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className="mr-3 opacity-90 text-base">📋</span>
           <span>보안 수칙 가이드</span>
         </button>
+
+        {onOpenSettings && (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer text-left group"
+          >
+            <span className="mr-3 opacity-90 text-base">⚙️</span>
+            <span className="flex-1">환경 설정 (소리·옵션)</span>
+            <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-400/30 rounded font-semibold">
+              알림음/볼륨
+            </span>
+          </button>
+        )}
       </nav>
 
       {/* Quick Status Block in Sidebar */}

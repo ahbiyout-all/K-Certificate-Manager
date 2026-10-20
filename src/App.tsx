@@ -44,6 +44,7 @@ import { RenewalGuidanceModal } from './components/RenewalGuidanceModal';
 import { UpdateModal } from './components/UpdateModal';
 import { StartupWorkflowModal, WorkflowType } from './components/StartupWorkflowModal';
 import { GuidedWorkflowOverlay } from './components/GuidedWorkflowOverlay';
+import { SettingsModal } from './components/SettingsModal';
 import { checkForAppUpdates, UpdateInfo } from './utils/updateChecker';
 import { playSuccessChime } from './utils/audioFeedback';
 import { 
@@ -116,6 +117,7 @@ export default function App() {
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isStartupWorkflowOpen, setIsStartupWorkflowOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [dontShowStartupAgain, setDontShowStartupAgain] = useState<boolean>(() => {
     try {
       return localStorage.getItem('kcert_dont_show_startup_modal') === 'true';
@@ -1059,6 +1061,7 @@ export default function App() {
           appViewMode={appViewMode}
           onToggleAppViewMode={handleToggleAppViewMode}
           onOpenStartupWorkflow={() => setIsStartupWorkflowOpen(true)}
+          onOpenSettings={() => setIsSettingsModalOpen(true)}
         />
       </div>
 
@@ -1148,6 +1151,10 @@ export default function App() {
                 setIsMobileSidebarOpen(false);
                 setIsStartupWorkflowOpen(true);
               }}
+              onOpenSettings={() => {
+                setIsMobileSidebarOpen(false);
+                setIsSettingsModalOpen(true);
+              }}
             />
           </div>
         </div>
@@ -1183,6 +1190,7 @@ export default function App() {
           appViewMode={appViewMode}
           onToggleAppViewMode={handleToggleAppViewMode}
           onOpenStartupWorkflow={() => setIsStartupWorkflowOpen(true)}
+          onOpenSettings={() => setIsSettingsModalOpen(true)}
         />
 
         {/* Content Body */}
@@ -1595,6 +1603,18 @@ export default function App() {
         onOpenBackupModal={() => handleOpenGeneralBackupModal()}
         onOpenUsbToPcModal={() => setIsUsbToPcModalOpen(true)}
         onSelectAllCerts={handleSelectAll}
+      />
+
+      {/* Environment & Sound Settings Modal (SuccessChime ON/OFF & Volume Slider) */}
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        theme={currentTheme}
+        onThemeChange={handleThemeChange}
+        appViewMode={appViewMode}
+        onToggleAppViewMode={handleToggleAppViewMode}
+        dontShowStartupAgain={dontShowStartupAgain}
+        onToggleDontShowStartupAgain={handleToggleDontShowStartupAgain}
       />
     </div>
   );
