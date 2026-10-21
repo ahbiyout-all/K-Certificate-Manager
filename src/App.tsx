@@ -141,15 +141,18 @@ export default function App() {
     setActiveWorkflow(type);
 
     if (type === 'pc_to_usb') {
-      const pcCertIds = certificates.filter(c => !c.isRemovableMedia).map(c => c.id);
+      const pcCerts = certificates.filter(c => !c.isRemovableMedia);
+      const pcCertIds = pcCerts.map(c => c.id);
       if (pcCertIds.length > 0) {
         setSelectedIds(pcCertIds);
-        showToast(`💻 [PC ➔ USB 가이드 모션 실행] PC에 보관된 복사 원본 인증서 ${pcCertIds.length}개가 모두 선택되었습니다.`);
+        showToast(`💻 [PC ➔ USB 복사하기] PC에 보관된 인증서 ${pcCertIds.length}개가 선택되어 복사 마법사 창이 실행되었습니다.`);
       } else {
-        showToast('💻 [PC ➔ USB 가이드 모션 실행] 1단계: 컴퓨터에 보관된 인증서를 선택하세요.');
+        showToast('💻 [PC ➔ USB 복사하기] 컴퓨터 인증서 복사 마법사 창이 실행되었습니다.');
       }
+      // USB ➔ PC 가져오기와 동일한 창(모달) 형식으로 PC ➔ USB 백업 마법사 창 직접 실행
+      handleOpenGeneralBackupModal(undefined, pcCerts.length > 0 ? pcCerts : undefined);
     } else if (type === 'usb_to_pc') {
-      showToast('💾 [USB ➔ PC 가이드 모션 실행] 1단계: 연결된 USB 메모리의 인증서를 선택하세요.');
+      showToast('💾 [USB ➔ PC 가져오기] 연결된 USB 메모리의 인증서를 컴퓨터로 복사하는 창이 실행되었습니다.');
       setIsUsbToPcModalOpen(true);
     } else if (type === 'dashboard') {
       showToast('🏠 전체 인증서 관리 대시보드로 이동했습니다.');

@@ -7,7 +7,7 @@
 ## 📌 프로젝트 기본 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v1.6.2` (Semantic Versioning 2.0.0)
+- **현재 버전**: `v1.6.3` (Semantic Versioning 2.0.0)
 - **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
 - **구글 공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **공식 홈페이지**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr) ((주)씨아이에스넷 CISNet)
@@ -16,6 +16,25 @@
 ---
 
 ## 📅 작업 기록 상세 내역
+
+### 📝 [작업 차수 85] 상세 사이드바 닫힘 시 목록창 가로 반응형 자동 확장 및 시작가이드 PC➔USB 복사 창 형식 통일
+- **작업 일시**: 2026-10-21 17:10 KST
+- **요청 사항**:
+  1. 상세 사이드바를 닫으면 빈칸을 인증서 보관함 목록창이 가로로 늘어나서 채워주도록 개선.
+  2. 시작가이드에서 PC ➔ USB 복사하기를 USB ➔ PC 가져오기와 동일한 창(대화상자) 형식을 사용하도록 통일.
+- **수행 내용**:
+  1. **인증서 보관함 목록창(DataGrid) 가로 전체 확장 및 빈칸 해소 (`MainWindow.xaml`, `MainWindow.xaml.cs`)**:
+     - `ColDetailSidebar`에 인라인 고정되어 있던 너비 속성(`Width="410" MinWidth="300" MaxWidth="680"`)을 분리하고, 스타일 트리거 및 코드 비하인드(`UpdateDetailSidebarColumn`)에서 닫힘 상태 시 `Width=0`, `MinWidth=0`, `MaxWidth=0`으로 완벽 수축 처리.
+     - `CertDataGrid`의 `인증서 명칭 (CN) 및 경로 상태` 컬럼을 고정 너비(`360`)에서 스타 너비(`Width="*" MinWidth="340"`)로 전환하여, 상세 사이드바가 닫히거나 창 크기가 늘어날 때 목록창이 100% 가로로 유연하게 늘어나 빈칸 없이 전체 영역을 꽉 채우도록 개선.
+  2. **시작가이드 PC ➔ USB 복사하기 전용 대화창 구축 및 UI 형식 통일 (`PcToUsbTransferDialog.xaml`, `PcToUsbTransferDialog.xaml.cs`, `PcToUsbTransferViewModel.cs`, `MainViewModel.cs`)**:
+     - 기존 `TargetDrivePickerDialog`(단순 드라이브 선택 카드) 대신, `UsbTransferDialog`와 100% 동일한 격조 높은 창 규격(820x640) 및 구조를 가진 `PcToUsbTransferDialog` 신설.
+     - **상단**: 💻 헤더 및 상세 설명 배너.
+     - **중단 1**: 대상 USB 메모리 선택 콤보박스 및 `[🔄 드라이브 갱신]` 버튼.
+     - **중단 2**: PC 보관 인증서 목록 DataGrid (선택 체크박스, 구분, 인증서명, 발급기관, 만료일) 탑재 및 미연결 시 친절한 USB 안내 배너 제공.
+     - **하단 1**: 스마트 덮어쓰기 / 날짜 백업본 보존 / 건너뛰기 라디오버튼 그룹.
+     - **하단 2**: 실시간 저장 위치 안내 및 `[선택한 인증서 USB로 복사 시작]` 버튼 일체화.
+  3. **빌드 및 린트 검증**:
+     - `compile_applet` 및 `lint_applet` 무결성 검증 통과.
 
 ### 📝 [작업 차수 84] 인증서 복사 중 쓰기/권한 오류(Disk Full, Permission Denied 등) 대응 '복사 에러 경고 모달' 고도화 및 네이티브 WPF 동기화
 - **작업 일시**: 2026-10-20 09:26 KST

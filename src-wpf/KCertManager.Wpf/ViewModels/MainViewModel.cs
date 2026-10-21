@@ -409,8 +409,8 @@ namespace KCertManager.Wpf.ViewModels
             if (GuidedWorkflowType == "pc_to_usb")
             {
                 GuidedWorkflowTitle = "🚀 시작가이드: PC ➔ USB 백업";
-                GuidedWorkflowStepTitle = "1단계: 복사할 PC 인증서 선택";
-                GuidedWorkflowStepDescription = "목록에서 USB로 복사할 인증서를 클릭하거나 체크박스를 선택하세요. [다음: USB 복사 진행 ➔]을 클릭하시면 복사 창이 열립니다.";
+                GuidedWorkflowStepTitle = "1단계: 복사할 PC 인증서 선택 및 대상 USB 지정";
+                GuidedWorkflowStepDescription = "컴퓨터에 보관된 공인인증서를 USB 메모리로 안전하게 복사/백업하는 대화창을 실행합니다.";
 
                 // PC 로컬 보관 인증서(복사 원본) 전체 자동 선택 체크
                 var pcCerts = FilteredCertificates.Where(c => !c.IsRemovableMedia).ToList();
@@ -422,7 +422,6 @@ namespace KCertManager.Wpf.ViewModels
                         c.IsSelected = !c.IsRemovableMedia;
                     }
                     SelectedCertificate = pcCerts.FirstOrDefault(c => c.Status != ExpiryStatus.Expired) ?? pcCerts.First();
-                    GuidedWorkflowStepDescription = $"PC에 보관된 복사 원본 인증서 {pcCerts.Count}개가 모두 선택되었습니다. [대상 USB로 복사 시작 ➔]을 클릭하시면 즉시 복사 창이 열립니다.";
                 }
                 else if (FilteredCertificates.Any())
                 {
@@ -434,6 +433,23 @@ namespace KCertManager.Wpf.ViewModels
                 }
                 OnPropertyChanged(nameof(SelectedCertificatesCount));
                 (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
+
+                // USB ➔ PC 가져오기와 동일한 모달 대화창 형식으로 PC ➔ USB 복사창 직접 실행
+                Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    var targets = FilteredCertificates.Where(c => c.IsSelected).ToList();
+                    if (!targets.Any())
+                    {
+                        targets = pcCerts.Any() ? pcCerts : FilteredCertificates.ToList();
+                    }
+                    var dlg = new Views.PcToUsbTransferDialog(this, targets)
+                    {
+                        Owner = Application.Current?.MainWindow
+                    };
+                    dlg.ShowDialog();
+                    RefreshAll();
+                });
+                IsGuidedWorkflowActive = false;
             }
             else
             {

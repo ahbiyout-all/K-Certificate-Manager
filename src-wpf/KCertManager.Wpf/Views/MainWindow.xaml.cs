@@ -145,6 +145,7 @@ namespace KCertManager.Wpf.Views
         }
 
         private MainViewModel? ViewModel => DataContext as MainViewModel;
+        private GridLength _savedSidebarWidth = new GridLength(410);
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
@@ -156,6 +157,17 @@ namespace KCertManager.Wpf.Views
 
                 if (ViewModel != null)
                 {
+                    ViewModel.PropertyChanged += (s, args) =>
+                    {
+                        if (args.PropertyName == nameof(MainViewModel.IsCertificateDetailSidebarVisible))
+                        {
+                            Dispatcher.Invoke(() => UpdateDetailSidebarColumn(ViewModel.IsCertificateDetailSidebarVisible));
+                        }
+                    };
+
+                    // Initial state sync
+                    UpdateDetailSidebarColumn(ViewModel.IsCertificateDetailSidebarVisible);
+
                     ViewModel.RequestOpenTargetDrivePicker += (targets) =>
                     {
                         Dispatcher.Invoke(() => OpenTargetDrivePickerForCertificates(targets));
@@ -165,6 +177,31 @@ namespace KCertManager.Wpf.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[HwndSource Hook Error] {ex.Message}");
+            }
+        }
+
+        private void UpdateDetailSidebarColumn(bool isVisible)
+        {
+            if (ColDetailSidebar == null || ColSplitter == null) return;
+
+            if (!isVisible)
+            {
+                // Save current width before collapsing if valid
+                if (ColDetailSidebar.Width.Value > 50)
+                {
+                    _savedSidebarWidth = ColDetailSidebar.Width;
+                }
+                ColDetailSidebar.MinWidth = 0;
+                ColDetailSidebar.MaxWidth = 0;
+                ColDetailSidebar.Width = new GridLength(0);
+                ColSplitter.Width = new GridLength(0);
+            }
+            else
+            {
+                ColDetailSidebar.MinWidth = 300;
+                ColDetailSidebar.MaxWidth = 680;
+                ColDetailSidebar.Width = _savedSidebarWidth.Value >= 300 ? _savedSidebarWidth : new GridLength(410);
+                ColSplitter.Width = GridLength.Auto;
             }
         }
 

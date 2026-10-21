@@ -599,9 +599,35 @@
                 <!-- Row 2: DataGrid Certificate List & Certificate Details Sidebar (With Horizontal & Vertical Scrollbars) -->
                 <Grid Grid.Row="2">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" MinWidth="380"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="410" MinWidth="300" MaxWidth="680"/>
+                        <ColumnDefinition x:Name="ColDataGrid" Width="*" MinWidth="380"/>
+                        <ColumnDefinition x:Name="ColSplitter" Width="Auto">
+                            <ColumnDefinition.Style>
+                                <Style TargetType="ColumnDefinition">
+                                    <Setter Property="Width" Value="Auto"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCertificateDetailSidebarVisible}" Value="False">
+                                            <Setter Property="Width" Value="0"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ColumnDefinition.Style>
+                        </ColumnDefinition>
+                        <ColumnDefinition x:Name="ColDetailSidebar">
+                            <ColumnDefinition.Style>
+                                <Style TargetType="ColumnDefinition">
+                                    <Setter Property="Width" Value="410"/>
+                                    <Setter Property="MinWidth" Value="300"/>
+                                    <Setter Property="MaxWidth" Value="680"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCertificateDetailSidebarVisible}" Value="False">
+                                            <Setter Property="Width" Value="0"/>
+                                            <Setter Property="MinWidth" Value="0"/>
+                                            <Setter Property="MaxWidth" Value="0"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ColumnDefinition.Style>
+                        </ColumnDefinition>
                     </Grid.ColumnDefinitions>
 
                     <!-- Column 0: Main Certificate DataGrid (With Native Horizontal & Vertical Scrollbars) -->
@@ -743,7 +769,7 @@
                                 </DataGridTemplateColumn>
 
                                 <!-- CN / Name -->
-                                <DataGridTemplateColumn Header="인증서 명칭 (CN) 및 경로 상태" Width="360" SortMemberPath="CommonName" CanUserSort="True">
+                                <DataGridTemplateColumn Header="인증서 명칭 (CN) 및 경로 상태" Width="*" MinWidth="340" SortMemberPath="CommonName" CanUserSort="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel VerticalAlignment="Center">
@@ -1152,7 +1178,7 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding AppVersion, TargetNullValue='v1.6.2', FallbackValue='v1.6.2'}" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding AppVersion, TargetNullValue='v1.6.3', FallbackValue='v1.6.3'}" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" Margin="0,0,8,0" VerticalAlignment="Center"/>
                     <TextBlock Text="|" FontSize="11" Foreground="{DynamicResource BorderBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                 </StackPanel>

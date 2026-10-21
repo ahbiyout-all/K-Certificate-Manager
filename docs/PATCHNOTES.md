@@ -16,6 +16,16 @@
 
 ## 📋 버전 릴리스 내역
 
+### 🚀 [v1.6.3] - 2026-10-21
+**변경 구분**: `PATCH` (상세 사이드바 닫힘 시 목록창 가로 반응형 자동 확장 및 시작가이드 PC➔USB 복사 창 형식 통일)
+#### ✨ 주요 개선 및 신규 기능 (Improvements & Features)
+- **인증서 보관함 목록창(DataGrid) 가로 전체 확장 및 여백(빈칸) 자동 채움 (`MainWindow.xaml`, `MainWindow.xaml.cs`)**:
+  - 상세 정보 사이드바를 닫았을 때 발생하는 우측 빈 공간(빈칸)을 목록창이 가로로 자연스럽게 늘어나 채우도록 `ColDetailSidebar`의 너비/최대너비/최소너비 축소 로직 정규화.
+  - `CertDataGrid`의 `인증서 명칭 (CN) 및 경로 상태` 컬럼에 `Width="*" MinWidth="340"`을 적용하여 창 너비 변화 및 사이드바 개폐에 맞춰 DataGrid 행 전체가 100% 가로 너비로 균등 확장되도록 지원.
+- **시작가이드 PC ➔ USB 복사하기 전용 대화창 구축 및 USB ➔ PC와 창 형식 일체화 (`PcToUsbTransferDialog.xaml`, `PcToUsbTransferViewModel.cs`)**:
+  - `UsbTransferDialog`와 100% 동일한 대화상자 규격(820x640)과 레이아웃(헤더, 대상 USB 메모리 선택 콤보박스 및 갱신 버튼, PC 인증서 선택 DataGrid, 중복 처리 옵션 라디오버튼 그룹, 하단 실시간 상태바 및 원클릭 복사 시작 버튼)을 갖춘 전용 `PcToUsbTransferDialog` 신설.
+  - 시작가이드에서 'PC ➔ USB 복사하기' 선택 시 해당 대화창이 직관적으로 실행되어 일관된 사용자 경험 제공.
+
 ### 🚀 [v1.6.2] - 2026-10-20
 **변경 구분**: `PATCH` (드라이브 쓰기 오류 및 권한 문제 시 명확한 에러 알림 모달 추가)
 #### ✨ 주요 개선 및 신규 기능 (Improvements & Features)

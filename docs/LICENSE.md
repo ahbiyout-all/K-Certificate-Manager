@@ -1,7 +1,7 @@
 # K-인증서 매니저 소프트웨어 라이선스 (Software License & Legal Notice)
 
 **소프트웨어 명칭 (Product Name)**: K-Certificate Manager (K-인증서 매니저)  
-**버전 (Version)**: `v1.6.2`  
+**버전 (Version)**: `v1.6.3`  
 **라이선스 정의 언어 (License Languages)**: 한국어 (Korean) / 영어 (English) 2종 지원  
 **저작권 (Copyright)**: Copyright (c) 2026 AhBiYout. All rights reserved.  
 **개발자 (Developer)**: AhBiYout (GitHub: [https://github.com/AhBiYout-all](https://github.com/AhBiYout-all))  
