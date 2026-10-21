@@ -447,7 +447,8 @@ namespace KCertManager.Wpf.ViewModels
                         Owner = Application.Current?.MainWindow
                     };
                     dlg.ShowDialog();
-                    RefreshAll();
+                    RefreshDrives();
+                    _ = RefreshCertificatesAsync();
                 });
                 IsGuidedWorkflowActive = false;
             }
@@ -465,6 +466,8 @@ namespace KCertManager.Wpf.ViewModels
                         Owner = Application.Current?.MainWindow
                     };
                     dlg.ShowDialog();
+                    RefreshDrives();
+                    _ = RefreshCertificatesAsync();
                 });
                 IsGuidedWorkflowActive = false;
             }

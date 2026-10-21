@@ -33,7 +33,9 @@
      - **중단 2**: PC 보관 인증서 목록 DataGrid (선택 체크박스, 구분, 인증서명, 발급기관, 만료일) 탑재 및 미연결 시 친절한 USB 안내 배너 제공.
      - **하단 1**: 스마트 덮어쓰기 / 날짜 백업본 보존 / 건너뛰기 라디오버튼 그룹.
      - **하단 2**: 실시간 저장 위치 안내 및 `[선택한 인증서 USB로 복사 시작]` 버튼 일체화.
-  3. **빌드 및 린트 검증**:
+  3. **GitHub Actions dotnet publish 컴파일 오류(CS0103) 긴급 교정 (`MainViewModel.cs`)**:
+     - `StartGuidedWorkflow` 내 다이얼로그 종료 후 호출되던 미정의 메서드 `RefreshAll()`을 정규 비동기/동기 메서드인 `RefreshDrives()` 및 `_ = RefreshCertificatesAsync()`로 교체하여 GitHub Actions CI 컴파일 오류(`CS0103: The name 'RefreshAll' does not exist in the current context`) 완벽 해소.
+  4. **빌드 및 린트 검증**:
      - `compile_applet` 및 `lint_applet` 무결성 검증 통과.
 
 ### 📝 [작업 차수 84] 인증서 복사 중 쓰기/권한 오류(Disk Full, Permission Denied 등) 대응 '복사 에러 경고 모달' 고도화 및 네이티브 WPF 동기화
