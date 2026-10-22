@@ -9,14 +9,14 @@ namespace KCertManager.Wpf.Views
     {
         private readonly PcToUsbTransferViewModel _viewModel;
 
-        public PcToUsbTransferDialog() : this(null, null)
+        public PcToUsbTransferDialog() : this(null, null, null)
         {
         }
 
-        public PcToUsbTransferDialog(MainViewModel? mainVm, IEnumerable<CertificateItem>? certs = null)
+        public PcToUsbTransferDialog(MainViewModel? mainVm, IEnumerable<CertificateItem>? certs = null, IEnumerable<DriveItem>? drives = null)
         {
             InitializeComponent();
-            _viewModel = new PcToUsbTransferViewModel(certs);
+            _viewModel = new PcToUsbTransferViewModel(certs, drives ?? mainVm?.AvailableTargetDrives);
             _viewModel.TransferCompleted += () =>
             {
                 DialogResult = true;

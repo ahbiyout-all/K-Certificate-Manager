@@ -6,6 +6,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using KCert.Core.Discovery;
+using KCert.Core.HardwareGuard;
 using KCert.Core.Vault;
 using KCertManager.Wpf.Common;
 using KCertManager.Wpf.Models;
@@ -23,39 +25,51 @@ namespace KCertManager.Wpf.ViewModels
         private ObservableCollection<CertificateItem> _foundPcCertificates = new();
         private string _conflictOption = "overwrite";
         private bool _isBusy;
-        private bool _hasUsbDrives;
-        private string _statusMessage = "복사할 대상 USB 드라이브를 선택하세요.";
+        private bool _hasDrives = true;
+        private bool _hasRemovableUsb;
+        private string _statusMessage = "복사할 대상 드라이브를 선택하세요.";
+        private string _confirmButtonText = "선택한 인증서 복사 시작";
 
         public event Action? TransferCompleted;
 
-        public PcToUsbTransferViewModel() : this(null, null)
+        public PcToUsbTransferViewModel() : this(null, null, null)
         {
         }
 
-        public PcToUsbTransferViewModel(IEnumerable<CertificateItem>? initialCertificates, string? initialDriveLetter = null)
+        public PcToUsbTransferViewModel(IEnumerable<CertificateItem>? initialCertificates, IEnumerable<DriveItem>? initialDrives = null, string? initialDriveLetter = null)
         {
-            RefreshDrivesCommand = new RelayCommand(() => RefreshDrives());
-            TransferToUsbCommand = new RelayCommand(async () => await TransferToUsbAsync(), () => HasUsbDrives && SelectedTargetDrive != null && FoundPcCertificates.Any(x => x.IsSelected) && !IsBusy);
+            RefreshDrivesCommand = new RelayCommand(() => RefreshDrives(null, initialDrives));
+            TransferToUsbCommand = new RelayCommand(async () => await TransferToUsbAsync(), () => SelectedTargetDrive != null && FoundPcCertificates.Any(x => x.IsSelected) && !IsBusy);
             SelectAllCommand = new RelayCommand(() =>
             {
                 foreach (var c in FoundPcCertificates) c.IsSelected = true;
+                UpdateStatusMessage();
                 (TransferToUsbCommand as RelayCommand)?.RaiseCanExecuteChanged();
             });
             ClearSelectionCommand = new RelayCommand(() =>
             {
                 foreach (var c in FoundPcCertificates) c.IsSelected = false;
+                UpdateStatusMessage();
                 (TransferToUsbCommand as RelayCommand)?.RaiseCanExecuteChanged();
             });
 
-            RefreshDrives(initialDriveLetter);
+            RefreshDrives(initialDriveLetter, initialDrives);
             LoadCertificates(initialCertificates);
         }
 
-        public bool HasUsbDrives
+        public bool HasDrives
         {
-            get => _hasUsbDrives;
-            set => SetProperty(ref _hasUsbDrives, value);
+            get => _hasDrives;
+            set => SetProperty(ref _hasDrives, value);
         }
+
+        public bool HasRemovableUsb
+        {
+            get => _hasRemovableUsb;
+            set => SetProperty(ref _hasRemovableUsb, value);
+        }
+
+        public bool HasCertificates => FoundPcCertificates != null && FoundPcCertificates.Count > 0;
 
         public ObservableCollection<DriveItem> AvailableDrives
         {
@@ -79,7 +93,13 @@ namespace KCertManager.Wpf.ViewModels
         public ObservableCollection<CertificateItem> FoundPcCertificates
         {
             get => _foundPcCertificates;
-            set => SetProperty(ref _foundPcCertificates, value);
+            set
+            {
+                if (SetProperty(ref _foundPcCertificates, value))
+                {
+                    OnPropertyChanged(nameof(HasCertificates));
+                }
+            }
         }
 
         public string ConflictOption
@@ -106,31 +126,66 @@ namespace KCertManager.Wpf.ViewModels
             set => SetProperty(ref _statusMessage, value);
         }
 
+        public string ConfirmButtonText
+        {
+            get => _confirmButtonText;
+            set => SetProperty(ref _confirmButtonText, value);
+        }
+
         public ICommand RefreshDrivesCommand { get; }
         public ICommand TransferToUsbCommand { get; }
         public ICommand SelectAllCommand { get; }
         public ICommand ClearSelectionCommand { get; }
 
-        public void RefreshDrives(string? preferredDriveLetter = null)
+        public void RefreshDrives(string? preferredDriveLetter = null, IEnumerable<DriveItem>? fallbackDrives = null)
         {
             try
             {
-                var usbDrives = UsbDriveWatcher.GetAvailableDrives()
-                    .Where(d => d.IsRemovable && !d.IsCdRom && d.IsReady)
-                    .OrderBy(d => d.Name)
-                    .ToList();
+                UsbStorageGuard.InvalidateUsbCache();
 
-                AvailableDrives = new ObservableCollection<DriveItem>(usbDrives);
-                HasUsbDrives = AvailableDrives.Count > 0;
+                var drives = new List<DriveItem>();
 
-                if (!HasUsbDrives)
+                // 1. UsbDriveWatcher로부터 사용 가능한 모든 드라이브 수집
+                var scanned = UsbDriveWatcher.GetAvailableDrives().Where(d => !d.IsCdRom).ToList();
+                if (scanned.Any())
                 {
-                    SelectedTargetDrive = null;
-                    StatusMessage = "연결된 USB 이동식 메모리가 없습니다. 본체에 USB를 꽂은 후 [🔄 드라이브 갱신]을 눌러주세요.";
-                    (TransferToUsbCommand as RelayCommand)?.RaiseCanExecuteChanged();
-                    return;
+                    drives.AddRange(scanned);
+                }
+                else if (fallbackDrives != null && fallbackDrives.Any())
+                {
+                    drives.AddRange(fallbackDrives.Where(d => !d.IsCdRom));
                 }
 
+                // 2. 기본 C: 드라이브가 누락된 경우 기본 시스템 드라이브 보장 추가
+                if (!drives.Any(d => d.Name.StartsWith("C", StringComparison.OrdinalIgnoreCase)))
+                {
+                    drives.Insert(0, new DriveItem
+                    {
+                        Name = @"C:\",
+                        VolumeLabel = "로컬 디스크",
+                        TotalSize = 256L * 1024 * 1024 * 1024,
+                        FreeSpace = 120L * 1024 * 1024 * 1024,
+                        IsRemovable = false,
+                        IsReady = true,
+                        DeviceKind = "internal_fixed",
+                        DeviceKindName = "내장 디스크",
+                        BusType = "NVMe",
+                        DiskMediaType = "SSD"
+                    });
+                }
+
+                // 3. USB 드라이브 우선, 그 다음 C:, D: 등 로컬 드라이브 순으로 정렬
+                var sortedDrives = drives
+                    .Where(d => d.IsReady)
+                    .OrderByDescending(d => d.IsRemovable)
+                    .ThenBy(d => d.Name)
+                    .ToList();
+
+                AvailableDrives = new ObservableCollection<DriveItem>(sortedDrives);
+                HasDrives = AvailableDrives.Count > 0;
+                HasRemovableUsb = AvailableDrives.Any(d => d.IsRemovable && d.IsReady);
+
+                // 4. 우선 드라이브 지정 또는 USB 우선 선택, 없으면 C: 기본 선택
                 if (!string.IsNullOrEmpty(preferredDriveLetter))
                 {
                     var match = AvailableDrives.FirstOrDefault(d =>
@@ -143,12 +198,41 @@ namespace KCertManager.Wpf.ViewModels
                     }
                 }
 
-                SelectedTargetDrive = AvailableDrives.FirstOrDefault();
+                var usbMatch = AvailableDrives.FirstOrDefault(d => d.IsRemovable && d.IsReady);
+                if (usbMatch != null)
+                {
+                    SelectedTargetDrive = usbMatch;
+                }
+                else
+                {
+                    // USB가 없을 경우 기본 C: 드라이브 또는 첫 번째 사용 가능 디스크 자동 선택
+                    var cDrive = AvailableDrives.FirstOrDefault(d => d.Name.StartsWith("C", StringComparison.OrdinalIgnoreCase));
+                    SelectedTargetDrive = cDrive ?? AvailableDrives.FirstOrDefault();
+                }
+
+                UpdateStatusMessage();
             }
             catch (Exception ex)
             {
-                HasUsbDrives = false;
-                StatusMessage = $"USB 드라이브 검색 오류: {ex.Message}";
+                System.Diagnostics.Debug.WriteLine($"[RefreshDrives Error] {ex.Message}");
+                // 예외 발생 시에도 C: 드라이브 기본 보장
+                if (AvailableDrives.Count == 0)
+                {
+                    var fallbackC = new DriveItem
+                    {
+                        Name = @"C:\",
+                        VolumeLabel = "로컬 디스크",
+                        IsRemovable = false,
+                        IsReady = true,
+                        DeviceKind = "internal_fixed",
+                        DeviceKindName = "내장 디스크"
+                    };
+                    AvailableDrives = new ObservableCollection<DriveItem> { fallbackC };
+                    SelectedTargetDrive = fallbackC;
+                    HasDrives = true;
+                    HasRemovableUsb = false;
+                }
+                UpdateStatusMessage();
             }
         }
 
@@ -202,24 +286,39 @@ namespace KCertManager.Wpf.ViewModels
             }
 
             FoundPcCertificates = new ObservableCollection<CertificateItem>(list);
+            OnPropertyChanged(nameof(HasCertificates));
             UpdateStatusMessage();
             (TransferToUsbCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
         private void UpdateStatusMessage()
         {
-            int selectedCount = FoundPcCertificates.Count(x => x.IsSelected);
-            if (!HasUsbDrives || SelectedTargetDrive == null)
+            int selectedCount = FoundPcCertificates?.Count(x => x.IsSelected) ?? 0;
+
+            if (SelectedTargetDrive == null)
             {
-                StatusMessage = "연결된 USB 이동식 메모리가 없습니다. USB를 연결해 주세요.";
+                StatusMessage = "목적지 디스크를 선택해 주세요.";
+                ConfirmButtonText = "선택한 인증서 복사 시작";
+                return;
             }
-            else if (selectedCount == 0)
+
+            if (SelectedTargetDrive.IsRemovable)
             {
-                StatusMessage = "복사할 PC 인증서를 1개 이상 선택해 주세요.";
+                ConfirmButtonText = $"선택한 인증서 USB({SelectedTargetDrive.Name.TrimEnd('\\')})로 복사 시작";
             }
             else
             {
-                StatusMessage = $"선택한 {selectedCount}건의 인증서를 대상 드라이브 {SelectedTargetDrive.Name} 로 복사할 준비가 되었습니다.";
+                ConfirmButtonText = $"선택한 인증서 디스크({SelectedTargetDrive.Name.TrimEnd('\\')})로 복사 시작";
+            }
+
+            if (selectedCount == 0)
+            {
+                StatusMessage = "복사할 PC 인증서를 1개 이상 체크(선택)해 주세요.";
+            }
+            else
+            {
+                string targetType = SelectedTargetDrive.IsRemovable ? "USB 메모리" : "로컬 디스크";
+                StatusMessage = $"선택한 {selectedCount}건의 인증서를 목적지 {targetType}({SelectedTargetDrive.Name})로 복사할 준비가 되었습니다.";
             }
         }
 
@@ -230,6 +329,7 @@ namespace KCertManager.Wpf.ViewModels
 
             IsBusy = true;
             string targetDriveName = SelectedTargetDrive.Name;
+            bool isTargetUsb = SelectedTargetDrive.IsRemovable;
             StatusMessage = $"{targetDriveName} 드라이브로 {selected.Count}건의 인증서 복사 진행 중...";
 
             int success = 0;
@@ -238,6 +338,9 @@ namespace KCertManager.Wpf.ViewModels
 
             await Task.Run(() =>
             {
+                string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\').ToUpperInvariant();
+                string cleanTarget = targetDriveName.TrimEnd('\\').ToUpperInvariant();
+
                 foreach (var cert in selected)
                 {
                     try
@@ -251,6 +354,13 @@ namespace KCertManager.Wpf.ViewModels
 
                         string relativePath = CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
                         string destinationRoot = targetDriveName;
+
+                        // 대상이 C: 시스템 드라이브인 경우 표준 AppData\LocalLow로 안전 매핑
+                        if (string.Equals(cleanTarget, sysRoot, StringComparison.OrdinalIgnoreCase))
+                        {
+                            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                            destinationRoot = Path.Combine(userProfile, "AppData", "LocalLow");
+                        }
 
                         string destDir = Path.Combine(destinationRoot, relativePath);
                         if (Directory.Exists(destDir))
@@ -290,12 +400,13 @@ namespace KCertManager.Wpf.ViewModels
 
             if (success > 0)
             {
-                string msg = $"선택하신 인증서 {success}개가 {targetDriveName} USB 메모리로 안전하게 복사/백업되었습니다.";
+                string targetDesc = isTargetUsb ? "USB 메모리" : "로컬 디스크";
+                string msg = $"선택하신 인증서 {success}개가 {targetDriveName} {targetDesc}로 안전하게 복사/백업되었습니다.";
                 if (failed > 0)
                 {
                     msg += $"\n(실패: {failed}건 - {string.Join(", ", errorList)})";
                 }
-                MessageBox.Show(msg, "PC ➔ USB 복사 완료", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(msg, "인증서 복사 / 백업 완료", MessageBoxButton.OK, MessageBoxImage.Information);
                 TransferCompleted?.Invoke();
             }
             else

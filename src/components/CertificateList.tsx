@@ -1205,8 +1205,8 @@ export const CertificateList: React.FC<CertificateListProps> = ({
           </div>
         </div>
 
-        {/* Table Content */}
-        <div className="overflow-x-auto overflow-y-auto max-h-[460px] pb-2">
+        {/* Table Content with Always Visible Horizontal Bar */}
+        <div className="overflow-x-scroll overflow-y-auto max-h-[460px] pb-2 border-b border-slate-200">
           {sortedFilteredCerts.length === 0 ? (
             <div className="py-14 text-center">
               <FileKey className="w-12 h-12 text-slate-300 mx-auto mb-3" />
@@ -1216,7 +1216,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
               </p>
             </div>
           ) : (
-            <table className="w-full text-left border-collapse min-w-[980px]">
+            <table className="w-full text-left border-collapse min-w-[1280px]">
               <thead className="sticky top-0 bg-slate-100/90 border-b border-slate-200 text-[12px] text-slate-700 uppercase font-bold tracking-wider z-10">
                 <tr>
                   <th className="p-4 w-12 text-center">
@@ -1302,33 +1302,34 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                   <th className="p-4 text-right">작업</th>
                 </tr>
               </thead>
-              <tbody className="text-sm divide-y divide-slate-100 text-slate-600">
+              <tbody className="text-sm divide-y divide-slate-200 text-slate-600">
                 {sortedFilteredCerts.map(cert => {
                   const isSelected = selectedIds.includes(cert.id);
                   const isRecentlyCopied = recentlyCopiedIds.includes(cert.id);
                   const isUsb = isUsbCertificate(cert);
                   const driveLetter = getDriveLetter(cert);
                   const isNonStandard = cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation);
+                  const cellPadding = isSelected ? 'px-4 py-4' : 'px-4 py-3.5';
 
                   return (
                     <tr
                       key={cert.id}
                       onClick={() => onToggleSelect(cert.id)}
-                      className={`cursor-pointer transition-all duration-300 ${
+                      className={`cursor-pointer transition-all duration-200 border-b ${
                         isRecentlyCopied
-                          ? 'animate-copied-row bg-emerald-100/70 border-l-4 border-l-emerald-500 shadow-xs'
+                          ? 'animate-copied-row bg-emerald-50/90 hover:bg-emerald-100/80 border-l-4 border-l-emerald-500 border-b-emerald-200 shadow-xs relative z-5'
                           : isNonStandard
                             ? isSelected
-                              ? 'bg-amber-100/90 border-l-4 border-l-amber-500'
-                              : 'bg-amber-50/60 hover:bg-amber-100/70 border-l-4 border-l-amber-500'
+                              ? 'bg-amber-100/90 hover:bg-amber-200/80 border-l-4 border-l-amber-500 border-b-2 border-b-amber-400 font-medium shadow-xs relative z-10'
+                              : 'bg-amber-50/60 hover:bg-amber-100/70 border-l-4 border-l-amber-400/60 border-b-amber-200/80'
                             : isSelected
-                              ? 'bg-blue-500/15 hover:bg-blue-500/25 border-l-4 border-l-blue-600 font-medium'
+                              ? 'bg-blue-50/95 hover:bg-blue-100/90 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 border-l-4 border-l-blue-600 border-b-2 border-b-blue-400 dark:border-b-blue-600 font-medium shadow-xs relative z-10'
                               : cert.status === 'expired'
-                                ? 'bg-rose-50/20 hover:bg-rose-50/40'
-                                : 'hover:bg-slate-50/70'
+                                ? 'bg-rose-50/20 hover:bg-rose-50/40 border-l-4 border-l-transparent border-b-slate-200/90 dark:border-b-slate-800'
+                                : 'bg-white hover:bg-slate-50/90 dark:bg-transparent dark:hover:bg-slate-800/40 border-l-4 border-l-transparent border-b-slate-200/90 dark:border-b-slate-800'
                       }`}
                     >
-                      <td className="p-4 text-center">
+                      <td className={`${cellPadding} text-center`}>
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -1338,7 +1339,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                       </td>
 
                       {/* Storage Location Badge Column [USB / 컴퓨터 with distinct drive colors C, D, E, F, G, H, I, J...] */}
-                      <td className="p-4 whitespace-nowrap">
+                      <td className={`${cellPadding} whitespace-nowrap`}>
                         {(() => {
                           const dColor = getDriveColorInfo(driveLetter);
                           return (
@@ -1372,7 +1373,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                         })()}
                       </td>
 
-                      <td className="p-4 font-medium text-slate-800">
+                      <td className={`${cellPadding} font-medium text-slate-800`}>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span>{getCategoryLabel(cert)}</span>
                           {cert.isSystemCa && (
@@ -1423,7 +1424,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                         )}
                       </td>
 
-                      <td className="p-4">
+                      <td className={cellPadding}>
                         <div className="flex items-center gap-2">
                           {isNonStandard ? (
                             <div className="p-1.5 bg-amber-100 text-amber-800 rounded-md border border-amber-300 shadow-2xs shrink-0" title="비표준 경로 보관 인증서">
@@ -1452,7 +1453,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                         </div>
                       </td>
 
-                      <td className="p-4 text-slate-700">
+                      <td className={`${cellPadding} text-slate-700`}>
                         <div className="font-semibold text-slate-800 text-xs sm:text-sm">{cert.issuer}</div>
                         {cert.caSignatureName && (
                           <div className="text-[11px] text-blue-700 font-mono mt-1 flex items-center gap-1 bg-blue-50/80 px-1.5 py-0.5 rounded border border-blue-200/70 w-fit max-w-[240px]" title={`기관 서명 이름 (CA Name): ${cert.caSignatureName}`}>
@@ -1461,11 +1462,11 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                         )}
                       </td>
 
-                      <td className="p-4 font-mono text-xs text-slate-700">{cert.validTo}</td>
+                      <td className={`${cellPadding} font-mono text-xs text-slate-700`}>{cert.validTo}</td>
 
-                      <td className="p-4">{getStatusBadge(cert)}</td>
+                      <td className={cellPadding}>{getStatusBadge(cert)}</td>
 
-                      <td className="p-4 text-right">
+                      <td className={`${cellPadding} text-right`}>
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"

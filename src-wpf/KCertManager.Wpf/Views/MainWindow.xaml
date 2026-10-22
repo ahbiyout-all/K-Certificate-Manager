@@ -640,9 +640,9 @@
                                   IsReadOnly="True" 
                                   SelectionMode="Single"
                                   SelectionChanged="CertDataGrid_SelectionChanged"
-                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Visible"
                                   ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                  ScrollViewer.CanContentScroll="True"
+                                  ScrollViewer.CanContentScroll="False"
                                   PreviewMouseWheel="CertListHorizontalScrollViewer_PreviewMouseWheel"
                                       GridLinesVisibility="Horizontal" 
                                       HorizontalGridLinesBrush="{DynamicResource BorderBrush}" 
@@ -769,7 +769,7 @@
                                 </DataGridTemplateColumn>
 
                                 <!-- CN / Name -->
-                                <DataGridTemplateColumn Header="인증서 명칭 (CN) 및 경로 상태" Width="*" MinWidth="340" SortMemberPath="CommonName" CanUserSort="True">
+                                <DataGridTemplateColumn Header="인증서 명칭 (CN) 및 경로 상태" Width="640" MinWidth="520" SortMemberPath="CommonName" CanUserSort="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel VerticalAlignment="Center">

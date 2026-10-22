@@ -59,7 +59,8 @@
                 <DataGrid ItemsSource="{Binding FoundUsbCertificates}" AutoGenerateColumns="False" CanUserAddRows="False"
                           Background="Transparent" RowBackground="{DynamicResource BgCardBrush}" AlternatingRowBackground="{DynamicResource BgDarkBrush}"
                           Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" GridLinesVisibility="Horizontal"
-                          HorizontalGridLinesBrush="{DynamicResource BorderBrush}">
+                          HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
+                          ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Auto">
                     <DataGrid.Resources>
                         <!-- Highlight colors -->
                         <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#2563EB"/>

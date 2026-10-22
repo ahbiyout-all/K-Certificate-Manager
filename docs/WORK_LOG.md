@@ -7,7 +7,7 @@
 ## 📌 프로젝트 기본 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v1.6.3` (Semantic Versioning 2.0.0)
+- **현재 버전**: `v1.6.4` (Semantic Versioning 2.0.0)
 - **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
 - **구글 공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **공식 홈페이지**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr) ((주)씨아이에스넷 CISNet)
@@ -16,6 +16,86 @@
 ---
 
 ## 📅 작업 기록 상세 내역
+
+### 📝 [작업 차수 89] 인증서 목록창 가로 스크롤바(가로바) 사라짐 현상 근본 원인 해결
+- **작업 일시**: 2026-10-22 19:45 KST
+- **요청 사항**: "인증서 목록창 가로바가 사라지는 현상."
+- **원인 분석**:
+  1. **가변 너비 컬럼(`Width="*"`)으로 인한 스크롤 영역 0 수축**:
+     - 인증서 명칭 컬럼에 `Width="*"`가 적용되어 상세 사이드바를 닫거나 창을 넓히면 해당 컬럼이 화면 너비만큼 무한히 늘어나면서 `총 컬럼 너비 == 뷰포트 너비`가 됨.
+     - 이로 인해 `ScrollableWidth = 0`이 되어 WPF가 스크롤 불필요 상태로 판단하고 Thumb(슬라이더)를 접음(Collapse).
+  2. **스크롤바 트랙 배경색 투명/동일화로 인한 완전 소멸 착시**:
+     - 스크롤바 배경이 윈도우 배경과 동일한 `BgDarkBrush(#0F1219)`로 되어 있어, Thumb이 접히는 순간 하단 가로바 영역 전체가 배경 속으로 완전히 사라지는 현상 발생.
+  3. **WPF 논리 단위 스크롤(`CanContentScroll="True"`)의 컬럼 스킵**:
+     - 논리 스크롤 활성화 시 컬럼 단위 점프 계산 중 가로 스크롤바가 순간적으로 숨겨지는 부작용 발생.
+- **수행 내용**:
+  1. **컬럼 너비 최적 고정폭 지정 (`MainWindow.xaml`)**:
+     - `인증서 명칭 (CN) 및 경로 상태` 컬럼의 가변 폭(`*`)을 제거하고 `Width="640" MinWidth="520"`으로 확정 지정.
+     - 전체 컬럼 너비 합계(1,595px)가 상시 확보되어 긴 인증서 저장 경로(`C:\Users\...\AppData\LocalLow\...`)가 말줄임표(`...`) 없이 시원하게 표시되며, 사이드바 개폐나 창 크기 변화와 상관없이 가로 스크롤 영역이 항상 활성화되어 가로바가 사라지지 않음.
+  2. **픽셀 단위 물리 스크롤 전환 (`ScrollViewer.CanContentScroll="False"`)**:
+     - 부드러운 픽셀 단위 스크롤로 전환하여 컬럼 단위 점프나 스크롤바 깜빡임/소멸 현상 완벽 차단.
+  3. **모던 고대비 ScrollBar 스타일 보강 (`App.xaml`)**:
+     - 스크롤바 트랙 배경을 선명한 `#161B26`으로 분리하고 상단 경계선(`Border: #2D3546`)을 추가.
+     - 비활성 상태(`IsEnabled="False"`)에서도 구조가 사라지지 않도록 `InactiveThumb` 인디케이터를 유지.
+     - 트랙 클릭 시 페이지 단위 좌/우 이동(`PageLeftCommand`, `PageRightCommand`)으로 정규화.
+  4. **웹 관리 콘솔 최적 가로 너비 보장 (`CertificateList.tsx`)**:
+     - 테이블 최소 너비를 `min-w-[1280px]`로 상향하여 가로바가 항상 활성화된 상태 유지.
+  5. **빌드 및 린트 검증**: `compile_applet` 및 `lint_applet` 무결성 검증 통과.
+
+### 📝 [작업 차수 88] 인증서 목록(CertificateList) 항목 간 선명한 수평 구분선(border-bottom) 및 선택/비선택 시각적 간격·대비 고도화
+- **작업 일시**: 2026-10-22 19:35 KST
+- **요청 사항**: "인증서 목록(CertificateList) 컴포넌트의 각 항목 사이에 가독성을 높일 수 있는 수평 구분선(border-bottom)을 추가하고, 선택된 항목과 비선택 항목의 시각적 간격을 조정해 주세요."
+- **수행 내용**:
+  1. **항목 간 선명한 수평 구분선(`border-bottom`) 적용 (`CertificateList.tsx`)**:
+     - 기존의 흐릿한 `divide-slate-100`을 명확한 `divide-slate-200`으로 교체하고, 각 행(`<tr>`)에 직접 `border-b`를 선언하여 수많은 인증서 목록 사이의 데이터 행 구분을 뚜렷하게 가시화.
+     - 비선택 행에는 부드럽고 명확한 `border-b-slate-200/90 (dark: border-b-slate-800)`을 적용하여 장시간 열람 시 눈의 피로 경감 및 가독성 확보.
+  2. **선택된 항목(Selected)과 비선택 항목(Unselected)의 시각적 간격 및 계층감 조정**:
+     - **좌측 테두리 정렬 고정**: 비선택 항목에도 `border-l-4 border-l-transparent`를 부여하여 체크 선택 시 컬럼 내용이 좌우로 밀리거나 흔들리는 레이아웃 시프트(Jumping) 현상 완전 제거.
+     - **선택 행의 시각적 볼륨감 및 입체 간격 부여**: 선택된 행에 `px-4 py-4`의 넉넉한 수직 셀 패딩을 적용하고, `border-l-4 border-l-blue-600`, `border-b-2 border-b-blue-400 (dark: border-b-blue-600)`, `bg-blue-50/95`, `shadow-xs relative z-10 font-medium` 효과를 복합 부여하여 인접 비선택 행(`py-3.5`)과 확연히 구분되는 시각적 계층감(Elevation) 형성.
+     - 비표준 위치 및 최근 복사 완료된 행도 각각 앰버/에메랄드 테마의 전용 하단 구분선과 간격 일체화.
+  3. **C# WPF 데스크톱 XAML 컴파일 오류(MC4004) 수정 (`App.xaml`)**:
+     - `App.xaml` 내 `DataGridColumnHeader` 스타일 태그 닫힘(`</Style>`)이 누락되어 하위 `ScrollBar` 스타일 삽입 시 발생한 `error MC4004: Style에 자식 'Style'을(를) 포함할 수 없습니다` 오류를 `</Style>` 정상 태깅으로 완벽 해결.
+  4. **빌드 및 린트 검증**: `compile_applet` 및 `lint_applet` 100% 통과.
+
+### 📝 [작업 차수 87] 인증서 보관함 목록 상시 가로바(가로 스크롤바) 생성 및 모던 고대비 스타일 구축
+- **작업 일시**: 2026-10-22 19:15 KST
+- **요청 사항**: "인증서 보관함 목록에 가로바 생성"
+- **원인 분석**:
+  - 기존 WPF `MainWindow.xaml`의 `CertDataGrid`에서 `ScrollViewer.HorizontalScrollBarVisibility="Auto"`가 설정되어 있었고, 명칭 컬럼에 `Width="*"`가 적용되어 뷰포트 내 가로 너비가 유동 계산되면서 `Auto` 조건에서 가로 스크롤바(가로바)가 생성되지 않고 숨겨지는 현상이 발생함.
+  - 기본 Windows WPF ScrollBar 테마가 다크 테마에서 대비가 낮거나 불명확하여 가로 스크롤 바 트랙과 썸(Thumb)의 시인성이 떨어졌음.
+- **수행 내용**:
+  1. **WPF 메인 인증서 목록(CertDataGrid) 상시 가로바 생성 (`MainWindow.xaml`)**:
+     - `ScrollViewer.HorizontalScrollBarVisibility="Visible"`로 지정하여 창 크기나 컬럼 너비 상태와 상관없이 하단에 가로 스크롤바(가로바)가 항상 뚜렷하게 생성·표시되도록 설정.
+     - 인증서 명칭 및 경로 컬럼의 최소 너비를 `MinWidth="460"`으로 넉넉하게 확장하여 긴 파일 경로가 생략되지 않고 가로 스크롤을 통해 전체를 편안하게 탐색할 수 있도록 개선.
+     - `PcToUsbTransferDialog.xaml`, `UsbTransferDialog.xaml`의 인증서 DataGrid에도 동일하게 `HorizontalScrollBarVisibility="Visible"` 적용.
+  2. **WPF 전역 모던 다크 고대비 ScrollBar 스타일 신설 (`App.xaml`)**:
+     - 가로바 높이 14px, 세로바 너비 14px 규격의 모던 플랫 스크롤바 스타일 구축.
+     - 다크 배경(`BgDarkBrush`), 슬레이트 썸(`#475569`), 마우스 호버(`Hover: #64748B`), 드래그 시 고대비 블루(`#3B82F6`)로 시각적 피드백 제공 및 트랙 클릭 시 좌우 이동 지원.
+  3. **웹 관리 콘솔 인증서 목록 가로바 상시 노출 (`CertificateList.tsx`, `index.css`)**:
+     - 웹 테이블 컨테이너에 `overflow-x-scroll`을 지정하여 브라우저 환경에 구애받지 않고 하단 가로 스크롤바가 상시 표시되도록 보장.
+     - `index.css`의 스크롤바 규격을 높이 10px, 썸/트랙의 고대비 스타일링으로 개편.
+
+### 📝 [작업 차수 86] PC ➔ USB/디스크 복사 창 기본 C: 드라이브 상시 표시 및 USB 미연결 시 화면 차단 해제
+- **작업 일시**: 2026-10-22 18:30 KST
+- **요청 사항**:
+  1. "디스크 저장장치를 보여 주어야 하지 않나요. 기본 c: 드라이버 보이기."
+  2. USB 미연결 시에도 창 내 드라이브 선택 콤보박스와 인증서 목록이 정상 표시되도록 개선.
+- **원인 분석**:
+  - `PcToUsbTransferDialog.xaml`에서 콤보박스가 `IsEnabled="{Binding HasUsbDrives}"`로 묶여 있고, 인증서 DataGrid가 `Visibility="{Binding HasUsbDrives, ...}"`로 감싸져 있어 USB 미연결 시 드라이브 선택이 비활성화되고 인증서 목록 대신 전체 빈 화면 블로커("연결된 USB 이동식 드라이브가 없습니다")가 화면을 가림.
+- **수행 내용**:
+  1. **드라이브 선택 콤보박스 상시 활성화 및 기본 C: 드라이브 자동 선택 (`PcToUsbTransferDialog.xaml`, `PcToUsbTransferViewModel.cs`)**:
+     - 콤보박스 `IsEnabled="True"` 적용.
+     - `RefreshDrives()` 시 이동식 USB뿐만 아니라 로컬 디스크(`C:\`, `D:\`)를 모두 탐색 목록에 포함하고, USB 미연결 시 기본값으로 `C:\ [로컬 디스크 (시스템)]`를 자동 선택.
+     - 메인 뷰모델(`MainViewModel.AvailableTargetDrives`)로부터 기존 감지된 드라이브 목록을 다이얼로그 생성자로 안전하게 전달.
+  2. **PC 인증서 DataGrid 상시 노출 및 화면 블로커 제거**:
+     - 인증서 목록을 `HasCertificates` 기준으로만 조건부 노출하여 USB 유무와 상관없이 인증서 체크 및 열람 가능.
+     - 화면을 가리던 대형 플러그 아이콘 블로커 대신 상단에 슬림한 안내 배너(`💡 이동식 USB 메모리가 연결되지 않아 기본 로컬 디스크(C:\)가 선택되었습니다...`) 제공.
+  3. **C: 드라이브 복사 지원 및 복사 버튼 문구 동적화**:
+     - `TransferToUsbCommand` CanExecute 조건을 `SelectedTargetDrive != null` 및 인증서 선택 시 활성화되도록 개선.
+     - 선택된 드라이브에 따라 `선택한 인증서 USB로 복사 시작` / `선택한 인증서 디스크(C:)로 복사 시작`으로 버튼 문구 자동 전환.
+     - C: 드라이브 대상 복사 시 `AppData\LocalLow\NPKI`로 안전하게 저장 경로 라우팅.
+  4. **C# WPF 데스크톱 에디션 빌드 컴파일 오류(CS0103) 해결 (`PcToUsbTransferViewModel.cs`)**:
+     - `UsbStorageGuard.InvalidateUsbCache()` 호출 시 네임스페이스 누락으로 발생하던 `error CS0103: 'UsbStorageGuard' 이름이 현재 컨텍스트에 없습니다.` 오류를 `using KCert.Core.HardwareGuard;` 및 `using KCert.Core.Discovery;` 선언을 추가하여 완벽하게 교정.
 
 ### 📝 [작업 차수 85] 상세 사이드바 닫힘 시 목록창 가로 반응형 자동 확장 및 시작가이드 PC➔USB 복사 창 형식 통일
 - **작업 일시**: 2026-10-21 17:10 KST

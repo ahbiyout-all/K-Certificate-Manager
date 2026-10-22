@@ -442,7 +442,7 @@ namespace KCertManager.Wpf.ViewModels
                     {
                         targets = pcCerts.Any() ? pcCerts : FilteredCertificates.ToList();
                     }
-                    var dlg = new Views.PcToUsbTransferDialog(this, targets)
+                    var dlg = new Views.PcToUsbTransferDialog(this, targets, AvailableTargetDrives)
                     {
                         Owner = Application.Current?.MainWindow
                     };
