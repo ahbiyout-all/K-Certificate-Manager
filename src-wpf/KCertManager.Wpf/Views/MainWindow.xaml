@@ -45,7 +45,7 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Brand Title (Draggable Area) -->
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <Border CornerRadius="8" Width="36" Height="36" Margin="0,0,10,0" ClipToBounds="True" Background="Transparent">
                         <Grid>
                             <Image x:Name="AppLogoImage" 
@@ -61,101 +61,112 @@
                     </StackPanel>
                 </StackPanel>
 
-                <!-- Header Action Tools, Theme Selector & Integrated Window Controls -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <!-- Theme Switcher Dropdown (ComboBox) -->
-                    <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="4,2" Margin="0,0,10,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="🎨" FontSize="11" VerticalAlignment="Center" Margin="3,0,4,0"/>
-                            <ComboBox SelectedValue="{Binding CurrentTheme, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                      SelectedValuePath="Tag" Width="98" Height="26" VerticalContentAlignment="Center"
-                                      ToolTip="원하는 화면 테마 스타일을 선택하세요.">
-                                <ComboBoxItem Content="다크 테마" Tag="dark"/>
-                                <ComboBoxItem Content="회색 테마" Tag="gray"/>
-                                <ComboBoxItem Content="화이트 테마" Tag="white"/>
-                                <ComboBoxItem Content="베이지 테마" Tag="beige"/>
-                            </ComboBox>
+                <!-- Header Action Tools & Theme Selector (Dedicated Column 1, Aligned Right) -->
+                <ScrollViewer Grid.Column="1"
+                              HorizontalScrollBarVisibility="Hidden"
+                              VerticalScrollBarVisibility="Disabled"
+                              Focusable="False"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Center"
+                              Margin="10,0,4,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Theme Switcher Dropdown (ComboBox) -->
+                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="4,2" Margin="0,0,10,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="🎨" FontSize="11" VerticalAlignment="Center" Margin="3,0,4,0"/>
+                                <ComboBox SelectedValue="{Binding CurrentTheme, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          SelectedValuePath="Tag" Width="98" Height="26" VerticalContentAlignment="Center"
+                                          ToolTip="원하는 화면 테마 스타일을 선택하세요.">
+                                    <ComboBoxItem Content="다크 테마" Tag="dark"/>
+                                    <ComboBoxItem Content="회색 테마" Tag="gray"/>
+                                    <ComboBoxItem Content="화이트 테마" Tag="white"/>
+                                    <ComboBoxItem Content="베이지 테마" Tag="beige"/>
+                                </ComboBox>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Mode Switch: [간편 모드] vs [상세 모드] -->
+                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton GroupName="UIModeGroup" Content="간편 모드" IsChecked="{Binding IsSimpleMode, Mode=TwoWay}"
+                                             Style="{StaticResource ModeToggleRadio}" ToolTip="초보자용 간편 모드: 핵심 복사 기능과 목록에 집중합니다."/>
+                                <RadioButton GroupName="UIModeGroup" Content="상세 모드" IsChecked="{Binding IsAdvancedUIMode, Mode=TwoWay}"
+                                             Style="{StaticResource ModeToggleRadio}" ToolTip="전문가용 상세 모드: 드라이브 상세 정보 및 부가 도구를 모두 표시합니다."/>
+                            </StackPanel>
+                        </Border>
+
+                        <Button Command="{Binding ShowStartupWorkflowCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,6,0" ToolTip="시작 작업 선택 창 및 순서별 가이드 모션을 다시 실행합니다.">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🚀" Margin="0,0,4,0"/>
+                                <TextBlock Text="시작 가이드" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Command="{Binding RefreshCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🔄" Margin="0,0,4,0"/>
+                                <TextBlock Text="새로고침"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Click="OpenTrash_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🗑️" Margin="0,0,4,0"/>
+                                <TextBlock Text="{Binding TrashCount, StringFormat='{}휴지통 ({0})'}" Foreground="#FDA4AF"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Advanced Mode Only Quick Tools (reduces cognitive clutter in Simple Mode) -->
+                        <StackPanel Orientation="Horizontal" Visibility="{Binding IsAdvancedUIMode, Converter={StaticResource BoolToVis}}">
+                            <Button Click="OpenSearchLocations_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📁" Margin="0,0,4,0"/>
+                                    <TextBlock Text="탐색 경로"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Click="OpenBackupHistory_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📜" Margin="0,0,4,0"/>
+                                    <TextBlock Text="백업 이력"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Click="OpenActivityLog_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📝" Margin="0,0,4,0"/>
+                                    <TextBlock Text="작업 로그"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Click="OpenSecurityGuide_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🛡️" Margin="0,0,4,0"/>
+                                    <TextBlock Text="보안 수칙"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Command="{Binding CheckUpdatesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" ToolTip="GitHub 최신 릴리스 및 버전 수동 확인">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="✨" Margin="0,0,4,0"/>
+                                    <TextBlock Text="업데이트 확인"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Click="OpenAbout_Click" Style="{StaticResource SecondaryButton}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="ℹ️" Margin="0,0,4,0"/>
+                                    <TextBlock Text="정보"/>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
-                    </Border>
-
-                    <!-- Mode Switch: [간편 모드] vs [상세 모드] -->
-                    <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,10,0">
-                        <StackPanel Orientation="Horizontal">
-                            <RadioButton GroupName="UIModeGroup" Content="간편 모드" IsChecked="{Binding IsSimpleMode, Mode=TwoWay}"
-                                         Style="{StaticResource ModeToggleRadio}" ToolTip="초보자용 간편 모드: 핵심 복사 기능과 목록에 집중합니다."/>
-                            <RadioButton GroupName="UIModeGroup" Content="상세 모드" IsChecked="{Binding IsAdvancedUIMode, Mode=TwoWay}"
-                                         Style="{StaticResource ModeToggleRadio}" ToolTip="전문가용 상세 모드: 드라이브 상세 정보 및 부가 도구를 모두 표시합니다."/>
-                        </StackPanel>
-                    </Border>
-
-                    <Button Command="{Binding ShowStartupWorkflowCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,6,0" ToolTip="시작 작업 선택 창 및 순서별 가이드 모션을 다시 실행합니다.">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🚀" Margin="0,0,4,0"/>
-                            <TextBlock Text="시작 가이드" FontWeight="SemiBold"/>
-                        </StackPanel>
-                    </Button>
-
-                    <Button Command="{Binding RefreshCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🔄" Margin="0,0,4,0"/>
-                            <TextBlock Text="새로고침"/>
-                        </StackPanel>
-                    </Button>
-
-                    <Button Click="OpenTrash_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🗑️" Margin="0,0,4,0"/>
-                            <TextBlock Text="{Binding TrashCount, StringFormat='{}휴지통 ({0})'}" Foreground="#FDA4AF"/>
-                        </StackPanel>
-                    </Button>
-
-                    <!-- Advanced Mode Only Quick Tools (reduces cognitive clutter in Simple Mode) -->
-                    <StackPanel Orientation="Horizontal" Visibility="{Binding IsAdvancedUIMode, Converter={StaticResource BoolToVis}}">
-                        <Button Click="OpenSearchLocations_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="📁" Margin="0,0,4,0"/>
-                                <TextBlock Text="탐색 경로"/>
-                            </StackPanel>
-                        </Button>
-
-                        <Button Click="OpenBackupHistory_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="📜" Margin="0,0,4,0"/>
-                                <TextBlock Text="백업 이력"/>
-                            </StackPanel>
-                        </Button>
-
-                        <Button Click="OpenActivityLog_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="📝" Margin="0,0,4,0"/>
-                                <TextBlock Text="작업 로그"/>
-                            </StackPanel>
-                        </Button>
-
-                        <Button Click="OpenSecurityGuide_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🛡️" Margin="0,0,4,0"/>
-                                <TextBlock Text="보안 수칙"/>
-                            </StackPanel>
-                        </Button>
-
-                        <Button Command="{Binding CheckUpdatesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" ToolTip="GitHub 최신 릴리스 및 버전 수동 확인">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="✨" Margin="0,0,4,0"/>
-                                <TextBlock Text="업데이트 확인"/>
-                            </StackPanel>
-                        </Button>
-
-                        <Button Click="OpenAbout_Click" Style="{StaticResource SecondaryButton}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="ℹ️" Margin="0,0,4,0"/>
-                                <TextBlock Text="정보"/>
-                            </StackPanel>
-                        </Button>
                     </StackPanel>
+                </ScrollViewer>
 
+                <!-- Integrated Window Controls (ALWAYS VISIBLE, ANCHORED IN DEDICATED COLUMN 2) -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="4,0,0,0">
                     <!-- Divider before Window Caption Buttons -->
-                    <Border Width="1" Height="22" Background="{DynamicResource BorderBrush}" Margin="10,0,6,0" VerticalAlignment="Center"/>
+                    <Border Width="1" Height="22" Background="{DynamicResource BorderBrush}" Margin="2,0,8,0" VerticalAlignment="Center"/>
 
                     <!-- Integrated Window Control Buttons (Minimize / Maximize / Close) -->
                     <Button Click="MinimizeWindow_Click" Style="{StaticResource TitleBarButton}" ToolTip="최소화" Margin="0,0,2,0">
