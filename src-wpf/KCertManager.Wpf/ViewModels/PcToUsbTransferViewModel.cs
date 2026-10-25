@@ -270,8 +270,10 @@ namespace KCertManager.Wpf.ViewModels
                 }
             }
 
-            foreach (var c in list)
+            for (int i = 0; i < list.Count; i++)
             {
+                var c = list[i];
+                c.IndexNumber = i + 1;
                 c.IsSelected = true;
                 c.PropertyChanged += (s, e) =>
                 {

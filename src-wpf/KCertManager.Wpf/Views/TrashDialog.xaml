@@ -114,6 +114,21 @@
                     </Style>
                 </DataGrid.Resources>
                 <DataGrid.Columns>
+                    <!-- Index Number Column -->
+                    <DataGridTemplateColumn Header="번호" Width="45" IsReadOnly="True">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding IndexNumber}" 
+                                           FontFamily="Consolas, Courier New, monospace" 
+                                           FontSize="11" 
+                                           FontWeight="Bold" 
+                                           Foreground="{DynamicResource TextSecondaryBrush}" 
+                                           HorizontalAlignment="Center" 
+                                           VerticalAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
                     <!-- Checkbox Column -->
                     <DataGridTemplateColumn Width="45">
                         <DataGridTemplateColumn.CellTemplate>

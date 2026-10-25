@@ -25,6 +25,20 @@ namespace KCertManager.Wpf.Models
         private bool _isSelected;
         private bool _isRecentlyCopied;
 
+        private int _indexNumber;
+        public int IndexNumber
+        {
+            get => _indexNumber;
+            set
+            {
+                if (_indexNumber != value)
+                {
+                    _indexNumber = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public bool IsRecentlyCopied
         {
             get => _isRecentlyCopied;

@@ -137,6 +137,7 @@
                     </Style>
                 </DataGrid.Resources>
                 <DataGrid.Columns>
+                    <DataGridTextColumn Header="번호" Binding="{Binding IndexNumber}" Width="45" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <DataGridTextColumn Header="저장 위치" Binding="{Binding StorageLocationBadge}" Width="120"/>
                     <DataGridTextColumn Header="인증서 명칭" Binding="{Binding CommonName}" Width="180"/>
                     <DataGridTextColumn Header="분류" Binding="{Binding CategoryBadgeText}" Width="110"/>

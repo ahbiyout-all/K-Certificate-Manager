@@ -728,7 +728,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                       USB에서 감지된 인증서가 없습니다. 위의 'USB 폴더 직접 열기'를 이용해 주세요.
                     </div>
                   ) : (
-                    detectedCerts.map(cert => {
+                    detectedCerts.map((cert, index) => {
                       const isSelected = selectedCertIds.includes(cert.id);
                       const isAlreadyInPc = existingCertificates.some(
                         c => c.serialNumber === cert.serialNumber || (c.name === cert.name && c.category === cert.category)
@@ -744,7 +744,8 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                               : 'bg-white/80 border-slate-200 hover:border-slate-300'
                           }`}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-5 text-center font-mono font-bold text-xs text-slate-500 shrink-0">{index + 1}</span>
                             <input
                               type="checkbox"
                               checked={isSelected}

@@ -278,17 +278,18 @@ export const TrashModal: React.FC<TrashModalProps> = ({
               </div>
 
               <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto">
-                {filteredItems.map(item => {
+                {filteredItems.map((item, index) => {
                   const isSelected = selectedIds.includes(item.id);
                   const cert = item.cert;
 
                   return (
                     <div
                       key={item.id}
-                      className={`p-3.5 sm:px-4 flex items-start gap-3 text-xs transition-colors ${
+                      className={`p-3.5 sm:px-4 flex items-start gap-2.5 text-xs transition-colors ${
                         isSelected ? 'bg-blue-50/40' : 'hover:bg-slate-50/70'
                       }`}
                     >
+                      <span className="mt-0.5 w-5 text-center font-mono font-bold text-xs text-slate-500 shrink-0">{index + 1}</span>
                       <input
                         type="checkbox"
                         checked={isSelected}

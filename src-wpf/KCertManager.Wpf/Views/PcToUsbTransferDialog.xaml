@@ -167,6 +167,7 @@
                             </Style>
                         </DataGrid.Resources>
                         <DataGrid.Columns>
+                            <DataGridTextColumn Header="번호" Binding="{Binding IndexNumber}" Width="45" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             <DataGridCheckBoxColumn Header="선택" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="55"/>
                             <DataGridTextColumn Header="구분" Binding="{Binding CategoryBadgeText}" Width="110" Foreground="{DynamicResource AccentTextBrush}"/>
                             <DataGridTextColumn Header="인증서 명칭 (CN)" Binding="{Binding CommonName}" Width="*" FontWeight="Bold"/>

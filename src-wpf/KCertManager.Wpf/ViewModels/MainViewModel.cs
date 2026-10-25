@@ -1205,7 +1205,12 @@ namespace KCertManager.Wpf.ViewModels
 
         public void RefreshTrash()
         {
-            TrashItems = new ObservableCollection<TrashItem>(_backupService.GetTrashItems());
+            var raw = _backupService.GetTrashItems();
+            for (int i = 0; i < raw.Count; i++)
+            {
+                raw[i].IndexNumber = i + 1;
+            }
+            TrashItems = new ObservableCollection<TrashItem>(raw);
             OnPropertyChanged(nameof(TrashCount));
         }
 
@@ -1254,6 +1259,10 @@ namespace KCertManager.Wpf.ViewModels
             }
 
             FilteredCertificates = new ObservableCollection<CertificateItem>(query);
+            for (int i = 0; i < FilteredCertificates.Count; i++)
+            {
+                FilteredCertificates[i].IndexNumber = i + 1;
+            }
             UpdateCounts();
             (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (BackupAllCommand as RelayCommand)?.RaiseCanExecuteChanged();

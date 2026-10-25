@@ -17,8 +17,13 @@
 ## 📋 버전 릴리스 내역
 
 ### 🚀 [v1.6.4] - 2026-10-25
-**변경 구분**: `PATCH` (작업완료 안내 팝업창 생성, 오른쪽 상단 창 제어 버튼 상시 노출 및 프로젝트 버전·컴파일 정합성 완료)
+**변경 구분**: `PATCH` (모든 인증서 열람 창 내부 왼쪽 첫 번째 칼럼 순번 카운터 추가, 작업완료 안내 팝업창 생성, 창 제어 버튼 고정)
 #### ✨ 주요 개선 및 신규 기능 (Improvements & Features)
+- **모든 인증서 열람 창 및 모달 내부 최좌측 첫 번째 칼럼에 순번(카운터 숫자 1, 2, 3...) 추가 (Web & WPF)**:
+  - **사용자 요청 사항**: "인증서를 보여주는 모든 창 내부 왼쪽 첫번째 칸에 숫자를 넣어 카운터 해주세요."
+  - **웹(React) 모달/테이블 8종 적용**: 메인 인증서 테이블(`CertificateList.tsx`), 간편 백업(`BackupModal.tsx`), USB ➔ PC 가져오기(`UsbToPcModal.tsx`), 만료 정리(`CertificateCleanupModal.tsx`), 휴지통(`TrashModal.tsx`), 작업완료 안내(`OperationCompleteModal.tsx`), 갱신 안내(`RenewalGuidanceModal.tsx`), USB 감지 팝업(`UsbDetectedPromptModal.tsx`).
+  - **데스크톱(WPF) 창/DataGrid 7종 적용**: 메인 DataGrid (`MainWindow.xaml`), PC ➔ USB 복사 (`PcToUsbTransferDialog.xaml`), USB ➔ PC 가져오기 (`UsbTransferDialog.xaml`), 만료 정리 (`ExpiredCleanupDialog.xaml`), 휴지통 (`TrashDialog.xaml`), 작업완료 안내 (`OperationCompleteDialog.xaml`).
+  - **자동 카운팅 데이터 바인딩**: ViewModel 및 컴포넌트 목록 바인딩 시 정렬 및 검색 필터링 상태에 맞춰 1부터 시작하는 순번(`1, 2, 3...`)이 실시간 계산되어 표시되도록 구현.
 - **작업완료 안내 전용 팝업창(Operation Complete Modal/Dialog) 신설 (Web & WPF 전면 연동)**:
   - **사용자 요청 사항**: 기존에 복사/백업/가져오기 작업 성공 후 수 초 뒤 사라지는 하단 토스트나 일반 윈도우 단색 알림창 대신, 상세 완료 내역을 한눈에 확인하고 필요한 후속 조치를 취할 수 있는 전용 팝업창(모달 대화상자) 신규 구현.
   - **공통 주요 구성 요소**:

@@ -736,6 +736,21 @@
                             </DataGrid.Resources>
 
                             <DataGrid.Columns>
+                                <!-- Index Number Column -->
+                                <DataGridTemplateColumn Header="번호" Width="45" SortMemberPath="IndexNumber" CanUserSort="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding IndexNumber}" 
+                                                       FontFamily="Consolas, Courier New, monospace" 
+                                                       FontSize="11" 
+                                                       FontWeight="Bold" 
+                                                       Foreground="{DynamicResource TextSecondaryBrush}" 
+                                                       HorizontalAlignment="Center" 
+                                                       VerticalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
                                 <!-- Selection Checkbox -->
                                 <DataGridTemplateColumn Width="45" CanUserSort="False">
                                     <DataGridTemplateColumn.CellTemplate>

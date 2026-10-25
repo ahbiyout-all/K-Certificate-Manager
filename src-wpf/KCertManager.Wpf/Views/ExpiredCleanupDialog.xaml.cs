@@ -134,6 +134,11 @@ namespace KCertManager.Wpf.Views
                     if (TxtSafetyNotice != null) TxtSafetyNotice.Foreground = isDark ? AllAlertText : new SolidColorBrush(Color.FromRgb(0xB4, 0x53, 0x09));
                 }
 
+                for (int i = 0; i < currentList.Count; i++)
+                {
+                    currentList[i].IndexNumber = i + 1;
+                }
+
                 if (GridCerts != null) GridCerts.ItemsSource = currentList;
                 if (TxtTargetSummary != null) TxtTargetSummary.Text = $"정리 대상: [{SelectedMediumName}] 총 {currentList.Count}건";
                 if (BtnExecute != null) BtnExecute.Content = $"[{SelectedMediumName}] 만료 인증서 {currentList.Count}건 정리";

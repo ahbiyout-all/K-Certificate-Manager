@@ -17,6 +17,32 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 94] 모든 인증서 열람 창 및 모달 내부 첫 번째 칼럼에 순번(카운터 숫자) 열 전면 추가
+- **작업 일시**: 2026-10-25 14:45 KST
+- **요청 사항**: "인증서를 보여주는 모든 창 내부 왼쪽 첫번째 칸에 숫자를 넣어 카운터 해주세요."
+- **배경 및 원인 분석**:
+  - 인증서 목록을 보여주는 각종 창(메인 인증서 목록, PC ➔ USB 복사, USB ➔ PC 가져오기, 만료 인증서 정리, 휴지통, 백업 이력 모달, USB 자동 감지 팝업, 작업 완료 안내 등)에서 대량의 인증서가 열람될 때 개별 항목의 순서(1, 2, 3, ...) 및 전체 건수를 시각적으로 즉각 식별하기 어려웠음.
+- **수행 내용**:
+  1. **React 웹 에디션 전 항목 카운터 숫자(번호) 열 추가**:
+     - `CertificateList.tsx`: 메인 테이블 0번 칼럼에 `<th className="p-4 w-12 text-center">번호</th>` 및 `<td className="... font-mono font-bold text-xs">{index + 1}</td>` 적용.
+     - `BackupModal.tsx`: 선택된 인증서 요약 피어 목록에 `{index + 1}` 순번 배지 적용.
+     - `UsbToPcModal.tsx`: 감지된 USB 인증서 리스트 카드의 최좌측에 `{index + 1}` font-mono 카운터 배지 배치.
+     - `CertificateCleanupModal.tsx`: 만료 정리 후보 목록 최좌측에 `{index + 1}` 카운터 적용.
+     - `TrashModal.tsx`: 안전 휴지통 목록 최좌측에 `{index + 1}` 카운터 적용.
+     - `OperationCompleteModal.tsx`: 복사 완료된 인증서 리스트 최좌측에 `{idx + 1}` 순번 배지 적용.
+     - `RenewalGuidanceModal.tsx`: 기관별 보유 인증서 목록 최좌측에 `{index + 1}` 카운터 적용.
+     - `UsbDetectedPromptModal.tsx`: 자동 감지 팝업 내 인증서 카드의 최좌측에 `{index + 1}` 순번 배지 적용.
+  2. **C# WPF 데스크톱 에디션 전 항목 카운터 숫자(번호) 열 추가**:
+     - `CertificateItem.cs`, `TrashItem.cs`, `OperationCompleteItem`: ViewModel에서 화면에 표시될 때 `IndexNumber = i + 1`을 자동 할당하도록 `IndexNumber` 프로퍼티 신설.
+     - `MainWindow.xaml` (`CertDataGrid`): DataGrid Columns의 0번 인덱스(최좌측)에 `<DataGridTemplateColumn Header="번호" Width="45">` 추가.
+     - `PcToUsbTransferDialog.xaml`, `UsbTransferDialog.xaml`, `ExpiredCleanupDialog.xaml`: DataGrid Columns 0번 인덱스에 `DataGridTextColumn Header="번호" Binding="{Binding IndexNumber}" Width="45"` 추가.
+     - `TrashDialog.xaml`: DataGrid Columns 0번 인덱스에 `DataGridTemplateColumn Header="번호"` 추가.
+     - `OperationCompleteDialog.xaml`: 완료 인증서 ListBox ItemTemplate 최좌측에 `{Binding IndexNumber}` 순번 배지 추가.
+     - `MainViewModel.cs`, `PcToUsbTransferViewModel.cs`, `UsbTransferViewModel.cs`, `ExpiredCleanupDialog.xaml.cs`, `TrashDialog.xaml.cs`: 데이터 로드, 필터링, 정렬 시 1부터 시작하는 순번(`IndexNumber = i + 1`)을 자동 재할당하도록 구현.
+  3. **빌드 및 린트 검증**:
+     - `lint_applet` (TypeScript strict mode noEmit) 0건 오류 통과.
+     - `compile_applet` (Vite Production Web Bundle) 100% 빌드 성공 검증.
+
 ### 📝 [작업 차수 93] 인증서 복사/백업/가져오기 작업 완료 안내 전용 팝업창(모달 및 대화상자) 신설 및 전역 연동
 - **작업 일시**: 2026-10-25 14:20 KST
 - **요청 사항**: "작업완료 안내 팝업창 생성."

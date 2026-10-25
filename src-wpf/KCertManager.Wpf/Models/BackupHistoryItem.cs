@@ -26,12 +26,26 @@ namespace KCertManager.Wpf.Models
     public class TrashItem : INotifyPropertyChanged
     {
         private bool _isSelected;
+        private int _indexNumber;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
         protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public int IndexNumber
+        {
+            get => _indexNumber;
+            set
+            {
+                if (_indexNumber != value)
+                {
+                    _indexNumber = value;
+                    OnPropertyChanged();
+                }
+            }
         }
 
         public string Id { get; set; } = Guid.NewGuid().ToString();

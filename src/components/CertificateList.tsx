@@ -1219,6 +1219,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
             <table className="w-full text-left border-collapse min-w-[1280px]">
               <thead className="sticky top-0 bg-slate-100/90 border-b border-slate-200 text-[12px] text-slate-700 uppercase font-bold tracking-wider z-10">
                 <tr>
+                  <th className="p-4 w-12 text-center">번호</th>
                   <th className="p-4 w-12 text-center">
                     <input
                       type="checkbox"
@@ -1303,7 +1304,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                 </tr>
               </thead>
               <tbody className="text-sm divide-y divide-slate-200 text-slate-600">
-                {sortedFilteredCerts.map(cert => {
+                {sortedFilteredCerts.map((cert, index) => {
                   const isSelected = selectedIds.includes(cert.id);
                   const isRecentlyCopied = recentlyCopiedIds.includes(cert.id);
                   const isUsb = isUsbCertificate(cert);
@@ -1329,6 +1330,9 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                                 : 'bg-white hover:bg-slate-50/90 dark:bg-transparent dark:hover:bg-slate-800/40 border-l-4 border-l-transparent border-b-slate-200/90 dark:border-b-slate-800'
                       }`}
                     >
+                      <td className={`${cellPadding} text-center font-mono font-bold text-xs text-slate-500`}>
+                        {index + 1}
+                      </td>
                       <td className={`${cellPadding} text-center`}>
                         <input
                           type="checkbox"

@@ -96,12 +96,15 @@ export const UsbDetectedPromptModal: React.FC<UsbDetectedPromptModalProps> = ({
             </div>
 
             <div className="space-y-1.5 max-h-40 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-200">
-              {detectedCerts.map(cert => (
+              {detectedCerts.map((cert, index) => (
                 <div 
                   key={cert.id}
                   className="p-2.5 bg-white rounded-lg border border-slate-200 flex items-center justify-between gap-2 text-xs"
                 >
                   <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 font-mono font-bold text-[10px] flex items-center justify-center shrink-0">
+                      {index + 1}
+                    </span>
                     <FileKey className="w-4 h-4 text-blue-600 shrink-0" />
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">

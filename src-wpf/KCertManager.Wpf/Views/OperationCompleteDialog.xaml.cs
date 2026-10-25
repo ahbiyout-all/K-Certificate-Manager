@@ -10,6 +10,7 @@ namespace KCertManager.Wpf.Views
 {
     public class OperationCompleteItem
     {
+        public int IndexNumber { get; set; }
         public string Name { get; set; } = string.Empty;
         public string IssuerAndPolicy { get; set; } = string.Empty;
     }
@@ -59,6 +60,13 @@ namespace KCertManager.Wpf.Views
             TxtTargetPath.Text = string.IsNullOrWhiteSpace(targetPath) ? "대상 저장소" : targetPath;
 
             var list = items?.ToList() ?? new List<OperationCompleteItem>();
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].IndexNumber <= 0)
+                {
+                    list[i].IndexNumber = i + 1;
+                }
+            }
             TxtCertCountBadge.Text = $" ({list.Count}개)";
             ListCertificates.ItemsSource = list;
 

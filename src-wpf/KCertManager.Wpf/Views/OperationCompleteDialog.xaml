@@ -145,15 +145,21 @@
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <Border Width="20" Height="20" Background="#065F46" CornerRadius="10" Margin="0,0,10,0" VerticalAlignment="Center">
+                                    <!-- Index Badge -->
+                                    <Border Grid.Column="0" Width="22" Height="22" Background="#1E293B" CornerRadius="11" Margin="0,0,8,0" VerticalAlignment="Center" BorderBrush="#334155" BorderThickness="1">
+                                        <TextBlock Text="{Binding IndexNumber}" FontSize="10.5" FontWeight="Bold" Foreground="#94A3B8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+
+                                    <Border Grid.Column="1" Width="20" Height="20" Background="#065F46" CornerRadius="10" Margin="0,0,10,0" VerticalAlignment="Center">
                                         <TextBlock Text="✓" FontSize="11" FontWeight="Bold" Foreground="#6EE7B7" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
 
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                         <TextBlock Text="{Binding IssuerAndPolicy}" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                     </StackPanel>

@@ -589,7 +589,7 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                      {certs.map(cert => {
+                      {certs.map((cert, index) => {
                         const isExpired = cert.daysRemaining <= 0;
                         const isExpiring = cert.daysRemaining > 0 && cert.daysRemaining <= 30;
 
@@ -598,7 +598,8 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
                             key={cert.id}
                             className="bg-white p-3 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs hover:border-slate-300 transition-colors"
                           >
-                            <div className="flex items-start sm:items-center gap-3">
+                            <div className="flex items-start sm:items-center gap-2.5">
+                              <span className="w-5 text-center font-mono font-bold text-xs text-slate-500 shrink-0">{index + 1}</span>
                               <div className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold shrink-0 ${
                                 isExpired
                                   ? 'bg-rose-100 text-rose-700'

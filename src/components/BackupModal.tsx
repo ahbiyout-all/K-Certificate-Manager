@@ -955,11 +955,12 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   선택된 사용자 및 인증서 ({selectedCerts.length}개):
                 </label>
                 <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  {selectedCerts.map(cert => (
+                  {selectedCerts.map((cert, index) => (
                     <div
                       key={cert.id}
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs shadow-2xs"
                     >
+                      <span className="px-1.5 py-0.2 bg-blue-100 text-blue-800 rounded font-bold text-[10px] font-mono shrink-0">{index + 1}</span>
                       <FileKey className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                       <span className="font-semibold text-slate-900">{cert.name}</span>
                       <span className="text-[11px] text-slate-500 font-mono">({cert.issuer})</span>

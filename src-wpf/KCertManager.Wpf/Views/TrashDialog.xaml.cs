@@ -40,6 +40,11 @@ namespace KCertManager.Wpf.Views
                 });
             }
 
+            for (int i = 0; i < _items.Count; i++)
+            {
+                _items[i].IndexNumber = i + 1;
+            }
+
             GridTrash.ItemsSource = _items;
             TxtTrashCount.Text = $"격리 보관된 인증서: {_items.Count}개";
             UpdateSelectedState();

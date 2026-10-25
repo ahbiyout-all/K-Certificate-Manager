@@ -538,16 +538,17 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
                   </p>
                 </div>
               ) : (
-                currentTargetCerts.map(cert => {
+                currentTargetCerts.map((cert, index) => {
                   const isChecked = checkedIds.includes(cert.id);
                   return (
                     <div
                       key={cert.id}
                       onClick={() => toggleCheck(cert.id)}
-                      className={`p-3 sm:px-4 flex items-start gap-3 text-xs cursor-pointer transition-colors ${
+                      className={`p-3 sm:px-4 flex items-start gap-2.5 text-xs cursor-pointer transition-colors ${
                         isChecked ? 'bg-rose-50/40' : 'hover:bg-slate-50'
                       }`}
                     >
+                      <span className="mt-0.5 w-5 text-center font-mono font-bold text-xs text-slate-500 shrink-0">{index + 1}</span>
                       <input
                         type="checkbox"
                         checked={isChecked}

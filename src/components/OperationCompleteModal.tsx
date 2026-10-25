@@ -254,6 +254,9 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
                 data.certNames.map((name, idx) => (
                   <div key={idx} className="flex items-center justify-between bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs shadow-2xs">
                     <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0">
+                        {idx + 1}
+                      </span>
                       <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" />
                       <span className="font-bold text-slate-800">{name}</span>
                     </div>
