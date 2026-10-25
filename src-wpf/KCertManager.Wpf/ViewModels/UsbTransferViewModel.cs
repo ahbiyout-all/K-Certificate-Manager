@@ -295,7 +295,7 @@ namespace KCertManager.Wpf.ViewModels
                 var completeItems = selected.Select(c => new OperationCompleteItem
                 {
                     Name = !string.IsNullOrWhiteSpace(c.CommonName) ? c.CommonName : "공동인증서",
-                    IssuerAndPolicy = $"{c.IssuerName} · 만료일: {c.ValidTo:yyyy-MM-dd}"
+                    IssuerAndPolicy = $"{c.IssuerName} · 만료일: {c.NotAfter:yyyy-MM-dd}"
                 }).ToList();
 
                 string sourcePath = selected.FirstOrDefault()?.DirectoryPath ?? "이동식 USB (NPKI)";

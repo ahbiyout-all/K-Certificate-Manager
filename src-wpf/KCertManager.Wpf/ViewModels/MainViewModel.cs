@@ -1477,7 +1477,11 @@ namespace KCertManager.Wpf.ViewModels
                                 IsSuccess = true,
                                 Message = $"이미 대상 드라이브({targetDriveName})의 동일한 폴더에 보관 중인 원본입니다 (자가 복사 생략)."
                             };
-                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() => _backupHistory.Insert(0, sameResult)));
+                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() => 
+                            {
+                                _backupHistory.Insert(0, sameResult);
+                                UpdateBackupHistoryIndices();
+                            }));
                             success++;
                             continue;
                         }
@@ -1497,7 +1501,11 @@ namespace KCertManager.Wpf.ViewModels
                                 IsSuccess = true,
                                 Message = $"[중복 방지 건너뜀] 대상 드라이브에 이미 동일한 인증서가 존재하여 복사를 건너뛰었습니다."
                             };
-                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() => _backupHistory.Insert(0, skipResult)));
+                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() => 
+                            {
+                                _backupHistory.Insert(0, skipResult);
+                                UpdateBackupHistoryIndices();
+                            }));
                             ActivityLogService.Instance.Log(
                                 LogCategory.BACKUP,
                                 LogLevel.INFO,
@@ -1534,7 +1542,11 @@ namespace KCertManager.Wpf.ViewModels
 
                         // [중복 처리 3: 덮어쓰기(overwrite)]
                         var result = _backupService.BackupCertificateToDrive(cert, targetDriveName);
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() => _backupHistory.Insert(0, result)));
+                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() => 
+                        {
+                            _backupHistory.Insert(0, result);
+                            UpdateBackupHistoryIndices();
+                        }));
                         if (result.IsSuccess)
                         {
                             success++;
@@ -1570,7 +1582,11 @@ namespace KCertManager.Wpf.ViewModels
                             IsSuccess = false,
                             Message = $"복사 중 예외 발생: {ex.Message}"
                         };
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() => _backupHistory.Insert(0, failResult)));
+                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() => 
+                        {
+                            _backupHistory.Insert(0, failResult);
+                            UpdateBackupHistoryIndices();
+                        }));
                     }
                 }
             });
@@ -1629,7 +1645,7 @@ namespace KCertManager.Wpf.ViewModels
                 var completeItems = selected.Select(c => new OperationCompleteItem
                 {
                     Name = !string.IsNullOrWhiteSpace(c.CommonName) ? c.CommonName : "공동인증서",
-                    IssuerAndPolicy = $"{c.IssuerName} · 만료일: {c.ValidTo:yyyy-MM-dd}"
+                    IssuerAndPolicy = $"{c.IssuerName} · 만료일: {c.NotAfter:yyyy-MM-dd}"
                 }).ToList();
 
                 string sourcePath = selected.FirstOrDefault()?.DirectoryPath ?? "내 컴퓨터 (NPKI/GPKI)";
