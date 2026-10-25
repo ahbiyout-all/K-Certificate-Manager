@@ -650,6 +650,7 @@
                                   CanUserAddRows="False"
                                   IsReadOnly="True"
                                   SelectionMode="Single"
+                                  FrozenColumnCount="1"
                                   SelectionChanged="CertDataGrid_SelectionChanged"
                                   ScrollViewer.HorizontalScrollBarVisibility="Visible"
                                   ScrollViewer.VerticalScrollBarVisibility="Auto"

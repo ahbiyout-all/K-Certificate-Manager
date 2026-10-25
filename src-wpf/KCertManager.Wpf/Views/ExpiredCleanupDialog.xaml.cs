@@ -136,7 +136,7 @@ namespace KCertManager.Wpf.Views
 
                 for (int i = 0; i < currentList.Count; i++)
                 {
-                    currentList[i].IndexNumber = i + 1;
+                    currentList[i].IndexNumber = i;
                 }
 
                 if (GridCerts != null) GridCerts.ItemsSource = currentList;

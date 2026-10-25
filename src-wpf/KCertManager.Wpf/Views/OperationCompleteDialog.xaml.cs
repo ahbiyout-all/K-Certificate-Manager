@@ -62,9 +62,9 @@ namespace KCertManager.Wpf.Views
             var list = items?.ToList() ?? new List<OperationCompleteItem>();
             for (int i = 0; i < list.Count; i++)
             {
-                if (list[i].IndexNumber <= 0)
+                if (list[i].IndexNumber < 0)
                 {
-                    list[i].IndexNumber = i + 1;
+                    list[i].IndexNumber = i;
                 }
             }
             TxtCertCountBadge.Text = $" ({list.Count}개)";

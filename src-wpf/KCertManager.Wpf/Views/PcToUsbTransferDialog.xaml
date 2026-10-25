@@ -102,6 +102,7 @@
                               Background="Transparent" RowBackground="{DynamicResource BgCardBrush}" AlternatingRowBackground="{DynamicResource BgDarkBrush}"
                               Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" GridLinesVisibility="Horizontal"
                               HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
+                              FrozenColumnCount="1"
                               ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <DataGrid.Resources>
                             <!-- Highlight colors -->

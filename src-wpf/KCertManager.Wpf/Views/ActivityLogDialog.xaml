@@ -77,7 +77,8 @@
                       GridLinesVisibility="Horizontal"
                       HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
                       HeadersVisibility="Column"
-                      RowHeight="40">
+                      RowHeight="40"
+                      FrozenColumnCount="1">
                 <DataGrid.Resources>
                     <Style TargetType="DataGridColumnHeader">
                         <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
@@ -105,6 +106,18 @@
                     </Style>
                 </DataGrid.Resources>
                 <DataGrid.Columns>
+                    <DataGridTextColumn Header="번호" Binding="{Binding IndexNumber}" Width="45">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Setter Property="FontFamily" Value="Consolas, Courier New, monospace"/>
+                                <Setter Property="FontSize" Value="11"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
                     <DataGridTextColumn Header="발생 시각" Binding="{Binding FormattedTime}" Width="140"/>
                     <DataGridTextColumn Header="분류" Binding="{Binding CategoryBadgeText}" Width="85"/>
                     <DataGridTextColumn Header="작업 명칭" Binding="{Binding Action}" Width="150"/>

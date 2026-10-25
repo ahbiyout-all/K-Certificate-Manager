@@ -56,11 +56,19 @@ namespace KCertManager.Wpf.Services
                     {
                         _logs.RemoveAt(_logs.Count - 1);
                     }
+                    for (int i = 0; i < _logs.Count; i++)
+                    {
+                        _logs[i].IndexNumber = i;
+                    }
                 }));
             }
             else
             {
                 _logs.Insert(0, item);
+                for (int i = 0; i < _logs.Count; i++)
+                {
+                    _logs[i].IndexNumber = i;
+                }
             }
 
             // Append to disk asynchronously

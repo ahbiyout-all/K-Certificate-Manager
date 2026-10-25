@@ -213,7 +213,7 @@ namespace KCertManager.Wpf.ViewModels
                     for (int i = 0; i < validCerts.Count; i++)
                     {
                         var c = validCerts[i];
-                        c.IndexNumber = i + 1;
+                        c.IndexNumber = i;
                         c.IsRemovableMedia = true;
                         c.IsSelected = true;
                         c.PropertyChanged += (s, e) =>

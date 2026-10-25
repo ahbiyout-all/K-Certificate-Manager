@@ -68,7 +68,8 @@
                       GridLinesVisibility="Horizontal"
                       HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
                       HeadersVisibility="Column"
-                      RowHeight="48">
+                      RowHeight="48"
+                      FrozenColumnCount="1">
                 <DataGrid.Resources>
                     <!-- Solid brushes for DataGrid selection highlight so WPF doesn't fallback to SystemColors.Highlight -->
                     <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#2563EB"/>

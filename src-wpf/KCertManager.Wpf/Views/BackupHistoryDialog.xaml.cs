@@ -24,7 +24,7 @@ namespace KCertManager.Wpf.Views
         {
             for (int i = 0; i < _history.Count; i++)
             {
-                _history[i].IndexNumber = i + 1;
+                _history[i].IndexNumber = i;
             }
             GridHistory.ItemsSource = null;
             GridHistory.ItemsSource = _history;

@@ -1208,7 +1208,7 @@ namespace KCertManager.Wpf.ViewModels
             var raw = _backupService.GetTrashItems();
             for (int i = 0; i < raw.Count; i++)
             {
-                raw[i].IndexNumber = i + 1;
+                raw[i].IndexNumber = i;
             }
             TrashItems = new ObservableCollection<TrashItem>(raw);
             OnPropertyChanged(nameof(TrashCount));
@@ -1261,7 +1261,7 @@ namespace KCertManager.Wpf.ViewModels
             FilteredCertificates = new ObservableCollection<CertificateItem>(query);
             for (int i = 0; i < FilteredCertificates.Count; i++)
             {
-                FilteredCertificates[i].IndexNumber = i + 1;
+                FilteredCertificates[i].IndexNumber = i;
             }
             UpdateCounts();
             (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
@@ -1997,6 +1997,15 @@ namespace KCertManager.Wpf.ViewModels
                 _driveWatcher.Dispose();
             }
             catch { }
+        }
+
+        private void UpdateBackupHistoryIndices()
+        {
+            if (_backupHistory == null) return;
+            for (int i = 0; i < _backupHistory.Count; i++)
+            {
+                _backupHistory[i].IndexNumber = i;
+            }
         }
 
         #endregion

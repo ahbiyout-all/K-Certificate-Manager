@@ -24,6 +24,7 @@ namespace KCertManager.Wpf.Models
 
     public class AppLogItem
     {
+        public int IndexNumber { get; set; }
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
         public DateTime Timestamp { get; set; } = DateTime.Now;
         public LogCategory Category { get; set; } = LogCategory.SCAN;
