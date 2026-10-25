@@ -17,6 +17,43 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 91] 프로젝트 버전 정보 및 컴파일 타깃 정보 100% 일치화 정합성 완료 (v1.6.4)
+- **작업 일시**: 2026-10-25 13:30 KST
+- **요청 사항**: "버전정보와 컴파일 정보가 맞지 않음."
+- **원인 분석**:
+  1. **C# 프로젝트 파일 버전 누락/불일치**:
+     - `package.json`과 `src/version.ts`는 `1.6.4`로 업데이트되었으나, `src-wpf/KCertManager.Wpf/KCertManager.Wpf.csproj` 및 `KCert.Core.csproj`의 `<Version>`, `<AssemblyVersion>`, `<FileVersion>`이 여전히 `1.6.3`으로 남아 있어 컴파일된 바이너리(`KCertManager.exe`, `KCert.Core.dll`) 속성이 구 버전으로 생성됨.
+  2. **업데이트 서비스 및 UI 고정 문자열 불일치**:
+     - `UpdateCheckerService.cs`의 `CURRENT_VERSION = "1.6.3"`, `CurrentVersion`, `LatestVersion`이 하드코딩되어 앱 내에서 `v1.6.3`으로 보고됨.
+     - `MainWindow.xaml` 상태바 FallbackValue 및 `UpdateNotificationDialog.xaml`의 버전 텍스트가 `v1.6.3`으로 잔류.
+     - `AboutDialog.xaml` 및 `AboutDialog.xaml.cs`의 부제목 및 라이선스 복사 텍스트가 구버전(`v1.4.5`)으로 하드코딩되어 있었음.
+  3. **빌드 스크립트(.bat, .ps1, Inno Setup)의 컴파일/버전 정보 불일치**:
+     - `build.ps1`의 Step 5 헤더가 `[5/7] .NET 8 C# WPF...`로 고정되어 있어 사용자가 `.NET 10.0.401` SDK로 `net10.0-windows` 타깃을 빌드할 때 헤더와 실제 타깃 간에 불일치가 육안으로 노출됨.
+     - `build.ps1`의 기본 버전 폴백이 `1.6.2`로 잔류.
+     - `dotnet build` 및 `dotnet publish` 호출 시 `-p:Version`, `-p:AssemblyVersion`, `-p:FileVersion` 인자가 누락되어 `package.json`의 버전이 C# 어셈블리에 주입되지 못함.
+     - `installer.iss`의 `#define MyAppVersion "1.6.3"`으로 남아 있었음.
+     - `push_to_github.bat`, `push_to_github.ps1`, `.github/workflows/build.yml`의 기본 폴백 버전이 `1.6.2`로 잔류.
+- **수행 내용**:
+  1. **C# 어셈블리 버전 100% 동기화 (`KCertManager.Wpf.csproj`, `KCert.Core.csproj`)**:
+     - `<Version>1.6.4</Version>`, `<AssemblyVersion>1.6.4.0</AssemblyVersion>`, `<FileVersion>1.6.4.0</FileVersion>`으로 최신화.
+  2. **빌드 및 배포 스크립트 컴파일 정보 일체화 (`build.ps1`, `build.bat`, `installer.iss`)**:
+     - Step 5 표기를 `[5/7] .NET 10 / .NET 8 C# WPF 데스크톱 네이티브 에디션 및 KCert.Core DLL 빌드 (v$appVersion)...`로 정규화.
+     - `dotnet build` 및 `dotnet publish` 시 `-p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0`을 명시 주입하여 컴파일 결과물 파일 속성과 패키지 버전 완전 일치화.
+     - `build.ps1` 폴백 기본값을 `1.6.4`로 교정.
+     - `installer.iss`: `#define MyAppVersion "1.6.4"` 동기화.
+     - `build.bat`: C# WPF 컴파일 단계에 `(.NET 10 / .NET 8, v1.6.4)` 및 버전 파라미터 적용.
+  3. **WPF UI 및 라이선스 대화상자 정합성 완료**:
+     - `UpdateCheckerService.cs`: `CURRENT_VERSION = "1.6.4"` 갱신.
+     - `MainViewModel.cs`: `RuntimeInfo`(`.NET 10.0 / 8.0`) 및 `CompileInfo` 동적 프로퍼티 신설.
+     - `MainWindow.xaml`: 상태바에 `v1.6.4` 및 `.NET 런타임 정보 뱃지` 표시.
+     - `AboutDialog.xaml` & `AboutDialog.xaml.cs`: `v1.6.4 · .NET 10.0 / .NET 8.0`으로 정규화.
+     - `UpdateNotificationDialog.xaml`: `v1.6.4`로 갱신.
+  4. **웹 콘솔 및 배포 문서 동기화**:
+     - `DesktopAppModal.tsx`, `CoreSpecModal.tsx`: `.NET 10 / .NET 8` 및 `kcert-manager-v1.6.4-setup.exe`로 정규화.
+     - `push_to_github.bat`, `push_to_github.ps1`, `.github/workflows/build.yml`: `1.6.4` 최신화.
+     - `docs/README.md`, `docs/LICENSE.md`, `docs/BUILD_GUIDE.md`: `v1.6.4` 동기화.
+  5. **컴파일 및 린트 검증**: `compile_applet` 및 `lint_applet` 100% 무결 통과.
+
 ### 📝 [작업 차수 90] 윈도우 상단 우측 창 제어 버튼(최소화 / 최대화 / 닫기) 독립 컬럼 분리 및 창 크기 변경 시 상시 노출 보장
 - **작업 일시**: 2026-10-22 20:00 KST
 - **요청 사항**: "오른쪽 상단 (최소/최대/닫기)는 창크기가 달라져도 항상 보이도록 합니다."

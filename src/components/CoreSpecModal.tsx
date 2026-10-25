@@ -33,7 +33,7 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
 
   const copySpecSummary = () => {
     const text = `[KCert.Core.dll 기술 명세 요약]
-- 버전: v${APP_VERSION} (.NET 8.0 제로 의존성 순수 창작 DLL)
+- 버전: v${APP_VERSION} (.NET 10.0 / .NET 8.0 제로 의존성 순수 창작 DLL)
 - 저작권: ${DEVELOPER_INFO.author} (${DEVELOPER_INFO.blog})
 - 홈페이지: ${DEVELOPER_INFO.homepage}
 - 3대 모듈:
@@ -58,7 +58,7 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
               <div className="flex items-center gap-2">
                 <h3 className="text-base sm:text-lg font-bold">KCert.Core.dll 순수 창작 코어 명세</h3>
                 <span className="text-[10px] font-mono px-2 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded font-semibold">
-                  .NET 8.0 Class Library
+                  .NET 10.0 / .NET 8.0 Class Library
                 </span>
               </div>
               <p className="text-xs text-slate-400">외부 서드파티 제로(Zero-Dependency) · 네트워크 통신 제로(Zero-Network)</p>

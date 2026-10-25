@@ -73,7 +73,7 @@
                         <StackPanel Grid.Column="2" HorizontalAlignment="Center">
                             <TextBlock Text="GitHub 최신 버전" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
                             <Border Background="#2563EB" CornerRadius="6" Padding="10,4" Margin="0,4,0,0">
-                                <TextBlock x:Name="TxtLatestVersion" Text="v1.6.3" FontSize="13" FontWeight="Bold" Foreground="White"/>
+                                <TextBlock x:Name="TxtLatestVersion" Text="v1.6.4" FontSize="13" FontWeight="Bold" Foreground="White"/>
                             </Border>
                         </StackPanel>
                     </Grid>

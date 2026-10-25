@@ -67,7 +67,7 @@ export const DesktopAppModal: React.FC<DesktopAppModalProps> = ({ isOpen, onClos
                   v{APP_VERSION} Native
                 </span>
                 <span className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded font-semibold hidden sm:inline-block">
-                  C# WPF .NET 8
+                  C# WPF (.NET 10 / .NET 8)
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -151,7 +151,7 @@ export const DesktopAppModal: React.FC<DesktopAppModalProps> = ({ isOpen, onClos
                       <span>풀버전 데스크톱</span>
                     </h4>
                     <p className="text-[11px] text-slate-500 leading-relaxed mb-3">
-                      .NET 8 런타임이 내장된 독립 단일 실행 파일. 사전 설치 없이 즉시 실행됩니다.
+                      .NET 10 / .NET 8 런타임이 내장된 독립 단일 실행 파일. 사전 설치 없이 즉시 실행됩니다.
                     </p>
                     <div className="bg-slate-50 p-2 rounded border border-slate-200 text-[11px] font-mono text-slate-700 break-all mb-3">
                       KCertManager.exe
@@ -194,7 +194,7 @@ export const DesktopAppModal: React.FC<DesktopAppModalProps> = ({ isOpen, onClos
                       <span>단 1~2MB 초소형 용량</span>
                     </li>
                     <li className="flex items-center gap-1 text-slate-500">
-                      <span>※ .NET 8 런타임 필요</span>
+                      <span>※ .NET 10 또는 .NET 8 런타임 필요</span>
                     </li>
                   </ul>
                 </div>
@@ -215,7 +215,7 @@ export const DesktopAppModal: React.FC<DesktopAppModalProps> = ({ isOpen, onClos
                       시작 메뉴 및 바탕화면 바로가기 등록, 찌꺼기 없는 100% 완전 삭제 언인스톨러 지원.
                     </p>
                     <div className="bg-slate-50 p-2 rounded border border-slate-200 text-[11px] font-mono text-slate-700 break-all mb-3">
-                      KCertManager_Setup_v{APP_VERSION}.exe
+                      kcert-manager-v{APP_VERSION}-setup.exe
                     </div>
                   </div>
                   <ul className="text-[11px] text-slate-600 space-y-1 pt-2 border-t border-slate-100">
@@ -282,7 +282,7 @@ export const DesktopAppModal: React.FC<DesktopAppModalProps> = ({ isOpen, onClos
                   </div>
                   <div className="flex items-start gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-200">
                     <span className="font-bold text-purple-700 min-w-28 shrink-0">인스톨러 패키지:</span>
-                    <span className="font-mono text-slate-600">release\07_Installer\KCertManager_Setup_v{APP_VERSION}.exe</span>
+                    <span className="font-mono text-slate-600">release\07_Installer\kcert-manager-v{APP_VERSION}-setup.exe</span>
                   </div>
                   <div className="flex items-start gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-200">
                     <span className="font-bold text-emerald-700 min-w-28 shrink-0">순수 코어 DLL:</span>

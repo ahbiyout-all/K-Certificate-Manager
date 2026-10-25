@@ -60,11 +60,11 @@ if not exist "%RELEASE_BASE%\04_WebBundle" mkdir "%RELEASE_BASE%\04_WebBundle"
 xcopy "%~dp0dist" "%RELEASE_BASE%\04_WebBundle" /E /I /Y /Q >nul 2>&1
 
 echo.
-echo [5/7] Building C# WPF Native Desktop Edition...
+echo [5/7] Building C# WPF Native Desktop Edition (.NET 10 / .NET 8, v1.6.4)...
 where dotnet >nul 2>&1
 if %ERRORLEVEL% equ 0 (
     if not exist "%RELEASE_BASE%\05_WpfDesktop" mkdir "%RELEASE_BASE%\05_WpfDesktop"
-    dotnet publish "%~dp0src-wpf\KCertManager.Wpf\KCertManager.Wpf.csproj" -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -p:DebugSymbols=false -o "%RELEASE_BASE%\05_WpfDesktop"
+    dotnet publish "%~dp0src-wpf\KCertManager.Wpf\KCertManager.Wpf.csproj" -c Release -r win-x64 -p:Version=1.6.4 -p:AssemblyVersion=1.6.4.0 -p:FileVersion=1.6.4.0 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -p:DebugSymbols=false -o "%RELEASE_BASE%\05_WpfDesktop"
     if exist "%RELEASE_BASE%\05_WpfDesktop\KCertManager.Wpf.exe" (
         copy /Y "%RELEASE_BASE%\05_WpfDesktop\KCertManager.Wpf.exe" "%RELEASE_BASE%\05_WpfDesktop\KCertManager.exe" >nul 2>&1
         copy /Y "%RELEASE_BASE%\05_WpfDesktop\KCertManager.Wpf.exe" "%~dp0KCertManager.exe" >nul 2>&1

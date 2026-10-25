@@ -686,6 +686,8 @@ namespace KCertManager.Wpf.ViewModels
         }
 
         public string AppVersion => $"v{KCertManager.Wpf.Services.UpdateCheckerService.CURRENT_VERSION}";
+        public string RuntimeInfo => $".NET {Environment.Version.Major}.{Environment.Version.Minor} ({System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture})";
+        public string CompileInfo => $"v{KCertManager.Wpf.Services.UpdateCheckerService.CURRENT_VERSION} (.NET {Environment.Version.Major}.{Environment.Version.Minor})";
 
         public bool IsPastelWhite
         {

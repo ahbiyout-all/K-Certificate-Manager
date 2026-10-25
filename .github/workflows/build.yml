@@ -24,7 +24,7 @@ jobs:
         id: version_step
         shell: pwsh
         run: |
-          $ver = "1.6.2"
+          $ver = "1.6.4"
           if ("${{ github.ref_name }}".StartsWith("v")) {
             $ver = "${{ github.ref_name }}".Substring(1)
           } elseif (Test-Path "package.json") {
@@ -75,14 +75,18 @@ jobs:
         run: dotnet restore KCertManager.sln
 
       - name: Build KCert.Core DLL
-        run: dotnet build src-wpf/KCert.Core/KCert.Core.csproj -c Release -o release/05_WpfDesktop
+        run: dotnet build src-wpf/KCert.Core/KCert.Core.csproj -c Release -p:Version=${{ env.APP_VER }} -p:AssemblyVersion=${{ env.APP_VER }}.0 -p:FileVersion=${{ env.APP_VER }}.0 -o release/05_WpfDesktop
 
       - name: Build & Publish WPF Desktop App (x64 Standalone Single-File)
         shell: pwsh
         run: |
+          $ver = "${{ env.APP_VER }}"
           dotnet publish src-wpf/KCertManager.Wpf/KCertManager.Wpf.csproj `
             -c Release `
             -r win-x64 `
+            -p:Version=$ver `
+            -p:AssemblyVersion=$ver.0 `
+            -p:FileVersion=$ver.0 `
             --self-contained true `
             -p:PublishSingleFile=true `
             -p:EnableCompressionInSingleFile=true `

@@ -56,13 +56,13 @@ Write-Host " [OK] Node.js: $nodeVer, NPM: $npmVer" -ForegroundColor Green
 # ------------------------------------------------------------------------------
 Write-Host ""
 Write-Host "[2/7] package.json 버전 정보 확인 중..." -ForegroundColor Cyan
-$appVersion = "1.6.2"
+$appVersion = "1.6.4"
 if (Test-Path "$scriptDir\package.json") {
     try {
         $pkgJson = Get-Content "$scriptDir\package.json" -Raw | ConvertFrom-Json
         if ($pkgJson.version) { $appVersion = $pkgJson.version }
     } catch {
-        Write-Host " [NOTICE] package.json 파싱 실패. 기본 버전(1.6.2) 사용" -ForegroundColor Yellow
+        Write-Host " [NOTICE] package.json 파싱 실패. 기본 버전(1.6.4) 사용" -ForegroundColor Yellow
     }
 }
 Write-Host " [OK] 대상 버전: v$appVersion" -ForegroundColor Green
@@ -83,7 +83,7 @@ if (-not (Test-Path "$scriptDir\node_modules")) {
 # Step 4: Vite Production Web Bundle Build
 # ------------------------------------------------------------------------------
 Write-Host ""
-Write-Host "[4/7] Vite 프로덕션 웹 번들 빌드 시작..." -ForegroundColor Cyan
+Write-Host "[4/7] Vite 프로덕션 웹 번들 빌드 시작 (v$appVersion)..." -ForegroundColor Cyan
 & npm run build
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] Vite 웹 번들 빌드에 실패했습니다." -ForegroundColor Red
@@ -100,10 +100,10 @@ Copy-Item -Path "$scriptDir\dist\*" -Destination $dir04Web -Recurse -Force
 Write-Host " [OK] Step 4 웹 번들 생성 완료: $dir04Web\" -ForegroundColor Green
 
 # ------------------------------------------------------------------------------
-# Step 5: .NET 8 C# WPF Native Desktop Edition Build
+# Step 5: .NET 10 / .NET 8 C# WPF Native Desktop Edition Build
 # ------------------------------------------------------------------------------
 Write-Host ""
-Write-Host "[5/7] .NET 8 C# WPF 데스크톱 네이티브 에디션 및 KCert.Core DLL 빌드..." -ForegroundColor Cyan
+Write-Host "[5/7] .NET 10 / .NET 8 C# WPF 데스크톱 네이티브 에디션 및 KCert.Core DLL 빌드 (v$appVersion)..." -ForegroundColor Cyan
 $coreProj = "$scriptDir\src-wpf\KCert.Core\KCert.Core.csproj"
 $wpfProj = "$scriptDir\src-wpf\KCertManager.Wpf\KCertManager.Wpf.csproj"
 $dir05Wpf = "$releaseBase\05_WpfDesktop"
@@ -125,14 +125,14 @@ if ($dotnetCmd -and (-not $SkipWpf)) {
             $resolvedTfm = "net10.0-windows"
         }
     }
-    Write-Host " [INFO] .NET SDK: $dotnetVer (대상 TargetFramework: $resolvedTfm)" -ForegroundColor Cyan
+    Write-Host " [INFO] .NET SDK: $dotnetVer (대상 TargetFramework: $resolvedTfm, 빌드 버전: v$appVersion)" -ForegroundColor Cyan
 
     # 5-0: KCert.Core.dll
     if (Test-Path $coreProj) {
-        Write-Host " [INFO] KCert.Core 독립 DLL 빌드 중 ($resolvedTfm)..." -ForegroundColor Yellow
-        & dotnet build $coreProj -c Release -p:TargetFramework=$resolvedTfm -o $dir05Wpf
+        Write-Host " [INFO] KCert.Core 독립 DLL 빌드 중 ($resolvedTfm, v$appVersion)..." -ForegroundColor Yellow
+        & dotnet build $coreProj -c Release -p:TargetFramework=$resolvedTfm -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 -o $dir05Wpf
         if ($LASTEXITCODE -ne 0) {
-            & dotnet build $coreProj -c Release -o $dir05Wpf
+            & dotnet build $coreProj -c Release -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 -o $dir05Wpf
         }
         if (Test-Path "$dir05Wpf\KCert.Core.dll") {
             Copy-Item -Path "$dir05Wpf\KCert.Core.dll" -Destination "$scriptDir\KCert.Core.dll" -Force
@@ -145,12 +145,12 @@ if ($dotnetCmd -and (-not $SkipWpf)) {
         Write-Host " [INFO] win-x64 패키지 복원 중 ($resolvedTfm)..." -ForegroundColor Yellow
         & dotnet restore $wpfProj -r win-x64 -p:TargetFramework=$resolvedTfm 2>$null | Out-Null
 
-        Write-Host " [INFO] Step 5-1 데스크톱 풀버전 KCertManager.exe ($resolvedTfm Self-Contained) 빌드 중..." -ForegroundColor Yellow
-        & dotnet publish $wpfProj -c Release -r win-x64 -p:TargetFramework=$resolvedTfm --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -p:DebugSymbols=false -o $dir05Wpf
+        Write-Host " [INFO] Step 5-1 데스크톱 풀버전 KCertManager.exe ($resolvedTfm Self-Contained, v$appVersion) 빌드 중..." -ForegroundColor Yellow
+        & dotnet publish $wpfProj -c Release -r win-x64 -p:TargetFramework=$resolvedTfm -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -p:DebugSymbols=false -o $dir05Wpf
 
         if ($LASTEXITCODE -ne 0) {
-            Write-Host " [NOTICE] Self-Contained 실패 시 프레임워크 종속 모드로 대체 빌드 ($resolvedTfm)..." -ForegroundColor Yellow
-            & dotnet publish $wpfProj -c Release -r win-x64 -p:TargetFramework=$resolvedTfm --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=false -p:DebugType=none -p:DebugSymbols=false -o $dir05Wpf
+            Write-Host " [NOTICE] Self-Contained 실패 시 프레임워크 종속 모드로 대체 빌드 ($resolvedTfm, v$appVersion)..." -ForegroundColor Yellow
+            & dotnet publish $wpfProj -c Release -r win-x64 -p:TargetFramework=$resolvedTfm -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=false -p:DebugType=none -p:DebugSymbols=false -o $dir05Wpf
         }
 
         if (Test-Path "$dir05Wpf\KCertManager.exe") {
@@ -161,11 +161,11 @@ if ($dotnetCmd -and (-not $SkipWpf)) {
         }
 
         # 5-2: Lite Edition
-        Write-Host " [INFO] Step 5-2 초경량 라이트 에디션 KCertManager-Lite.exe ($resolvedTfm) 빌드 중..." -ForegroundColor Yellow
+        Write-Host " [INFO] Step 5-2 초경량 라이트 에디션 KCertManager-Lite.exe ($resolvedTfm, v$appVersion) 빌드 중..." -ForegroundColor Yellow
         $dir05Lite = "$releaseBase\05_WpfLite"
         if (Test-Path $dir05Lite) { Remove-Item -Recurse -Force $dir05Lite }
         New-Item -ItemType Directory -Path $dir05Lite | Out-Null
-        & dotnet publish $wpfProj -c Release -r win-x64 -p:TargetFramework=$resolvedTfm --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=false -p:DebugType=none -p:DebugSymbols=false -o $dir05Lite 2>$null | Out-Null
+        & dotnet publish $wpfProj -c Release -r win-x64 -p:TargetFramework=$resolvedTfm -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=false -p:DebugType=none -p:DebugSymbols=false -o $dir05Lite 2>$null | Out-Null
 
         if (Test-Path "$dir05Lite\KCertManager.exe") {
             Copy-Item -Path "$dir05Lite\KCertManager.exe" -Destination "$dir05Wpf\KCertManager-Lite.exe" -Force
