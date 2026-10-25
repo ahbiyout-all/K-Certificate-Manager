@@ -72,18 +72,18 @@ build.bat net8
 ### 빌드 파이프라인 진행 순서
 0. **Pre-build Cleanup**: 작업 공간 내 잔여 레거시 스크립트(`*.vbs`, 중복 `*.bat`, `*.ps1`) 자동 정리
 1. **Environment Check**: `node.exe`, `npm.cmd`, `dotnet.exe` 환경 점검
-2. **Version Extraction**: `package.json`의 SemVer 버전 자동 추출 (예: `1.6.4`)
+2. **Version Extraction**: `package.json`의 SemVer 버전 자동 추출 (예: `1.6.5`)
 3. **Dependency Verification**: `node_modules` 존재 여부 확인 및 자동 설치
 4. **Web Bundle Build**: `npm run build` (`dist/` 생성)
 5. **C# WPF Native Desktop Compilation**:
    - .NET 10.0 / .NET 8.0 타깃 프레임워크 자동 매칭 컴파일
    - `KCert.Core.dll` 순수 창작 코어 라이브러리 빌드
-   - `KCertManager_v1.6.4.exe` (풀버전, Self-Contained)
-   - `KCertManager-Lite_v1.6.4.exe` (초경량 에디션, Framework-Dependent)
+   - `KCertManager_v1.6.5.exe` (풀버전, Self-Contained)
+   - `KCertManager-Lite_v1.6.5.exe` (초경량 에디션, Framework-Dependent)
    - 인스톨러 및 런처 호환용 `KCertManager.exe` 자동 생성
 6. **Unpacked Multi-File Package Assembling**: `release\06_UnpackedApp\` 폴더에 불필요한 VBS/중복 스크립트 없이 정제된 구성 파일 및 실행 런처(`run-web.cmd`) 복사
 7. **Inno Setup Compiler Packaging (Unpacked Multi-File Installer)**:
-   - `ISCC.exe`가 감지되면 `installer.iss`를 자동 컴파일하여 `release\07_Installer\kcert-manager-v1.6.4-setup.exe` 생성
+   - `ISCC.exe`가 감지되면 `installer.iss`를 자동 컴파일하여 `release\07_Installer\kcert-manager-v1.6.5-setup.exe` 생성
    - **중복 팩킹 원천 제거**: 70MB 바이너리를 단 1벌만 배포하고, 무차별 와일드카드(`*`) 제거, 중복 스크립트 및 개발 전용 소스 파일 배포 제외로 인스톨러 용량 50% 절감
    - **폴더 풀림(Unpacked Multi-File) 설치**: 설치 완료 시 대상 디렉터리(`{app}`) 내에 `dist\`, `docs\`, 필수 실행 바이너리(`KCertManager.exe`, `KCert.Core.dll`), 에셋 및 런처가 디렉터리 트리 그대로 개별 파일로 완전히 풀려서 설치됨
    - **Windows 방화벽 인바운드 규칙 자동/사전 등록**: 기본 이름 및 버전 포함 이름 인바운드 규칙 백그라운드 사전 등록
@@ -97,7 +97,7 @@ build.bat net8
 Inno Setup Compiler GUI를 열거나 커맨드라인에서 직접 컴파일할 수도 있습니다:
 
 ```cmd
-"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=1.6.4 installer.iss
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=1.6.5 installer.iss
 ```
 
 ---
@@ -107,10 +107,10 @@ Inno Setup Compiler GUI를 열거나 커맨드라인에서 직접 컴파일할 �
 | 폴더 / 파일 | 빌드 단계 | 예상 용량 | 설명 및 특징 |
 | :--- | :--- | :--- | :--- |
 | `release\04_WebBundle\` | **Step 4** | ~2MB | Vite 프로덕션 번들 (HTML, CSS, JS 개별 에셋) |
-| `release\05_WpfDesktop\KCertManager_v1.6.4.exe` | **Step 5-1** | **~69MB** | **C# WPF 데스크톱 풀버전 (정식 독립 실행형)** (.NET 10 / .NET 8 런타임 내장) |
-| `release\05_WpfDesktop\KCertManager-Lite_v1.6.4.exe` | **Step 5-2** | **~6MB** | **C# WPF 초경량 라이트 에디션** (프레임워크 종속형 단일 실행 바이너리) |
+| `release\05_WpfDesktop\KCertManager_v1.6.5.exe` | **Step 5-1** | **~69MB** | **C# WPF 데스크톱 풀버전 (정식 독립 실행형)** (.NET 10 / .NET 8 런타임 내장) |
+| `release\05_WpfDesktop\KCertManager-Lite_v1.6.5.exe` | **Step 5-2** | **~6MB** | **C# WPF 초경량 라이트 에디션** (프레임워크 종속형 단일 실행 바이너리) |
 | `release\06_UnpackedApp\` | **Step 6** | ~75MB | 중복 파일이 제거된 슬림 무설치 폴더 풀림(Unpacked Multi-File) 포터블 패키지 |
-| `release\07_Installer\kcert-manager-v1.6.4-setup.exe` | **Step 7** | ~40MB | Inno Setup 공식 설치 인스톨러 (방화벽 자동 등록 및 무인 설치 지원) |
+| `release\07_Installer\kcert-manager-v1.6.5-setup.exe` | **Step 7** | ~40MB | Inno Setup 공식 설치 인스톨러 (방화벽 자동 등록 및 무인 설치 지원) |
 
 ---
 

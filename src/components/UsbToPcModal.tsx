@@ -745,7 +745,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                             }`}
                           >
                             <div className="flex items-center gap-2.5">
-                              <span className="w-5 text-center font-mono font-bold text-xs text-slate-500 shrink-0 sticky left-0 z-10 bg-white group-hover:bg-slate-50">{index}</span>
+                              <span className="w-5 text-center font-mono font-bold text-xs text-slate-500 shrink-0 sticky left-0 z-10 bg-white group-hover:bg-slate-50">{index + 1}</span>
                             <input
                               type="checkbox"
                               checked={isSelected}

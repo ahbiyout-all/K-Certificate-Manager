@@ -56,7 +56,7 @@ Write-Host " [OK] Node.js: $nodeVer, NPM: $npmVer" -ForegroundColor Green
 # ------------------------------------------------------------------------------
 Write-Host ""
 Write-Host "[2/7] package.json 버전 정보 확인 중..." -ForegroundColor Cyan
-$appVersion = "1.6.4"
+$appVersion = "1.6.5"
 if (Test-Path "$scriptDir\package.json") {
     try {
         $pkgJson = Get-Content "$scriptDir\package.json" -Raw | ConvertFrom-Json

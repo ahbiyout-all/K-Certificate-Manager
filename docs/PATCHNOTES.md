@@ -16,14 +16,27 @@
 
 ## 📋 버전 릴리스 내역
 
-### 🚀 [v1.6.4] - 2026-10-25
-**변경 구분**: `PATCH` (모든 인증서 열람 창 내부 왼쪽 첫 번째 칼럼 순번 카운터 추가, 작업완료 안내 팝업창 생성, 창 제어 버튼 고정)
+### 🚀 [v1.6.5] - 2026-10-25
+**변경 구분**: `PATCH` (최좌측 1번 인덱스(1, 2, 3...) 일원화, DataGrid 최좌측 고정열(Frozen/Sticky) 보장, 작업 로그 인덱스 열 신설, C# 빌드 오류 CS0103 해소)
 #### ✨ 주요 개선 및 신규 기능 (Improvements & Features)
-- **모든 인증서 열람 창 및 모달 내부 최좌측 첫 번째 칼럼에 순번(카운터 숫자 1, 2, 3...) 추가 (Web & WPF)**:
-  - **사용자 요청 사항**: "인증서를 보여주는 모든 창 내부 왼쪽 첫번째 칸에 숫자를 넣어 카운터 해주세요."
-  - **웹(React) 모달/테이블 8종 적용**: 메인 인증서 테이블(`CertificateList.tsx`), 간편 백업(`BackupModal.tsx`), USB ➔ PC 가져오기(`UsbToPcModal.tsx`), 만료 정리(`CertificateCleanupModal.tsx`), 휴지통(`TrashModal.tsx`), 작업완료 안내(`OperationCompleteModal.tsx`), 갱신 안내(`RenewalGuidanceModal.tsx`), USB 감지 팝업(`UsbDetectedPromptModal.tsx`).
-  - **데스크톱(WPF) 창/DataGrid 7종 적용**: 메인 DataGrid (`MainWindow.xaml`), PC ➔ USB 복사 (`PcToUsbTransferDialog.xaml`), USB ➔ PC 가져오기 (`UsbTransferDialog.xaml`), 만료 정리 (`ExpiredCleanupDialog.xaml`), 휴지통 (`TrashDialog.xaml`), 작업완료 안내 (`OperationCompleteDialog.xaml`).
-  - **자동 카운팅 데이터 바인딩**: ViewModel 및 컴포넌트 목록 바인딩 시 정렬 및 검색 필터링 상태에 맞춰 1부터 시작하는 순번(`1, 2, 3...`)이 실시간 계산되어 표시되도록 구현.
+- **최좌측 1번부터 시작하는 인덱스(번호: 1, 2, 3...) 전면 도입 및 일원화 (Web & WPF)**:
+  - **사용자 요청 사항**: "Web(React)과 데스크톱(WPF)의 모든 테이블에서 최좌측 1번 인덱스 부터 시작"
+  - **웹(React) 모달 및 테이블 전체 1-based 동기화**: 메인 인증서 테이블(`CertificateList.tsx`), 간편 백업(`BackupModal.tsx`), 백업 이력(`BackupHistoryPanel.tsx`), USB ➔ PC 가져오기(`UsbToPcModal.tsx`), 만료 정리(`CertificateCleanupModal.tsx`), 휴지통(`TrashModal.tsx`), 작업완료 안내(`OperationCompleteModal.tsx`), 갱신 안내(`RenewalGuidanceModal.tsx`), USB 감지 팝업(`UsbDetectedPromptModal.tsx`) 등 전체 뷰에서 순번을 1부터 시작(`1, 2, 3...`)하도록 일원화.
+  - **데스크톱(WPF) DataGrid 및 대화상자 전체 1-based 정합성 확보**: 메인 DataGrid (`MainWindow.xaml`), PC ➔ USB 복사 (`PcToUsbTransferDialog.xaml`), USB ➔ PC 가져오기 (`UsbTransferDialog.xaml`), 만료 정리 (`ExpiredCleanupDialog.xaml`), 휴지통 (`TrashDialog.xaml`), 백업 이력 (`BackupHistoryDialog.xaml`), 작업 로그 (`ActivityLogDialog.xaml`), 작업완료 안내 (`OperationCompleteDialog.xaml`).
+  - **자동 카운팅 데이터 바인딩**: ViewModel 및 컴포넌트 목록 바인딩 시 정렬 및 검색 필터링 상태에 맞춰 1부터 시작하는 순번(`IndexNumber = i + 1`)이 실시간 계산 및 자동 할당되도록 구현.
+- **최좌측 인덱스(번호) 열 상시 고정(Frozen & Sticky Column) 보장 (데스크톱 & 모바일 뷰 전면 대응)**:
+  - **WPF DataGrid 6종 `FrozenColumnCount="1"` 적용**: 메인 인증서 DataGrid, 백업 이력, 휴지통, 작업 로그, PC ➔ USB 복사, USB ➔ PC 가져오기 창에서 가로 스크롤바를 우측으로 끝까지 패닝하더라도 최좌측 1번 인덱스(번호) 열이 화면 좌측에 단단히 고정되어 항상 표시됨.
+  - **React Web `sticky left-0` 고정 열 구축**: 모바일 및 좁은 화면/가로 스크롤 상태에서도 `CertificateList.tsx`의 1번 인덱스 열에 `sticky left-0 z-10` 및 테마별 배경색(`bg-slate-50 dark:bg-slate-900`)을 적용하여 컬럼이 배경에 묻히거나 스크롤에 밀려 사라지지 않도록 UI 개선.
+- **작업 로그(Activity Log) 대화상자 고정 1-based 번호 열 신설 및 동적 재색인 연동**:
+  - `AppLogItem.cs`: 감사 로그 모델에 `public int IndexNumber { get; set; }` 신설.
+  - `ActivityLogDialog.xaml`: `FrozenColumnCount="1"` 및 1번 인덱스 텍스트 컬럼(`<DataGridTextColumn Header="번호" Binding="{Binding IndexNumber}" Width="50" ... />`) 신규 추가.
+  - `ActivityLogService.cs`: 신규 로그 추가 시 최신 항목을 1번으로 지정하고, 기존 로그 항목들의 번호를 1부터 시작하도록 자동 재색인(`_logs[i].IndexNumber = i + 1;`)하여 일관된 번호 체계 유지.
+- **C# .NET 10 / .NET 8 릴리스 빌드 오류 CS0103 해소 (`MainViewModel.cs`)**:
+  - `MainViewModel.cs` 내 백업 히스토리 삭제/새로고침 시 호출되는 `UpdateBackupHistoryIndices()` 메서드 정의 누락으로 발생하던 빌드 에러(`error CS0103: The name 'UpdateBackupHistoryIndices' does not exist in the current context`)를 완벽하게 해소하여 GitHub Actions 및 로컬 빌드 무결성 확보.
+
+### 🚀 [v1.6.4] - 2026-10-25
+**변경 구분**: `PATCH` (작업완료 안내 팝업창 생성, 창 제어 버튼 고정, 가로 스크롤바 사라짐 방지)
+#### ✨ 주요 개선 및 신규 기능 (Improvements & Features)
 - **작업완료 안내 전용 팝업창(Operation Complete Modal/Dialog) 신설 (Web & WPF 전면 연동)**:
   - **사용자 요청 사항**: 기존에 복사/백업/가져오기 작업 성공 후 수 초 뒤 사라지는 하단 토스트나 일반 윈도우 단색 알림창 대신, 상세 완료 내역을 한눈에 확인하고 필요한 후속 조치를 취할 수 있는 전용 팝업창(모달 대화상자) 신규 구현.
   - **공통 주요 구성 요소**:

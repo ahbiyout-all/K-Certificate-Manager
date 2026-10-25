@@ -146,9 +146,22 @@
 
 ---
 
-## 10. 메타데이터 & 개발자
+## 10. UI 테이블 & DataGrid 1-Based 고정 인덱스 열(Frozen/Sticky) 아키텍처
+
+1. **최좌측 1-Based 인덱싱 일원화 원칙**:
+   - 데이터 컬렉션의 행 번호를 일반 사용자의 카운팅 규칙(`1, 2, 3...`)에 맞춰 최좌측 열 번호로 일관되게 제공하여 가독성과 직관성을 보장합니다.
+   - 검색 필터링(`SearchQuery`), 상태 필터(`All`, `Valid`, `Expiring`, `Expired`), 정렬(`SortBy`) 등이 트리거될 때마다 뷰 모델 및 컴포넌트 렌더링 단계에서 `IndexNumber`를 1부터 시작하도록 실시간 재색인합니다 (`IndexNumber = i + 1`).
+2. **최좌측 고정 열(Frozen / Sticky Column) 아키텍처**:
+   - **WPF Native DataGrid**: `FrozenColumnCount="1"` 속성을 통해 가로 스크롤 시에도 최좌측 1번 인덱스 열이 화면 좌측에 항시 고정(Pinning)되도록 보장합니다. (`MainWindow`, `BackupHistoryDialog`, `TrashDialog`, `ActivityLogDialog`, `PcToUsbTransferDialog`, `UsbTransferDialog`)
+   - **Web React Table**: Tailwind CSS `sticky left-0 z-10` 및 고정 배경색을 결합하여, 모바일 뷰포트 및 가로 스크롤 상황에서도 테이블 번호 열이 수평 스크롤에 밀려 사라지지 않도록 보호합니다.
+3. **감사 로그(ActivityLog) 동적 재색인 파이프라인**:
+   - `AppLogItem`에 `IndexNumber`를 탑재하고, 새 로그가 삽입될 때 최신 로그를 1번으로 두고 기존 항목들을 1부터 시작하도록 자동 재할당(`_logs[i].IndexNumber = i + 1;`)하여 실시간 감사 추적성을 극대화합니다.
+
+---
+
+## 11. 메타데이터 & 개발자
 - **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
 - **공식 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
 - **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **회사 홈페이지**: [https://www.cisnet.co.kr/](https://www.cisnet.co.kr/)
-- **버전**: `v1.5.0` (SemVer 2.0.0)
+- **버전**: `v1.6.5` (SemVer 2.0.0)

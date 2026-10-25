@@ -289,7 +289,7 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                         isSelected ? 'bg-blue-50/40' : 'hover:bg-slate-50/70'
                       }`}
                     >
-                      <span className={`mt-0.5 w-5 text-center font-mono font-bold text-xs text-slate-500 shrink-0 sticky left-0 z-10 ${isSelected ? 'bg-blue-50' : 'bg-white group-hover:bg-slate-50'}`}>{index}</span>
+                      <span className={`mt-0.5 w-5 text-center font-mono font-bold text-xs text-slate-500 shrink-0 sticky left-0 z-10 ${isSelected ? 'bg-blue-50' : 'bg-white group-hover:bg-slate-50'}`}>{index + 1}</span>
                       <input
                         type="checkbox"
                         checked={isSelected}

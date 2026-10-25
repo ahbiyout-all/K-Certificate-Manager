@@ -32,7 +32,7 @@
                 </Border>
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="K-Certificate Manager (K-인증서 매니저)" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <TextBlock Text="C# WPF MVVM Desktop Edition v1.6.4 · .NET 10.0 / .NET 8.0 · 한국어 / English 2종 라이선스" FontSize="11.5" Foreground="{DynamicResource AccentTextBrush}"/>
+                    <TextBlock Text="C# WPF MVVM Desktop Edition v1.6.5 · .NET 10.0 / .NET 8.0 · 한국어 / English 2종 라이선스" FontSize="11.5" Foreground="{DynamicResource AccentTextBrush}"/>
                 </StackPanel>
             </StackPanel>
 

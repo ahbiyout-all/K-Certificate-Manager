@@ -1343,7 +1343,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                                 ? 'bg-rose-50/20 dark:bg-slate-900/20'
                                 : 'bg-white dark:bg-slate-900'
                       }`}>
-                        {index}
+                        {index + 1}
                       </td>
                       <td className={`${cellPadding} text-center`}>
                         <input

@@ -7,7 +7,7 @@
 ## 📌 프로젝트 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v1.6.4` (Semantic Versioning: `1.6.4`)
+- **현재 버전**: `v1.6.5` (Semantic Versioning: `1.6.5`)
 - **개발자**: AhBiYout
 - **소속**: [http://www.cisnet.co.kr/](http://www.cisnet.co.kr/) (CISNet)
 - **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
@@ -21,12 +21,12 @@
 | 파일명 | 설명 |
 | :--- | :--- |
 | [`VERSIONING_POLICY.md`](./VERSIONING_POLICY.md) | **버전 관리 표준 정책**: SemVer 2.0.0 (MAJOR.MINOR.PATCH) 3단계 분류 및 코드 수정 시 동기화 체크리스트 |
-| [`PATCHNOTES.md`](./PATCHNOTES.md) | **버전 릴리스 패치노트**: v1.0.0부터 v1.6.4까지의 상세 기능 변경, 보안 패치 및 릴리스 히스토리 |
+| [`PATCHNOTES.md`](./PATCHNOTES.md) | **버전 릴리스 패치노트**: v1.0.0부터 v1.6.5까지의 상세 기능 변경, 보안 패치 및 릴리스 히스토리 |
 | [`BLOG_v1.5.0.md`](./BLOG_v1.5.0.md) | **공식 구글 블로그 배포 문서**: v1.5.0 공식 구글 블로그(Blogger) 게시용 10단계 표준 마크다운 원고 |
 | [`AI_INSTRUCTIONS.md`](../AI_INSTRUCTIONS.md) | **AI 개발 행동 강령 & 유지보수 가이드**: 자아검증 수칙, 듀얼 아키텍처, 보안 하드닝, 빌드/배포 자동화 파이프라인 명세 |
 | [`LICENSE.md`](./LICENSE.md) | **소프트웨어 라이선스 & 법적 고지**: 한국어(`LICENSE_KR.txt`)·영어(`LICENSE_EN.txt`) 2종 라이선스 정의, 무상 이용 조건 및 보증 부인 |
 | [`USER_GUIDE.md`](./USER_GUIDE.md) | **사용자 매뉴얼**: 모던 일체형 타이틀바, 4종 테마, 인증서 탐색, USB 백업, USB➔PC 복사, 만료/타인 정리 및 휴지통 가이드 |
-| [`BUILD_GUIDE.md`](./BUILD_GUIDE.md) | **빌드 및 배포 가이드**: .NET 10 / .NET 8 자동 감지 빌드(`build.bat`), Inno Setup 단일 설치파일(`kcert-manager-v1.6.4-setup.exe`), GitHub 업로드(`push_to_github.bat`) 안내 |
+| [`BUILD_GUIDE.md`](./BUILD_GUIDE.md) | **빌드 및 배포 가이드**: .NET 10 / .NET 8 자동 감지 빌드(`build.bat`), Inno Setup 단일 설치파일(`kcert-manager-v1.6.5-setup.exe`), GitHub 업로드(`push_to_github.bat`) 안내 |
 | [`AUTO_UPDATE_GUIDE.md`](./AUTO_UPDATE_GUIDE.md) | **자동 업데이트 가이드**: GitHub Releases REST API 기반 실시간 버전 확인, SemVer 비교, 커스텀 업데이트 알림 팝업창(`UpdateNotificationDialog`) 및 릴리스 배포 파이프라인 |
 | [`WPF_NATIVE_GUIDE.md`](./WPF_NATIVE_GUIDE.md) | **C# WPF 데스크톱 개발 가이드**: MVVM 아키텍처, 모던 일체형 타이틀바(`WindowChrome`), 드롭다운 테마 선택기, 4대 테마 시스템 안내 |
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | **시스템 아키텍처**: 인증서 파일 쌍 규격, 경로 매핑, 양방향 전송 파이프라인, 5대 서브시스템 및 7대 보안 하드닝 설계 원칙 |
@@ -87,5 +87,11 @@
     - 창 크기 축소 시 타이틀바 우측 창 제어 버튼(`─`, `□`, `✕`)이 화면 밖으로 밀리지 않도록 독립된 Auto 컬럼에 고정 격리
     - 인증서 보관함 DataGrid 확정 폭(`640px`) 및 물리 스크롤(`CanContentScroll="False"`) 적용으로 가로바 상시 유지
     - .NET 10 / .NET 8 자동 타깃 프레임워크 감지 및 C# 프로젝트·어셈블리·스크립트 버전(`v1.6.4`) 100% 일치화
+19. **최좌측 1번부터 시작하는 1-Based 고정 인덱스(번호: 1, 2, 3...) 일원화 및 고정열(Frozen/Sticky) 보장 (v1.6.5)**
+    - 웹(React) 및 데스크톱(WPF) 모든 인증서 목록, 백업 이력, 휴지통, 복사 대화상자, 작업 로그(Activity Log)의 최좌측에 1부터 시작하는 순번(`1, 2, 3...`) 전면 적용
+    - WPF DataGrid `FrozenColumnCount="1"` 및 React `sticky left-0 z-10`을 적용하여 가로 스크롤 시에도 최좌측 인덱스 열이 화면 밖으로 밀리지 않고 상시 고정 노출
+20. **작업 완료 안내 전용 팝업창(모달/대화상자) 구축 및 C# 빌드 오류 CS0103 해소 (v1.6.5)**
+    - 복사/가져오기 성공 시 에메랄드 성공 배너, SHA-256 무결성 100% 검증 배지, 출발지➔도착지 경로 및 실용 후속 조치 가이드를 제공하는 전용 팝업창 전면 연동
+    - `MainViewModel.cs` 내 `UpdateBackupHistoryIndices()` 구현으로 .NET 10 / .NET 8 릴리스 빌드 파이프라인 무결성 확보
 
 

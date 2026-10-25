@@ -7,7 +7,7 @@
 ## 📌 프로젝트 기본 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v1.6.4` (Semantic Versioning 2.0.0)
+- **현재 버전**: `v1.6.5` (Semantic Versioning 2.0.0)
 - **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
 - **구글 공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **공식 홈페이지**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr) ((주)씨아이에스넷 CISNet)
@@ -16,6 +16,35 @@
 ---
 
 ## 📅 작업 기록 상세 내역
+
+### 📝 [작업 차수 95] Web & WPF 모든 테이블 최좌측 1번 인덱스(1, 2, 3...) 시작 일원화, DataGrid/테이블 최좌측 고정열(Frozen/Sticky) 보장, C# 빌드 오류 CS0103 해소 및 v1.6.5 버전업
+- **작업 일시**: 2026-10-25 15:40 KST
+- **요청 사항**:
+  1. "docs폴더 문서들에 수정된 최신 내용을 업데이트 합니다."
+  2. "버전업이 필요하지 않나요?" (v1.6.5 정식 패치 릴리스)
+  3. "Web(React)과 데스크톱(WPF)의 모든 테이블에서 최좌측 1번 인덱스 부터 시작"
+- **배경 및 원인 분석**:
+  - 인증서 목록 및 각종 데이터 테이블을 열람할 때 일반 사용자 관점의 표준 카운팅 규칙에 따라 순번을 1번부터 시작(`1, 2, 3...`)하여 가독성과 직관성을 극대화할 필요성 대두.
+  - 가로 스크롤이 발생하는 대형 테이블에서 스크롤을 우측으로 이동할 때 최좌측 번호 열이 화면 밖으로 밀려나지 않도록 상시 고정(Frozen/Sticky) 보장 필요.
+  - 데스크톱(WPF)과 웹(React) 간의 데이터 인덱스 표현 정합성을 1부터 시작하도록 100% 일치시킴.
+  - C# 빌드 시 `MainViewModel.cs`에서 `UpdateBackupHistoryIndices()` 메서드 정의 누락으로 인한 CS0103 컴파일 오류 발생 해결.
+- **수행 내용**:
+  1. **React 웹 에디션 최좌측 1-based 고정 인덱스 및 Sticky 컬럼 적용**:
+     - `CertificateList.tsx`: 테이블 헤더 및 데이터 행의 1번 인덱스 컬럼에 1부터 시작하는 순번(`index + 1 = 1, 2, 3...`)을 적용하고 `sticky left-0 z-10` 및 테마별 배경색(`bg-slate-50 dark:bg-slate-900`)을 적용하여 데스크톱 및 모바일 뷰에서 상시 고정 노출 보장.
+     - `BackupModal.tsx`, `BackupHistoryPanel.tsx`, `UsbToPcModal.tsx`, `CertificateCleanupModal.tsx`, `TrashModal.tsx`, `OperationCompleteModal.tsx`, `RenewalGuidanceModal.tsx`, `UsbDetectedPromptModal.tsx`: 모든 대화상자 및 모달 내 목록을 1부터 시작하는 인덱스(`1, 2, 3...`)로 일괄 전환.
+  2. **C# WPF 데스크톱 에디션 1-based 인덱싱 및 DataGrid `FrozenColumnCount="1"` 전면 적용**:
+     - `MainWindow.xaml`: 메인 `CertDataGrid`에 `FrozenColumnCount="1"`을 적용하여 가로 스크롤 시에도 최좌측 1번 인덱스 번호 열 고정 유지.
+     - `BackupHistoryDialog.xaml`, `TrashDialog.xaml`, `PcToUsbTransferDialog.xaml`, `UsbTransferDialog.xaml`, `ExpiredCleanupDialog.xaml`: 모든 DataGrid에 `FrozenColumnCount="1"` 및 1번 인덱스 바인딩 적용.
+     - `AppLogItem.cs`: 감사 로그 모델에 `public int IndexNumber { get; set; }` 신설.
+     - `ActivityLogDialog.xaml`: `FrozenColumnCount="1"` 및 고정 번호 열(`<DataGridTextColumn Header="번호" Binding="{Binding IndexNumber}" Width="50" ... />`) 신규 추가.
+     - `ActivityLogService.cs`: 신규 로그 추가 시 최신 항목을 1번으로 두고 기존 항목들을 1부터 시작하도록 자동 재색인(`_logs[i].IndexNumber = i + 1;`)하여 일관성 유지.
+     - `MainViewModel.cs`, `PcToUsbTransferViewModel.cs`, `UsbTransferViewModel.cs`, `ExpiredCleanupDialog.xaml.cs`, `TrashDialog.xaml.cs`, `BackupHistoryDialog.xaml.cs`, `OperationCompleteDialog.xaml.cs`: 데이터 로드, 필터링, 정렬 시 1부터 시작하는 순번(`IndexNumber = i + 1`)을 실시간 자동 재할당하도록 구현.
+  3. **C# .NET 10 / .NET 8 빌드 오류 CS0103 해소 (`MainViewModel.cs`)**:
+     - `MainViewModel.cs` 내에 `private void UpdateBackupHistoryIndices()`를 구현하여 백업 히스토리 갱신/삭제 시 1부터 시작하는 인덱스를 재정렬하도록 연결하고, CS0103 컴파일 에러를 완벽하게 해소.
+  4. **문서(docs/) 최신화**:
+     - `PATCHNOTES.md`, `WORK_LOG.md`, `USER_GUIDE.md`, `WPF_NATIVE_GUIDE.md`, `README.md`, `ARCHITECTURE.md`에 최신 1-based 최좌측 고정열 및 빌드 수정 사항을 정밀 기록.
+  5. **컴파일 및 린트 검증**:
+     - `compile_applet` (Vite Production Web Bundle) 100% 성공 검증.
 
 ### 📝 [작업 차수 94] 모든 인증서 열람 창 및 모달 내부 첫 번째 칼럼에 순번(카운터 숫자) 열 전면 추가
 - **작업 일시**: 2026-10-25 14:45 KST

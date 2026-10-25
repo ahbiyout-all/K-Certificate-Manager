@@ -1,6 +1,6 @@
 # K-인증서 매니저 C# WPF MVVM 데스크톱 버전 개발 가이드
 
-K-Certificate Manager (K-인증서 매니저)의 **C# .NET 10 / .NET 8 WPF MVVM 네이티브 윈도우 데스크톱 애플리케이션 (`v1.5.0`)** 아키텍처 및 빌드 가이드입니다.
+K-Certificate Manager (K-인증서 매니저)의 **C# .NET 10 / .NET 8 WPF MVVM 네이티브 윈도우 데스크톱 애플리케이션 (`v1.6.5`)** 아키텍처 및 빌드 가이드입니다.
 
 ---
 
@@ -53,12 +53,16 @@ KCertManager.sln (솔루션 파일)
     │   └── UserFriendlyMessageHelper.cs  # 한국어 친화적 오류/해결 방법 안내 대화상자 도우미
     ├── ViewModels/
     │   ├── MainViewModel.cs          # 메인 화면 상태, 드롭다운 테마 전환, 검색/필터링, 백업/삭제
-    │   └── UsbTransferViewModel.cs   # USB ➔ PC 역방향 가져오기 다이얼로그 뷰모델
+    │   ├── UsbTransferViewModel.cs   # USB ➔ PC 역방향 가져오기 다이얼로그 뷰모델
+    │   └── PcToUsbTransferViewModel.cs # PC ➔ USB 백업 다이얼로그 뷰모델
     └── Views/
         ├── MainWindow.xaml / .cs     # 모던 일체형 타이틀바(WindowChrome) 및 테마 ComboBox 드롭다운 메인 UI
-        ├── CertificateDetailDialog.xaml / .cs # [신규] PKCS#8 키 암호화 알고리즘 및 지문 상세 뷰
-        ├── UpdateNotificationDialog.xaml / .cs # [신규] 커스텀 업데이트 알림 전용 팝업 창
+        ├── CertificateDetailDialog.xaml / .cs # PKCS#8 키 암호화 알고리즘 및 지문 상세 뷰
+        ├── UpdateNotificationDialog.xaml / .cs # 커스텀 업데이트 알림 전용 팝업 창
+        ├── OperationCompleteDialog.xaml / .cs # [신규] 복사/백업 완료 안내 전용 팝업 창
+        ├── PcToUsbTransferDialog.xaml / .cs  # [신규] PC ➔ USB 복사하기 전용 대화창
         ├── UsbTransferDialog.xaml / .cs  # USB ➔ PC 가져오기 창
+        ├── ActivityLogDialog.xaml / .cs  # [신규] 작업 로그 및 감사 이력 창 (Frozen 번호 열)
         ├── RenewalGuidanceDialog.xaml / .cs # 인증서 갱신 안내 및 공식 포털 연결 창
         └── AboutDialog.xaml / .cs    # 프로그램 정보 및 한·영 2종 라이선스 고지 창
 ```
@@ -87,6 +91,13 @@ KCertManager.sln (솔루션 파일)
    - `Win32_VolumeChangeEvent`를 구독하여 USB 메모리를 꽂거나 뽑는 즉시 드라이브 콤보박스 및 목록 자동 갱신.
 7. **역방향 가져오기 (USB ➔ PC) 및 안전 휴지통 (`SafetyTrash`)**:
    - USB 내의 `NPKI`, `GPKI`, `EPKI` 폴더를 스캔하여 로컬 PC의 `AppData\LocalLow` 경로로 자동 복원 및 삭제 시 안전 격리/원클릭 복원 지원.
+8. **최좌측 1번부터 시작하는 고정 인덱스 열 (`FrozenColumnCount="1"`, v1.6.5)**:
+   - `MainWindow.xaml` (`CertDataGrid`), `BackupHistoryDialog.xaml`, `TrashDialog.xaml`, `ActivityLogDialog.xaml`, `PcToUsbTransferDialog.xaml`, `UsbTransferDialog.xaml`, `ExpiredCleanupDialog.xaml` 등 전역 DataGrid의 최좌측 인덱스 컬럼에 `IndexNumber` 바인딩 및 `FrozenColumnCount="1"`을 적용.
+   - 가로 스크롤 시에도 최좌측 번호 열이 고정되어 항상 표시되며, `MainViewModel`, `ActivityLogService`, 각 대화상자 코드비하인드에서 1-based(`1, 2, 3...`) 인덱싱을 실시간 유지.
+9. **작업 완료 안내 전용 팝업 대화상자 (`OperationCompleteDialog`, v1.6.5)**:
+   - 복사/가져오기 완료 시 `UserFriendlyMessageHelper.ShowOperationComplete(...)`를 통해 무결성(SHA-256) 검증 결과, 출발지➔도착지 경로, 완료 인증서 목록 및 대상 폴더 열기 액션을 모던 커스텀 대화상자로 표시.
+10. **창 제어 버튼(최소/최대/닫기) 독립 격리 고정**:
+    - `MainWindow.xaml` 상단 타이틀바 Grid `Column="2" (Auto)`에 창 제어 버튼을 독립 격리하여 창 크기를 줄여도 버튼이 화면 밖으로 밀려나지 않고 최우측 상단에 100% 온전하게 고정 노출 보장.
 
 ---
 

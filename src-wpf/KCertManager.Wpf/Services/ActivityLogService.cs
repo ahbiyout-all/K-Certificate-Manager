@@ -58,7 +58,7 @@ namespace KCertManager.Wpf.Services
                     }
                     for (int i = 0; i < _logs.Count; i++)
                     {
-                        _logs[i].IndexNumber = i;
+                        _logs[i].IndexNumber = i + 1;
                     }
                 }));
             }
@@ -67,7 +67,7 @@ namespace KCertManager.Wpf.Services
                 _logs.Insert(0, item);
                 for (int i = 0; i < _logs.Count; i++)
                 {
-                    _logs[i].IndexNumber = i;
+                    _logs[i].IndexNumber = i + 1;
                 }
             }
 

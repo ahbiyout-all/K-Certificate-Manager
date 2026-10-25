@@ -43,7 +43,7 @@ export const BackupHistoryPanel: React.FC<BackupHistoryPanelProps> = ({
         {history.map((item, index) => (
           <div key={item.id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs group">
             <div className="flex items-start gap-2.5">
-              <span className="mt-1.5 w-5 text-center font-mono font-bold text-[10px] text-slate-400 shrink-0">{index}</span>
+              <span className="mt-1.5 w-5 text-center font-mono font-bold text-[10px] text-slate-400 shrink-0">{index + 1}</span>
               <div className="w-7 h-7 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5 border border-emerald-200">
                 <CheckCircle2 className="w-4 h-4" />
               </div>

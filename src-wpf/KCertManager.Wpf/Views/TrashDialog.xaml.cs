@@ -42,7 +42,7 @@ namespace KCertManager.Wpf.Views
 
             for (int i = 0; i < _items.Count; i++)
             {
-                _items[i].IndexNumber = i;
+                _items[i].IndexNumber = i + 1;
             }
 
             GridTrash.ItemsSource = _items;
