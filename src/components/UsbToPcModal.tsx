@@ -735,17 +735,17 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                       );
 
                       return (
-                        <div
-                          key={cert.id}
-                          onClick={() => handleToggleCert(cert.id)}
-                          className={`p-3 rounded-lg border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                            isSelected
-                              ? 'bg-white border-blue-500 shadow-2xs ring-1 ring-blue-500/20'
-                              : 'bg-white/80 border-slate-200 hover:border-slate-300'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <span className="w-5 text-center font-mono font-bold text-xs text-slate-500 shrink-0">{index + 1}</span>
+                          <div
+                            key={cert.id}
+                            onClick={() => handleToggleCert(cert.id)}
+                            className={`p-3 rounded-lg border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                              isSelected
+                                ? 'bg-white border-blue-500 shadow-2xs ring-1 ring-blue-500/20'
+                                : 'bg-white/80 border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <span className="w-5 text-center font-mono font-bold text-xs text-slate-500 shrink-0 sticky left-0 z-10 bg-white group-hover:bg-slate-50">{index}</span>
                             <input
                               type="checkbox"
                               checked={isSelected}

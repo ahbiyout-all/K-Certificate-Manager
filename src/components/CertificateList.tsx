@@ -1219,7 +1219,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
             <table className="w-full text-left border-collapse min-w-[1280px]">
               <thead className="sticky top-0 bg-slate-100/90 border-b border-slate-200 text-[12px] text-slate-700 uppercase font-bold tracking-wider z-10">
                 <tr>
-                  <th className="p-4 w-12 text-center">번호</th>
+                  <th className="p-4 w-12 text-center sticky left-0 bg-slate-100/90 z-20">번호</th>
                   <th className="p-4 w-12 text-center">
                     <input
                       type="checkbox"
@@ -1330,8 +1330,20 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                                 : 'bg-white hover:bg-slate-50/90 dark:bg-transparent dark:hover:bg-slate-800/40 border-l-4 border-l-transparent border-b-slate-200/90 dark:border-b-slate-800'
                       }`}
                     >
-                      <td className={`${cellPadding} text-center font-mono font-bold text-xs text-slate-500`}>
-                        {index + 1}
+                      <td className={`${cellPadding} text-center font-mono font-bold text-xs text-slate-500 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] ${
+                        isRecentlyCopied
+                          ? 'bg-emerald-50/90' 
+                          : isNonStandard
+                            ? isSelected
+                              ? 'bg-amber-100/90'
+                              : 'bg-amber-50/60'
+                            : isSelected
+                              ? 'bg-blue-50/95 dark:bg-blue-950/50'
+                              : cert.status === 'expired'
+                                ? 'bg-rose-50/20 dark:bg-slate-900/20'
+                                : 'bg-white dark:bg-slate-900'
+                      }`}>
+                        {index}
                       </td>
                       <td className={`${cellPadding} text-center`}>
                         <input
