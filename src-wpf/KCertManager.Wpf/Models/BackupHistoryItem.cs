@@ -6,6 +6,7 @@ namespace KCertManager.Wpf.Models
 {
     public class BackupHistoryItem
     {
+        public int IndexNumber { get; set; }
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public DateTime Timestamp { get; set; } = DateTime.Now;
         public string CertCommonName { get; set; } = string.Empty;

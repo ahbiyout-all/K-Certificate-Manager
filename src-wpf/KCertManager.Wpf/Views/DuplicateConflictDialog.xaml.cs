@@ -50,8 +50,9 @@ namespace KCertManager.Wpf.Views
             var textPri = (Brush)Application.Current.FindResource("TextPrimaryBrush") ?? Brushes.White;
             var textSec = (Brush)Application.Current.FindResource("TextSecondaryBrush") ?? new SolidColorBrush(Color.FromRgb(148, 163, 184));
 
-            foreach (var item in _conflicts)
+            for (int i = 0; i < _conflicts.Count; i++)
             {
+                var item = _conflicts[i];
                 var border = new Border
                 {
                     Background = cardBg,
@@ -66,6 +67,29 @@ namespace KCertManager.Wpf.Views
 
                 // Row 1: CommonName & Badge
                 var headerRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 4) };
+
+                var indexBadge = new Border
+                {
+                    Width = 22,
+                    Height = 22,
+                    Background = new SolidColorBrush(Color.FromRgb(30, 41, 59)),
+                    BorderBrush = new SolidColorBrush(Color.FromRgb(51, 65, 85)),
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(11),
+                    Margin = new Thickness(0, 0, 8, 0),
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                indexBadge.Child = new TextBlock
+                {
+                    Text = (i + 1).ToString(),
+                    FontSize = 10.5,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = new SolidColorBrush(Color.FromRgb(148, 163, 184)),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                headerRow.Children.Add(indexBadge);
+
                 var icon = new TextBlock
                 {
                     Text = "🔑",

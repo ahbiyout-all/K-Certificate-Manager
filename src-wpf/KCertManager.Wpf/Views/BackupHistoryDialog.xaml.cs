@@ -22,6 +22,10 @@ namespace KCertManager.Wpf.Views
 
         private void LoadHistory()
         {
+            for (int i = 0; i < _history.Count; i++)
+            {
+                _history[i].IndexNumber = i + 1;
+            }
             GridHistory.ItemsSource = null;
             GridHistory.ItemsSource = _history;
             TxtHistoryCount.Text = $"총 {_history.Count}건의 백업 기록";

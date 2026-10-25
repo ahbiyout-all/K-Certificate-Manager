@@ -97,6 +97,20 @@
                     </Style>
                 </DataGrid.Resources>
                 <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="번호" Width="45">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding IndexNumber}" 
+                                           FontFamily="Consolas, Courier New, monospace" 
+                                           FontSize="11" 
+                                           FontWeight="Bold" 
+                                           Foreground="{DynamicResource TextSecondaryBrush}" 
+                                           HorizontalAlignment="Center" 
+                                           VerticalAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
                     <DataGridTemplateColumn Header="백업 시각" Width="140">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
