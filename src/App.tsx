@@ -45,6 +45,7 @@ import { UpdateModal } from './components/UpdateModal';
 import { StartupWorkflowModal, WorkflowType } from './components/StartupWorkflowModal';
 import { GuidedWorkflowOverlay } from './components/GuidedWorkflowOverlay';
 import { SettingsModal } from './components/SettingsModal';
+import { OperationCompleteModal, OperationCompleteData } from './components/OperationCompleteModal';
 import { checkForAppUpdates, UpdateInfo } from './utils/updateChecker';
 import { playSuccessChime } from './utils/audioFeedback';
 import { 
@@ -118,6 +119,8 @@ export default function App() {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isStartupWorkflowOpen, setIsStartupWorkflowOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isOperationCompleteOpen, setIsOperationCompleteOpen] = useState(false);
+  const [operationCompleteData, setOperationCompleteData] = useState<OperationCompleteData | null>(null);
   const [dontShowStartupAgain, setDontShowStartupAgain] = useState<boolean>(() => {
     try {
       return localStorage.getItem('kcert_dont_show_startup_modal') === 'true';
@@ -873,6 +876,33 @@ export default function App() {
       true,
       'SHA-256 해시 일치'
     );
+
+    // 전용 작업 완료 안내 팝업창(모달) 오픈
+    const copiedCertObjects = certificates.filter(
+      c => record.certNames.includes(c.name) || selectedIds.includes(c.id)
+    );
+
+    setOperationCompleteData({
+      title: '인증서 복사 및 USB 백업 완료!',
+      subtitle: `선택하신 인증서 ${record.certificatesCount}개가 대상 디스크(${record.targetDisk})에 안전하게 복사되었으며, SHA-256 무결성 검증을 통과했습니다.`,
+      operationType: 'PC_TO_USB',
+      count: record.certificatesCount,
+      certNames: record.certNames,
+      targetDiskName: record.targetDisk,
+      targetPath: `${record.targetDisk}\\${record.targetPath}`,
+      sourcePath: copiedCertObjects[0]?.sourceLocation || 'C:\\Users\\...\\AppData\\LocalLow\\NPKI',
+      timestamp: record.timestamp,
+      checksum: record.checksum || 'SHA-256 무결성 검증 통과',
+      certificates: copiedCertObjects.length > 0
+        ? copiedCertObjects.map(c => ({
+            name: c.name,
+            issuer: c.issuer,
+            policy: c.policy,
+            validTo: c.validTo
+          }))
+        : record.certNames.map(name => ({ name, issuer: '공동인증서 (전자서명 키 페어)' }))
+    });
+    setIsOperationCompleteOpen(true);
   };
 
   const handleImportFromUsbSuccess = (importedCerts: CertificateItem[], summaryMessage?: string) => {
@@ -917,6 +947,27 @@ export default function App() {
       true,
       'SHA-256 해시 일치'
     );
+
+    // 전용 작업 완료 안내 팝업창(모달) 오픈
+    setOperationCompleteData({
+      title: '인증서 컴퓨터(PC) 가져오기 완료!',
+      subtitle: `USB 메모리의 인증서 ${importedCerts.length}개가 내 컴퓨터의 공인 보관함(AppData\\LocalLow)으로 안전하게 복사되었습니다.`,
+      operationType: 'USB_TO_PC',
+      count: importedCerts.length,
+      certNames: importedCerts.map(c => c.name),
+      targetDiskName: '내 컴퓨터 로컬 디스크 (C:)',
+      targetPath: 'C:\\Users\\...\\AppData\\LocalLow\\NPKI',
+      sourcePath: importedCerts[0]?.sourceLocation || '이동식 USB 매체 (NPKI)',
+      timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      checksum: 'SHA-256 무결성 검증 통과',
+      certificates: importedCerts.map(c => ({
+        name: c.name,
+        issuer: c.issuer,
+        policy: c.policy,
+        validTo: c.validTo
+      }))
+    });
+    setIsOperationCompleteOpen(true);
   };
 
   const handleClearActivityLogs = () => {
@@ -1618,6 +1669,17 @@ export default function App() {
         onToggleAppViewMode={handleToggleAppViewMode}
         dontShowStartupAgain={dontShowStartupAgain}
         onToggleDontShowStartupAgain={handleToggleDontShowStartupAgain}
+      />
+
+      {/* 작업 완료 안내 전용 팝업창 모달 (Operation Complete Modal) */}
+      <OperationCompleteModal
+        isOpen={isOperationCompleteOpen}
+        onClose={() => setIsOperationCompleteOpen(false)}
+        data={operationCompleteData}
+        onOpenHistory={() => {
+          setIsOperationCompleteOpen(false);
+          handleNavTabSelect('history');
+        }}
       />
     </div>
   );

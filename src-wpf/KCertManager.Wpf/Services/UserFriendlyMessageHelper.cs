@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using KCert.Core.Common;
+using KCertManager.Wpf.Views;
 
 namespace KCertManager.Wpf.Services
 {
@@ -98,6 +101,49 @@ namespace KCertManager.Wpf.Services
             {
                 MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
+        }
+
+        /// <summary>
+        /// 작업 완료 안내 전용 팝업 대화상자 (상세 정보 포함)
+        /// </summary>
+        public static bool? ShowOperationComplete(
+            string title,
+            string subtitle,
+            int count,
+            string sourcePath,
+            string targetPath,
+            IEnumerable<OperationCompleteItem> items,
+            string? guideTip = null,
+            Window? owner = null)
+        {
+            try
+            {
+                var dialog = new OperationCompleteDialog(title, subtitle, count, sourcePath, targetPath, items, guideTip, owner);
+                return dialog.ShowDialog();
+            }
+            catch
+            {
+                // UI 스레드 문제 등으로 대화상자 생성 실패 시 fallback
+                ShowInfo($"{title}\n\n{subtitle}", title, owner);
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// 작업 완료 안내 전용 팝업 대화상자 (인증서 이름 목록 간단 호출)
+        /// </summary>
+        public static bool? ShowOperationComplete(
+            string title,
+            int count,
+            string targetDrive,
+            string targetPath,
+            string sourcePath,
+            IEnumerable<string> certNames,
+            Window? owner = null)
+        {
+            var items = certNames?.Select(name => new OperationCompleteItem { Name = name, IssuerAndPolicy = "공동인증서 (전자서명 키 페어 검증)" }) ?? Enumerable.Empty<OperationCompleteItem>();
+            string subtitle = $"선택하신 인증서 {count}개가 {targetDrive}로 안전하게 복사/백업되었습니다.";
+            return ShowOperationComplete(title, subtitle, count, sourcePath, targetPath, items, null, owner);
         }
     }
 }

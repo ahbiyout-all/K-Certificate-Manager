@@ -17,6 +17,38 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 93] 인증서 복사/백업/가져오기 작업 완료 안내 전용 팝업창(모달 및 대화상자) 신설 및 전역 연동
+- **작업 일시**: 2026-10-25 14:20 KST
+- **요청 사항**: "작업완료 안내 팝업창 생성."
+- **배경 및 원인 분석**:
+  - 기존 웹 관리 콘솔에서는 작업 완료 시 화면 하단의 작은 토스트 알림이 수 초 후 사라져, 복사된 인증서 세부 내역이나 무결성 검증 결과를 차분히 확인하기 어려웠음.
+  - C# WPF 데스크톱 앱에서는 표준 Windows 단색 MessageBox 알림창으로만 결과가 출력되어 다크/그레이/화이트 테마와 일체감이 부족하고, 복사 경로 흐름이나 대상 폴더 열기 등의 실용적 후속 액션이 부재했음.
+- **수행 내용**:
+  1. **React 웹 에디션 전용 작업 완료 안내 팝업창 모달 구현 (`src/components/OperationCompleteModal.tsx`)**:
+     - 상단 에메랄드 성공 배너 및 실드 배지(`[🛡️ SHA-256 데이터 무결성 검증 통과]`).
+     - 3대 핵심 요약 카드: 성공 건수, 데이터 무결성 100% 일치, 완료 시각.
+     - 출발지 ➔ 도착지 경로 흐름 시각화 카드.
+     - 복사 완료된 인증서 상세 목록 스크롤뷰 (인증서명, 발급기관, 만료일, 키 페어 무결성).
+     - USB 분리 시 안전 제거 및 타 PC 은행/정부 로그인 가이드 팁 카드.
+     - 액션: `[결과 텍스트 복사]`, `[백업 이력 보기]`, `[확인(닫기)]`.
+  2. **WPF 네이티브 전용 작업 완료 안내 다이얼로그 구현 (`OperationCompleteDialog.xaml`, `OperationCompleteDialog.xaml.cs`)**:
+     - `DynamicResource` 테마 스타일링 완벽 적용 (다크/그레이/베이지/화이트 테마 즉각 동기화).
+     - 복사 완료 건수, SHA-256 무결성 검증 100% 통과 배지, 실시간 완료 타임스탬프 표시.
+     - 출발지 ➔ 도착지 경로 텍스트블록 및 폰트 트리밍.
+     - `ListBox` 바인딩을 통한 복사된 인증서 카드 리스트 렌더링.
+     - 액션: `[📋 결과 텍스트 복사]`, `[📁 대상 폴더 열기]` (Windows 탐색기 연동), `[✓ 확인]` 버튼.
+  3. **WPF 메시지 헬퍼 서비스 확장 (`UserFriendlyMessageHelper.cs`)**:
+     - `ShowOperationComplete(...)` 정적 메서드를 신설하여 다이얼로그 호출을 중앙화하고 UI 예외 발생 시 안전 폴백 제공.
+  4. **WPF 메인 및 전송 뷰모델 전면 연동 (`MainViewModel.cs`, `PcToUsbTransferViewModel.cs`, `UsbTransferViewModel.cs`)**:
+     - 메인 복사 완료, PC ➔ USB 백업 완료, USB ➔ PC 가져오기 완료 시점에 새 작업완료 팝업창을 즉각 띄우도록 일괄 교체.
+  5. **React 웹 메인 앱 전면 연동 (`src/App.tsx`, `src/types.ts`)**:
+     - `OperationCompleteModal` 컴포넌트 임포트 및 모달 상태(`isOperationCompleteOpen`, `operationCompleteData`) 탑재.
+     - `handleBackupSuccess` 및 `handleImportFromUsbSuccess` 핸들러에서 팝업창 데이터 구성 및 자동 오픈 연동.
+     - `BackupHistoryItem`에 `checksum?: string` 필드 추가.
+  6. **빌드 및 린트 검증**:
+     - `lint_applet` (TypeScript strict mode noEmit) 0건 오류 통과.
+     - `compile_applet` (Vite Production Web Bundle) 100% 성공 검증.
+
 ### 📝 [작업 차수 92] GitHub 업로드 소스코드 보안성 전수 정밀 감사 및 `.gitignore` 하드닝 완료
 - **작업 일시**: 2026-10-25 13:55 KST
 - **요청 사항**: "보안을 위해서 깃허브에 올라가는 소스중에 중요내용이 포함되어 있는지 확인"

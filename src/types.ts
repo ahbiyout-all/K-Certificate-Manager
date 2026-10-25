@@ -125,6 +125,7 @@ export interface BackupHistoryItem {
   certNames: string[];
   status: 'success' | 'failed';
   hashCheckPassed: boolean;
+  checksum?: string;
 }
 
 export interface TrashItem {

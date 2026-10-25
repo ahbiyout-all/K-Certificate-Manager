@@ -9,6 +9,7 @@ using System.Windows.Input;
 using KCertManager.Wpf.Common;
 using KCertManager.Wpf.Models;
 using KCertManager.Wpf.Services;
+using KCertManager.Wpf.Views;
 
 namespace KCertManager.Wpf.ViewModels
 {
@@ -289,9 +290,23 @@ namespace KCertManager.Wpf.ViewModels
 
             if (success == selected.Count)
             {
-                UserFriendlyMessageHelper.ShowInfo(
-                    $"선택하신 인증서 {success}개가 내 컴퓨터의 {TargetCategory} 보관함(AppData\\LocalLow)으로 성공적으로 복사되었습니다.\n\n메인 화면의 인증서 목록이 자동으로 새로고침되었습니다.",
-                    "인증서 가져오기 완료");
+                var completeItems = selected.Select(c => new OperationCompleteItem
+                {
+                    Name = !string.IsNullOrWhiteSpace(c.CommonName) ? c.CommonName : "공동인증서",
+                    IssuerAndPolicy = $"{c.IssuerName} · 만료일: {c.ValidTo:yyyy-MM-dd}"
+                }).ToList();
+
+                string sourcePath = selected.FirstOrDefault()?.DirectoryPath ?? "이동식 USB (NPKI)";
+                string targetPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "Low", "NPKI");
+
+                UserFriendlyMessageHelper.ShowOperationComplete(
+                    "인증서 PC 가져오기 완료!",
+                    $"선택하신 인증서 {success}개가 내 컴퓨터의 {TargetCategory} 보관함(AppData\\LocalLow)으로 성공적으로 복사되었습니다.",
+                    success,
+                    sourcePath,
+                    targetPath,
+                    completeItems,
+                    "• 이제 내 컴퓨터의 웹 브라우저나 금융 프로그램에서 [하드디스크]를 선택하시면 바로 로그인하실 수 있습니다.\n• 메인 화면의 인증서 목록이 자동으로 새로고침되었습니다.");
             }
             else
             {

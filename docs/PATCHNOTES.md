@@ -16,9 +16,26 @@
 
 ## 📋 버전 릴리스 내역
 
-### 🚀 [v1.6.4] - 2026-10-22
-**변경 구분**: `PATCH` (오른쪽 상단 창 제어 버튼 상시 노출 및 인증서 보관함 가로바 사라짐 완벽 방지)
+### 🚀 [v1.6.4] - 2026-10-25
+**변경 구분**: `PATCH` (작업완료 안내 팝업창 생성, 오른쪽 상단 창 제어 버튼 상시 노출 및 프로젝트 버전·컴파일 정합성 완료)
 #### ✨ 주요 개선 및 신규 기능 (Improvements & Features)
+- **작업완료 안내 전용 팝업창(Operation Complete Modal/Dialog) 신설 (Web & WPF 전면 연동)**:
+  - **사용자 요청 사항**: 기존에 복사/백업/가져오기 작업 성공 후 수 초 뒤 사라지는 하단 토스트나 일반 윈도우 단색 알림창 대신, 상세 완료 내역을 한눈에 확인하고 필요한 후속 조치를 취할 수 있는 전용 팝업창(모달 대화상자) 신규 구현.
+  - **공통 주요 구성 요소**:
+    - **에메랄드 성공 헤더 배너**: 작업 성공 배지(SUCCESS), "🛡️ SHA-256 데이터 무결성 검증 통과" 실드 배지, 명확한 작업 타이틀 및 설명.
+    - **3대 핵심 메트릭 카드**: 복사 완료 건수(N건 성공), 데이터 무결성(SHA-256 100% 일치), 완료 시각(년-월-일 시:분:초).
+    - **복사 경로 시각화 (Route Flow)**: 출발지(Source, 예: 내 컴퓨터 AppData\LocalLow\NPKI) ➔ 도착지(Destination, 예: E:\NPKI 이동식 USB)를 한눈에 볼 수 있는 경로 카드.
+    - **복사 완료 인증서 목록 (Certificate ListBox/Card)**: 복사된 인증서 이름(소유자명 CN), 발급기관 및 정책, 전자서명 키 페어(`signCert.der + signPri.key`) 검증 배지.
+    - **작업 완료 후 활용 가이드 (Practical Next Steps Guide)**:
+      - USB 대상: 타 PC 은행/정부24 로그인 시 [이동식 디스크] 선택 방법 및 윈도우 트레이 '하드웨어 안전하게 제거' 권장 수칙 안내.
+      - PC 대상: 웹 브라우저/금융 프로그램에서 [하드디스크] 즉시 사용 방법 및 공용 PC 사용 시 삭제 보안 수칙 안내.
+    - **원클릭 편의 액션 버튼**:
+      - `[📋 결과 텍스트 복사]`: 작업 완료 보고서 요약 텍스트 클립보드 복사.
+      - `[📁 대상 폴더 열기]`: 파일 탐색기(Explorer)로 저장된 대상 폴더 즉시 열기 (WPF).
+      - `[📜 백업 이력 보기]`: 백업/복사 히스토리 패널로 즉시 이동 (Web).
+      - `[✓ 확인 (닫기)]`: 팝업 닫기.
+  - **WPF 데스크톱 네이티브 연동**: `OperationCompleteDialog.xaml`, `.xaml.cs` 및 `UserFriendlyMessageHelper.ShowOperationComplete(...)`를 구축하여 `MainViewModel`, `PcToUsbTransferViewModel`, `UsbTransferViewModel`에서 복사 성공 시 즉시 팝업.
+  - **React 웹 에디션 연동**: `OperationCompleteModal.tsx` 구축 및 `App.tsx`의 `handleBackupSuccess`, `handleImportFromUsbSuccess`에 전면 연동.
 - **오른쪽 상단 윈도우 창 제어 버튼(최소화 / 최대화 / 닫기) 독립 고정 및 창 크기 변경 시 상시 노출 보장 (`MainWindow.xaml`)**:
   - 기존 헤더 도구들과 동일 `StackPanel`에 함께 묶여 있어 창 크기를 줄였을 때 화면 밖으로 밀려나 사라지던 구조적 결함 해결.
   - 상단 타이틀바 Grid의 `Column="1" (*)`에 헤더 기능 도구들을 격리하고, `Column="2" (Auto)`에 오직 최소화(`─`), 최대화/복원(`□`), 닫기(`✕`) 버튼만을 독립 배치.

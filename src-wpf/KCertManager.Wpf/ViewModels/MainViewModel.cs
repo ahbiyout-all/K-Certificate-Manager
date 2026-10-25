@@ -11,6 +11,7 @@ using KCert.Core.HardwareGuard;
 using KCertManager.Wpf.Common;
 using KCertManager.Wpf.Models;
 using KCertManager.Wpf.Services;
+using KCertManager.Wpf.Views;
 using Microsoft.Win32;
 
 namespace KCertManager.Wpf.ViewModels
@@ -1616,9 +1617,26 @@ namespace KCertManager.Wpf.ViewModels
 
             if (success == selected.Count)
             {
-                UserFriendlyMessageHelper.ShowInfo(
-                    $"선택하신 인증서 {success}개가 대상 {targetTypeName}({targetDriveName})로 안전하게 복사/백업되었습니다.\n\n인증서 목록과 드라이브 상태가 최신 상태로 새로고침되었습니다.",
-                    "인증서 복사 / 백업 완료");
+                var completeItems = selected.Select(c => new OperationCompleteItem
+                {
+                    Name = !string.IsNullOrWhiteSpace(c.CommonName) ? c.CommonName : "공동인증서",
+                    IssuerAndPolicy = $"{c.IssuerName} · 만료일: {c.ValidTo:yyyy-MM-dd}"
+                }).ToList();
+
+                string sourcePath = selected.FirstOrDefault()?.DirectoryPath ?? "내 컴퓨터 (NPKI/GPKI)";
+                var lastSuccessItem = _backupHistory.FirstOrDefault(h => h.IsSuccess && !string.IsNullOrEmpty(h.DestinationPath));
+                string targetPath = lastSuccessItem?.DestinationPath ?? $"{targetDriveName}\\";
+
+                UserFriendlyMessageHelper.ShowOperationComplete(
+                    "인증서 복사 및 백업 완료!",
+                    $"선택하신 인증서 {success}개가 대상 {targetTypeName}({targetDriveName})로 안전하게 복사/백업되었습니다.",
+                    success,
+                    sourcePath,
+                    targetPath,
+                    completeItems,
+                    isTargetUsb
+                        ? "• USB 메모리를 타 PC에 연결하여 은행 및 공공기관 로그인 시 [이동식 디스크]를 선택하시면 즉시 사용하실 수 있습니다.\n• 분리 전 윈도우 우측 하단의 '하드웨어 안전하게 제거'를 누르시면 파일 손상을 예방할 수 있습니다."
+                        : "• 복사된 대상 디스크의 NPKI 폴더를 백업 보관용으로 안전하게 관리하세요.\n• 필요 시 언제든지 복원 기능을 통해 원본 PC로 되돌릴 수 있습니다.");
             }
             else
             {
