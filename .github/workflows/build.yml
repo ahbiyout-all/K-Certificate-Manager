@@ -158,11 +158,13 @@ jobs:
               - Windows 방화벽 인바운드 규칙 자동/사전 등록 (기본 이름 및 버전 포함 이름 동시 등록)
             
             ### ✨ 주요 기능 및 업데이트 (v${{ env.APP_VER }})
-            - 시작 시 작업 선택 창 (PC➔USB, USB➔PC, 메인 진입) 및 순서별 가이드 모션 오버레이
-            - 실시간 SHA-256 체크섬 대조 기반 '무결성 확인 완료' 녹색 실드 배지 토스트 연동
-            - 동일 디스크 자가 복사(Self-Copy) 방지 및 복사 목적지 디스크 수동 지정 팝업
-            - 드라이브 문자별(C, D, E, F...) 고유 배지 색상 및 전 테마 WCAG 고대비 글자 시인성 강화
-            - CMD 터미널 창 없이 C# WPF 네이티브 GUI 앱 즉시 실행
+            - Web(React) 및 데스크톱(WPF) 모든 테이블 최좌측 1번 인덱스(1, 2, 3...) 시작 일원화
+            - 가로 스크롤 시 최좌측 1번 인덱스 열 상시 고정 (WPF DataGrid FrozenColumnCount="1", React sticky left-0 z-10)
+            - 작업 완료 안내 전용 팝업창 신설 (OperationCompleteDialog / OperationCompleteModal)
+            - 우측 상단 창 제어 버튼(최소/최대/닫기) 독립 격리 고정 및 상시 노출 보장
+            - 드라이브 쓰기 오류 및 권한 문제 시 명확한 에러 알림 모달 (CopyErrorAlertModal) 구축
+            - 작업 감사 로그(Activity Log) 최좌측 1번 인덱스 열 신설 및 동적 재색인 파이프라인
+            - C# .NET 10 / .NET 8 자동 감지 및 릴리스 빌드 파이프라인 무결성 확보
             
             상세 변경 내역은 저장소 내 `docs/PATCHNOTES.md`를 참고해 주시기 바랍니다.
           files: |

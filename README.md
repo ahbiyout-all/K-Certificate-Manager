@@ -1,9 +1,9 @@
-# K-Certificate Manager (K-인증서 매니저) v1.5.0
+# K-Certificate Manager (K-인증서 매니저) v1.6.5
 
 <div align="center">
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Version](https://img.shields.io/badge/Version-v1.5.0-green.svg)
+![Version](https://img.shields.io/badge/Version-v1.6.5-green.svg)
 ![React](https://img.shields.io/badge/React-19.0-61dafb.svg)
 ![Vite](https://img.shields.io/badge/Vite-6.2-646cff.svg)
 ![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512bd4.svg)
@@ -17,19 +17,20 @@
 
 ---
 
-## 🚀 최신 릴리스 정보 (Latest Release: v1.5.0)
+## 🚀 최신 릴리스 정보 (Latest Release: v1.6.5)
 
-> **버전**: `v1.5.0` (최신 안정화 빌드)  
-> **출시일**: 2026-10-08  
+> **버전**: `v1.6.5` (최신 안정화 빌드)  
+> **출시일**: 2026-10-25  
 > **상세 변경 내역**: [docs/PATCHNOTES.md](./docs/PATCHNOTES.md)
 
-### 🌟 v1.5.0 핵심 업데이트 내용
-- **시작 작업 선택 창 및 순서별 가이드 모션 (Web & WPF)**: 시작 시 자동 업데이트 확인 후 PC ➔ USB 복사하기, USB ➔ PC 가져오기, 메인 대시보드 직접 진입 창 자동 연동 및 단계별 가이드 모션 스텝 배너 장착
-- **SHA-256 해시 검증 및 '무결성 확인 완료' 배지 (Web & WPF)**: 복사/백업 완료 후 개인키와 인증서 원본-복사본 체크섬을 자동 검증하여 안심할 수 있는 무결성 확인용 녹색 실드 배지 실시간 토스트 연동
-- **동적 버전 동기화 및 원클릭 인스톨러 최적화**: `package.json` 및 `PATCHNOTES.md` 기반으로 `build.bat`이 버전을 자동 파싱하여 인스톨러(`kcert-manager-v1.5.0-setup.exe`) 및 WPF 앱에 일체화 동적 자동 적용
-- **자가 복사(Self-Copy) 방지 및 목적지 디스크 수동 지정**: 드라이브 오복사 및 불필요한 동일 경로 자가 백업 원천 차단 및 충돌 대처 옵션 고도화
-- **드라이브 문자별 고유 색상 및 시안성 강화**: C(네이비 블루), D(딥 틸), E(에메랄드 그린), F(앰버) 등 드라이브별 다른 고유 색상 배지 및 전 테마 WCAG 고대비 글자색 최적화
-- **WPF 네이티브 CMD 창 없는 무소음 즉각 실행**: 인스톨러를 통해 설치 시 불필요한 콘솔 터미널이 발생하지 않고, C# WPF 네이티브 GUI 앱이 바로가기 아이콘 클릭 즉시 다이렉트로 실행되도록 완전 정상화
+### 🌟 v1.6.5 핵심 업데이트 내용
+- **Web & WPF 모든 테이블 최좌측 1번 인덱스(1, 2, 3...) 시작 일원화**: 메인 인증서 목록, PC ➔ USB 복사창, USB ➔ PC 가져오기창, 만료 정리, 휴지통, 백업 이력, 작업 감사 로그 등 전체 뷰의 최좌측 열 번호가 1번부터 시작하도록 일관되게 적용
+- **최좌측 인덱스 열 상시 고정 (Frozen & Sticky Column)**: 데스크톱 WPF DataGrid `FrozenColumnCount="1"` 및 웹 React `sticky left-0 z-10`을 적용하여 가로 스크롤 시에도 최좌측 1번 인덱스 열이 화면에 고정 노출
+- **작업 완료 안내 전용 팝업창 신설 (`OperationCompleteDialog` / `OperationCompleteModal`)**: 복사/가져오기 성공 시 에메랄드 성공 배지, SHA-256 데이터 무결성 100% 검증, 출발지➔도착지 경로, 인증서 목록 및 실용 후속 조치 가이드를 제공하는 전용 팝업창 전면 연동
+- **오른쪽 상단 창 제어 버튼(최소/최대/닫기) 독립 격리 고정**: 창 크기를 줄여도 상단 창 제어 버튼이 화면 밖으로 밀려나지 않고 최우측 상단에 100% 온전하게 고정 노출 보장
+- **드라이브 쓰기 오류 및 권한 문제 시 명확한 에러 알림 모달 (`CopyErrorAlertModal`)**: USB 쓰기 금지(Write-Protected), 권한 거부, 디스크 용량 부족 등 I/O 예외 발생 시 단계별 조치 가이드 및 원클릭 재시도 제공
+- **작업 감사 로그(Activity Log) 1번 인덱스 열 신설 및 동적 재색인**: 실시간 보안 감사 로그에 최좌측 1번 인덱스 열 신설 및 최신 항목 자동 재색인 파이프라인 탑재
+- **C# .NET 10 / .NET 8 릴리스 빌드 파이프라인 무결성 확보**: `UpdateBackupHistoryIndices` 구현으로 CS0103 컴파일 에러 해소 및 Inno Setup 설치 프로그램(`kcert-manager-v1.6.5-setup.exe`) 빌드 무결성 보장
 
 ---
 
@@ -139,7 +140,7 @@ git config user.email "AhBiYout-all@users.noreply.github.com"
 
 # 2. 파일 스테이징 및 커밋
 git add .
-git commit -m "feat: release K-Certificate Manager v1.5.0"
+git commit -m "feat: release K-Certificate Manager v1.6.5"
 
 # 3. 원격 저장소 연결 및 푸시
 git branch -M main

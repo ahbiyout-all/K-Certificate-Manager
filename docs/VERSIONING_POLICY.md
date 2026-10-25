@@ -70,13 +70,13 @@
 
 1. **C# WPF 데스크톱 풀버전 (Standalone Self-Contained)**:
    - 파일명: `release\05_WpfDesktop\KCertManager_v{MAJOR.MINOR.PATCH}.exe`
-   - 예시: `KCertManager_v1.5.0.exe`
+   - 예시: `KCertManager_v1.6.5.exe`
 2. **C# WPF 초경량 라이트 에디션 (Framework-Dependent)**:
    - 파일명: `release\05_WpfDesktop\KCertManager-Lite_v{MAJOR.MINOR.PATCH}.exe`
-   - 예시: `KCertManager-Lite_v1.5.0.exe`
+   - 예시: `KCertManager-Lite_v1.6.5.exe`
 3. **Inno Setup 공식 통합 설치 인스톨러 (Unpacked Multi-File)**:
    - 파일명: `release\07_Installer\kcert-manager-v{MAJOR.MINOR.PATCH}-setup.exe`
-   - 예시: `kcert-manager-v1.5.0-setup.exe`
+   - 예시: `kcert-manager-v1.6.5-setup.exe`
 
 ---
 

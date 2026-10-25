@@ -126,8 +126,8 @@ push_to_github.bat
   - `push_to_github.bat`, `push_to_github.ps1`, `build.bat` 모두가 3단계 파이프라인으로 버전을 자동 판별합니다:
     1. **1차 기준**: `package.json`의 `"version"` 필드에서 동적 추출 (Node.js 및 PowerShell 지원)
     2. **2차 기준 (패치노트 직결)**: 누락 또는 비Node 환경 시 `docs/PATCHNOTES.md` 상단 최신 릴리스 헤더(`### 🚀 [vX.X.X]`)를 정규식으로 직접 추출
-    3. **3차 기준**: 안전 기본값 (`1.5.0`)
-  - 수동 버전 수정 없이도 패치노트 작성만으로 커밋 메시지, 창 타이틀, Git 태그(`v1.5.0`), 인스톨러 파일명이 100% 일괄 동기화됩니다.
+    3. **3차 기준**: 안전 기본값 (`1.6.5`)
+  - 수동 버전 수정 없이도 패치노트 작성만으로 커밋 메시지, 창 타이틀, Git 태그(`v1.6.5`), 인스톨러 파일명이 100% 일괄 동기화됩니다.
 - **GitHub Actions 클라우드 빌드 (`.github/workflows/build.yml`)**: 코드가 푸시되면 깃허브 클라우드의 Windows 러너가 최신 **Node.js 24** 환경에서 웹(Vite)과 C# WPF 데스크톱 앱 및 Inno Setup 인스톨러를 자동 컴파일하고 공식 인스톨러(`release/07_Installer/*.exe`)만 단독으로 **GitHub Releases** 자산에 첨부합니다.
 - **용량 제한 및 보안 방어**: `.gitignore`를 통해 인증서/키(`*.der`, `*.key`, `*.pri` 등)와 대용량 빌드 폴더를 자동으로 Git 추적에서 제외(`git rm -r --cached`)합니다.
 
