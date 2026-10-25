@@ -121,35 +121,6 @@ build.bat
 
 ---
 
-## 📤 GitHub에 올리는 방법 (How to Push to GitHub)
-
-본 프로젝트에는 GitHub 원클릭 업로드 스크립트(`push_to_github.bat`)가 포함되어 있습니다.
-
-### 방법 1. 원클릭 배치 파일 사용 (가장 간단)
-1. GitHub([https://github.com/new](https://github.com/new))에서 **`K-Certificate-Manager`** 이름으로 새 빈 저장소를 생성합니다.
-2. 프로젝트 루트의 **`push_to_github.bat`** 파일을 더블 클릭하여 실행합니다.
-3. 브라우저 GitHub 인증 창이 열리면 로그인 및 승인을 완료합니다.
-
-### 방법 2. Git CLI 수동 업로드
-
-```bash
-# 1. Git 저장소 초기화
-git init
-git config user.name "AhBiYout-all"
-git config user.email "AhBiYout-all@users.noreply.github.com"
-
-# 2. 파일 스테이징 및 커밋
-git add .
-git commit -m "feat: release K-Certificate Manager v1.6.5"
-
-# 3. 원격 저장소 연결 및 푸시
-git branch -M main
-git remote add origin https://github.com/AhBiYout-all/K-Certificate-Manager.git
-git push -u origin main --force
-```
-
----
-
 ## 📜 라이선스 및 저작권 (License)
 
 - **License**: MIT License (한국어/영어 듀얼 라이선스 정의)
