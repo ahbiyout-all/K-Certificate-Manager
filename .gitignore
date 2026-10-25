@@ -87,6 +87,18 @@ desktop.ini
 # Exception for mock assets if needed (assets folder only)
 !src/data/**
 
+# SSH Keys, Tokens, Local Secrets & Passwords
+id_rsa*
+id_ed25519*
+*.token
+*.secret
+*.auth
+*.pem
+*.publishsettings
+*.pubxml
+appsettings.*.json
+!appsettings.json
+
 # 8. Unnecessary Root Artifacts & Temporary Scripts
 /scripts/
 /AI_INSTRUCTIONS.md
@@ -97,6 +109,8 @@ K-인증서 매니저-시트.png
 # 9. Local Git Credentials and User Data
 *.credential
 *.credentials
+.git-credentials
+.netrc
 
 # 10. Local GitHub Push Scripts & Tools (원격 깃허브 업로드 제외 대상 - 로컬 전용)
 push_to_github.bat
