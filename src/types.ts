@@ -138,6 +138,19 @@ export interface TrashItem {
 export type AppLogCategory = 'BACKUP' | 'IMPORT' | 'DELETE' | 'RESTORE' | 'SCAN' | 'SYSTEM' | 'SECURITY' | 'RENEWAL';
 export type AppLogLevel = 'INFO' | 'SUCCESS' | 'WARN' | 'ERROR';
 
+export interface SecureDeletionEvidenceItem {
+  certId: string;
+  name: string;
+  subjectDn: string;
+  issuer: string;
+  serialNumber: string;
+  sourceLocation: string;
+  fileList: string[];
+  sha256?: string;
+  deletedAt: string;
+  permanentMethod: string;
+}
+
 export interface AppLogItem {
   id: string;
   timestamp: string;      // YYYY-MM-DD HH:mm:ss
@@ -148,5 +161,7 @@ export interface AppLogItem {
   source?: string;        // 예: "로컬 NPKI", "E:\NPKI"
   target?: string;        // 예: "E:\NPKI", "C:\Users\Admin\AppData\LocalLow\NPKI"
   count?: number;         // 관련 인증서 건수
+  deletionEvidence?: SecureDeletionEvidenceItem[]; // 보안 삭제 증적 로그 (상세 경로 및 SubjectDN 등)
 }
+
 

@@ -1,4 +1,4 @@
-import { AppLogItem, AppLogCategory, AppLogLevel } from '../types';
+import { AppLogItem, AppLogCategory, AppLogLevel, SecureDeletionEvidenceItem } from '../types';
 
 const STORAGE_KEY = 'kcert_activity_logs';
 const MAX_LOGS = 250;
@@ -104,6 +104,7 @@ export function logActivity(entry: {
   source?: string;
   target?: string;
   count?: number;
+  deletionEvidence?: SecureDeletionEvidenceItem[];
 }): AppLogItem {
   const newLog: AppLogItem = {
     id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
@@ -114,7 +115,8 @@ export function logActivity(entry: {
     details: entry.details,
     source: entry.source,
     target: entry.target,
-    count: entry.count
+    count: entry.count,
+    deletionEvidence: entry.deletionEvidence
   };
 
   try {
@@ -147,10 +149,11 @@ export function exportActivityLogsAsFile(logs: AppLogItem[]): void {
   const dateStr = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const header = [
     '================================================================================',
-    ' K-인증서 매니저 (K-Certificate Manager) - 앱 작업 및 감사 로그 (Activity Log)',
+    ' K-인증서 매니저 (K-Certificate Manager) - 앱 작업 및 보안 감사 로그 (Audit Log)',
     '================================================================================',
     `출력 일시: ${formatCurrentTimestamp(now)}`,
     `총 기록 건수: ${logs.length}건`,
+    '보안 감사: 휴지통 비우기 및 영구 삭제 고유 식별자(SubjectDN)·상세경로 증적 포함',
     '개발자 블로그 및 공식 홈페이지: https://ahbiyoutvibe.blogspot.com/',
     '================================================================================\n'
   ].join('\n');
@@ -163,6 +166,20 @@ export function exportActivityLogsAsFile(logs: AppLogItem[]): void {
     if (log.source) parts.push(`    출처(Source): ${log.source}`);
     if (log.target) parts.push(`    대상(Target): ${log.target}`);
     if (log.count !== undefined) parts.push(`    처리 건수: ${log.count}건`);
+
+    if (log.deletionEvidence && log.deletionEvidence.length > 0) {
+      parts.push(`    [🛡️ 보안 영구 삭제 증적 기록 (${log.deletionEvidence.length}건)]`);
+      log.deletionEvidence.forEach((ev, idx) => {
+        parts.push(`      (${idx + 1}) 인증서명: ${ev.name} [발급기관: ${ev.issuer}]`);
+        parts.push(`          - 고유 식별자 (SubjectDN): ${ev.subjectDn}`);
+        parts.push(`          - 삭제 상세 파일 경로: ${ev.sourceLocation}`);
+        parts.push(`          - 일련번호(Serial): ${ev.serialNumber}`);
+        parts.push(`          - 영구 폐기 파일 목록: ${ev.fileList.join(', ')}`);
+        if (ev.sha256) parts.push(`          - SHA-256 해시값: ${ev.sha256}`);
+        parts.push(`          - 소멸 방식: ${ev.permanentMethod} | 일시: ${ev.deletedAt}`);
+      });
+    }
+
     return parts.join('\n');
   });
 

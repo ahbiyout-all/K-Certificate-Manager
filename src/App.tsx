@@ -16,6 +16,7 @@ import {
   BackupHistoryItem,
   TrashItem,
   AppLogItem,
+  SecureDeletionEvidenceItem,
   AppTheme
 } from './types';
 import { Header } from './components/Header';
@@ -58,7 +59,7 @@ import {
   setActiveDrives 
 } from './utils/usbToPcService';
 import { isNonStandardCertPath } from './utils/certPathUtils';
-import { getStoredActivityLogs, logActivity, clearAllActivityLogs } from './utils/activityLogger';
+import { getStoredActivityLogs, logActivity, clearAllActivityLogs, formatCurrentTimestamp } from './utils/activityLogger';
 import { 
   CheckCircle2, 
   ShieldCheck,
@@ -84,7 +85,29 @@ interface ToastData {
 }
 
 export default function App() {
-  const [certificates, setCertificates] = useState<CertificateItem[]>(INITIAL_CERTIFICATES);
+  const [trashItems, setTrashItems] = useState<TrashItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('kcert_trash_items');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [certificates, setCertificates] = useState<CertificateItem[]>(() => {
+    try {
+      const savedTrash = localStorage.getItem('kcert_trash_items');
+      const savedList: TrashItem[] = savedTrash ? JSON.parse(savedTrash) : [];
+      if (savedList && savedList.length > 0) {
+        const trashCertIds = new Set(savedList.map(t => t.cert.id));
+        const filtered = INITIAL_CERTIFICATES.filter(c => !trashCertIds.has(c.id));
+        return filtered.length > 0 ? filtered : INITIAL_CERTIFICATES;
+      }
+    } catch {
+      // fallback
+    }
+    return INITIAL_CERTIFICATES;
+  });
   const [searchPaths, setSearchPaths] = useState<SearchPath[]>(INITIAL_SEARCH_PATHS);
   const [availableDrives, setAvailableDrives] = useState<DiskDrive[]>(INITIAL_DRIVES);
   const [selectedIds, setSelectedIds] = useState<string[]>(() => INITIAL_CERTIFICATES.map(c => c.id));
@@ -196,14 +219,6 @@ export default function App() {
     }
   };
 
-  const [trashItems, setTrashItems] = useState<TrashItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('kcert_trash_items');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
 
   const [selectedCertForDetail, setSelectedCertForDetail] = useState<CertificateItem | null>(null);
   const [lastScanTime, setLastScanTime] = useState('오늘 14:02');
@@ -692,8 +707,13 @@ export default function App() {
       cert,
     }));
 
-    // Move to trash
-    setTrashItems(prev => [...newTrashItems, ...prev]);
+    // Move to trash (deduplicating to prevent count mismatch or duplicate items)
+    setTrashItems(prev => {
+      const deletedCertIds = new Set(deletedCerts.map(c => c.id));
+      const deletedSerials = new Set(deletedCerts.map(c => c.serialNumber));
+      const filteredPrev = prev.filter(t => !deletedCertIds.has(t.cert.id) && !deletedSerials.has(t.cert.serialNumber));
+      return [...newTrashItems, ...filteredPrev];
+    });
 
     // Remove from active list and selection
     setCertificates(prev => prev.filter(c => !idsToDelete.includes(c.id)));
@@ -806,29 +826,78 @@ export default function App() {
 
   const handleEmptyTrash = () => {
     const count = trashItems.length;
+    if (count === 0) return;
+
+    // 보안 삭제 증적 로그 생성: 삭제된 파일의 상세 경로 및 고유 식별자(SubjectDN)
+    const deletionEvidence: SecureDeletionEvidenceItem[] = trashItems.map(item => ({
+      certId: item.cert.id,
+      name: item.cert.name,
+      subjectDn: item.cert.subjectDn,
+      issuer: item.cert.issuer,
+      serialNumber: item.cert.serialNumber,
+      sourceLocation: item.cert.sourceLocation,
+      fileList: [
+        item.cert.files.certName,
+        item.cert.files.keyName,
+        ...(item.cert.files.kmCertName ? [item.cert.files.kmCertName] : []),
+        ...(item.cert.files.kmKeyName ? [item.cert.files.kmKeyName] : []),
+      ].filter(Boolean),
+      sha256: item.cert.files.sha256,
+      deletedAt: formatCurrentTimestamp(),
+      permanentMethod: '휴지통 전체 비우기 (공개키 및 개인키 영구 소멸/파기)'
+    }));
+
     setTrashItems([]);
-    showToast(`휴지통을 비웠습니다. (${count}건의 파일이 완전히 폐기되었습니다.)`);
+    showToast(`휴지통을 비웠습니다. (${count}건의 파일 영구 소멸 및 보안 삭제 증적 기록 완료)`);
 
     const newLog = logActivity({
       category: 'DELETE',
       level: 'ERROR',
-      action: '휴지통 전체 비우기 (영구 폐기)',
-      details: `휴지통 내 ${count}건의 인증서 파일 영구 삭제`,
-      count: count
+      action: '휴지통 전체 비우기 (보안 삭제 증적 기록)',
+      details: `휴지통 내 ${count}건의 인증서 파일 및 개인키를 영구 폐기하고, 삭제 파일 상세 경로와 고유 식별자(SubjectDN) 증적을 기록했습니다.`,
+      source: '임시 보관 휴지통',
+      target: '영구 파기 (Permanent Purge)',
+      count: count,
+      deletionEvidence
     });
     setActivityLogs(prev => [newLog, ...prev]);
   };
 
   const handlePermanentlyDeleteTrash = (trashIds: string[]) => {
+    const targets = trashItems.filter(item => trashIds.includes(item.id));
+    if (targets.length === 0) return;
+
+    // 보안 삭제 증적 로그 생성: 삭제된 파일의 상세 경로 및 고유 식별자(SubjectDN)
+    const deletionEvidence: SecureDeletionEvidenceItem[] = targets.map(item => ({
+      certId: item.cert.id,
+      name: item.cert.name,
+      subjectDn: item.cert.subjectDn,
+      issuer: item.cert.issuer,
+      serialNumber: item.cert.serialNumber,
+      sourceLocation: item.cert.sourceLocation,
+      fileList: [
+        item.cert.files.certName,
+        item.cert.files.keyName,
+        ...(item.cert.files.kmCertName ? [item.cert.files.kmCertName] : []),
+        ...(item.cert.files.kmKeyName ? [item.cert.files.kmKeyName] : []),
+      ].filter(Boolean),
+      sha256: item.cert.files.sha256,
+      deletedAt: formatCurrentTimestamp(),
+      permanentMethod: '개별 영구 폐기 (공개키 및 개인키 영구 소멸/파기)'
+    }));
+
     setTrashItems(prev => prev.filter(item => !trashIds.includes(item.id)));
-    showToast(`선택한 ${trashIds.length}건의 인증서가 영구 폐기되었습니다.`);
+    showToast(`선택한 ${targets.length}건의 인증서가 영구 폐기되었습니다. (보안 삭제 증적 기록 완료)`);
 
     const newLog = logActivity({
       category: 'DELETE',
       level: 'ERROR',
-      action: '선택 인증서 영구 폐기',
-      details: `휴지통 내 ${trashIds.length}건 영구 삭제`,
-      count: trashIds.length
+      action: `인증서 ${targets.length}건 개별 영구 삭제 (보안 삭제 증적 기록)`,
+      details: `선택한 인증서(${targets.map(t => t.cert.name).join(', ')})를 영구 폐기하고, 삭제 파일 상세 경로 및 고유 식별자(SubjectDN) 증적을 기록했습니다.`,
+      source: '임시 보관 휴지통',
+      target: '영구 파기 (Permanent Purge)',
+      count: targets.length,
+      deletionEvidence
     });
     setActivityLogs(prev => [newLog, ...prev]);
   };

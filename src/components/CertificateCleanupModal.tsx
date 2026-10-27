@@ -99,23 +99,9 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
     return hong ? hong.name : (distinctUsers[0]?.name || '');
   });
 
-  // Strict expired certificate checker (만료일자 23:59:59 초과 및 만료 상태 완벽 검증 - 사용 가능한 인증서 절대 포함 금지)
+  // Strict expired certificate checker
   const isCertExpired = (c: CertificateItem): boolean => {
-    // 1. 유효(valid) 및 만료 임박(expiring) 인증서는 정상 사용 가능하므로 절대 만료 정리 대상에 포함되지 않음
-    if (c.status === 'valid' || c.status === 'expiring') return false;
-    // 2. 남은 일수가 0일 초과인 경우에도 정상 사용 가능하므로 만료 대상에서 제외
-    if (c.daysRemaining > 0) return false;
-    // 3. 만료 상태 검증 및 날짜(만료일자 23:59:59 기준) 정밀 비교
-    try {
-      const dateStr = c.validTo.includes('T') ? c.validTo : `${c.validTo}T23:59:59`;
-      const expiryMs = new Date(dateStr).getTime();
-      if (!isNaN(expiryMs)) {
-        return Date.now() > expiryMs;
-      }
-    } catch {
-      // ignore
-    }
-    return c.status === 'expired' && c.daysRemaining <= 0;
+    return c.status === 'expired' || c.daysRemaining <= 0;
   };
 
   // Base raw candidates per tab
@@ -162,20 +148,9 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
       let initialCands: CertificateItem[] = [];
       if (initialMode === 'EXPIRED') {
         const expiredAll = certificates.filter(isCertExpired);
-        const localExpired = expiredAll.filter(c => !isUsbCert(c));
-        const usbExpired = expiredAll.filter(c => isUsbCert(c));
-
-        // User safety default: prioritize LOCAL first to prevent accidental USB wiping
-        if (localExpired.length > 0) {
-          setStorageFilter('LOCAL');
-          initialCands = localExpired;
-        } else if (usbExpired.length > 0) {
-          setStorageFilter('REMOVABLE');
-          initialCands = usbExpired;
-        } else {
-          setStorageFilter('ALL');
-          initialCands = expiredAll;
-        }
+        // Default to ALL so that all expired certs (PC + USB) shown on the banner/button are selected and moved to trash without mismatch
+        setStorageFilter('ALL');
+        initialCands = expiredAll;
       } else if (initialMode === 'OTHER_USERS') {
         setStorageFilter('ALL');
         initialCands = certificates.filter(c => c.name !== myUserName);

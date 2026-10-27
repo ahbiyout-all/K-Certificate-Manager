@@ -234,15 +234,20 @@ namespace KCertManager.Wpf.Views
 
             if (confirm == MessageBoxResult.Yes)
             {
+                int count = _items.Count;
+                var evidenceSummary = string.Join("; ", _items.Select(x => $"인증서: {x.CertCommonName}, 원본경로: {x.OriginalDirectoryPath}"));
                 _trashManager.EmptyTrash();
                 ActivityLogService.Instance.Log(
                     LogCategory.DELETE,
                     LogLevel.WARN,
-                    "휴지통 영구 비우기",
-                    $"{_items.Count}개 인증서 영구 삭제");
+                    "휴지통 영구 비우기 (보안 삭제 증적)",
+                    $"총 {count}개 인증서 영구 폐기 증적: {evidenceSummary}",
+                    "Trash",
+                    "Permanent Purge",
+                    count);
 
                 LoadTrashItems();
-                UserFriendlyMessageHelper.ShowInfo("휴지통의 모든 항목을 완전히 비웠습니다.", "휴지통 비우기 완료", this);
+                UserFriendlyMessageHelper.ShowInfo("휴지통의 모든 항목을 완전히 비우고 보안 삭제 증적을 기록했습니다.", "휴지통 비우기 완료", this);
             }
         }
 

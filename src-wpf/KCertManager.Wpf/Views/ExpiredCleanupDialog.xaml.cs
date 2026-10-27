@@ -57,19 +57,8 @@ namespace KCertManager.Wpf.Views
             if (TxtUsbCount != null) TxtUsbCount.Text = $"{_usbExpired.Count}건 대상";
             if (TxtAllCount != null) TxtAllCount.Text = $"{_allExpired.Count}건 대상";
 
-            // Safety default: if Desktop has expired items, default to Desktop to avoid accidental USB wipe
-            if (_desktopExpired.Count > 0)
-            {
-                SetMedium(MediumTarget.Desktop);
-            }
-            else if (_usbExpired.Count > 0)
-            {
-                SetMedium(MediumTarget.Usb);
-            }
-            else
-            {
-                SetMedium(MediumTarget.All);
-            }
+            // Default to All so that all expired certificates across all media (PC + USB) are cleaned consistently with the ExpiredCount banner
+            SetMedium(MediumTarget.All);
         }
 
         private void SetMedium(MediumTarget target)
