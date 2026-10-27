@@ -1216,7 +1216,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
               </p>
             </div>
           ) : (
-            <table className="w-full text-left border-collapse min-w-[960px]">
+            <table className="w-full text-left border-collapse min-w-[1150px]">
               <thead className="sticky top-0 bg-slate-100/90 border-b border-slate-200 text-[12px] text-slate-700 uppercase font-bold tracking-wider z-10">
                 <tr>
                   <th className="p-4 w-12 text-center sticky left-0 bg-slate-100/90 z-20">번호</th>

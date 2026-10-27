@@ -795,7 +795,7 @@
                                 </DataGridTemplateColumn>
 
                                 <!-- CN / Name -->
-                                <DataGridTemplateColumn Header="인증서 명칭 (CN) 및 경로 상태" Width="*" MinWidth="100" SortMemberPath="CommonName" CanUserSort="True">
+                                <DataGridTemplateColumn Header="인증서 명칭 (CN) 및 경로 상태" Width="380" MinWidth="220" SortMemberPath="CommonName" CanUserSort="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel VerticalAlignment="Center">

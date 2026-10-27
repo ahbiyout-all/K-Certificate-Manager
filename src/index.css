@@ -17,28 +17,45 @@
 ::-webkit-scrollbar-track {
   background: #e2e8f0;
   border-radius: 6px;
+  transition: background-color 0.2s ease-in-out;
+}
+::-webkit-scrollbar-track:hover {
+  background: #cbd5e1;
 }
 ::-webkit-scrollbar-thumb {
   background: #94a3b8;
   border-radius: 9999px;
-  border: 2px solid #e2e8f0;
+  border-width: 2px;
+  border-style: solid;
+  border-color: #e2e8f0;
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: #475569;
+  border-color: #cbd5e1;
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-track,
 [data-theme="pastel-black"] ::-webkit-scrollbar-track {
   background: #111827;
+  transition: background-color 0.2s ease-in-out;
+}
+[data-theme="dark"] ::-webkit-scrollbar-track:hover,
+[data-theme="pastel-black"] ::-webkit-scrollbar-track:hover {
+  background: #1f2937;
 }
 [data-theme="dark"] ::-webkit-scrollbar-thumb,
 [data-theme="pastel-black"] ::-webkit-scrollbar-thumb {
   background: #475569;
-  border: 2px solid #111827;
+  border-width: 2px;
+  border-style: solid;
+  border-color: #111827;
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 }
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
 [data-theme="pastel-black"] ::-webkit-scrollbar-thumb:hover {
   background: #3b82f6;
+  border-color: #1d4ed8;
 }
 
 /* ==========================================================================
@@ -217,12 +234,21 @@
 
 [data-theme="dark"] ::-webkit-scrollbar-track, [data-theme="pastel-black"] ::-webkit-scrollbar-track {
   background: #0f1219 !important;
+  transition: background-color 0.2s ease-in-out !important;
+}
+[data-theme="dark"] ::-webkit-scrollbar-track:hover, [data-theme="pastel-black"] ::-webkit-scrollbar-track:hover {
+  background: #1e293b !important;
 }
 [data-theme="dark"] ::-webkit-scrollbar-thumb, [data-theme="pastel-black"] ::-webkit-scrollbar-thumb {
-  background: #2d3546 !important;
+  background: #334155 !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  border-color: #0f1219 !important;
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out !important;
 }
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover, [data-theme="pastel-black"] ::-webkit-scrollbar-thumb:hover {
-  background: #3f4a62 !important;
+  background: #3b82f6 !important;
+  border-color: #1e3a8a !important;
 }
 
 /* --------------------------------------------------------------------------
