@@ -278,7 +278,7 @@ namespace KCertManager.Wpf.ViewModels
 
         public event Action<IList<CertificateItem>>? RequestOpenTargetDrivePicker;
 
-        private bool _isCertificateDetailSidebarVisible = true;
+        private bool _isCertificateDetailSidebarVisible = false;
         public bool IsCertificateDetailSidebarVisible
         {
             get => _isCertificateDetailSidebarVisible;

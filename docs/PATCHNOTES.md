@@ -31,6 +31,10 @@
   - `AppLogItem.cs`: 감사 로그 모델에 `public int IndexNumber { get; set; }` 신설.
   - `ActivityLogDialog.xaml`: `FrozenColumnCount="1"` 및 1번 인덱스 텍스트 컬럼(`<DataGridTextColumn Header="번호" Binding="{Binding IndexNumber}" Width="50" ... />`) 신규 추가.
   - `ActivityLogService.cs`: 신규 로그 추가 시 최신 항목을 1번으로 지정하고, 기존 로그 항목들의 번호를 1부터 시작하도록 자동 재색인(`_logs[i].IndexNumber = i + 1;`)하여 일관된 번호 체계 유지.
+- **앱 시작 시 인증서 상세 정보 사이드바 기본 해제(닫힘) 상태 적용 (`MainViewModel.cs`)**:
+  - 앱 첫 실행 시 우측 상세 정보 사이드바가 기본적으로 닫힌 상태(`_isCertificateDetailSidebarVisible = false`)로 구동되어 메인 인증서 보관함 DataGrid가 화면 전체 가로 폭을 시원하게 활용하도록 개선.
+- **인증서 보관함 목록 "인증서 명칭 (CN) 및 경로 상태" 컬럼 동적 가로폭 조정 보장 (`MainWindow.xaml`, `CertificateList.tsx`)**:
+  - 고정 폭(`Width="640"`) 대신 반응형 가변 너비(`Width="*" MinWidth="260"`)를 부여하여, 창 크기를 줄이거나 늘릴 때, 또는 상세 사이드바를 열고 닫을 때 컬럼이 억지로 강제 고정되지 않고 유연하게 늘어나고 줄어들도록 교정.
 - **C# .NET 10 / .NET 8 릴리스 빌드 오류 CS0103 해소 (`MainViewModel.cs`)**:
   - `MainViewModel.cs` 내 백업 히스토리 삭제/새로고침 시 호출되는 `UpdateBackupHistoryIndices()` 메서드 정의 누락으로 발생하던 빌드 에러(`error CS0103: The name 'UpdateBackupHistoryIndices' does not exist in the current context`)를 완벽하게 해소하여 GitHub Actions 및 로컬 빌드 무결성 확보.
 
