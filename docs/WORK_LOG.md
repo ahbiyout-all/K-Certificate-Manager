@@ -17,6 +17,36 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 100] GitHub Actions Node.js 20 EOL 대응: CI/CD 워크플로 최신 LTS(Node 22) 및 차세대(Node 24) 런타임 전환·매트릭스 파이프라인 구축
+- **작업 일시**: 2026-10-27 18:20 KST
+- **요청 사항**:
+  - "Node.js 20 공식 지원 종료 (End-of-Life, 2026년 4월 EOL)에 따라 GitHub Actions 클라우드 실행 환경에서도 Node.js 20 사용이 공식 중단(Deprecated)됨."
+  - "모든 CI/CD 워크플로(.github/workflows/*.yml)에서 node-version: 20 대신 최신 LTS 버전(node-version: 22) 또는 차세대 버전(node-version: 24)으로 업데이트하도록 권고."
+- **배경 및 변경 사유**:
+  - 2026년 가을부터 GitHub Actions의 기본 액션과 러너가 Node.js 24 및 Node 22 LTS 환경으로 강제 전환되어, 기존 `node-version: 20` 사용 시 노란색 경고(Warning: "Node.js 20 is deprecated...")가 발생함.
+- **수행 내용**:
+  1. **빌드 & 릴리스 워크플로(`.github/workflows/build.yml`) 최신 런타임 적용**:
+     - `actions/setup-node@v4`에 Node.js 24 / Node 22 LTS 런타임 적용 및 EOL 방지 주석 보강.
+     - Fallback 기본 버전을 현재 정식 릴리스 버전인 `1.7.0`으로 갱신.
+  2. **크로스 플랫폼 CI 매트릭스 워크플로(`.github/workflows/ci.yml`) 신규 구축**:
+     - `ubuntu-latest` 및 `windows-latest` 환경에서 `node-version: [22, 24]`(Active LTS 22 및 차세대 24) 동시 교차 검증 매트릭스 파이프라인 구성.
+     - `npm run lint`(TypeScript 엄격 검사), `npm run build`(Vite 웹 번들) 및 `.NET 8/10` 컴파일 무결성을 자동 검증.
+  3. **프로젝트 엔진 환경 명세 (`package.json`)**:
+     - `"engines": { "node": ">=22.0.0" }`를 추가하여 개발자 로컬 및 CI 환경에서 Node 20 이하 구버전 런타임 구동을 원천 차단하고 Node 22/24 규격 준수.
+  4. **통합 빌드 스크립트 및 문서 동기화 (`build.ps1`, `docs/BUILD_GUIDE.md`)**:
+     - `build.ps1`의 Node.js 환경 검사 안내 문구에 `Node 22 LTS / 24 권장` 명시 및 기본 버전 `1.7.0` 갱신.
+     - `docs/BUILD_GUIDE.md`의 사전 요구사항을 Node 22 LTS / 24 권장으로 업데이트하고 GitHub Actions CI/CD 설명을 듀얼 워크플로(`.github/workflows/ci.yml`, `build.yml`)로 상세화.
+  5. **검증**: `lint_applet` 및 `compile_applet` 성공 확인.
+
+### 📝 [작업 차수 99] 루트 디렉터리 표준 MIT 라이선스(LICENSE) 파일 생성 및 저작권자 표기 규격화
+- **작업 일시**: 2026-10-27 18:05 KST
+- **요청 사항**: "루트 디렉터리에 표준 MIT 라이선스 텍스트를 포함하는 LICENSE 파일을 생성하고, 저작권 소유자를 'AhBiYout'으로 업데이트하고 연도를 개발시작 부터 지금 현재 년으로 수정하여 형식을 올바르게 지정하십시오."
+- **수행 내용**:
+  1. 루트 디렉터리에 표준 Open Source Initiative(OSI) 규격의 `LICENSE` 파일 생성.
+  2. 저작권 소유자(`AhBiYout`) 및 개발 개시부터 현재 시점까지의 연도(`2026`)를 반영하여 `Copyright (c) 2026 AhBiYout`로 표준 라이선스 고지문 규격화 완료.
+  3. 기존 `LICENSE.txt`, `LICENSE_KR.txt`, `LICENSE_EN.txt` 및 `docs/LICENSE.md`와의 저작권 일관성 검증.
+  4. `lint_applet` 및 `compile_applet` 정상 통과 확인.
+
 ### 📝 [작업 차수 98] 보안 영구 삭제 증적 감사 로그(SubjectDN 포렌식) 시스템 구축, 만료 정리 휴지통 동기화 버그 해결 및 v1.7.0 정식 마이너 버전업
 - **작업 일시**: 2026-10-27 17:50 KST
 - **요청 사항**:

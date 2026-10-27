@@ -49,20 +49,20 @@ if (-not $nodeCmd) {
 }
 $nodeVer = & node -v
 $npmVer = & npm -v
-Write-Host " [OK] Node.js: $nodeVer, NPM: $npmVer" -ForegroundColor Green
+Write-Host " [OK] Node.js: $nodeVer (Node 22 LTS / 24 권장), NPM: $npmVer" -ForegroundColor Green
 
 # ------------------------------------------------------------------------------
 # Step 2: Read Semantic Version from package.json
 # ------------------------------------------------------------------------------
 Write-Host ""
 Write-Host "[2/7] package.json 버전 정보 확인 중..." -ForegroundColor Cyan
-$appVersion = "1.6.5"
+$appVersion = "1.7.0"
 if (Test-Path "$scriptDir\package.json") {
     try {
         $pkgJson = Get-Content "$scriptDir\package.json" -Raw | ConvertFrom-Json
         if ($pkgJson.version) { $appVersion = $pkgJson.version }
     } catch {
-        Write-Host " [NOTICE] package.json 파싱 실패. 기본 버전(1.6.4) 사용" -ForegroundColor Yellow
+        Write-Host " [NOTICE] package.json 파싱 실패. 기본 버전(1.7.0) 사용" -ForegroundColor Yellow
     }
 }
 Write-Host " [OK] 대상 버전: v$appVersion" -ForegroundColor Green

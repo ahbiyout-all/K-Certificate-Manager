@@ -8,8 +8,8 @@
 
 - **운영체제**: Windows 10 / 11 또는 Windows Server
 - **.NET SDK**: **.NET 10.0 SDK** (권장, `net10.0-windows` 타깃) 또는 **.NET 8.0 SDK** (`net8.0-windows` 자동 호환)
-- **Node.js**: v18.0.0 이상 권장
-- **NPM**: Node.js 기본 패키지 관리자
+- **Node.js**: **Node.js 22 LTS** (Active LTS) 또는 **Node.js 24** (차세대 런타임) 권장 (Node.js 20 공식 EOL 및 GitHub Actions 러너 강제 전환 대응)
+- **NPM**: Node.js 기본 패키지 관리자 (v10.0.0 이상)
 - **Inno Setup**: Inno Setup 6 (권장) 또는 Inno Setup 5 (설치 프로그램 컴파일 시 필요)
   - 공식 다운로드: [https://jrsoftware.org/isdl.php](https://jrsoftware.org/isdl.php)
 
@@ -126,9 +126,9 @@ push_to_github.bat
   - `push_to_github.bat`, `push_to_github.ps1`, `build.bat` 모두가 3단계 파이프라인으로 버전을 자동 판별합니다:
     1. **1차 기준**: `package.json`의 `"version"` 필드에서 동적 추출 (Node.js 및 PowerShell 지원)
     2. **2차 기준 (패치노트 직결)**: 누락 또는 비Node 환경 시 `docs/PATCHNOTES.md` 상단 최신 릴리스 헤더(`### 🚀 [vX.X.X]`)를 정규식으로 직접 추출
-    3. **3차 기준**: 안전 기본값 (`1.6.5`)
-  - 수동 버전 수정 없이도 패치노트 작성만으로 커밋 메시지, 창 타이틀, Git 태그(`v1.6.5`), 인스톨러 파일명이 100% 일괄 동기화됩니다.
-- **GitHub Actions 클라우드 빌드 (`.github/workflows/build.yml`)**: 코드가 푸시되면 깃허브 클라우드의 Windows 러너가 최신 **Node.js 24** 환경에서 웹(Vite)과 C# WPF 데스크톱 앱 및 Inno Setup 인스톨러를 자동 컴파일하고 공식 인스톨러(`release/07_Installer/*.exe`)만 단독으로 **GitHub Releases** 자산에 첨부합니다.
+    3. **3차 기준**: 안전 기본값 (`1.7.0`)
+  - 수동 버전 수정 없이도 패치노트 작성만으로 커밋 메시지, 창 타이틀, Git 태그(`v1.7.0`), 인스톨러 파일명이 100% 일괄 동기화됩니다.
+- **GitHub Actions 클라우드 빌드 (`.github/workflows/*.yml`)**: GitHub Actions의 Node.js 20 공식 지원 종료(2026년 4월 EOL 및 2026년 가을 러너 Deprecation 경고 발생)에 따라, 모든 CI/CD 파이프라인(`.github/workflows/ci.yml`, `build.yml`)을 최신 **Node.js 22 LTS** 및 차세대 **Node.js 24** 환경으로 완벽하게 전환 구축하였습니다. 푸시 시 웹(Vite/TypeScript) 교차 매트릭스 검증과 Windows 러너 기반 C# WPF 데스크톱 앱 및 Inno Setup 인스톨러 컴파일 후 공식 인스톨러(`release/07_Installer/*.exe`)를 GitHub Releases에 안전하게 단독 배포합니다.
 - **용량 제한 및 보안 방어**: `.gitignore`를 통해 인증서/키(`*.der`, `*.key`, `*.pri` 등)와 대용량 빌드 폴더를 자동으로 Git 추적에서 제외(`git rm -r --cached`)합니다.
 
 ---

@@ -1,0 +1,86 @@
+name: Continuous Integration (Node 22 LTS & Node 24 Matrix)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web-ci:
+    name: Web Quality Matrix (Node.js ${{ matrix.node-version }} on ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+        node-version: [ 22, 24 ] # Node.js 22 (Active LTS) & Node.js 24 (Next-Gen) - Deprecated Node.js 20 EOL Resolved
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Check Node and NPM Version
+        shell: bash
+        run: |
+          echo "Active Node Version: $(node -v)"
+          echo "Active NPM Version: $(npm -v)"
+
+      - name: Install Dependencies
+        shell: bash
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Code Quality & TypeScript Compilation Check (npm run lint)
+        shell: bash
+        run: npm run lint
+
+      - name: Vite Production Web Bundle Build (npm run build)
+        shell: bash
+        run: npm run build
+
+      - name: Verify Web Dist Output
+        shell: bash
+        run: |
+          if [ ! -f dist/index.html ]; then
+            echo "::error::dist/index.html was not generated!"
+            exit 1
+          fi
+          echo "Build verified successfully on Node.js ${{ matrix.node-version }} (${{ matrix.os }})."
+
+  dotnet-ci:
+    name: .NET Core & WPF Compilation Check
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK (8.0.x & 10.0.x)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Restore NuGet Packages
+        run: dotnet restore KCertManager.sln
+
+      - name: Build KCert.Core DLL (Release)
+        run: dotnet build src-wpf/KCert.Core/KCert.Core.csproj -c Release
+
+      - name: Build KCertManager.Wpf Application (Release)
+        run: dotnet build src-wpf/KCertManager.Wpf/KCertManager.Wpf.csproj -c Release --no-restore

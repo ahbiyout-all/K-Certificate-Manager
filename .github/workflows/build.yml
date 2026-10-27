@@ -24,7 +24,7 @@ jobs:
         id: version_step
         shell: pwsh
         run: |
-          $ver = "1.6.5"
+          $ver = "1.7.0"
           if ("${{ github.ref_name }}".StartsWith("v")) {
             $ver = "${{ github.ref_name }}".Substring(1)
           } elseif (Test-Path "package.json") {
@@ -38,9 +38,9 @@ jobs:
           [System.IO.File]::AppendAllText($env:GITHUB_ENV, "APP_VER=$ver`n")
 
       # ------------------------------------------------------------------------
-      # Node.js 24 Next-Gen Runtime (Node.js 20 EOL / Deprecation Resolution)
+      # Node.js 24 Next-Gen / Node.js 22 LTS Runtime (Node.js 20 Deprecated & EOL Resolution)
       # ------------------------------------------------------------------------
-      - name: Setup Node.js (Node 24 LTS / Next-Gen)
+      - name: Setup Node.js (Node 24 Next-Gen / Node 22 LTS)
         uses: actions/setup-node@v4
         with:
           node-version: '24'
