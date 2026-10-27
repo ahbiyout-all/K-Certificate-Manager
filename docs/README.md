@@ -7,7 +7,7 @@
 ## 📌 프로젝트 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v1.6.5` (Semantic Versioning: `1.6.5`)
+- **현재 버전**: `v1.7.0` (Semantic Versioning: `1.7.0`)
 - **개발자**: AhBiYout
 - **소속**: [http://www.cisnet.co.kr/](http://www.cisnet.co.kr/) (CISNet)
 - **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
@@ -21,7 +21,8 @@
 | 파일명 | 설명 |
 | :--- | :--- |
 | [`VERSIONING_POLICY.md`](./VERSIONING_POLICY.md) | **버전 관리 표준 정책**: SemVer 2.0.0 (MAJOR.MINOR.PATCH) 3단계 분류 및 코드 수정 시 동기화 체크리스트 |
-| [`PATCHNOTES.md`](./PATCHNOTES.md) | **버전 릴리스 패치노트**: v1.0.0부터 v1.6.5까지의 상세 기능 변경, 보안 패치 및 릴리스 히스토리 |
+| [`PATCHNOTES.md`](./PATCHNOTES.md) | **버전 릴리스 패치노트**: v1.0.0부터 v1.7.0까지의 상세 기능 변경, 보안 패치 및 릴리스 히스토리 |
+| [`BLOG_v1.7.0.md`](./BLOG_v1.7.0.md) | **공식 구글 블로그 배포 문서**: v1.7.0 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
 | [`BLOG_v1.6.5.md`](./BLOG_v1.6.5.md) | **공식 구글 블로그 배포 문서**: v1.6.5 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
 | [`BLOG_v1.5.0.md`](./BLOG_v1.5.0.md) | **공식 구글 블로그 배포 문서**: v1.5.0 공식 구글 블로그(Blogger) 게시용 10단계 표준 마크다운 원고 |
 | [`AI_INSTRUCTIONS.md`](../AI_INSTRUCTIONS.md) | **AI 개발 행동 강령 & 유지보수 가이드**: 자아검증 수칙, 듀얼 아키텍처, 보안 하드닝, 빌드/배포 자동화 파이프라인 명세 |
@@ -94,5 +95,11 @@
 20. **작업 완료 안내 전용 팝업창(모달/대화상자) 구축 및 C# 빌드 오류 CS0103 해소 (v1.6.5)**
     - 복사/가져오기 성공 시 에메랄드 성공 배너, SHA-256 무결성 100% 검증 배지, 출발지➔도착지 경로 및 실용 후속 조치 가이드를 제공하는 전용 팝업창 전면 연동
     - `MainViewModel.cs` 내 `UpdateBackupHistoryIndices()` 구현으로 .NET 10 / .NET 8 릴리스 빌드 파이프라인 무결성 확보
+21. **보안 영구 삭제 증적 감사 로그(SubjectDN 포렌식) 시스템 및 보관함 컬럼/스크롤 반응형 고도화 (v1.7.0)**
+    - 휴지통 비우기 및 개별 영구 삭제 시 삭제 대상 인증서의 SubjectDN 고유식별자, 원본 디스크 파일 경로, SHA-256 전자지문을 감사 로그로 영구 보존
+    - 작업 감사 로그 모달(`AppActivityLogModal`) 내 전용 '보안 삭제 증적' 탭, 실시간 검색, 원클릭 클립보드 복사 및 .log 감사 보고서 내보내기 구축
+    - 만료 인증서 일괄 정리 시 휴지통 항목 및 카운트 불일치 근본 해소
+    - 인증서 보관함 경로 상태 반응형 가변 너비(`Width="*" MinWidth="100"`) 교정 및 스크롤바 썸 두께·호버 트랜지션 디자인 개선
+    - 앱 시작 시 상세 사이드바 기본 해제(닫힘)로 초기 로딩 시 시원한 전체 테이블 뷰 제공
 
 

@@ -7,7 +7,7 @@
 ## 📌 프로젝트 기본 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v1.6.5` (Semantic Versioning 2.0.0)
+- **현재 버전**: `v1.7.0` (Semantic Versioning 2.0.0)
 - **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
 - **구글 공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **공식 홈페이지**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr) ((주)씨아이에스넷 CISNet)
@@ -16,6 +16,29 @@
 ---
 
 ## 📅 작업 기록 상세 내역
+
+### 📝 [작업 차수 98] 보안 영구 삭제 증적 감사 로그(SubjectDN 포렌식) 시스템 구축, 만료 정리 휴지통 동기화 버그 해결 및 v1.7.0 정식 마이너 버전업
+- **작업 일시**: 2026-10-27 17:50 KST
+- **요청 사항**:
+  1. "휴지통 비우기 및 개별 영구 삭제 작업 시, 삭제된 파일의 상세 경로와 인증서 고유 식별자(SubjectDN)를 기록하는 '보안 삭제 증적 로그' 기능을 AppActivityLogModal에 추가하세요."
+  2. "만료 인증서 정리한뒤에 휴지통에 들어가있는 숫자에서 차이가 남."
+  3. "src/index.css 파일에서 ::-webkit-scrollbar-thumb에 border-width를 조정하고, 스크롤바 영역이 호버될 때 배경색이 더 명확하게 변경되도록 transition 효과를 추가하세요."
+  4. "버전업이 필요하지 않나요?" (v1.7.0 정식 릴리스)
+- **수행 내용**:
+  1. **보안 삭제 증적 로그 (Secure Deletion Audit Trail) 아키텍처 구축**:
+     - `SecureDeletionEvidenceItem` 모델 설계: certId, name, subjectDn, issuer, serialNumber, sourceLocation, fileList, deletedAt, permanentMethod, sha256 등 법적·감사적 효력을 갖는 증적 데이터 필드 완비.
+     - `App.tsx` 내 `handleEmptyTrash` 및 `handlePermanentlyDeleteTrash`에서 영구 삭제 실행 전 원본 메타데이터 및 SHA-256 전자지문을 보존하여 활동 로그 시스템에 증적으로 즉시 적재.
+     - `AppActivityLogModal.tsx` 내 '보안 삭제 증적 (N건)' 전용 탭 신설, SubjectDN/경로/시리얼 통합 검색, 원클릭 클립보드 복사(SubjectDN, 파일경로) 및 카드형 포렌식 뷰포트 구현.
+     - `activityLogger.ts` 감사 파일(`.log`) 내보내기 시 [보안 삭제 증적 감사 보고서] 섹션 자동 생성.
+     - WPF 데스크톱 `TrashDialog.xaml.cs`에서도 휴지통 비우기 및 개별 영구 삭제 시 인증서명과 원본 경로가 감사 로그에 온전히 기록되도록 연동.
+  2. **만료 인증서 일괄 정리 시 휴지통 동기화 카운트 불일치 해소**:
+     - `CertificateCleanupModal.tsx`에서 만료 인증서 일괄 정리 시 삭제된 인증서들을 실시간으로 휴지통 목록(`trashList`)에 1:1 동기화하여 카운트 정합성 100% 확보.
+  3. **스크롤바 디자인 & 호버 트랜지션 고도화**:
+     - `src/index.css`의 `::-webkit-scrollbar-thumb` border-width 미세 조정 및 `:hover` 트랜지션 효과 추가.
+  4. **전체 프로젝트 v1.7.0 일괄 버전업**:
+     - `package.json`, `src/version.ts`, `KCertManager.Wpf.csproj`, `KCert.Core.csproj`, `UpdateCheckerService.cs`, `AboutDialog.xaml`, `AboutDialog.xaml.cs`, `MainWindow.xaml`, `UpdateNotificationDialog.xaml` 전체 동기화.
+     - 공식 패치노트(`PATCHNOTES.md`), 문서 목록(`README.md`), 구글 블로그 전용 배포 문서(`BLOG_v1.7.0.md`) 생성.
+  5. **검증**: `lint_applet` 및 `compile_applet` 무결점 통과.
 
 ### 📝 [작업 차수 97] 인증서 보관함 가로 스크롤바 이동 동작(`Width="380" MinWidth="220"`, 전체 1,135px) 교정 및 앱 시작 시 상세 사이드바 해제(닫힘) 상태 기본 설정
 - **작업 일시**: 2026-10-27 16:02 KST

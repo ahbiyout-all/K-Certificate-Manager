@@ -16,6 +16,31 @@
 
 ## 📋 버전 릴리스 내역
 
+### 🚀 [v1.7.0] - 2026-10-27
+**변경 구분**: `MINOR` (보안 영구 삭제 증적 감사 로그 시스템 신설, SubjectDN/원본경로/해시값 전자포렌식 감사 보존, 만료 인증서 일괄 정리 휴지통 카운트 불일치 근본 해소, 스크롤바 디자인 및 호버 트랜지션 고도화, 보관함 경로 상태 반응형 컬럼 교정)
+#### ✨ 주요 개선 및 신규 기능 (Improvements & Features)
+- **보안 삭제 증적 로그 (Secure Deletion Audit Records) 감사 시스템 전면 구축 (Web & WPF)**:
+  - **사용자 요청 사항**: "휴지통 비우기 및 개별 영구 삭제 작업 시, 삭제된 파일의 상세 경로와 인증서 고유 식별자(SubjectDN)를 기록하는 '보안 삭제 증적 로그' 기능을 AppActivityLogModal에 추가"
+  - **데이터 모델 신설 (`SecureDeletionEvidenceItem`)**: 영구 삭제된 인증서 고유 식별자(`SubjectDN`), 인증서명(`name`), 발급기관(`issuer`), 일련번호(`serialNumber`), 원본 디렉터리 경로(`sourceLocation`), 개별 파일 목록(`signCert.der`, `signPri.key`), 삭제 타임스탬프(`deletedAt`), 삭제 방식(`permanentMethod: 'trash_empty' | 'trash_single_delete'`), SHA-256 무결성 전자지문(`sha256`)을 독립 구조체로 캡처 및 영구 보존.
+  - **작업 감사 모달 내 전용 탭 신설 (`AppActivityLogModal.tsx`)**:
+    - 상단 `🛡️ 보안 삭제 증적 (N건)` 탭 신설 및 삭제 증적 전용 뷰 제공.
+    - 증적 검색 필터(SubjectDN, 파일 경로, 일련번호 실시간 검색) 및 통계 배지(총 영구 삭제 건수, 최신 삭제 일시 등) 완비.
+    - 인증서 고유 식별자(SubjectDN) 및 원본 파일 디렉터리 경로의 1-클릭 클립보드 복사(복사 피드백 토스트 포함) 지원.
+  - **감사 보고서(`.log`) 내보내기 확장 (`activityLogger.ts`)**:
+    - 시스템 작업 로그 내보내기 시, `[보안 삭제 증적 감사 보고서 (FORENSIC AUDIT TRAIL)]` 전용 섹션을 자동 생성하여 규정 준수(Compliance) 및 전자 감사 증적 파일 완벽 추출.
+  - **C# WPF 데스크톱 휴지통 영구 삭제 증적 연동 (`TrashDialog.xaml.cs`)**:
+    - 휴지통 비우기 및 영구 삭제 실행 시, 삭제 대상 인증서 이름과 원본 파일 디스크 경로를 누락 없이 캡처하여 감사 로그 시스템에 기록하도록 보강.
+- **만료 인증서 일괄 정리 시 휴지통 동기화 및 카운트 불일치 근본 해소 (`CertificateCleanupModal.tsx`)**:
+  - 만료 인증서 정리 실행 시 이동된 인증서들을 실시간으로 휴지통 상태(`trashList`) 및 통계 카운터에 즉각 일괄 반영하여, 만료 정리 후 휴지통에 표시되는 개수와 실제 격리 파일 수가 정확하게 1:1 일치하도록 동기화 로직 전면 개선.
+- **인증서 보관함 경로 상태 반응형 가변 너비 및 가로 스크롤바 활성화 (`MainWindow.xaml`, `CertificateList.tsx`)**:
+  - 가로 폭이 줄어들지 않던 경로 상태 컬럼을 `Width="*" MinWidth="100"` 반응형 가변 너비로 교정하여 창 크기나 사이드바 개폐에 따라 유연하게 축소·확대.
+  - 가로 스크롤바가 상시 정상 작동하도록 스크롤 컨테이너 가로 오버플로우 구조 최적화.
+- **스크롤바 썸(Thumb) 테두리 두께 및 호버 트랜지션 디자인 고도화 (`src/index.css`)**:
+  - `::-webkit-scrollbar-thumb`의 `border-width`를 미세 조정(3px -> 2.5px)하여 슬림하고 정제된 비주얼을 제공.
+  - 마우스 호버(`:hover`) 및 활성화(`:active`) 시 배경색이 부드럽고 명확하게 전환되도록 `transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1)` 효과 추가.
+- **앱 시작 시 인증서 상세 사이드바 기본 해제(닫힘) 보장 (`App.tsx`, `MainViewModel.cs`)**:
+  - 첫 실행 시 사이드바가 닫힌 상태로 시작하여 인증서 목록 테이블이 화면 가로폭을 시원하게 사용할 수 있도록 기본값 최적화.
+
 ### 🚀 [v1.6.5] - 2026-10-25
 **변경 구분**: `PATCH` (최좌측 1번 인덱스(1, 2, 3...) 일원화, DataGrid 최좌측 고정열(Frozen/Sticky) 보장, 작업 로그 인덱스 열 신설, C# 빌드 오류 CS0103 해소)
 #### ✨ 주요 개선 및 신규 기능 (Improvements & Features)
