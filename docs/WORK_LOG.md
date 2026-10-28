@@ -17,6 +17,81 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 103] 인증서 복사·백업 완료 성공 알림음(SuccessChime) ON/OFF 및 볼륨 크기 설정 기능 '설정 모달' 추가
+- **작업 일시**: 2026-10-27 23:30 KST
+- **요청 사항**: "인증서 복사나 백업 작업이 완료되었을 때 재생되는 성공 알림음(SuccessChime)을 사용자가 설정에서 ON/OFF하거나 볼륨을 조절할 수 있는 기능을 '설정 모달'에 추가하세요."
+- **배경 및 변경 사유**:
+  - 인증서 복사(PC ➔ USB, USB ➔ PC)나 백업 작업 완료 시 사용자에게 작업이 안심하고 끝났음을 알리는 성공 차임음(SuccessChime)을 청각적 피드백으로 제공하고 있으나, 조용한 사무 환경이나 개인 취향에 따라 알림음을 완전히 끄거나 볼륨 크기를 미세하게 조절하고자 하는 사용자 니즈가 존재함.
+  - 이를 위해 설정 모달(`SettingsModal.tsx`)에 복사 완료 알림음 스위치(ON/OFF), 볼륨 수치 범위 슬라이더(0% ~ 100%), 빠른 볼륨 프리셋 버튼, 실시간 음량 테스트(소리 미리듣기) 버튼을 추가하고, 사용자 선택값을 브라우저 `localStorage`(`kcert_sound_settings`)에 안전하게 영구 저장되도록 구현함.
+- **수행 내용**:
+  1. **Web Audio API 오디오 제어 모듈 고도화 (`src/utils/audioFeedback.ts`)**:
+     - `SoundSettings` 인터페이스 정의 (`enabled: boolean`, `volume: number`).
+     - `getSoundSettings()`, `saveSoundSettings()`, `playSuccessChime()`, `playTestChime()` 오디오 컨트롤 유틸리티 제공.
+     - `SOUND_SETTINGS_CHANGED_EVENT` 사용자 지정 이벤트를 통해 설정 변경 시 앱 전역에 실시간 동기화.
+     - 외부 MP3/WAV 자원 다운로드 없이 Web Audio API OscillatorNode를 통해 `Eb5(622.25Hz) -> G5(783.99Hz) -> C6(1046.50Hz)`의 맑고 청명한 3음계 하모닉 차임음을 사용자 설정 볼륨에 맞춰 실시간 합성 재생.
+  2. **환경 설정 모달 UI 구축 (`src/components/SettingsModal.tsx`)**:
+     - **성공 알림음 (SuccessChime) ON/OFF 토글 스위치**: 직관적인 블루 펄스 토글 스위치 제공.
+     - **볼륨 크기 조절 범주 슬라이더 (Range Slider)**: 0%부터 100%까지 1% 단위 미세 볼륨 조절 슬라이더 및 음량 아이콘(음소거/저음/고음) 가시화.
+     - **빠른 볼륨 프리셋 버튼 5종**: [음소거(0%)], [조용히(25%)], [보통(50%)], [크게(80%)], [최대(100%)] 버튼을 배치하여 원클릭으로 주용도별 설정 가능.
+     - **소리 미리듣기 / 테스트 버튼**: 슬라이더로 조절한 볼륨 크기를 모달 내에서 즉시 청음해 볼 수 있는 미리듣기 버튼 제공.
+     - **기본값 복원 및 즉시 저장 고지**: [기본값으로 복원] 시 40% 기본 볼륨으로 재설정되며 상단에 '저장됨' 확인 배지 표시.
+  3. **복사/백업 프로세스 완결 경로 연동 (`src/components/BackupModal.tsx`, `src/components/UsbToPcModal.tsx`, `src/App.tsx`)**:
+     - PC ➔ USB 백업 완료, USB ➔ PC 로컬 가져오기 완료, 및 드라이브 간 복사 성공 이벤트 시 사용자 설정(ON/OFF 및 볼륨 % 값)을 전적으로 존중하여 `playSuccessChime()`이 재생되도록 검증 완료.
+  4. **컴파일 및 빌드 검증**:
+     - `compile_applet` 실행 결과 0 에러 정상 빌드 성공 확인.
+
+---
+
+### 📝 [작업 차수 102] 인증서 명칭·저장 경로 및 상태 컬럼 최소 폭 자유 조절(30px) 구현 및 발급기관 정확한 공식 기관명 표시 체계 구축
+- **작업 일시**: 2026-10-27 19:05 KST
+- **요청 사항**:
+  1. "인증서 명칭 및 경로 상태 크기 최소로 자유롭게 되도록 수정."
+  2. "발급기관 정확한 기관명으로 표시."
+- **배경 및 변경 사유**:
+  - 기존 웹 관리 콘솔 및 WPF 데스크톱 앱에서 '인증서 명칭 및 경로'와 '상태' 컬럼의 최소 폭 제약(`minW = 80`, WPF `MinWidth = 220`)으로 인해 화면이 좁거나 다른 컬럼을 넓게 보고자 할 때 컬럼을 충분히 줄일 수 없었던 불편을 해소함.
+  - 발급기관 정보가 원본 DN 문자열이나 단순 약칭으로 표시될 경우 사용자가 인증서 발급 주체(금융결제원, 코스콤, 한국정보인증, 행정안전부, 교육부 등)를 명확하게 식별하기 어려웠던 점을 개선하여 공인/행정 전자서명 기관의 정확한 공식 기관명으로 일원화함.
+- **수행 내용**:
+  1. **인증서 명칭·저장 경로 (`category`) 및 상태 (`status`) 컬럼 최소 크기 자유 조절**:
+     - **웹 관리 콘솔 (`src/components/CertificateList.tsx`)**:
+       - `handleStartResize`의 최소 폭 제약 `minW`를 `category` 및 `status`에 대해 `30px`(기존 80px)로 대폭 완화하여 마우스 드래그로 원하는 만큼 극도로 좁게 컬럼을 자유롭게 축소 가능하도록 개선.
+       - 메인 `<table>`에 `table-fixed` 레이아웃 속성을 추가하여 브라우저의 기본 셀 컨텐츠 확장 간섭을 차단하고 사용자가 지정한 픽셀 너비를 100% 엄격 준수.
+       - '인증서 명칭 및 저장 경로' 셀 내부의 뱃지, 파일 경로 박스에 `min-w-0`, `truncate`, `overflow-hidden`을 철저히 적용하여 30~50px 폭으로 축소되어도 텍스트가 줄바꿈되거나 인접 셀로 침범하지 않고 깔끔한 말줄임표(...) 및 마우스 오버 툴팁(`title`)으로 안전 조회 보장.
+       - '상태' 뱃지(`getStatusBadge`): 폭이 70px 미만으로 좁아질 때 `isNarrow` 모드로 자동 전환되어 텍스트 넘침 없이 정돈된 도트 인디케이터와 상태 안내 툴팁 제공.
+     - **Windows WPF 데스크톱 앱 (`src-wpf/KCertManager.Wpf/Views/MainWindow.xaml`)**:
+       - `인증서 명칭 (CN) 및 경로 상태` 열의 `MinWidth="220"`을 `MinWidth="30"`으로 대폭 완화.
+       - `상태` 열의 `MinWidth="30"`을 명시하여 DataGrid 헤더 구분선을 드래그해 최소 크기로 자유롭게 축소 가능하도록 보장.
+  2. **발급기관 정확한 공식 기관명 및 공인인증센터 표시 체계 구축**:
+     - **발급기관 공식 명칭 매핑 유틸리티 신설 (`src/utils/issuerUtils.ts`)**:
+       - 대한민국 5대 공인인증기관(금융결제원, (주)코스콤, 한국정보인증(주), 한국전자인증(주), 한국무역정보통신(주)) 및 정부/공공 전자서명인증센터(행정안전부 GPKI, 교육부 EPKI, 국방부 MPKI, 대법원 사법전자서명), 글로벌 CA(Let's Encrypt, DigiCert, Sectigo)의 정확한 공식 기관명, 대표 약칭, 브랜드 태그, 상세 인증센터명, 뱃지 스타일 매핑 함수 `getAccurateIssuerInfo` 구현.
+     - **웹 관리 콘솔 UI 적용 (`src/components/CertificateList.tsx`, `src/components/CertificateDetailModal.tsx`)**:
+       - 목록의 '발급기관' 열에서 식별 브랜드 뱃지(`yessign`, `SignKorea`, `KICA`, `CrossCert`, `TradeSign`, `GPKI`, `EPKI`, `MPKI`)와 함께 정확한 공식 기관명(예: `금융결제원 (yessign)`, `(주)코스콤 (SignKorea)`, `행정안전부 행정전자서명인증센터 (GPKI)` 등) 및 상세 인증센터명을 시각적으로 분리 표시.
+       - 인증서 상세 정보 모달(`CertificateDetailModal`)에도 동일한 공식 기관명 및 인증센터 명세를 적용.
+     - **WPF 데스크톱 앱 모델 및 UI 연동 (`CertificateItem.cs`, `MainWindow.xaml`)**:
+       - `CertificateItem`에 `AccurateIssuerName` 계산 속성을 추가하여 정제된 공식 기관명을 반환하도록 하고, DataGrid의 '발급기관' 템플릿에 공식 기관명과 서명기관 식별자(`CaSignatureName`)를 선명하게 바인딩.
+  3. **빌드 및 컴파일 무결성 검증**:
+     - `compile_applet` (Vite 번들 빌드) 무결점 통과 완료.
+
+### 📝 [작업 차수 101] 인증서 보관함 목록 세로 구분선(Vertical Grid Lines) 전면 도입, 대화형 컬럼 폭 드래그 조절 및 좌우 여백 밀도 조절 컨트롤 구현
+- **작업 일시**: 2026-10-27 18:35 KST
+- **요청 사항**: "목록에 세로선을 넣어서 좌우여백 조절을 하기 쉽도록 하세요."
+- **배경 및 변경 사유**:
+  - 기존 인증서 보관함 목록(웹 콘솔 및 WPF 데스크톱 DataGrid)에 행 단위 가로선만 존재하여, 각 컬럼의 정확한 경계와 좌우 여백(셀 패딩)을 시각적으로 가늠하고 조절하기 어려웠음.
+  - 사용자가 열 간 경계선을 직관적으로 확인하고, 필요에 따라 컬럼 너비(Width)를 마우스로 자유롭게 늘리거나 줄일 수 있는 대화형 조절 기능 및 좌우 여백(Padding) 밀도 조절 기능을 양대 플랫폼에 걸쳐 일관되게 제공함.
+- **수행 내용**:
+  1. **웹 관리 콘솔 (`src/components/CertificateList.tsx`) 세로선 및 여백 조절 아키텍처 구축**:
+     - **선명한 세로 구분선(Vertical Borders)**: 테이블 헤더(`th`)에 `border-r border-slate-300 dark:border-slate-700`, 본문 데이터 셀(`td`)에 `border-r border-slate-200/90 dark:border-slate-800`을 적용하여 모든 열(번호, 체크박스, 보관 위치, 인증서 종류/경로, 사용자명, 발급기관, 만료일, 상태, 작업) 사이를 명확히 분할.
+     - **대화형 컬럼 폭 리사이저(Draggable Column Resizer)**: 모든 헤더 우측 경계선에 `col-resize` 핸들을 장착하여 마우스 좌클릭 드래그로 실시간 컬럼 너비 조절 지원. 드래그 중 블루 액티브 가이드 라인(`bg-blue-600`) 및 호버 피드백 제공, 사용자 맞춤 너비 설정값을 브라우저 `localStorage`(`kcert_col_widths_v1`)에 자동 영구 보존.
+     - **좌우 여백 밀도 간편 컨트롤(Toolbar Padding Density Selector)**: 상단 툴바에 [좌우 여백: 좁게 | 보통 | 넓게] 3단계 프리셋 토글 및 [너비 초기화 ↺] 버튼을 배치하여, 클릭 한 번으로 셀 내부 좌우 패딩을 최적화할 수 있도록 지원.
+     - **외곽선 및 고정 컬럼 보강**: 테이블 전체 외곽 테두리(`border border-slate-300 dark:border-slate-700`) 및 가로 스크롤 시 좌측 고정 번호 열의 입체 그림자 분리선 유지.
+  2. **Windows WPF 데스크톱 앱 (`src-wpf/KCertManager.Wpf/Views/MainWindow.xaml`) 세로 그리드 라인 및 컬럼 크기 조절 활성화**:
+     - `CertDataGrid`의 `GridLinesVisibility`를 `"All"`로 확장하고 `VerticalGridLinesBrush="{DynamicResource BorderBrush}"` 지정.
+     - `CanUserResizeColumns="True"`를 적용하여 사용자가 DataGrid 헤더 구분선을 마우스로 드래그하여 각 컬럼의 좌우 폭과 여백을 손쉽게 조절할 수 있도록 개방.
+     - `DataGridColumnHeader` 및 `DataGridCell` 템플릿의 오른쪽 테두리(`BorderThickness="0,0,1,1"`, `BorderThickness="0,0,1,0"`)를 보강하여 행과 열이 일목요연하게 교차하는 그리드 레이아웃 완성.
+  3. **검증**:
+     - TypeScript 정적 타입 검사(`npm run lint`, `tsc --noEmit`) 0건 통과.
+     - Vite 웹 번들 컴파일(`npm run build`) 무결점 성공.
+     - WPF `MainWindow.xaml` XAML/XML 구문 정합성 100% 검증.
+
 ### 📝 [작업 차수 100] GitHub Actions Node.js 20 EOL 대응: CI/CD 워크플로 최신 LTS(Node 22) 및 차세대(Node 24) 런타임 전환·매트릭스 파이프라인 구축
 - **작업 일시**: 2026-10-27 18:20 KST
 - **요청 사항**:

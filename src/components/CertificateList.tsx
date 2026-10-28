@@ -7,6 +7,7 @@ import {
 import { isNonStandardCertPath } from '../utils/certPathUtils';
 import { filterPhysicalDrivesOnly } from '../utils/driveFilter';
 import { getDriveColorInfo } from '../utils/driveColors';
+import { getAccurateIssuerInfo } from '../utils/issuerUtils';
 import { 
   Search, 
   Copy, 
@@ -103,6 +104,97 @@ export const CertificateList: React.FC<CertificateListProps> = ({
   const [sourceFilter, setSourceFilter] = useState<'ALL' | 'LOCAL' | 'REMOVABLE'>('ALL');
   const [onlyDrivesWithCerts, setOnlyDrivesWithCerts] = useState<boolean>(false);
   
+  // Column widths state for resizable columns with vertical separator lines
+  const DEFAULT_COL_WIDTHS = useMemo(() => ({
+    index: 52,
+    select: 46,
+    storage: 130,
+    category: 320,
+    name: 210,
+    issuer: 210,
+    notAfter: 130,
+    status: 120,
+    actions: 175,
+  }), []);
+
+  const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
+    try {
+      const saved = localStorage.getItem("kcert_col_widths_v1");
+      if (saved) {
+        return { ...DEFAULT_COL_WIDTHS, ...JSON.parse(saved) };
+      }
+    } catch (e) {
+      // ignore
+    }
+    return DEFAULT_COL_WIDTHS;
+  });
+
+  // Table padding density state: "compact" | "normal" | "spacious"
+  const [paddingDensity, setPaddingDensity] = useState<"compact" | "normal" | "spacious">(() => {
+    try {
+      const saved = localStorage.getItem("kcert_col_padding_density");
+      if (saved === "compact" || saved === "normal" || saved === "spacious") return saved;
+    } catch (e) {
+      // ignore
+    }
+    return "normal";
+  });
+
+  const [resizingCol, setResizingCol] = useState<string | null>(null);
+
+  const handleStartResize = (colKey: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startWidth = colWidths[colKey] || 100;
+    setResizingCol(colKey);
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      // '인증서 명칭 및 경로', '상태' 컬럼의 너비를 최소 30px까지 자유자재로 줄일 수 있도록 완화
+      const minW = (colKey === "category" || colKey === "status")
+        ? 30 
+        : (colKey === "index" || colKey === "select" ? 28 : 36);
+      const newWidth = Math.max(minW, startWidth + deltaX);
+      setColWidths(prev => ({ ...prev, [colKey]: newWidth }));
+    };
+
+    const onMouseUp = () => {
+      setResizingCol(null);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      setColWidths(current => {
+        try {
+          localStorage.setItem("kcert_col_widths_v1", JSON.stringify(current));
+        } catch (err) {}
+        return current;
+      });
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  };
+
+  const handleResetColWidths = () => {
+    setColWidths(DEFAULT_COL_WIDTHS);
+    setPaddingDensity("normal");
+    try {
+      localStorage.removeItem("kcert_col_widths_v1");
+      localStorage.setItem("kcert_col_padding_density", "normal");
+    } catch (err) {}
+  };
+
+  const handleSetPaddingDensity = (density: "compact" | "normal" | "spacious") => {
+    setPaddingDensity(density);
+    try {
+      localStorage.setItem("kcert_col_padding_density", density);
+    } catch (err) {}
+  };
+
+  const totalTableWidth = useMemo(() => {
+    return Object.values(colWidths).reduce((acc: number, w: number) => acc + (typeof w === 'number' ? w : 100), 0);
+  }, [colWidths]);
+
   // Sorting state for certificate box list
   const [sortBy, setSortBy] = useState<'storage' | 'category' | 'name' | 'issuer' | 'notAfter' | 'status'>('notAfter');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -402,27 +494,64 @@ export const CertificateList: React.FC<CertificateListProps> = ({
     }
   };
 
+  // Column divider resizer grip with vertical separator line
+  const renderColResizer = (colKey: string) => (
+    <div
+      onMouseDown={(e) => handleStartResize(colKey, e)}
+      className={`absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize z-30 select-none flex items-center justify-center transition-colors group/resizer ${
+        resizingCol === colKey ? "bg-blue-500/30" : "hover:bg-blue-500/20"
+      }`}
+      title="좌우 드래그: 컬럼 너비 및 여백 조절"
+    >
+      <div className={`w-[2px] h-full transition-colors ${
+        resizingCol === colKey ? "bg-blue-600 shadow-sm" : "bg-slate-300 dark:bg-slate-600 group-hover/resizer:bg-blue-500"
+      }`} />
+    </div>
+  );
+
+  const thPadding = paddingDensity === "compact"
+    ? "px-2 py-2.5 text-xs"
+    : paddingDensity === "spacious"
+      ? "px-4 py-4 text-xs sm:text-sm"
+      : "px-3 py-3.5 text-xs";
+
   const getStatusBadge = (cert: CertificateItem) => {
+    const isNarrow = (colWidths.status ?? 120) < 70;
     if (cert.status === 'expired') {
       return (
-        <span className="px-2.5 py-1 bg-rose-100 text-rose-800 rounded-md text-xs font-bold inline-flex items-center gap-1.5 border border-rose-300 shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
-          <span>만료됨</span>
+        <span 
+          className={`bg-rose-100 text-rose-800 rounded-md text-xs font-bold inline-flex items-center gap-1 border border-rose-300 shadow-2xs overflow-hidden max-w-full shrink-0 ${
+            isNarrow ? 'px-1.5 py-1 justify-center' : 'px-2.5 py-1'
+          }`}
+          title="만료됨 (유효기간 경과)"
+        >
+          <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse shrink-0"></span>
+          {!isNarrow && <span className="truncate">만료됨</span>}
         </span>
       );
     }
     if (cert.status === 'expiring') {
       return (
-        <span className="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-md text-xs font-bold inline-flex items-center gap-1.5 border border-amber-300 shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-amber-600"></span>
-          <span>만료임박 (D-{cert.daysRemaining})</span>
+        <span 
+          className={`bg-amber-100 text-amber-800 rounded-md text-xs font-bold inline-flex items-center gap-1 border border-amber-300 shadow-2xs overflow-hidden max-w-full shrink-0 ${
+            isNarrow ? 'px-1.5 py-1 justify-center' : 'px-2.5 py-1'
+          }`}
+          title={`만료임박 (D-${cert.daysRemaining})`}
+        >
+          <span className="w-2 h-2 rounded-full bg-amber-600 shrink-0"></span>
+          {!isNarrow && <span className="truncate">만료임박 (D-{cert.daysRemaining})</span>}
         </span>
       );
     }
     return (
-      <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-md text-xs font-bold inline-flex items-center gap-1.5 border border-emerald-300 shadow-2xs">
-        <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-        <span>유효함</span>
+      <span 
+        className={`bg-emerald-100 text-emerald-800 rounded-md text-xs font-bold inline-flex items-center gap-1 border border-emerald-300 shadow-2xs overflow-hidden max-w-full shrink-0 ${
+          isNarrow ? 'px-1.5 py-1 justify-center' : 'px-2.5 py-1'
+        }`}
+        title="유효함 (정상 사용 가능)"
+      >
+        <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0"></span>
+        {!isNarrow && <span className="truncate">유효함</span>}
       </span>
     );
   };
@@ -1185,13 +1314,67 @@ export const CertificateList: React.FC<CertificateListProps> = ({
               </button>
             )}
 
+            {/* 세로선 & 좌우여백 조절 컨트롤 */}
+            <div className="flex items-center gap-1.5 bg-slate-100/90 border border-slate-200/90 px-2 py-1 rounded-lg text-xs shadow-2xs">
+              <span className="text-slate-600 font-bold text-[11px] flex items-center gap-1">
+                <SlidersHorizontal className="w-3 h-3 text-blue-600" />
+                <span>좌우 여백:</span>
+              </span>
+              <div className="inline-flex rounded-md p-0.5 bg-white border border-slate-200 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => handleSetPaddingDensity("compact")}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${
+                    paddingDensity === "compact"
+                      ? "bg-blue-600 text-white shadow-2xs"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                  }`}
+                  title="좌우 여백을 좁게 조절하여 많은 정보를 한눈에 표시합니다"
+                >
+                  좁게
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetPaddingDensity("normal")}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${
+                    paddingDensity === "normal"
+                      ? "bg-blue-600 text-white shadow-2xs"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                  }`}
+                  title="표준 좌우 여백 (기본값)"
+                >
+                  보통
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetPaddingDensity("spacious")}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${
+                    paddingDensity === "spacious"
+                      ? "bg-blue-600 text-white shadow-2xs"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                  }`}
+                  title="좌우 여백을 넓게 조절하여 시인성을 높입니다"
+                >
+                  넓게
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={handleResetColWidths}
+                className="px-1.5 py-0.5 text-[10px] text-slate-500 hover:text-blue-600 hover:bg-white rounded border border-transparent hover:border-slate-200 cursor-pointer transition-colors font-semibold"
+                title="컬럼 너비와 좌우 여백을 초기 기본값으로 복원합니다"
+              >
+                너비 초기화 ↺
+              </button>
+            </div>
+
             <div className="hidden sm:flex items-center space-x-2 pl-2 border-l border-slate-200">
               <button
                 type="button"
                 onClick={handleToggleSelectAllFiltered}
                 className="text-xs text-blue-600 font-bold hover:underline cursor-pointer"
               >
-                {allFilteredSelected ? '선택 해제' : '목록 전체 선택'}
+                {allFilteredSelected ? "선택 해제" : "목록 전체 선택"}
               </button>
               <span className="text-slate-300">|</span>
               <button
@@ -1216,91 +1399,159 @@ export const CertificateList: React.FC<CertificateListProps> = ({
               </p>
             </div>
           ) : (
-            <table className="w-full text-left border-collapse min-w-[1150px]">
-              <thead className="sticky top-0 bg-slate-100/90 border-b border-slate-200 text-[12px] text-slate-700 uppercase font-bold tracking-wider z-10">
+            <table 
+              className={`table-fixed text-left border-collapse border border-slate-300 dark:border-slate-700 bg-white shadow-2xs ${
+                resizingCol ? "select-none" : ""
+              }`}
+              style={{ width: `${totalTableWidth}px`, minWidth: "100%" }}
+            >
+              <thead className="sticky top-0 bg-slate-100/95 border-b-2 border-slate-300 dark:border-slate-700 text-[12px] text-slate-700 uppercase font-bold tracking-wider z-20 shadow-2xs">
                 <tr>
-                  <th className="p-4 w-12 text-center sticky left-0 bg-slate-100/90 z-20">번호</th>
-                  <th className="p-4 w-12 text-center">
+                  {/* 1. 번호 (Number) */}
+                  <th 
+                    style={{ width: `${colWidths.index}px`, minWidth: `${colWidths.index}px`, maxWidth: `${colWidths.index}px` }}
+                    className={`${thPadding} text-center sticky left-0 bg-slate-100 z-30 border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                  >
+                    <span>번호</span>
+                    {renderColResizer("index")}
+                  </th>
+
+                  {/* 2. 체크박스 (Selection Checkbox) */}
+                  <th 
+                    style={{ width: `${colWidths.select}px`, minWidth: `${colWidths.select}px`, maxWidth: `${colWidths.select}px` }}
+                    className={`${thPadding} text-center border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                  >
                     <input
                       type="checkbox"
                       checked={allFilteredSelected}
                       onChange={handleToggleSelectAllFiltered}
                       className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      title="필터된 전체 선택/해제"
                     />
+                    {renderColResizer("select")}
                   </th>
-                  <th className="p-4 w-28">
+
+                  {/* 3. 보관 위치 (Storage) */}
+                  <th 
+                    style={{ width: `${colWidths.storage}px`, minWidth: `${colWidths.storage}px`, maxWidth: `${colWidths.storage}px` }}
+                    className={`${thPadding} border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                  >
                     <button
                       type="button"
-                      onClick={() => handleSort('storage')}
-                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors"
+                      onClick={() => handleSort("storage")}
+                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors max-w-full overflow-hidden"
+                      title="보관 위치 정렬"
                     >
-                      <span>보관 위치</span>
-                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500">
-                        {sortBy === 'storage' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                      <span className="truncate">보관 위치</span>
+                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500 shrink-0">
+                        {sortBy === "storage" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
                       </span>
                     </button>
+                    {renderColResizer("storage")}
                   </th>
-                  <th className="p-4">
+
+                  {/* 4. 인증서 명칭 및 저장 경로 (Category) - 최소 크기로 자유자재 축소 가능 */}
+                  <th 
+                    style={{ width: `${colWidths.category}px`, minWidth: `${colWidths.category}px`, maxWidth: `${colWidths.category}px` }}
+                    className={`${thPadding} border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                  >
                     <button
                       type="button"
-                      onClick={() => handleSort('category')}
-                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors"
+                      onClick={() => handleSort("category")}
+                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors max-w-full overflow-hidden"
+                      title="인증서 명칭 및 저장 경로 (자유로운 최소 크기 조절 가능)"
                     >
-                      <span>인증서 종류</span>
-                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500">
-                        {sortBy === 'category' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                      <span className="truncate">인증서 명칭 및 저장 경로</span>
+                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500 shrink-0">
+                        {sortBy === "category" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
                       </span>
                     </button>
+                    {renderColResizer("category")}
                   </th>
-                  <th className="p-4">
+
+                  {/* 5. 사용자명 / 소속 (Name) */}
+                  <th 
+                    style={{ width: `${colWidths.name}px`, minWidth: `${colWidths.name}px`, maxWidth: `${colWidths.name}px` }}
+                    className={`${thPadding} border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                  >
                     <button
                       type="button"
-                      onClick={() => handleSort('name')}
-                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors"
+                      onClick={() => handleSort("name")}
+                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors max-w-full overflow-hidden"
+                      title="사용자명 / 소속 정렬"
                     >
-                      <span>사용자명</span>
-                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500">
-                        {sortBy === 'name' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                      <span className="truncate">사용자명 / 소속</span>
+                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500 shrink-0">
+                        {sortBy === "name" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
                       </span>
                     </button>
+                    {renderColResizer("name")}
                   </th>
-                  <th className="p-4">
+
+                  {/* 6. 발급기관 / 서명기관(CA) (Issuer) - 정확한 공식 기관명 */}
+                  <th 
+                    style={{ width: `${colWidths.issuer}px`, minWidth: `${colWidths.issuer}px`, maxWidth: `${colWidths.issuer}px` }}
+                    className={`${thPadding} border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                  >
                     <button
                       type="button"
-                      onClick={() => handleSort('issuer')}
-                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors"
+                      onClick={() => handleSort("issuer")}
+                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors max-w-full overflow-hidden"
+                      title="발급기관 정확한 기관명 정렬"
                     >
-                      <span>발급기관 / 서명기관(CA)</span>
-                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500">
-                        {sortBy === 'issuer' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                      <span className="truncate">발급기관(공식 기관명)</span>
+                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500 shrink-0">
+                        {sortBy === "issuer" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
                       </span>
                     </button>
+                    {renderColResizer("issuer")}
                   </th>
-                  <th className="p-4">
+
+                  {/* 7. 만료일 (Expiration Date) */}
+                  <th 
+                    style={{ width: `${colWidths.notAfter}px`, minWidth: `${colWidths.notAfter}px`, maxWidth: `${colWidths.notAfter}px` }}
+                    className={`${thPadding} border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                  >
                     <button
                       type="button"
-                      onClick={() => handleSort('notAfter')}
-                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors"
+                      onClick={() => handleSort("notAfter")}
+                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors max-w-full overflow-hidden"
+                      title="만료일 정렬"
                     >
-                      <span>만료일</span>
-                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500">
-                        {sortBy === 'notAfter' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                      <span className="truncate">만료일</span>
+                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500 shrink-0">
+                        {sortBy === "notAfter" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
                       </span>
                     </button>
+                    {renderColResizer("notAfter")}
                   </th>
-                  <th className="p-4">
+
+                  {/* 8. 상태 (Status) - 최소 크기로 자유자재 축소 가능 */}
+                  <th 
+                    style={{ width: `${colWidths.status}px`, minWidth: `${colWidths.status}px`, maxWidth: `${colWidths.status}px` }}
+                    className={`${thPadding} border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                  >
                     <button
                       type="button"
-                      onClick={() => handleSort('status')}
-                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors"
+                      onClick={() => handleSort("status")}
+                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors max-w-full overflow-hidden"
+                      title="상태 (자유로운 최소 크기 조절 가능)"
                     >
-                      <span>상태</span>
-                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500">
-                        {sortBy === 'status' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                      <span className="truncate">상태</span>
+                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500 shrink-0">
+                        {sortBy === "status" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
                       </span>
                     </button>
+                    {renderColResizer("status")}
                   </th>
-                  <th className="p-4 text-right">작업</th>
+
+                  {/* 9. 작업 (Actions) */}
+                  <th 
+                    style={{ width: `${colWidths.actions}px`, minWidth: `${colWidths.actions}px`, maxWidth: `${colWidths.actions}px` }}
+                    className={`${thPadding} text-right`}
+                  >
+                    작업
+                  </th>
                 </tr>
               </thead>
               <tbody className="text-sm divide-y divide-slate-200 text-slate-600">
@@ -1310,7 +1561,11 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                   const isUsb = isUsbCertificate(cert);
                   const driveLetter = getDriveLetter(cert);
                   const isNonStandard = cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation);
-                  const cellPadding = isSelected ? 'px-4 py-4' : 'px-4 py-3.5';
+                  const cellPadding = paddingDensity === "compact"
+                    ? (isSelected ? "px-2.5 py-3" : "px-2.5 py-2")
+                    : paddingDensity === "spacious"
+                      ? (isSelected ? "px-5 py-4.5" : "px-5 py-4")
+                      : (isSelected ? "px-3.5 py-4" : "px-3.5 py-3");
 
                   return (
                     <tr
@@ -1318,34 +1573,42 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                       onClick={() => onToggleSelect(cert.id)}
                       className={`cursor-pointer transition-all duration-200 border-b ${
                         isRecentlyCopied
-                          ? 'animate-copied-row bg-emerald-50/90 hover:bg-emerald-100/80 border-l-4 border-l-emerald-500 border-b-emerald-200 shadow-xs relative z-5'
+                          ? "animate-copied-row bg-emerald-50/90 hover:bg-emerald-100/80 border-l-4 border-l-emerald-500 border-b-emerald-200 shadow-xs relative z-5"
                           : isNonStandard
                             ? isSelected
-                              ? 'bg-amber-100/90 hover:bg-amber-200/80 border-l-4 border-l-amber-500 border-b-2 border-b-amber-400 font-medium shadow-xs relative z-10'
-                              : 'bg-amber-50/60 hover:bg-amber-100/70 border-l-4 border-l-amber-400/60 border-b-amber-200/80'
+                              ? "bg-amber-100/90 hover:bg-amber-200/80 border-l-4 border-l-amber-500 border-b-2 border-b-amber-400 font-medium shadow-xs relative z-10"
+                              : "bg-amber-50/60 hover:bg-amber-100/70 border-l-4 border-l-amber-400/60 border-b-amber-200/80"
                             : isSelected
-                              ? 'bg-blue-50/95 hover:bg-blue-100/90 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 border-l-4 border-l-blue-600 border-b-2 border-b-blue-400 dark:border-b-blue-600 font-medium shadow-xs relative z-10'
-                              : cert.status === 'expired'
-                                ? 'bg-rose-50/20 hover:bg-rose-50/40 border-l-4 border-l-transparent border-b-slate-200/90 dark:border-b-slate-800'
-                                : 'bg-white hover:bg-slate-50/90 dark:bg-transparent dark:hover:bg-slate-800/40 border-l-4 border-l-transparent border-b-slate-200/90 dark:border-b-slate-800'
+                              ? "bg-blue-50/95 hover:bg-blue-100/90 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 border-l-4 border-l-blue-600 border-b-2 border-b-blue-400 dark:border-b-blue-600 font-medium shadow-xs relative z-10"
+                              : cert.status === "expired"
+                                ? "bg-rose-50/20 hover:bg-rose-50/40 border-l-4 border-l-transparent border-b-slate-200/90 dark:border-b-slate-800"
+                                : "bg-white hover:bg-slate-50/90 dark:bg-transparent dark:hover:bg-slate-800/40 border-l-4 border-l-transparent border-b-slate-200/90 dark:border-b-slate-800"
                       }`}
                     >
-                      <td className={`${cellPadding} text-center font-mono font-bold text-xs text-slate-500 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] ${
+                      {/* Col 1: 번호 */}
+                      <td 
+                        style={{ width: `${colWidths.index}px`, minWidth: `${colWidths.index}px`, maxWidth: `${colWidths.index}px` }}
+                        className={`${cellPadding} text-center font-mono font-bold text-xs text-slate-500 sticky left-0 z-10 border-r border-slate-300 dark:border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] ${
                         isRecentlyCopied
-                          ? 'bg-emerald-50/90' 
+                          ? "bg-emerald-50/90" 
                           : isNonStandard
                             ? isSelected
-                              ? 'bg-amber-100/90'
-                              : 'bg-amber-50/60'
+                              ? "bg-amber-100/90"
+                              : "bg-amber-50/60"
                             : isSelected
-                              ? 'bg-blue-50/95 dark:bg-blue-950/50'
-                              : cert.status === 'expired'
-                                ? 'bg-rose-50/20 dark:bg-slate-900/20'
-                                : 'bg-white dark:bg-slate-900'
+                              ? "bg-blue-50/95 dark:bg-blue-950/50"
+                              : cert.status === "expired"
+                                ? "bg-rose-50/20 dark:bg-slate-900/20"
+                                : "bg-white dark:bg-slate-900"
                       }`}>
                         {index + 1}
                       </td>
-                      <td className={`${cellPadding} text-center`}>
+
+                      {/* Col 2: 체크박스 */}
+                      <td 
+                        style={{ width: `${colWidths.select}px`, minWidth: `${colWidths.select}px`, maxWidth: `${colWidths.select}px` }}
+                        className={`${cellPadding} text-center border-r border-slate-200/90 dark:border-slate-800`}
+                      >
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -1354,8 +1617,11 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                         />
                       </td>
 
-                      {/* Storage Location Badge Column [USB / 컴퓨터 with distinct drive colors C, D, E, F, G, H, I, J...] */}
-                      <td className={`${cellPadding} whitespace-nowrap`}>
+                      {/* Col 3: Storage Location Badge Column */}
+                      <td 
+                        style={{ width: `${colWidths.storage}px`, minWidth: `${colWidths.storage}px`, maxWidth: `${colWidths.storage}px` }}
+                        className={`${cellPadding} whitespace-nowrap border-r border-slate-200/90 dark:border-slate-800`}
+                      >
                         {(() => {
                           const dColor = getDriveColorInfo(driveLetter);
                           return (
@@ -1364,22 +1630,22 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                               style={{
                                 backgroundColor: dColor.bgHex,
                                 borderColor: dColor.borderHex,
-                                color: '#FFFFFF',
+                                color: "#FFFFFF",
                               }}
-                              title={`보관 위치: ${isUsb ? '이동식 USB' : '컴퓨터 로컬 디스크'} (${driveLetter})`}
+                              title={`보관 위치: ${isUsb ? "이동식 USB" : "컴퓨터 로컬 디스크"} (${driveLetter})`}
                             >
                               {isUsb ? (
                                 <HardDrive className="w-3.5 h-3.5 shrink-0" style={{ color: dColor.subTextHex }} />
                               ) : (
                                 <Laptop className="w-3.5 h-3.5 shrink-0" style={{ color: dColor.subTextHex }} />
                               )}
-                              <span className="text-white">{isUsb ? 'USB' : '컴퓨터'}</span>
+                              <span className="text-white">{isUsb ? "USB" : "컴퓨터"}</span>
                               <span
                                 className="text-[11px] font-mono font-extrabold px-1.5 py-0.2 rounded border shadow-2xs"
                                 style={{
                                   backgroundColor: dColor.tagBgHex,
                                   borderColor: dColor.tagBorderHex,
-                                  color: '#FFFFFF',
+                                  color: "#FFFFFF",
                                 }}
                               >
                                 {dColor.letter}
@@ -1389,42 +1655,46 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                         })()}
                       </td>
 
-                      <td className={`${cellPadding} font-medium text-slate-800`}>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span>{getCategoryLabel(cert)}</span>
+                      {/* Col 4: 인증서 명칭 및 저장 경로 (최소 크기까지 자유롭게 조절 가능) */}
+                      <td 
+                        style={{ width: `${colWidths.category}px`, minWidth: `${colWidths.category}px`, maxWidth: `${colWidths.category}px` }}
+                        className={`${cellPadding} font-medium text-slate-800 border-r border-slate-200/90 dark:border-slate-800 overflow-hidden min-w-0`}
+                      >
+                        <div className="flex items-center gap-1.5 flex-nowrap overflow-hidden min-w-0" title={getCategoryLabel(cert)}>
+                          <span className="truncate shrink font-semibold">{getCategoryLabel(cert)}</span>
                           {cert.isSystemCa && (
-                            <span className="text-[10px] px-1.5 py-0.2 bg-blue-50 text-blue-700 font-bold rounded border border-blue-200">
-                              시스템 CA
+                            <span className="text-[10px] px-1.5 py-0.2 bg-blue-50 text-blue-700 font-bold rounded border border-blue-200 shrink-0">
+                              CA
                             </span>
                           )}
                           {cert.isInstitutional && (
-                            <span className="text-[10px] px-1.5 py-0.2 bg-indigo-50 text-indigo-700 font-bold rounded border border-indigo-200">
-                              기관/관인
+                            <span className="text-[10px] px-1.5 py-0.2 bg-indigo-50 text-indigo-700 font-bold rounded border border-indigo-200 shrink-0">
+                              기관
                             </span>
                           )}
                           {cert.isCustomAdded && (
-                            <span className="text-[10px] px-1.5 py-0.2 bg-teal-50 text-teal-700 rounded border border-teal-200">
-                              수동 추가
+                            <span className="text-[10px] px-1.5 py-0.2 bg-teal-50 text-teal-700 rounded border border-teal-200 shrink-0">
+                              수동
                             </span>
                           )}
                           {isRecentlyCopied && (
-                            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 bg-emerald-600 text-white rounded-full font-bold shadow-xs animate-pulse">
-                              <Sparkles className="w-3 h-3 text-amber-300" />
-                              <span>복사 완료</span>
+                            <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.2 bg-emerald-600 text-white rounded-full font-bold shadow-xs shrink-0">
+                              <Sparkles className="w-2.5 h-2.5 text-amber-300" />
+                              <span>복사</span>
                             </span>
                           )}
                         </div>
                         <div 
-                          className="text-[11px] text-slate-600 font-medium break-all mt-1 font-mono flex items-start gap-1 bg-slate-50/70 p-1 rounded border border-slate-200/50 group/path"
+                          className="text-[11px] text-slate-600 font-medium mt-1 font-mono flex items-center justify-between gap-1 bg-slate-50/70 p-1 rounded border border-slate-200/50 group/path overflow-hidden min-w-0"
                           title={`인증서 전체 저장 경로: ${cert.sourceLocation}`}
                         >
-                          <span className="select-all leading-relaxed">{cert.sourceLocation}</span>
+                          <span className="select-all leading-relaxed truncate shrink min-w-0">{cert.sourceLocation}</span>
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               navigator.clipboard.writeText(cert.sourceLocation);
-                              alert('인증서 전체 경로가 클립보드에 복사되었습니다.');
+                              alert("인증서 전체 경로가 클립보드에 복사되었습니다.");
                             }}
                             className="opacity-0 group-hover/path:opacity-100 transition-opacity p-0.5 text-slate-400 hover:text-blue-600 rounded shrink-0 cursor-pointer"
                             title="전체 경로 클립보드 복사"
@@ -1433,15 +1703,19 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                           </button>
                         </div>
                         {isNonStandard && (
-                          <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 bg-amber-100/80 text-amber-900 border border-amber-300 rounded text-[10px] font-bold shadow-2xs" title="일반 인증서 프로그램(은행/정부)이 인식하지 못하는 위치입니다. [USB ➔ PC] 또는 [정 위치 복사]가 필요합니다.">
+                          <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.2 bg-amber-100/80 text-amber-900 border border-amber-300 rounded text-[10px] font-bold shadow-2xs overflow-hidden max-w-full truncate shrink-0" title="일반 인증서 프로그램(은행/정부)이 인식하지 못하는 위치입니다. [USB ➔ PC] 또는 [정 위치 복사]가 필요합니다.">
                             <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
-                            <span>⚠️ 비표준 위치 (은행/정부 미인식)</span>
+                            <span className="truncate">⚠️ 비표준 위치</span>
                           </div>
                         )}
                       </td>
 
-                      <td className={cellPadding}>
-                        <div className="flex items-center gap-2">
+                      {/* Col 5: 사용자명 / 소속 */}
+                      <td 
+                        style={{ width: `${colWidths.name}px`, minWidth: `${colWidths.name}px`, maxWidth: `${colWidths.name}px` }}
+                        className={`${cellPadding} border-r border-slate-200/90 dark:border-slate-800 overflow-hidden min-w-0`}
+                      >
+                        <div className="flex items-center gap-2 overflow-hidden min-w-0">
                           {isNonStandard ? (
                             <div className="p-1.5 bg-amber-100 text-amber-800 rounded-md border border-amber-300 shadow-2xs shrink-0" title="비표준 경로 보관 인증서">
                               <FileKey className="w-4 h-4 text-amber-600" />
@@ -1451,9 +1725,9 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                               <FileKey className="w-4 h-4 text-slate-500" />
                             </div>
                           )}
-                          <div>
-                            <div className="font-semibold text-slate-900 flex items-center gap-1.5">
-                              <span>{cert.name}</span>
+                          <div className="min-w-0 overflow-hidden">
+                            <div className="font-semibold text-slate-900 flex items-center gap-1.5 overflow-hidden">
+                              <span className="truncate">{cert.name}</span>
                               {isNonStandard && (
                                 <span className="text-[10px] px-1.5 py-0.2 bg-amber-100 text-amber-800 border border-amber-300 rounded font-bold shrink-0">
                                   ⚠️ 비표준
@@ -1461,7 +1735,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                               )}
                             </div>
                             {cert.departmentOrOrg && (
-                              <div className="text-xs text-slate-500 truncate max-w-xs">
+                              <div className="text-xs text-slate-500 truncate" title={cert.departmentOrOrg}>
                                 {cert.departmentOrOrg}
                               </div>
                             )}
@@ -1469,21 +1743,63 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                         </div>
                       </td>
 
-                      <td className={`${cellPadding} text-slate-700`}>
-                        <div className="font-semibold text-slate-800 text-xs sm:text-sm">{cert.issuer}</div>
-                        {cert.caSignatureName && (
-                          <div className="text-[11px] text-blue-700 font-mono mt-1 flex items-center gap-1 bg-blue-50/80 px-1.5 py-0.5 rounded border border-blue-200/70 w-fit max-w-[240px]" title={`기관 서명 이름 (CA Name): ${cert.caSignatureName}`}>
-                            <span className="truncate">{cert.caSignatureName}</span>
-                          </div>
-                        )}
+                      {/* Col 6: 발급기관 / 서명기관(CA) - 정확한 공식 기관명 표시 */}
+                      <td 
+                        style={{ width: `${colWidths.issuer}px`, minWidth: `${colWidths.issuer}px`, maxWidth: `${colWidths.issuer}px` }}
+                        className={`${cellPadding} text-slate-700 border-r border-slate-200/90 dark:border-slate-800 overflow-hidden min-w-0`}
+                      >
+                        {(() => {
+                          const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);
+                          return (
+                            <div className="flex flex-col gap-1 min-w-0 overflow-hidden">
+                              <div className="flex items-center gap-1.5 min-w-0 overflow-hidden" title={issuerInfo.officialOrgName}>
+                                <span className={`text-[10px] px-1.5 py-0.2 rounded font-extrabold border shrink-0 ${issuerInfo.badgeClass}`}>
+                                  {issuerInfo.brandTag}
+                                </span>
+                                <span className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm truncate">
+                                  {issuerInfo.officialOrgName}
+                                </span>
+                              </div>
+                              <div className="text-[11px] text-slate-500 font-medium truncate" title={issuerInfo.centerName}>
+                                {issuerInfo.centerName}
+                              </div>
+                              {cert.caSignatureName && cert.caSignatureName !== issuerInfo.centerName && (
+                                <div 
+                                  className="text-[10px] text-blue-700 dark:text-blue-400 font-mono flex items-center gap-1 bg-blue-50/80 dark:bg-blue-950/40 px-1 py-0.2 rounded border border-blue-200/70 dark:border-blue-800/60 truncate max-w-full" 
+                                  title={`인증기관 서명 식별자: ${cert.caSignatureName}`}
+                                >
+                                  <span className="truncate">{cert.caSignatureName}</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
 
-                      <td className={`${cellPadding} font-mono text-xs text-slate-700`}>{cert.validTo}</td>
+                      {/* Col 7: 만료일 */}
+                      <td 
+                        style={{ width: `${colWidths.notAfter}px`, minWidth: `${colWidths.notAfter}px`, maxWidth: `${colWidths.notAfter}px` }}
+                        className={`${cellPadding} font-mono text-xs text-slate-700 border-r border-slate-200/90 dark:border-slate-800 whitespace-nowrap overflow-hidden`}
+                      >
+                        <span className="truncate block">{cert.validTo}</span>
+                      </td>
 
-                      <td className={cellPadding}>{getStatusBadge(cert)}</td>
+                      {/* Col 8: 상태 (최소 크기까지 자유롭게 조절 가능) */}
+                      <td 
+                        style={{ width: `${colWidths.status}px`, minWidth: `${colWidths.status}px`, maxWidth: `${colWidths.status}px` }}
+                        className={`${cellPadding} border-r border-slate-200/90 dark:border-slate-800 overflow-hidden min-w-0`}
+                      >
+                        <div className="overflow-hidden min-w-0 flex items-center">
+                          {getStatusBadge(cert)}
+                        </div>
+                      </td>
 
-                      <td className={`${cellPadding} text-right`}>
-                        <div className="flex items-center justify-end gap-1.5">
+                      {/* Col 9: 작업 */}
+                      <td 
+                        style={{ width: `${colWidths.actions}px`, minWidth: `${colWidths.actions}px`, maxWidth: `${colWidths.actions}px` }}
+                        className={`${cellPadding} text-right`}
+                      >
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); onOpenDetailModal(cert); }}
@@ -1497,9 +1813,9 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                               type="button"
                               onClick={(e) => { e.stopPropagation(); onOpenRenewalGuidance([cert]); }}
                               className={`p-1.5 px-2 text-xs rounded font-medium transition-colors cursor-pointer border flex items-center gap-1 ${
-                                cert.status === 'expiring' || cert.status === 'expired'
-                                  ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
-                                  : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
+                                cert.status === "expiring" || cert.status === "expired"
+                                  ? "bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100"
+                                  : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
                               }`}
                               title={`${cert.issuer} 갱신 안내 및 홈페이지 바로가기`}
                             >

@@ -656,8 +656,10 @@
                                   ScrollViewer.VerticalScrollBarVisibility="Auto"
                                   ScrollViewer.CanContentScroll="False"
                                   PreviewMouseWheel="CertListHorizontalScrollViewer_PreviewMouseWheel"
-                                      GridLinesVisibility="Horizontal"
+                                      CanUserResizeColumns="True"
+                                      GridLinesVisibility="All"
                                       HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
+                                      VerticalGridLinesBrush="{DynamicResource BorderBrush}"
                                       Background="{DynamicResource BgCardBrush}"
                                       RowBackground="{DynamicResource BgCardBrush}"
                                       AlternatingRowBackground="{DynamicResource BgDarkBrush}"
@@ -691,18 +693,19 @@
                                     <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                     <Setter Property="FontWeight" Value="SemiBold"/>
                                     <Setter Property="Padding" Value="12,10"/>
-                                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                    <Setter Property="BorderThickness" Value="0,0,1,1"/>
                                     <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
                                 </Style>
                                 <Style TargetType="DataGridCell">
                                     <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="BorderThickness" Value="0,0,1,0"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
                                     <Setter Property="Padding" Value="10,6"/>
                                     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                                     <Setter Property="Template">
                                         <Setter.Value>
                                              <ControlTemplate TargetType="DataGridCell">
-                                                 <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderThickness="0">
+                                                 <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderThickness="0,0,1,0" BorderBrush="{DynamicResource BorderBrush}">
                                                      <ContentPresenter VerticalAlignment="Center"/>
                                                  </Border>
                                              </ControlTemplate>
@@ -795,7 +798,7 @@
                                 </DataGridTemplateColumn>
 
                                 <!-- CN / Name -->
-                                <DataGridTemplateColumn Header="인증서 명칭 (CN) 및 경로 상태" Width="380" MinWidth="220" SortMemberPath="CommonName" CanUserSort="True">
+                                <DataGridTemplateColumn Header="인증서 명칭 (CN) 및 경로 상태" Width="380" MinWidth="30" SortMemberPath="CommonName" CanUserSort="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel VerticalAlignment="Center">
@@ -814,17 +817,20 @@
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
 
-                                <!-- Issuer -->
-                                <DataGridTemplateColumn Header="발급기관" Width="175" SortMemberPath="IssuerName" CanUserSort="True">
+                                <!-- Issuer (Accurate Organization Name) -->
+                                <DataGridTemplateColumn Header="발급기관" Width="185" MinWidth="35" SortMemberPath="AccurateIssuerName" CanUserSort="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding IssuerName}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding AccurateIssuerName}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding AccurateIssuerName}"/>
+                                                <TextBlock Text="{Binding CaSignatureName}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextTrimming="CharacterEllipsis" ToolTip="{Binding CaSignatureName}"/>
+                                            </StackPanel>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
 
                                 <!-- Expiration Date -->
-                                <DataGridTemplateColumn Header="만료일자" Width="110" SortMemberPath="NotAfter" CanUserSort="True">
+                                <DataGridTemplateColumn Header="만료일자" Width="110" MinWidth="35" SortMemberPath="NotAfter" CanUserSort="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding NotAfter, StringFormat='{}{0:yyyy-MM-dd}'}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
@@ -833,7 +839,7 @@
                                 </DataGridTemplateColumn>
 
                                 <!-- Status -->
-                                <DataGridTemplateColumn Header="상태" Width="120" SortMemberPath="StatusDisplayText" CanUserSort="True">
+                                <DataGridTemplateColumn Header="상태" Width="120" MinWidth="30" SortMemberPath="StatusDisplayText" CanUserSort="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left">

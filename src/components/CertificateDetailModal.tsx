@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { CertificateItem } from '../types';
 import { getDriveColorInfo } from '../utils/driveColors';
+import { getAccurateIssuerInfo } from '../utils/issuerUtils';
 
 interface CertificateDetailModalProps {
   cert: CertificateItem | null;
@@ -179,14 +180,27 @@ export const CertificateDetailModal: React.FC<CertificateDetailModalProps> = ({
             </div>
 
             <div>
-              <div className="text-xs text-slate-500">발급기관 (CA) 및 서명기관</div>
-              <div className="text-sm font-semibold text-slate-900 mt-0.5">{cert.issuer}</div>
-              {cert.caSignatureName && (
-                <div className="text-xs text-blue-700 font-semibold mt-1 flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 w-fit">
-                  <ShieldCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <span>{cert.caSignatureName}</span>
-                </div>
-              )}
+              <div className="text-xs text-slate-500">발급기관 (CA) 및 공인인증센터</div>
+              {(() => {
+                const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);
+                return (
+                  <div className="mt-1 space-y-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded font-extrabold border ${issuerInfo.badgeClass}`}>
+                        {issuerInfo.brandTag}
+                      </span>
+                      <span className="text-sm font-bold text-slate-900">{issuerInfo.officialOrgName}</span>
+                    </div>
+                    <div className="text-xs text-slate-600 font-medium">{issuerInfo.centerName}</div>
+                    {cert.caSignatureName && cert.caSignatureName !== issuerInfo.centerName && (
+                      <div className="text-xs text-blue-700 font-semibold mt-1 flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 w-fit">
+                        <ShieldCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span>{cert.caSignatureName}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               <div className="text-xs text-slate-600 font-medium mt-1">{cert.policy}</div>
             </div>
           </div>

@@ -185,9 +185,36 @@ namespace KCertManager.Wpf.Models
 
         // Compatibility & Alias properties
         public string Name => CommonName;
-        public string Issuer => IssuerName;
+        public string Issuer => AccurateIssuerName;
         public string UserDn => SubjectDn;
         public int DaysRemaining => RemainingDays;
+
+        public string AccurateIssuerName
+        {
+            get
+            {
+                var raw = $"{IssuerName} {CaSignatureName} {SubjectDn}".ToLowerInvariant();
+                if (raw.Contains("yessign") || raw.Contains("금융결제원") || raw.Contains("financial telecommunications"))
+                    return "금융결제원 (yessign)";
+                if (raw.Contains("signkorea") || raw.Contains("koscom") || raw.Contains("코스콤") || raw.Contains("사인코리아"))
+                    return "(주)코스콤 (SignKorea)";
+                if (raw.Contains("kica") || raw.Contains("signgate") || raw.Contains("한국정보인증"))
+                    return "한국정보인증 (KICA)";
+                if (raw.Contains("crosscert") || raw.Contains("한국전자인증"))
+                    return "한국전자인증 (CrossCert)";
+                if (raw.Contains("tradesign") || raw.Contains("한국무역정보통신") || raw.Contains("ktnet"))
+                    return "한국무역정보통신 (TradeSign)";
+                if (raw.Contains("gpki") || raw.Contains("government of korea") || raw.Contains("행정안전부") || raw.Contains("행정전자서명") || raw.Contains("ca134"))
+                    return "행정안전부 행정전자서명인증센터 (GPKI)";
+                if (raw.Contains("epki") || raw.Contains("korea education") || raw.Contains("교육부") || raw.Contains("ca974") || raw.Contains("ca973") || raw.Contains("keris") || raw.Contains("나이스"))
+                    return "교육부 교육행정전자서명인증센터 (EPKI)";
+                if (raw.Contains("mpki") || raw.Contains("국방전자서명") || raw.Contains("국방부"))
+                    return "국방부 국방전자서명인증센터 (MPKI)";
+                if (raw.Contains("대법원") || raw.Contains("사법부") || raw.Contains("ca128"))
+                    return "대법원 사법전자서명인증센터";
+                return string.IsNullOrWhiteSpace(IssuerName) ? "공동인증기관" : IssuerName;
+            }
+        }
 
         public string StorageLocationType => IsRemovableMedia ? "USB" : "컴퓨터";
         public string StorageLocationIcon => IsRemovableMedia ? "💾" : "💻";
