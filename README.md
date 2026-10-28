@@ -1,9 +1,9 @@
-# K-Certificate Manager (K-인증서 매니저) v1.6.5
+# K-Certificate Manager (K-인증서 매니저) v1.7.0
 
 <div align="center">
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Version](https://img.shields.io/badge/Version-v1.6.5-green.svg)
+![Version](https://img.shields.io/badge/Version-v1.7.0-green.svg)
 ![React](https://img.shields.io/badge/React-19.0-61dafb.svg)
 ![Vite](https://img.shields.io/badge/Vite-6.2-646cff.svg)
 ![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512bd4.svg)
@@ -17,20 +17,19 @@
 
 ---
 
-## 🚀 최신 릴리스 정보 (Latest Release: v1.6.5)
+## 🚀 최신 릴리스 정보 (Latest Release: v1.7.0)
 
-> **버전**: `v1.6.5` (최신 안정화 빌드)  
-> **출시일**: 2026-10-25  
+> **버전**: `v1.7.0` (최신 안정화 빌드)  
+> **출시일**: 2026-10-27  
 > **상세 변경 내역**: [docs/PATCHNOTES.md](./docs/PATCHNOTES.md)
 
-### 🌟 v1.6.5 핵심 업데이트 내용
-- **Web & WPF 모든 테이블 최좌측 1번 인덱스(1, 2, 3...) 시작 일원화**: 메인 인증서 목록, PC ➔ USB 복사창, USB ➔ PC 가져오기창, 만료 정리, 휴지통, 백업 이력, 작업 감사 로그 등 전체 뷰의 최좌측 열 번호가 1번부터 시작하도록 일관되게 적용
-- **최좌측 인덱스 열 상시 고정 (Frozen & Sticky Column)**: 데스크톱 WPF DataGrid `FrozenColumnCount="1"` 및 웹 React `sticky left-0 z-10`을 적용하여 가로 스크롤 시에도 최좌측 1번 인덱스 열이 화면에 고정 노출
-- **작업 완료 안내 전용 팝업창 신설 (`OperationCompleteDialog` / `OperationCompleteModal`)**: 복사/가져오기 성공 시 에메랄드 성공 배지, SHA-256 데이터 무결성 100% 검증, 출발지➔도착지 경로, 인증서 목록 및 실용 후속 조치 가이드를 제공하는 전용 팝업창 전면 연동
-- **오른쪽 상단 창 제어 버튼(최소/최대/닫기) 독립 격리 고정**: 창 크기를 줄여도 상단 창 제어 버튼이 화면 밖으로 밀려나지 않고 최우측 상단에 100% 온전하게 고정 노출 보장
-- **드라이브 쓰기 오류 및 권한 문제 시 명확한 에러 알림 모달 (`CopyErrorAlertModal`)**: USB 쓰기 금지(Write-Protected), 권한 거부, 디스크 용량 부족 등 I/O 예외 발생 시 단계별 조치 가이드 및 원클릭 재시도 제공
-- **작업 감사 로그(Activity Log) 1번 인덱스 열 신설 및 동적 재색인**: 실시간 보안 감사 로그에 최좌측 1번 인덱스 열 신설 및 최신 항목 자동 재색인 파이프라인 탑재
-- **C# .NET 10 / .NET 8 릴리스 빌드 파이프라인 무결성 확보**: `UpdateBackupHistoryIndices` 구현으로 CS0103 컴파일 에러 해소 및 Inno Setup 설치 프로그램(`kcert-manager-v1.6.5-setup.exe`) 빌드 무결성 보장
+### 🌟 v1.7.0 핵심 업데이트 내용
+- **인증서 복사·백업 성공 알림음(SuccessChime) ON/OFF 및 볼륨 조절 기능**: 환경 설정 모달(`SettingsModal`)에 복사 완료 알림음 스위치(ON/OFF), 0%~100% 범위 슬라이더, 볼륨 프리셋 버튼(음소거/25%/50%/80%/100%), 소리 미리듣기 테스트 연동
+- **보안 삭제 증적 로그 (Secure Deletion Audit Records) 감사 시스템 구축**: 영구 삭제된 인증서의 SubjectDN, 원본 디렉터리 경로, 파일 목록 및 SHA-256 전자포렌식 감사 증적을 독립 구조체로 영구 보존 및 클립보드 복사 지원
+- **인증서 명칭·저장 경로 및 상태 컬럼 최소 폭 자유 조절(30px)**: 마우스 드래그로 원하는 만큼 축소 가능한 30px 최소 폭 적용 및 대한민국 5대 공인/정부 CA 공식 기관명 완벽 매핑
+- **인증서 보관함 세로 구분선(Vertical Grid Lines) 전면 도입**: 데이터 셀 간 선명한 세로선 및 상단 툴바 좌우 여백 밀도 조절 컨트롤(좁게/보통/넓게) 구축
+- **만료 인증서 정리 시 휴지통 통계 1:1 완벽 동기화**: 만료 정리 대상과 휴지통 통계 카운터 간의 수량 불일치 근본 해소
+- **스크롤바 디자인 고도화**: 슬림한 테두리 및 마우스 호버/활성화 배경색 트랜지션 애니메이션 적용
 
 ---
 

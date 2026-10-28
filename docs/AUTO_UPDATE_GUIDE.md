@@ -20,7 +20,7 @@
 ```
 [ 1단계: /releases/latest ] ──(404 발생 시 즉시 폴백)──►
 [ 2단계: /releases (전체 릴리스 목록) ] ──(비어있을 시 즉시 폴백)──►
-[ 3단계: /tags (Git 태그 직결 엔드포인트) ] ──► 최신 v1.6.5 태그 즉시 감지 & 알림 점등!
+[ 3단계: /tags (Git 태그 직결 엔드포인트) ] ──► 최신 v1.7.0 태그 즉시 감지 & 알림 점등!
 ```
 
 ---
@@ -29,19 +29,19 @@
 
 ```
 [ 개발자 PC ]
-  │ 1. push_to_github.bat 실행 (v1.6.5 태그 및 소스 업로드)
+  │ 1. push_to_github.bat 실행 (v1.7.0 태그 및 소스 업로드)
   │ 2. GitHub Actions 자동 빌드 및 릴리스 인스톨러 생성
   ▼
 [ GitHub 원격 저장소 ]
-  │ Tags: v1.6.5 등록 완료
-  │ Releases: v1.6.5 등록 완료
+  │ Tags: v1.7.0 등록 완료
+  │ Releases: v1.7.0 등록 완료
   ▼
 [ 사용자 환경 (웹 & WPF 데스크톱) ]
   │ 1. 앱 첫 실행 시 또는 [업데이트 확인] 버튼 클릭 시
   │ 2. 3-Tier API 비동기 조회 (releases/latest -> releases -> tags)
   ▼
 [ 업데이트 감지 시 ]
-  ├─ 1) 우측 하단 토스트 알림: "✨ 새 버전 v1.6.5가 출시되었습니다!"
+  ├─ 1) 우측 하단 토스트 알림: "✨ 새 버전 v1.7.0이 출시되었습니다!"
   ├─ 2) 상단 헤더 / 사이드바 [업데이트 확인] 버튼에 주황색 펄스 뱃지 점등
   ├─ 3) 업데이트 모달(UpdateModal)에서 버전 비교 & 릴리스 노트 & 직링크 다운로드 제공
   └─ 4) [새 버전 다운로드] 원클릭 이동
@@ -79,14 +79,14 @@
 
 1. **배포 스크립트 실행**:
    - `push_to_github.bat` (또는 `push_to_github.ps1`) 실행
-   - 최신 소스코드와 `v1.6.5` 태그가 GitHub에 자동 푸시됩니다.
+   - 최신 소스코드와 `v1.7.0` 태그가 GitHub에 자동 푸시됩니다.
 
 2. **GitHub Releases 등록**:
    - 브라우저로 릴리스 직접 생성 링크 접속: `https://github.com/AhBiYout-all/K-Certificate-Manager/releases/new`
-   - **Choose a tag**: 푸시된 `v1.6.5` 선택
-   - **Release title**: `K-Certificate Manager v1.6.5`
+   - **Choose a tag**: 푸시된 `v1.7.0` 선택
+   - **Release title**: `K-Certificate Manager v1.7.0`
    - **Description**: 주요 업데이트 내용 입력
-   - **Attach binaries**: 빌드 산출물(`kcert-manager-v1.6.5-setup.exe`) 첨부
+   - **Attach binaries**: 빌드 산출물(`kcert-manager-v1.7.0-setup.exe`) 첨부
    - **[Publish release]** 초록색 버튼 클릭 (페이지 맨 아래)
    - ➔ 즉시 전 세계 모든 사용자의 앱에 업데이트 모달 및 뱃지가 뜹니다.
 
