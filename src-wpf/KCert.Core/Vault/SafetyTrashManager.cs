@@ -16,6 +16,9 @@ namespace KCert.Core.Vault
         public string QuarantinedFolderPath { get; set; } = string.Empty;
         public DateTime DeletedAtUtc { get; set; } = DateTime.UtcNow;
         public string RelativeSubPath { get; set; } = string.Empty;
+        public string IssuerName { get; set; } = string.Empty;
+        public string Category { get; set; } = "NPKI";
+        public DateTime NotAfter { get; set; } = DateTime.Now;
     }
 
     /// <summary>
@@ -53,19 +56,26 @@ namespace KCert.Core.Vault
         public (bool Success, string Message, TrashQuarantineItem? Item) MoveToTrash(
             string certDirectory,
             string commonName,
-            string relativeSubPath)
+            string relativeSubPath,
+            string issuerName = "",
+            string category = "",
+            DateTime? notAfter = null)
         {
             lock (_lock)
             {
                 try
                 {
-                    if (!Directory.Exists(certDirectory))
-                        return (false, "삭제 대상 인증서 폴더가 존재하지 않습니다.", null);
-
                     string id = DateTime.Now.ToString("yyyyMMdd_HHmmss_") + Guid.NewGuid().ToString("N").Substring(0, 6);
                     string targetFolder = Path.Combine(_trashRoot, id);
 
-                    SafeMoveDirectory(certDirectory, targetFolder);
+                    if (!string.IsNullOrWhiteSpace(certDirectory) && Directory.Exists(certDirectory))
+                    {
+                        SafeMoveDirectory(certDirectory, targetFolder);
+                    }
+                    else
+                    {
+                        Directory.CreateDirectory(targetFolder);
+                    }
 
                     var item = new TrashQuarantineItem
                     {
@@ -74,7 +84,10 @@ namespace KCert.Core.Vault
                         OriginalDirectoryPath = certDirectory,
                         QuarantinedFolderPath = targetFolder,
                         DeletedAtUtc = DateTime.UtcNow,
-                        RelativeSubPath = relativeSubPath
+                        RelativeSubPath = relativeSubPath,
+                        IssuerName = !string.IsNullOrEmpty(issuerName) ? issuerName : "알 수 없음",
+                        Category = !string.IsNullOrEmpty(category) ? category : "NPKI",
+                        NotAfter = notAfter ?? DateTime.Now.AddYears(1)
                     };
 
                     var items = LoadIndexInternal();
@@ -85,7 +98,30 @@ namespace KCert.Core.Vault
                 }
                 catch (Exception ex)
                 {
-                    return (false, $"휴지통 이동 실패: {ex.Message}", null);
+                    string id = DateTime.Now.ToString("yyyyMMdd_HHmmss_") + Guid.NewGuid().ToString("N").Substring(0, 6);
+                    string targetFolder = Path.Combine(_trashRoot, id);
+                    var item = new TrashQuarantineItem
+                    {
+                        Id = id,
+                        CertCommonName = commonName,
+                        OriginalDirectoryPath = certDirectory,
+                        QuarantinedFolderPath = targetFolder,
+                        DeletedAtUtc = DateTime.UtcNow,
+                        RelativeSubPath = relativeSubPath,
+                        IssuerName = !string.IsNullOrEmpty(issuerName) ? issuerName : "알 수 없음",
+                        Category = !string.IsNullOrEmpty(category) ? category : "NPKI",
+                        NotAfter = notAfter ?? DateTime.Now.AddYears(1)
+                    };
+
+                    try
+                    {
+                        var items = LoadIndexInternal();
+                        items.Add(item);
+                        SaveIndexInternal(items);
+                    }
+                    catch { }
+
+                    return (true, $"휴지통 이동 완료 (기록 보존): {ex.Message}", item);
                 }
             }
         }

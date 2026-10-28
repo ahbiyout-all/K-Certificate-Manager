@@ -28,6 +28,12 @@ namespace KCertManager.Wpf.Views
             var raw = _trashManager.GetItems();
             foreach (var r in raw)
             {
+                CertCategory cat = CertCategory.NPKI;
+                if (!string.IsNullOrEmpty(r.Category) && Enum.TryParse<CertCategory>(r.Category, out var parsedCat))
+                {
+                    cat = parsedCat;
+                }
+
                 _items.Add(new TrashItem
                 {
                     Id = r.Id,
@@ -35,7 +41,9 @@ namespace KCertManager.Wpf.Views
                     CertCommonName = r.CertCommonName,
                     OriginalDirectoryPath = r.OriginalDirectoryPath,
                     TrashDirectoryPath = r.QuarantinedFolderPath,
-                    Category = CertCategory.NPKI,
+                    IssuerName = !string.IsNullOrEmpty(r.IssuerName) ? r.IssuerName : "알 수 없음",
+                    Category = cat,
+                    NotAfter = r.NotAfter != default ? r.NotAfter : DateTime.Now.AddYears(1),
                     IsSelected = false
                 });
             }

@@ -91,7 +91,13 @@ namespace KCertManager.Wpf.Services
         public TrashItem MoveToTrash(CertificateItem cert)
         {
             string relPath = CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
-            var (success, msg, item) = _trashManager.MoveToTrash(cert.DirectoryPath, cert.CommonName, relPath);
+            var (success, msg, item) = _trashManager.MoveToTrash(
+                cert.DirectoryPath, 
+                cert.CommonName, 
+                relPath, 
+                cert.IssuerName, 
+                cert.Category.ToString(), 
+                cert.NotAfter);
 
             return new TrashItem
             {
@@ -119,6 +125,12 @@ namespace KCertManager.Wpf.Services
 
             foreach (var r in rawItems)
             {
+                CertCategory cat = CertCategory.NPKI;
+                if (!string.IsNullOrEmpty(r.Category) && Enum.TryParse<CertCategory>(r.Category, out var parsedCat))
+                {
+                    cat = parsedCat;
+                }
+
                 list.Add(new TrashItem
                 {
                     Id = r.Id,
@@ -126,9 +138,9 @@ namespace KCertManager.Wpf.Services
                     CertCommonName = r.CertCommonName,
                     OriginalDirectoryPath = r.OriginalDirectoryPath,
                     TrashDirectoryPath = r.QuarantinedFolderPath,
-                    IssuerName = "알 수 없음",
-                    Category = CertCategory.NPKI,
-                    NotAfter = DateTime.Now.AddYears(1)
+                    IssuerName = !string.IsNullOrEmpty(r.IssuerName) ? r.IssuerName : "알 수 없음",
+                    Category = cat,
+                    NotAfter = r.NotAfter != default ? r.NotAfter : DateTime.Now.AddYears(1)
                 });
             }
 

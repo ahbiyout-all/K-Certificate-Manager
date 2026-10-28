@@ -368,6 +368,29 @@
      - `docs/README.md`, `docs/LICENSE.md`, `docs/BUILD_GUIDE.md`: `v1.6.4` 동기화.
   5. **컴파일 및 린트 검증**: `compile_applet` 및 `lint_applet` 100% 무결 통과.
 
+### 📝 [작업 차수 105] 만료 인증서 정리 및 일괄 삭제 시 삭제 수량과 안전 격리 휴지통 수량 100% 동기화 개선
+- **작업 일시**: 2026-10-28 18:20 KST
+- **요청 사항**: "만료인증서 정리 전/후 숫자 차이남 (컴퓨터 로컬 만료 인증서 22개 정리 후 휴지통 항목 수량이 14개로 표시되는 숫 불일치 현상 개선)"
+- **원인 분석**:
+  1. **동일 폴더/다중 인증서 삭제 시 `SafetyTrashManager` 매니페스트 누락 결함 (WPF C#)**:
+     - `ExpiredCleanupDialog`에서 만료 인증서 22건을 일괄 삭제할 때, 일부 인증서(예: 동일 `NPKI` 폴더 내 다수 서명/암호화 인증서 또는 경로 중복 항목)가 동일한 물리 디렉터리를 공유함.
+     - 첫 번째 인증서 삭제 시 `SafeMoveDirectory`가 해당 폴더를 격리소로 이동하면서, 동일 폴더에 있던 후속 인증서 처리 시 `Directory.Exists(certDirectory)`가 `false`를 반환.
+     - 기존 `SafetyTrashManager.MoveToTrash` 구현에서 `Directory.Exists`가 `false`일 경우 `Item = null`을 반환하고 `trash_manifest.json` 매니페스트 저장을 건너뜀.
+     - 이로 인해 활성 인증서 목록에서는 22개가 삭제되었으나 `trash_manifest.json`에는 물리 디렉터리가 존재했던 14개만 등록되어, 휴지통 뱃지 및 휴지통 관리 창에서 `격리 보관된 인증서: 14개`로 불일치 발생.
+  2. **휴지통 매니페스트 메타데이터 누락 (WPF C#)**:
+     - `TrashQuarantineItem` 모델에 `IssuerName`, `Category`, `NotAfter` 필드가 없어, 휴지통 조회 시 발급기관이 `"알 수 없음"`으로 노출되던 메타데이터 누락 문제 존재.
+  3. **웹 애플리케이션(`src/`) 동기화 구조 정밀화**:
+     - `src/App.tsx` 내 삭제 처리 및 `localStorage` 동기화 시 시리얼번호 대신 고유 `id` 기준으로 엄격하게 1:1 트래킹하고, `isCertificateExpired` 헬퍼 함수로 유효기간 판단 기준을 일체화.
+- **수행 내용**:
+  1. **C# WPF 안전 휴지통 매니페스트 지속성 보장 (`SafetyTrashManager.cs`)**:
+     - `MoveToTrash` 메서드가 원본 디렉터리의 물리적 존재 여부나 예외 발생 여부와 상관없이 **삭제된 모든 인증서 항목에 대해 고유 격리 아이템을 매니페스트(`trash_manifest.json`)에 100% 기록 및 저장**하도록 수정.
+     - `TrashQuarantineItem` 모델 및 `MoveToTrash` 메서드에 `IssuerName`, `Category`, `NotAfter` 메타데이터 필드를 확장 주입하여, 휴지통 복원 및 조회 시 정확한 인증서 정보가 온전히 표시되도록 보장.
+  2. **C# WPF 서비스 및 휴지통 UI 메타데이터 파싱 연동 (`CertificateBackupService.cs`, `TrashDialog.xaml.cs`)**:
+     - `MoveToTrash` 호출 시 인증서 객체의 `IssuerName`, `Category`, `NotAfter`를 전달하고, `GetTrashItems()` 및 `LoadTrashItems()` 파싱 시 해당 데이터를 복원하여 UI 출력.
+  3. **웹 React TS 애플리케이션 정합성 강화 (`App.tsx`, `CertificateCleanupModal.tsx`, `TrashModal.tsx`, `certParser.ts`)**:
+     - `handleDeleteCertificates`의 `deletedCerts.length` 삭제 수량과 `trashItems` 추가 수량을 1:1로 엄격히 맞추고 `t.cert.id` 기반 중복 제거 적용.
+  4. **빌드 및 린트 검증**: `compile_applet` 및 `lint_applet` 100% 정상 통과.
+
 ### 📝 [작업 차수 90] 윈도우 상단 우측 창 제어 버튼(최소화 / 최대화 / 닫기) 독립 컬럼 분리 및 창 크기 변경 시 상시 노출 보장
 - **작업 일시**: 2026-10-22 20:00 KST
 - **요청 사항**: "오른쪽 상단 (최소/최대/닫기)는 창크기가 달라져도 항상 보이도록 합니다."
