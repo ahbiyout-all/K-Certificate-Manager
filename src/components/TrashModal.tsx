@@ -189,14 +189,28 @@ export const TrashModal: React.FC<TrashModalProps> = ({
             ) : (
               trashItems.length > 0 && (
                 <>
-                  <button
-                    type="button"
-                    onClick={onRestoreAll}
-                    className="px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>휴지통 전체 일괄 복원 ({trashItems.length}건)</span>
-                  </button>
+                  {searchQuery.trim() ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onRestore(filteredItems.map(i => i.id));
+                        setSearchQuery('');
+                      }}
+                      className="px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>검색된 {filteredItems.length}건 복원</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={onRestoreAll}
+                      className="px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>휴지통 전체 일괄 복원 ({trashItems.length}건)</span>
+                    </button>
+                  )}
 
                   <button
                     type="button"
@@ -366,7 +380,12 @@ export const TrashModal: React.FC<TrashModalProps> = ({
         {/* Footer */}
         <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
           <div className="text-xs text-slate-500">
-            보관 중인 항목: <strong>{trashItems.length}건</strong>
+            보관 중인 항목: <strong className="text-slate-800">{trashItems.length}건</strong>
+            {searchQuery.trim() && (
+              <span className="text-blue-600 font-semibold ml-1.5">
+                (검색 일치: {filteredItems.length}건)
+              </span>
+            )}
           </div>
 
           <button

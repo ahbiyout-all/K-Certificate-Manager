@@ -163,7 +163,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
       }
       setCheckedIds(initialCands.map(c => c.id));
     }
-  }, [isOpen, initialMode]);
+  }, [isOpen, initialMode, singleCert]);
 
   const handleTabChange = (tab: CleanupModalMode) => {
     setActiveTab(tab);
@@ -317,98 +317,100 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
         {/* Modal Body */}
         <div className="p-5 flex-1 overflow-y-auto space-y-4">
           {/* Storage Medium Filter Control (User request: USB / 컴퓨터 구분 정리 옵션) */}
-          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                <HardDrive className="w-4 h-4 text-blue-600" />
-                <span>정리 대상 저장 매체 선택:</span>
-              </span>
-              <span className="text-[11px] text-slate-500">
-                컴퓨터 또는 USB 드라이브를 구분하여 개별/일괄 정리할 수 있습니다.
-              </span>
+          {activeTab !== 'SINGLE' && (
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <HardDrive className="w-4 h-4 text-blue-600" />
+                  <span>정리 대상 저장 매체 선택:</span>
+                </span>
+                <span className="text-[11px] text-slate-500">
+                  컴퓨터 또는 USB 드라이브를 구분하여 개별/일괄 정리할 수 있습니다.
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleStorageFilterChange('ALL')}
+                  className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    storageFilter === 'ALL'
+                      ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <span>🌐 전체 매체</span>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                    storageFilter === 'ALL' ? 'bg-rose-700 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {storageCounts.all}건
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleStorageFilterChange('LOCAL')}
+                  className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    storageFilter === 'LOCAL'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <Laptop className="w-3.5 h-3.5" />
+                  <span>💻 컴퓨터만 (PC)</span>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                    storageFilter === 'LOCAL' ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {storageCounts.local}건
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleStorageFilterChange('REMOVABLE')}
+                  className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    storageFilter === 'REMOVABLE'
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <HardDrive className="w-3.5 h-3.5" />
+                  <span>💾 USB 이동식만</span>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                    storageFilter === 'REMOVABLE' ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {storageCounts.usb}건
+                  </span>
+                </button>
+              </div>
+
+              {/* Safety protection feedback banner */}
+              {storageFilter === 'LOCAL' && (
+                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>
+                    <strong>실수 방지 보호 활성화:</strong> [컴퓨터(PC) 로컬]의 인증서만 대상입니다. <strong>연결된 USB 드라이브의 인증서는 절대 삭제되지 않고 안전하게 보존</strong>됩니다.
+                  </span>
+                </div>
+              )}
+              {storageFilter === 'REMOVABLE' && (
+                <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-900 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>
+                    <strong>실수 방지 보호 활성화:</strong> [USB 이동식]의 인증서만 대상입니다. <strong>컴퓨터(PC) 로컬의 모든 인증서는 절대 삭제되지 않고 안전하게 보존</strong>됩니다.
+                  </span>
+                </div>
+              )}
+              {storageFilter === 'ALL' && (
+                <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>
+                    <strong>전체 매체 선택됨:</strong> 컴퓨터(PC) 및 USB의 인증서가 모두 포함됩니다. 실수 방지를 원하시면 위의 [컴퓨터만] 또는 [USB만]을 선택해 주세요.
+                  </span>
+                </div>
+              )}
             </div>
-
-            <div className="grid grid-cols-3 gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => handleStorageFilterChange('ALL')}
-                className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  storageFilter === 'ALL'
-                    ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                <span>🌐 전체 매체</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                  storageFilter === 'ALL' ? 'bg-rose-700 text-white' : 'bg-slate-100 text-slate-600'
-                }`}>
-                  {storageCounts.all}건
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleStorageFilterChange('LOCAL')}
-                className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  storageFilter === 'LOCAL'
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                <Laptop className="w-3.5 h-3.5" />
-                <span>💻 컴퓨터만 (PC)</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                  storageFilter === 'LOCAL' ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-600'
-                }`}>
-                  {storageCounts.local}건
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleStorageFilterChange('REMOVABLE')}
-                className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  storageFilter === 'REMOVABLE'
-                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                <HardDrive className="w-3.5 h-3.5" />
-                <span>💾 USB 이동식만</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                  storageFilter === 'REMOVABLE' ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-600'
-                }`}>
-                  {storageCounts.usb}건
-                </span>
-              </button>
-            </div>
-
-            {/* Safety protection feedback banner */}
-            {storageFilter === 'LOCAL' && (
-              <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
-                <span>
-                  <strong>실수 방지 보호 활성화:</strong> [컴퓨터(PC) 로컬]의 인증서만 대상입니다. <strong>연결된 USB 드라이브의 인증서는 절대 삭제되지 않고 안전하게 보존</strong>됩니다.
-                </span>
-              </div>
-            )}
-            {storageFilter === 'REMOVABLE' && (
-              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-900 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>
-                  <strong>실수 방지 보호 활성화:</strong> [USB 이동식]의 인증서만 대상입니다. <strong>컴퓨터(PC) 로컬의 모든 인증서는 절대 삭제되지 않고 안전하게 보존</strong>됩니다.
-                </span>
-              </div>
-            )}
-            {storageFilter === 'ALL' && (
-              <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>
-                  <strong>전체 매체 선택됨:</strong> 컴퓨터(PC) 및 USB의 인증서가 모두 포함됩니다. 실수 방지를 원하시면 위의 [컴퓨터만] 또는 [USB만]을 선택해 주세요.
-                </span>
-              </div>
-            )}
-          </div>
+          )}
 
           {/* Tab Description & Context */}
           {activeTab === 'EXPIRED' && (

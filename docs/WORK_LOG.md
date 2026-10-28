@@ -43,9 +43,14 @@
      - 탭 헤더의 만료 인증서 수량, 선택 항목 수량도 실제 일치하는 항목 수로 표기.
   4. **인증서 목록 및 활성 상태 영구 동기화 (`src/components/CertificateList.tsx`, `src/App.tsx`)**:
      - `CertificateList.tsx`의 `expiredCount` 및 만료 상태 뱃지 판별에 `isCertificateExpired` 적용.
+     - `SearchLocationsPanel`에서 경로 토글 시 `handleTogglePath`에서 휴지통에 보관 중인 항목(`trashCertIds`)이 되살아나는 현상을 방지하도록 필터 보강.
+     - 외부 USB 메모리 가져오기(`handleImportFromUsbSuccess`) 및 사용자 폴더 스캔(`handleCustomScannedCerts`) 시 재인식된 인증서를 휴지통에서 자동 제외하여 활성/휴지통 간 중복 보관 방지.
      - `localStorage`의 `kcert_active_certificates` 저장을 연동하여 새로고침 시에도 삭제된 인증서가 되살아나지 않고 휴지통과 활성 목록 수량이 항시 정확히 일치하도록 조치.
-  5. **컴파일 및 빌드 검증**:
-     - `compile_applet`을 통한 TypeScript 타입 안정성 및 번들링 100% 정상 통과 확인.
+  5. **휴지통 모달(`TrashModal.tsx`) 및 단독 삭제 모달 UI 명확화**:
+     - 단독 삭제(`SINGLE`) 모달 시 저장 매체 구분 선택기를 숨겨 단독 대상 인증서가 매체 필터에 의해 숨겨지거나 수량이 0으로 오인되는 UX 결함 차단.
+     - 휴지통 검색어 입력 시 '전체 일괄 복원'과 '검색된 N건 복원'을 명확히 구분하고 푸터에 전체 보관 수량과 검색 일치 수량을 함께 표기.
+  6. **컴파일 및 빌드 검증**:
+     - `compile_applet` 및 `lint_applet` (TypeScript `tsc --noEmit`) 100% 정상 통과 확인.
 
 ---
 

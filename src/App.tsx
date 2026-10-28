@@ -456,7 +456,9 @@ export default function App() {
       const isUsbEnabled = updated.some(p => p.type === 'removable_usb' && p.enabled);
       
       setCertificates(() => {
+        const trashCertIds = new Set(trashItems.map(t => t.cert.id));
         return INITIAL_CERTIFICATES.filter(cert => {
+          if (trashCertIds.has(cert.id)) return false;
           if (cert.sourceLocation.startsWith('E:') && !isUsbEnabled) return false;
           if (cert.category === 'GPKI_GOV' && !enabledTypes.includes('default_gpki')) return false;
           if (cert.category === 'EPKI_EDU' && !enabledTypes.includes('default_epki')) return false;
@@ -496,6 +498,13 @@ export default function App() {
     });
 
     setSelectedIds(prev => [...new Set([...prev, ...newCerts.filter(Boolean).map(c => c.id)])]);
+
+    // Also remove from trash if imported
+    setTrashItems(prev => {
+      const scannedIds = new Set(newCerts.map(c => c.id));
+      return prev.filter(t => !scannedIds.has(t.cert.id));
+    });
+
     showToast(`${newCerts.length}개의 인증서를 로드하여 목록에 추가했습니다.`);
   };
 
@@ -1015,6 +1024,13 @@ export default function App() {
       // Automatically select newly imported certificates
       setSelectedIds(prevSelected => [...new Set([...prevSelected, ...newlyAddedIds])]);
       return nextList;
+    });
+
+    // Also remove from trash if imported
+    setTrashItems(prev => {
+      const importedIds = new Set(importedCerts.map(c => c.id));
+      const importedDns = new Set(importedCerts.map(c => c.subjectDn));
+      return prev.filter(t => !importedIds.has(t.cert.id) && !importedDns.has(t.cert.subjectDn));
     });
 
     const newLog = logActivity({
