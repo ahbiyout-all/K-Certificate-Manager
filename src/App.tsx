@@ -59,6 +59,7 @@ import {
   setActiveDrives 
 } from './utils/usbToPcService';
 import { isNonStandardCertPath } from './utils/certPathUtils';
+import { isCertificateExpired } from './utils/certParser';
 import { getStoredActivityLogs, logActivity, clearAllActivityLogs, formatCurrentTimestamp } from './utils/activityLogger';
 import { 
   CheckCircle2, 
@@ -98,10 +99,17 @@ export default function App() {
     try {
       const savedTrash = localStorage.getItem('kcert_trash_items');
       const savedList: TrashItem[] = savedTrash ? JSON.parse(savedTrash) : [];
+      const trashCertIds = new Set(savedList.map(t => t.cert.id));
+
+      const savedCerts = localStorage.getItem('kcert_active_certificates');
+      if (savedCerts) {
+        const parsed = JSON.parse(savedCerts);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(c => !trashCertIds.has(c.id));
+        }
+      }
       if (savedList && savedList.length > 0) {
-        const trashCertIds = new Set(savedList.map(t => t.cert.id));
-        const filtered = INITIAL_CERTIFICATES.filter(c => !trashCertIds.has(c.id));
-        return filtered.length > 0 ? filtered : INITIAL_CERTIFICATES;
+        return INITIAL_CERTIFICATES.filter(c => !trashCertIds.has(c.id));
       }
     } catch {
       // fallback
@@ -289,6 +297,15 @@ export default function App() {
       console.warn('localStorage error:', e);
     }
   }, [trashItems]);
+
+  // Save active certificates to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('kcert_active_certificates', JSON.stringify(certificates));
+    } catch (e) {
+      console.warn('localStorage error:', e);
+    }
+  }, [certificates]);
 
   // Synchronize available drives with USB Watcher Service
   useEffect(() => {
@@ -692,6 +709,7 @@ export default function App() {
     const deletedCerts = certificates.filter(c => idsToDelete.includes(c.id));
     if (deletedCerts.length === 0) return;
 
+    const count = deletedCerts.length;
     const nowStr = new Date().toLocaleString('ko-KR', {
       year: 'numeric',
       month: '2-digit',
@@ -707,22 +725,22 @@ export default function App() {
       cert,
     }));
 
-    // Move to trash (deduplicating to prevent count mismatch or duplicate items)
+    const deletedCertIds = new Set(deletedCerts.map(c => c.id));
+
+    // Move to trash (deduplicating strictly by unique certificate ID, preserving all other trash items)
     setTrashItems(prev => {
-      const deletedCertIds = new Set(deletedCerts.map(c => c.id));
-      const deletedSerials = new Set(deletedCerts.map(c => c.serialNumber));
-      const filteredPrev = prev.filter(t => !deletedCertIds.has(t.cert.id) && !deletedSerials.has(t.cert.serialNumber));
+      const filteredPrev = prev.filter(t => !deletedCertIds.has(t.cert.id));
       return [...newTrashItems, ...filteredPrev];
     });
 
     // Remove from active list and selection
-    setCertificates(prev => prev.filter(c => !idsToDelete.includes(c.id)));
-    setSelectedIds(prev => prev.filter(id => !idsToDelete.includes(id)));
+    setCertificates(prev => prev.filter(c => !deletedCertIds.has(c.id)));
+    setSelectedIds(prev => prev.filter(id => !deletedCertIds.has(id)));
 
     // Provide immediate Undo action in the Toast!
     const trashIds = newTrashItems.map(t => t.id);
     showToast(
-      `${reason} (${idsToDelete.length}건이 휴지통으로 이동되었습니다.)`,
+      `${reason} (${count}건이 휴지통으로 이동되었습니다.)`,
       () => handleUndoDelete(trashIds, deletedCerts),
       () => setIsTrashModalOpen(true)
     );
@@ -730,11 +748,11 @@ export default function App() {
     const newLog = logActivity({
       category: 'DELETE',
       level: 'WARN',
-      action: `인증서 ${idsToDelete.length}건 휴지통 이동`,
+      action: `인증서 ${count}건 휴지통 이동`,
       details: `${reason} - 대상: ${deletedCerts.map(c => c.name).join(', ')}`,
       source: '로컬 AppData\\LocalLow',
       target: '임시 보관 휴지통',
-      count: idsToDelete.length
+      count: count
     });
     setActivityLogs(prev => [newLog, ...prev]);
   };
@@ -1063,7 +1081,7 @@ export default function App() {
   };
 
   const validCount = certificates.filter(c => c.status === 'valid').length;
-  const expiredCount = certificates.filter(c => c.status === 'expired').length;
+  const expiredCount = certificates.filter(isCertificateExpired).length;
   const removableDrivesCount = availableDrives.filter(d => d.type === 'removable').length;
 
   const selectedCertificates = useMemo(() => {

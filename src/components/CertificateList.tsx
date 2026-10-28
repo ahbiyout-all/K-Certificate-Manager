@@ -5,6 +5,7 @@ import {
   DiskDrive
 } from '../types';
 import { isNonStandardCertPath } from '../utils/certPathUtils';
+import { isCertificateExpired } from '../utils/certParser';
 import { filterPhysicalDrivesOnly } from '../utils/driveFilter';
 import { getDriveColorInfo } from '../utils/driveColors';
 import { getAccurateIssuerInfo } from '../utils/issuerUtils';
@@ -321,7 +322,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
       if (categoryFilter === 'VALID' && cert.status !== 'valid') {
         return false;
       }
-      if (categoryFilter === 'EXPIRED' && cert.status !== 'expired') {
+      if (categoryFilter === 'EXPIRED' && !isCertificateExpired(cert)) {
         return false;
       }
       if (categoryFilter === 'EXPIRING' && cert.status !== 'expiring') {
@@ -427,7 +428,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
 
   // Category & status counts
   const validCount = certificates.filter(c => c.status === 'valid').length;
-  const expiredCount = certificates.filter(c => c.status === 'expired').length;
+  const expiredCount = certificates.filter(isCertificateExpired).length;
   const expiringSoonCount = certificates.filter(c => c.status === 'expiring').length;
   const govCount = certificates.filter(c => c.category === 'GPKI_GOV' || c.category === 'EPKI_EDU').length;
   const bankCount = certificates.filter(c => c.category === 'NPKI_BANK').length;
@@ -517,7 +518,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
 
   const getStatusBadge = (cert: CertificateItem) => {
     const isNarrow = (colWidths.status ?? 120) < 70;
-    if (cert.status === 'expired') {
+    if (isCertificateExpired(cert)) {
       return (
         <span 
           className={`bg-rose-100 text-rose-800 rounded-md text-xs font-bold inline-flex items-center gap-1 border border-rose-300 shadow-2xs overflow-hidden max-w-full shrink-0 ${

@@ -17,6 +17,38 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 104] 삭제된 숫자와 휴지통 숫자 불일치 개선 및 상태 동기화 정밀화
+- **작업 일시**: 2026-10-28 01:25 KST
+- **요청 사항**: "삭제된 숫자와 휴지통 숫자 불일치 개선."
+- **배경 및 원인 분석**:
+  1. **과도한 일련번호(serialNumber) 중복 제거 필터로 인한 기존 휴지통 항목 누락**:
+     - 기존 `handleDeleteCertificates`(`App.tsx`)에서 휴지통 추가 시 `filteredPrev = prev.filter(t => !deletedCertIds.has(...) && !deletedSerials.has(t.cert.serialNumber))` 로직으로 인해, 일련번호가 중복되거나 누락된 인증서가 있을 경우 기존에 이미 휴지통에 보관되어 있던 다른 인증서가 뜻하지 않게 누락되어 휴지통 카운트가 실제 삭제 건수만큼 증가하지 않는 현상이 발생함.
+  2. **삭제 토스트 알림 및 작업 로그 내 요청 ID 개수(`idsToDelete.length`)와 실제 삭제 건수(`deletedCerts.length`) 불일치**:
+     - 모달 등에서 전달된 대상 ID 목록 중 이미 삭제되었거나 필터링된 항목이 포함된 경우, 토스트 알림과 감사 로그에는 `idsToDelete.length`가 표기되는 반면 실제 활성 목록에서 제거되고 휴지통으로 이동한 인증서는 `deletedCerts.length` 건만 반영되어 사용자에게 안내되는 숫자와 휴지통 숫자가 불일치함.
+  3. **만료 인증서 판정 기준(`isCertificateExpired`) 불일치**:
+     - 툴바/사이드바 뱃지는 `status === 'expired'`로 카운트한 반면, 정리 모달 내부에서는 `status === 'expired' || daysRemaining <= 0`을 기준으로 대상을 산출하여 '만료 인증서 삭제 (N건)' 버튼에 표시된 숫자와 모달 내 기본 체크 항목 수, 그리고 휴지통 이동 숫자에 차이가 발생할 수 있었음.
+  4. **정리 모달 내 매체 필터(전체/컴퓨터/USB) 전환 시 체크 ID 잔존 현상**:
+     - 정리 모달에서 매체 필터를 전환할 때, 현재 필터링된 목록 범위를 벗어난 ID가 `checkedIds`에 남아 버튼 텍스트의 숫자 및 실제 삭제되는 숫자 간에 불일치가 유발될 위험이 있었음.
+  5. **새로고침 시 영구 삭제된 인증서 재등장 방지 및 활성 목록 동기화**:
+     - 휴지통 비우기 후 브라우저 새로고침 시 로컬 스토리지에 활성 인증서 목록(`kcert_active_certificates`)이 보존되지 않아 초기 데모 데이터로 복원되면서 휴지통 수량과 활성 목록 수량 간 불일치가 발생하던 점을 보완.
+- **수행 내용**:
+  1. **휴지통 추가 시 고유 인증서 식별자(`cert.id`) 기준 1:1 무결성 보장 (`src/App.tsx`)**:
+     - `serialNumber` 기준 제거 필터를 전면 배제하고 고유 ID(`deletedCertIds`)만으로 중복을 방지하여, 새롭게 삭제된 인증서 건수만큼 휴지통 보관 숫자가 100% 일치하여 정확히 증가하도록 개선.
+     - 활성 목록 제거(`setCertificates`) 및 선택 해제(`setSelectedIds`) 또한 실제 삭제된 `deletedCertIds`를 기준으로 1:1 동기화.
+     - 토스트 안내 메시지, Undo 복원 타겟, 작업 감사 로그의 `action`, `details`, `count`를 모두 `count = deletedCerts.length`로 통일.
+  2. **만료 인증서 통합 판별 유틸리티 구축 (`src/utils/certParser.ts`)**:
+     - `isCertificateExpired(c: CertificateItem)` 함수를 export하여 `status === 'expired' || daysRemaining <= 0` 기준으로 앱 전역(헤더, 사이드바, 툴바, 테이블 상태 뱃지, 정리 모달)의 만료 판정 기준을 단일화.
+  3. **정리 모달 유효 선택 ID 동기화 (`src/components/CertificateCleanupModal.tsx`)**:
+     - `effectiveCheckedIds = checkedIds.filter(id => currentTargetIds.has(id))`를 도입하여 매체 필터(전체/컴퓨터/USB) 전환 시에도 현재 화면에 표시된 대상 항목만 정확하게 체크 및 삭제 버튼 수치로 연동되도록 조치.
+     - 탭 헤더의 만료 인증서 수량, 선택 항목 수량도 실제 일치하는 항목 수로 표기.
+  4. **인증서 목록 및 활성 상태 영구 동기화 (`src/components/CertificateList.tsx`, `src/App.tsx`)**:
+     - `CertificateList.tsx`의 `expiredCount` 및 만료 상태 뱃지 판별에 `isCertificateExpired` 적용.
+     - `localStorage`의 `kcert_active_certificates` 저장을 연동하여 새로고침 시에도 삭제된 인증서가 되살아나지 않고 휴지통과 활성 목록 수량이 항시 정확히 일치하도록 조치.
+  5. **컴파일 및 빌드 검증**:
+     - `compile_applet`을 통한 TypeScript 타입 안정성 및 번들링 100% 정상 통과 확인.
+
+---
+
 ### 📝 [작업 차수 103] 인증서 복사·백업 완료 성공 알림음(SuccessChime) ON/OFF 및 볼륨 크기 설정 기능 '설정 모달' 추가
 - **작업 일시**: 2026-10-27 23:30 KST
 - **요청 사항**: "인증서 복사나 백업 작업이 완료되었을 때 재생되는 성공 알림음(SuccessChime)을 사용자가 설정에서 ON/OFF하거나 볼륨을 조절할 수 있는 기능을 '설정 모달'에 추가하세요."

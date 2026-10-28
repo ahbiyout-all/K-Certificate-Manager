@@ -607,3 +607,13 @@ export async function groupUploadedCertFiles(fileList: FileList): Promise<Certif
 
   return certs;
 }
+
+/**
+ * 인증서 만료 여부를 판별하는 통합 검사 함수
+ * status가 'expired'이거나 잔여일수(daysRemaining)가 0 이하인 경우 만료로 판정하여
+ * 모달, 툴바, 사이드바, 휴지통 간 카운트 불일치를 원천 차단합니다.
+ */
+export function isCertificateExpired(c: CertificateItem | null | undefined): boolean {
+  if (!c) return false;
+  return c.status === 'expired' || (typeof c.daysRemaining === 'number' && c.daysRemaining <= 0);
+}

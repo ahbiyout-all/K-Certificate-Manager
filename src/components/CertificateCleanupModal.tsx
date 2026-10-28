@@ -17,6 +17,7 @@ import {
   HardDrive
 } from 'lucide-react';
 import { CertificateItem } from '../types';
+import { isCertificateExpired } from '../utils/certParser';
 
 export type CleanupModalMode = 'EXPIRED' | 'OTHER_USERS' | 'SELECTED' | 'SINGLE';
 export type StorageMediumFilter = 'ALL' | 'LOCAL' | 'REMOVABLE';
@@ -99,16 +100,11 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
     return hong ? hong.name : (distinctUsers[0]?.name || '');
   });
 
-  // Strict expired certificate checker
-  const isCertExpired = (c: CertificateItem): boolean => {
-    return c.status === 'expired' || c.daysRemaining <= 0;
-  };
-
   // Base raw candidates per tab
   const rawCandidates = useMemo(() => {
     switch (activeTab) {
       case 'EXPIRED':
-        return certificates.filter(isCertExpired);
+        return certificates.filter(isCertificateExpired);
       case 'OTHER_USERS':
         return certificates.filter(c => c.name !== myUserName);
       case 'SELECTED':
@@ -138,6 +134,10 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
     });
   }, [rawCandidates, storageFilter]);
 
+  // Guaranteed synchronization: only IDs that belong to the current filtered candidates
+  const currentTargetIds = useMemo(() => new Set(currentTargetCerts.map(c => c.id)), [currentTargetCerts]);
+  const effectiveCheckedIds = useMemo(() => checkedIds.filter(id => currentTargetIds.has(id)), [checkedIds, currentTargetIds]);
+
   // Synchronize modal state reliably upon open
   React.useEffect(() => {
     if (isOpen) {
@@ -147,7 +147,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
 
       let initialCands: CertificateItem[] = [];
       if (initialMode === 'EXPIRED') {
-        const expiredAll = certificates.filter(isCertExpired);
+        const expiredAll = certificates.filter(isCertificateExpired);
         // Default to ALL so that all expired certs (PC + USB) shown on the banner/button are selected and moved to trash without mismatch
         setStorageFilter('ALL');
         initialCands = expiredAll;
@@ -171,7 +171,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
     setIsConfirmed(false);
     let cands: CertificateItem[] = [];
     if (tab === 'EXPIRED') {
-      cands = certificates.filter(isCertExpired);
+      cands = certificates.filter(isCertificateExpired);
     } else if (tab === 'OTHER_USERS') {
       cands = certificates.filter(c => c.name !== myUserName);
     } else if (tab === 'SELECTED') {
@@ -217,7 +217,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
   };
 
   const handleExecuteDelete = async () => {
-    if (checkedIds.length === 0) return;
+    if (effectiveCheckedIds.length === 0) return;
 
     setIsDeleting(true);
     await new Promise(r => setTimeout(r, 500));
@@ -227,12 +227,12 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
     if (storageFilter === 'LOCAL') storageLabel = '컴퓨터 로컬';
     else if (storageFilter === 'REMOVABLE') storageLabel = 'USB 이동식';
 
-    let reason = `선택한 인증서 ${checkedIds.length}건 일괄 삭제 [${storageLabel}]`;
-    if (activeTab === 'EXPIRED') reason = `만료된 인증서 ${checkedIds.length}건 정리 [${storageLabel}]`;
-    else if (activeTab === 'OTHER_USERS') reason = `타인 인증서 ${checkedIds.length}건 정리 [${storageLabel}] (보존: ${myUserName})`;
+    let reason = `선택한 인증서 ${effectiveCheckedIds.length}건 일괄 삭제 [${storageLabel}]`;
+    if (activeTab === 'EXPIRED') reason = `만료된 인증서 ${effectiveCheckedIds.length}건 정리 [${storageLabel}]`;
+    else if (activeTab === 'OTHER_USERS') reason = `타인 인증서 ${effectiveCheckedIds.length}건 정리 [${storageLabel}] (보존: ${myUserName})`;
     else if (activeTab === 'SINGLE' && singleCert) reason = `인증서 단독 삭제 (${singleCert.name})`;
 
-    onDeleteCertificates(checkedIds, reason);
+    onDeleteCertificates(effectiveCheckedIds, reason);
     onClose();
   };
 
@@ -281,7 +281,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
               }`}
             >
               <CalendarX className="w-4 h-4" />
-              <span>만료된 인증서 정리 ({certificates.filter(c => c.status === 'expired').length})</span>
+              <span>만료된 인증서 정리 ({certificates.filter(isCertificateExpired).length})</span>
             </button>
 
             <button
@@ -308,7 +308,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
                 }`}
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>선택된 항목 정리 ({selectedIds.length})</span>
+                <span>선택된 항목 정리 ({certificates.filter(c => selectedIds.includes(c.id)).length})</span>
               </button>
             )}
           </div>
@@ -514,7 +514,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
                 </div>
               ) : (
                 currentTargetCerts.map((cert, index) => {
-                  const isChecked = checkedIds.includes(cert.id);
+                  const isChecked = effectiveCheckedIds.includes(cert.id);
                   return (
                     <div
                       key={cert.id}
@@ -573,7 +573,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
           </div>
 
           {/* Deletion Warning Box */}
-          {checkedIds.length > 0 && (
+          {effectiveCheckedIds.length > 0 && (
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-600 space-y-2">
               <div className="flex items-center gap-2 font-bold text-slate-800">
                 <ShieldAlert className="w-4 h-4 text-rose-600" />
@@ -593,7 +593,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
                 <span className="font-semibold text-slate-800">
                   위 내용을 확인하였으며, [
                   {storageFilter === 'LOCAL' ? '컴퓨터(PC) 로컬' : storageFilter === 'REMOVABLE' ? 'USB 이동식' : '전체 매체'}
-                  ]에서 선택한 {checkedIds.length}건의 인증서를 안전 휴지통으로 이동(정리)하는 것에 동의합니다.
+                  ]에서 선택한 {effectiveCheckedIds.length}건의 인증서를 안전 휴지통으로 이동(정리)하는 것에 동의합니다.
                 </span>
               </label>
             </div>
@@ -603,7 +603,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
         {/* Footer Actions */}
         <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
           <div className="text-xs text-slate-500">
-            선택된 삭제 대상: <strong className="text-rose-600">{checkedIds.length}건</strong>
+            선택된 삭제 대상: <strong className="text-rose-600">{effectiveCheckedIds.length}건</strong>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -619,7 +619,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
             <button
               type="button"
               onClick={handleExecuteDelete}
-              disabled={checkedIds.length === 0 || !isConfirmed || isDeleting}
+              disabled={effectiveCheckedIds.length === 0 || !isConfirmed || isDeleting}
               className="px-5 py-2 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-lg text-xs font-bold shadow-md shadow-rose-200 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               {isDeleting ? (
@@ -632,10 +632,10 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>
                     {activeTab === 'EXPIRED' 
-                      ? `[${storageFilter === 'LOCAL' ? '컴퓨터만' : storageFilter === 'REMOVABLE' ? 'USB만' : '전체'}] 만료 인증서 ${checkedIds.length}건 정리` 
+                      ? `[${storageFilter === 'LOCAL' ? '컴퓨터만' : storageFilter === 'REMOVABLE' ? 'USB만' : '전체'}] 만료 인증서 ${effectiveCheckedIds.length}건 정리` 
                       : activeTab === 'OTHER_USERS'
-                      ? `타인 인증서 ${checkedIds.length}건 삭제`
-                      : `선택한 인증서 ${checkedIds.length}건 영구 삭제`}
+                      ? `타인 인증서 ${effectiveCheckedIds.length}건 삭제`
+                      : `선택한 인증서 ${effectiveCheckedIds.length}건 영구 삭제`}
                   </span>
                 </>
               )}
