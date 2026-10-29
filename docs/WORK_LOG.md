@@ -40,6 +40,8 @@
      - 간편 모드 / 상세 모드 UI 전환기.
      - 시작 가이드 자동 표시 여부 토글 체크박스.
      - 기본값으로 복원 및 닫기 버튼 구현.
+  4. **WPF XAML 컴파일러 빌드 오류(MC3072: The property 'Spacing' does not exist) 조치**:
+     - WPF 표준 `System.Windows.Controls.StackPanel`에는 `Spacing` 속성이 지원되지 않으므로, 이를 제거하고 각 자식 `Border`에 표준 `Margin="0,0,0,14"`을 적용하여 Release 빌드 및 GitHub Actions CI 워크플로우 정상 컴파일 보장.
 
 ### 📝 [작업 차수 104] 삭제된 숫자와 휴지통 숫자 불일치 개선 및 상태 동기화 정밀화
 - **작업 일시**: 2026-10-28 01:25 KST

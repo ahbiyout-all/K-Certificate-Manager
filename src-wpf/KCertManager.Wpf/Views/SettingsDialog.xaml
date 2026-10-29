@@ -36,9 +36,9 @@
 
         <!-- Settings Body -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,16">
-            <StackPanel Spacing="16">
+            <StackPanel>
                 <!-- Group 1: 성공 알림음 (SuccessChime) & 볼륨 슬라이더 -->
-                <Border Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="16" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                <Border Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="16" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,0,14">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="🔔" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
@@ -89,7 +89,7 @@
                 </Border>
 
                 <!-- Group 2: 화면 테마 스타일 -->
-                <Border Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="16" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                <Border Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="16" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,0,14">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="🎨" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
@@ -106,7 +106,7 @@
                 </Border>
 
                 <!-- Group 3: 인터페이스 모드 -->
-                <Border Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="16" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                <Border Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="16" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,0,14">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="🖥️" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
