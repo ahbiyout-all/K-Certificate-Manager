@@ -86,7 +86,7 @@
                         </Border>
 
                         <!-- Mode Switch: [간편 모드] vs [상세 모드] -->
-                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,10,0">
+                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0">
                             <StackPanel Orientation="Horizontal">
                                 <RadioButton GroupName="UIModeGroup" Content="간편 모드" IsChecked="{Binding IsSimpleMode, Mode=TwoWay}"
                                              Style="{StaticResource ModeToggleRadio}" ToolTip="초보자용 간편 모드: 핵심 복사 기능과 목록에 집중합니다."/>
@@ -94,6 +94,31 @@
                                              Style="{StaticResource ModeToggleRadio}" ToolTip="전문가용 상세 모드: 드라이브 상세 정보 및 부가 도구를 모두 표시합니다."/>
                             </StackPanel>
                         </Border>
+
+                        <!-- Horizontal Sound Volume Slider Bar & Mute Toggle -->
+                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="6,2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0" ToolTip="복사 성공 알림음(SuccessChime) 실시간 볼륨 조절 및 음소거 토글">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Command="{Binding ToggleSoundCommand}" Style="{StaticResource SecondaryButton}" Padding="4,2" Margin="0,0,4,0" ToolTip="성공 알림음 켜기/끄기 토글">
+                                    <TextBlock Text="{Binding SoundIcon}" FontSize="12" VerticalAlignment="Center"/>
+                                </Button>
+                                <TextBlock Text="알림음:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <Slider Minimum="0" Maximum="100" Value="{Binding SoundVolume, Mode=TwoWay}" Width="70" VerticalAlignment="Center"
+                                        SmallChange="5" LargeChange="10" ToolTip="성공 알림음 볼륨 가로 슬라이더 바"/>
+                                <TextBlock Text="{Binding SoundVolumeText}" Width="32" TextAlignment="Right" FontSize="11" FontWeight="Bold"
+                                           Foreground="{DynamicResource AccentTextBrush}" VerticalAlignment="Center" Margin="2,0,4,0"/>
+                                <Button Command="{Binding TestSoundCommand}" Style="{StaticResource SecondaryButton}" Padding="4,2" ToolTip="성공 알림음 테스트 재생 (미리듣기)">
+                                    <TextBlock Text="▶" FontSize="9" VerticalAlignment="Center"/>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Prominent Settings Button -->
+                        <Button Click="OpenSettings_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" ToolTip="환경 설정 창 열기 (알림음, 테마, UI 모드, 시작 가이드)">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⚙️" Margin="0,0,4,0"/>
+                                <TextBlock Text="환경 설정" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
 
                         <Button Command="{Binding ShowStartupWorkflowCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,6,0" ToolTip="시작 작업 선택 창 및 순서별 가이드 모션을 다시 실행합니다.">
                             <StackPanel Orientation="Horizontal">

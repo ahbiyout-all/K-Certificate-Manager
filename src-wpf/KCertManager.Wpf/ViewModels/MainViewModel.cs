@@ -85,6 +85,8 @@ namespace KCertManager.Wpf.ViewModels
             CheckUpdatesCommand = new RelayCommand(async () => await CheckForAppUpdatesAsync());
             ShowStartupWorkflowCommand = new RelayCommand(ShowStartupWorkflowDialog);
             CloseToastCommand = new RelayCommand(() => IsToastVisible = false);
+            ToggleSoundCommand = new RelayCommand(ToggleSound);
+            TestSoundCommand = new RelayCommand(PlayTestSound);
 
             StartGuidedWorkflowCommand = new RelayCommand<string>(StartGuidedWorkflow);
             NextGuidedStepCommand = new RelayCommand(NextGuidedStep);
@@ -252,10 +254,39 @@ namespace KCertManager.Wpf.ViewModels
             }
         }
 
+        private int _soundVolume = 40;
+        public int SoundVolume
+        {
+            get => _soundVolume;
+            set
+            {
+                if (SetProperty(ref _soundVolume, value))
+                {
+                    if (value > 0 && !_isSoundEnabled)
+                    {
+                        _isSoundEnabled = true;
+                        OnPropertyChanged(nameof(IsSoundEnabled));
+                    }
+                    OnPropertyChanged(nameof(SoundVolumeText));
+                    OnPropertyChanged(nameof(SoundIcon));
+                }
+            }
+        }
+
+        public string SoundVolumeText => IsSoundEnabled && SoundVolume > 0 ? $"{SoundVolume}%" : "OFF";
+        public string SoundIcon => IsSoundEnabled && SoundVolume > 0 ? (SoundVolume > 50 ? "🔊" : "🔉") : "🔇";
+
         public bool IsSoundEnabled
         {
             get => _isSoundEnabled;
-            set => SetProperty(ref _isSoundEnabled, value);
+            set
+            {
+                if (SetProperty(ref _isSoundEnabled, value))
+                {
+                    OnPropertyChanged(nameof(SoundVolumeText));
+                    OnPropertyChanged(nameof(SoundIcon));
+                }
+            }
         }
 
         public ObservableCollection<DriveItem> AllDrives
@@ -272,6 +303,8 @@ namespace KCertManager.Wpf.ViewModels
 
         public ICommand ShowStartupWorkflowCommand { get; }
         public ICommand CloseToastCommand { get; }
+        public ICommand ToggleSoundCommand { get; }
+        public ICommand TestSoundCommand { get; }
         public ICommand StartGuidedWorkflowCommand { get; }
         public ICommand NextGuidedStepCommand { get; }
         public ICommand PrevGuidedStepCommand { get; }
@@ -556,6 +589,28 @@ namespace KCertManager.Wpf.ViewModels
             }
 
             RequestOpenTargetDrivePicker?.Invoke(selected);
+        }
+
+        public void ToggleSound()
+        {
+            IsSoundEnabled = !IsSoundEnabled;
+            if (IsSoundEnabled && SoundVolume == 0)
+            {
+                SoundVolume = 40;
+            }
+            if (IsSoundEnabled)
+            {
+                PlayTestSound();
+            }
+        }
+
+        public void PlayTestSound()
+        {
+            try
+            {
+                System.Media.SystemSounds.Asterisk.Play();
+            }
+            catch { }
         }
 
         public void CopySelectedCertDetails()
@@ -1611,9 +1666,9 @@ namespace KCertManager.Wpf.ViewModels
             {
                 try 
                 { 
-                    if (IsSoundEnabled)
+                    if (IsSoundEnabled && SoundVolume > 0)
                     {
-                        System.Media.SystemSounds.Asterisk.Play(); 
+                        PlayTestSound();
                     }
                 } 
                 catch { }

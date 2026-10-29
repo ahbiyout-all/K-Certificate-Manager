@@ -494,6 +494,15 @@ namespace KCertManager.Wpf.Views
             dialog.ShowDialog();
         }
 
+        private void OpenSettings_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new SettingsDialog(ViewModel)
+            {
+                Owner = this
+            };
+            dialog.ShowDialog();
+        }
+
         private void OpenAbout_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new AboutDialog

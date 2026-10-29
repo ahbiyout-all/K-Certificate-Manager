@@ -1,9 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ShieldCheck, HardDrive, RefreshCw, FileKey, Menu, Trash2, Tag, ArrowDownLeft, FileText, Scale, Cpu, Usb, Activity, Palette, Check, Monitor, Globe, Sparkles, Sliders } from 'lucide-react';
+import { ShieldCheck, HardDrive, RefreshCw, FileKey, Menu, Trash2, Tag, ArrowDownLeft, FileText, Scale, Cpu, Usb, Activity, Palette, Check, Monitor, Globe, Sparkles, Sliders, Settings, Volume2, VolumeX, Volume1, Play } from 'lucide-react';
 import { AppTheme } from '../types';
 import { THEME_OPTIONS } from '../data/themes';
 import { BRANDING_ASSETS } from '../data/brandingAssets';
 import { APP_VERSION } from '../version';
+import {
+  getSoundSettings,
+  saveSoundSettings,
+  playTestChime,
+  SoundSettings,
+  SOUND_SETTINGS_CHANGED_EVENT,
+} from '../utils/audioFeedback';
 
 interface HeaderProps {
   totalCount: number;
@@ -66,6 +73,44 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const themeMenuRef = useRef<HTMLDivElement>(null);
+
+  const [soundSettings, setSoundSettings] = useState<SoundSettings>(getSoundSettings);
+  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
+
+  useEffect(() => {
+    const handleSettingsChanged = (e: Event) => {
+      const customEvent = e as CustomEvent<SoundSettings>;
+      if (customEvent.detail) {
+        setSoundSettings(customEvent.detail);
+      }
+    };
+    window.addEventListener(SOUND_SETTINGS_CHANGED_EVENT, handleSettingsChanged);
+    return () => {
+      window.removeEventListener(SOUND_SETTINGS_CHANGED_EVENT, handleSettingsChanged);
+    };
+  }, []);
+
+  const handleToggleSound = () => {
+    const newEnabled = !soundSettings.enabled;
+    const newVol = newEnabled && soundSettings.volume === 0 ? 40 : soundSettings.volume;
+    const updated = saveSoundSettings({ enabled: newEnabled, volume: newVol });
+    setSoundSettings(updated);
+    if (newEnabled) {
+      playTestChime(updated.volume);
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value, 10);
+    const updated = saveSoundSettings({ volume: val, enabled: val > 0 });
+    setSoundSettings(updated);
+  };
+
+  const handlePreviewChime = () => {
+    setIsPlayingPreview(true);
+    playTestChime(soundSettings.enabled ? soundSettings.volume : 40);
+    setTimeout(() => setIsPlayingPreview(false), 500);
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -182,6 +227,69 @@ export const Header: React.FC<HeaderProps> = ({
               상세 모드
             </button>
           </div>
+        )}
+
+        {/* Horizontal Sound Volume Slider Bar & Mute Toggle */}
+        <div 
+          className="flex items-center bg-slate-100/95 hover:bg-slate-100 px-2 py-1 rounded-lg border border-slate-200/90 gap-1.5 shadow-2xs transition-colors"
+          title="복사 성공 알림음(SuccessChime) 실시간 볼륨 조절 및 음소거 토글"
+        >
+          <button
+            type="button"
+            onClick={handleToggleSound}
+            className="text-slate-600 hover:text-blue-600 transition-colors p-0.5 rounded cursor-pointer"
+            title={soundSettings.enabled ? "성공 알림음 음소거 (Mute)" : "성공 알림음 켜기 (Unmute)"}
+            aria-label="성공 알림음 켜기/끄기 토글"
+          >
+            {soundSettings.enabled && soundSettings.volume > 0 ? (
+              soundSettings.volume > 50 ? (
+                <Volume2 className="w-3.5 h-3.5 text-blue-600" />
+              ) : (
+                <Volume1 className="w-3.5 h-3.5 text-blue-600" />
+              )
+            ) : (
+              <VolumeX className="w-3.5 h-3.5 text-rose-500" />
+            )}
+          </button>
+          <span className="text-[11px] font-bold text-slate-500 hidden md:inline select-none">알림음:</span>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            value={soundSettings.enabled ? soundSettings.volume : 0}
+            onChange={handleVolumeChange}
+            aria-label="성공 알림음 볼륨 가로 슬라이더 바"
+            title={`알림음 볼륨: ${soundSettings.enabled ? `${soundSettings.volume}%` : '음소거'}`}
+            className="w-16 sm:w-20 md:w-24 h-1.5 bg-slate-300 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"
+          />
+          <span className="text-[11px] font-mono font-bold text-slate-700 w-7 sm:w-8 text-right select-none">
+            {soundSettings.enabled && soundSettings.volume > 0 ? `${soundSettings.volume}%` : 'OFF'}
+          </span>
+          <button
+            type="button"
+            onClick={handlePreviewChime}
+            disabled={isPlayingPreview}
+            className="text-slate-400 hover:text-blue-600 p-0.5 rounded transition-colors cursor-pointer disabled:opacity-50"
+            title="성공 알림음 테스트 재생 (미리듣기)"
+            aria-label="알림음 테스트 재생"
+          >
+            <Play className={`w-3 h-3 ${isPlayingPreview ? 'text-blue-600 scale-125' : ''}`} />
+          </button>
+        </div>
+
+        {/* Prominent Settings Modal Button */}
+        {onOpenSettings && (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200/90 hover:border-blue-300 rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+            title="⚙️ 환경 설정: 성공 알림음, 테마 스타일, 보기 모드, 시작 가이드 설정"
+          >
+            <Settings className="w-3.5 h-3.5 text-slate-600" />
+            <span className="hidden sm:inline font-bold">환경 설정</span>
+            <span className="sm:hidden font-bold">설정</span>
+          </button>
         )}
 
         {/* Startup Workflow Guide Button */}
@@ -335,18 +443,6 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
           </>
-        )}
-
-        {onOpenSettings && (
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-700 hover:text-blue-600 rounded-md text-xs font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
-            title="환경 설정: 복사 성공 알림음(SuccessChime) ON/OFF, 볼륨 조절 슬라이더 및 앱 환경설정"
-          >
-            <Sliders className="w-3.5 h-3.5 text-slate-600" />
-            <span className="hidden sm:inline">설정</span>
-          </button>
         )}
 
         <button

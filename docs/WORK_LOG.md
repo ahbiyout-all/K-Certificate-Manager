@@ -7,7 +7,7 @@
 ## 📌 프로젝트 기본 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v1.7.0` (Semantic Versioning 2.0.0)
+- **현재 버전**: `v1.7.1` (Semantic Versioning 2.0.0)
 - **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
 - **구글 공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **공식 홈페이지**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr) ((주)씨아이에스넷 CISNet)
@@ -16,6 +16,30 @@
 ---
 
 ## 📅 작업 기록 상세 내역
+
+### 📝 [작업 차수 107] 상단 헤더 가로 슬라이더 바 구축 및 환경 설정(⚙️) 모달 접근성 직관화
+- **작업 일시**: 2026-10-29 01:30 KST
+- **요청 사항**: "⚙️ [환경 설정] 모달이 없음. 상단헤더에 가로 슬라이더 바 생성."
+- **배경 및 원인 분석**:
+  1. 기존 웹 환경에서 환경 설정 버튼이 우측 최하단 또는 일부 상세 모드에서만 작게 표시되어 사용자가 찾기 어려웠고, 복사 성공 알림음(SuccessChime) 볼륨을 확인하거나 조절하기 위해 모달을 열어야 하는 번거로움이 존재함.
+  2. Windows C# WPF 데스크톱 앱(`KCertManager.Wpf`)의 경우 상단 헤더 툴바에 테마 선택, 모드 전환, 시작 가이드, 새로고침, 휴지통 버튼만 존재하고 전용 `SettingsDialog.xaml` 모달 및 볼륨 조절 슬라이더가 탑재되어 있지 않아 모달 부재 현상이 발생함.
+- **수행 내용**:
+  1. **상단 헤더 가로 볼륨 슬라이더 바(Horizontal Sound Slider Bar) 직접 구축**:
+     - **Web (`src/components/Header.tsx`)**:
+       - 상단 헤더 툴바 중앙에 `[🔊/🔇 음소거 토글]` + `알림음:` 라벨 + `가로 범위 슬라이더(<input type="range" min="0" max="100"/>)` + `볼륨 수치(40% / OFF)` + `[▶ 미리듣기/테스트]` 버튼 컴포넌트 탑재.
+       - 슬라이더 드래그 시 실시간으로 `saveSoundSettings({ volume, enabled })` 실행 및 `SOUND_SETTINGS_CHANGED_EVENT` 전역 브로드캐스트로 모든 모달 및 위젯 동기화.
+     - **WPF C# (`MainWindow.xaml`, `MainViewModel.cs`)**:
+       - 헤더 툴바에 `SoundVolume` 바인딩 가로 `<Slider Width="70" .../>`, `SoundVolumeText`(40%/OFF), `SoundIcon`(🔊/🔇) 및 `ToggleSoundCommand`, `TestSoundCommand` 연동.
+       - 복사 성공 시 `IsSoundEnabled && SoundVolume > 0` 검증 후 청각 효과음 재생.
+  2. **눈에 잘 띄는 직관적인 ⚙️ [환경 설정] 버튼 상단 헤더 배치**:
+     - Web 상단 헤더에 가로 슬라이더 바 바로 옆에 돋보이는 `[⚙️ 환경 설정]` 버튼을 항시 노출 배치하여 `SettingsModal`로 즉각 연결.
+     - WPF 데스크톱 상단 툴바에도 `[⚙️ 환경 설정]` 버튼을 영구 배치하여 클릭 시 전용 `SettingsDialog` 팝업.
+  3. **WPF 전용 환경 설정 대화상자 신설 (`SettingsDialog.xaml`, `SettingsDialog.xaml.cs`)**:
+     - 알림음(SuccessChime) 사용 여부 체크박스, 가로 슬라이더 바, 실시간 볼륨 수치, 미리듣기 재생 버튼 탑재.
+     - 다크/회색/화이트/베이지 4대 테마 라디오 버튼 선택기.
+     - 간편 모드 / 상세 모드 UI 전환기.
+     - 시작 가이드 자동 표시 여부 토글 체크박스.
+     - 기본값으로 복원 및 닫기 버튼 구현.
 
 ### 📝 [작업 차수 104] 삭제된 숫자와 휴지통 숫자 불일치 개선 및 상태 동기화 정밀화
 - **작업 일시**: 2026-10-28 01:25 KST
