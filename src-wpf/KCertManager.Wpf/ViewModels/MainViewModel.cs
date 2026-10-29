@@ -47,6 +47,7 @@ namespace KCertManager.Wpf.ViewModels
         private string _currentSortMember = "NotAfter";
         private bool _isSortAscending = true;
 
+        private bool _isSoundEnabled = true;
         private bool _isToastVisible;
         private string _toastMessage = string.Empty;
         private bool _toastHasIntegrityBadge;
@@ -249,6 +250,12 @@ namespace KCertManager.Wpf.ViewModels
                     ShowAllDrivesInStatus = false;
                 }
             }
+        }
+
+        public bool IsSoundEnabled
+        {
+            get => _isSoundEnabled;
+            set => SetProperty(ref _isSoundEnabled, value);
         }
 
         public ObservableCollection<DriveItem> AllDrives
@@ -1604,7 +1611,10 @@ namespace KCertManager.Wpf.ViewModels
             {
                 try 
                 { 
-                    System.Media.SystemSounds.Asterisk.Play(); 
+                    if (IsSoundEnabled)
+                    {
+                        System.Media.SystemSounds.Asterisk.Play(); 
+                    }
                 } 
                 catch { }
 
