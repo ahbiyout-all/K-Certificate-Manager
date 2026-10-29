@@ -164,7 +164,10 @@ namespace KCertManager.Wpf.ViewModels
                     // 업데이트 확인 후 작업 선택 창 다이얼로그 안내
                     Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                     {
-                        ShowStartupWorkflowDialog();
+                        if (!DontShowStartupWorkflowAgain)
+                        {
+                            ShowStartupWorkflowDialog();
+                        }
                     }));
                 }
                 catch (Exception ex)
@@ -287,6 +290,13 @@ namespace KCertManager.Wpf.ViewModels
                     OnPropertyChanged(nameof(SoundIcon));
                 }
             }
+        }
+
+        private bool _dontShowStartupWorkflowAgain = false;
+        public bool DontShowStartupWorkflowAgain
+        {
+            get => _dontShowStartupWorkflowAgain;
+            set => SetProperty(ref _dontShowStartupWorkflowAgain, value);
         }
 
         public ObservableCollection<DriveItem> AllDrives
@@ -422,7 +432,13 @@ namespace KCertManager.Wpf.ViewModels
                     {
                         Owner = Application.Current?.MainWindow
                     };
-                    if (dialog.ShowDialog() == true)
+                    bool? showResult = dialog.ShowDialog();
+                    if (!dialog.AlwaysShowOnStartup)
+                    {
+                        DontShowStartupWorkflowAgain = true;
+                    }
+
+                    if (showResult == true)
                     {
                         if (dialog.SelectedResult == Views.StartupWorkflowResult.PcToUsb)
                         {
