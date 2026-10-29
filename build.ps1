@@ -56,13 +56,13 @@ Write-Host " [OK] Node.js: $nodeVer (Node 22 LTS / 24 권장), NPM: $npmVer" -Fo
 # ------------------------------------------------------------------------------
 Write-Host ""
 Write-Host "[2/7] package.json 버전 정보 확인 중..." -ForegroundColor Cyan
-$appVersion = "1.7.0"
+$appVersion = "1.7.1"
 if (Test-Path "$scriptDir\package.json") {
     try {
         $pkgJson = Get-Content "$scriptDir\package.json" -Raw | ConvertFrom-Json
         if ($pkgJson.version) { $appVersion = $pkgJson.version }
     } catch {
-        Write-Host " [NOTICE] package.json 파싱 실패. 기본 버전(1.7.0) 사용" -ForegroundColor Yellow
+        Write-Host " [NOTICE] package.json 파싱 실패. 기본 버전(1.7.1) 사용" -ForegroundColor Yellow
     }
 }
 Write-Host " [OK] 대상 버전: v$appVersion" -ForegroundColor Green

@@ -7,7 +7,7 @@
 ## 📌 프로젝트 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v1.7.0` (Semantic Versioning: `1.7.0`)
+- **현재 버전**: `v1.7.1` (Semantic Versioning: `1.7.1`)
 - **개발자**: AhBiYout
 - **소속**: [http://www.cisnet.co.kr/](http://www.cisnet.co.kr/) (CISNet)
 - **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
@@ -21,7 +21,10 @@
 | 파일명 | 설명 |
 | :--- | :--- |
 | [`VERSIONING_POLICY.md`](./VERSIONING_POLICY.md) | **버전 관리 표준 정책**: SemVer 2.0.0 (MAJOR.MINOR.PATCH) 3단계 분류 및 코드 수정 시 동기화 체크리스트 |
-| [`PATCHNOTES.md`](./PATCHNOTES.md) | **버전 릴리스 패치노트**: v1.0.0부터 v1.7.0까지의 상세 기능 변경, 보안 패치 및 릴리스 히스토리 |
+| [`PATCHNOTES.md`](./PATCHNOTES.md) | **버전 릴리스 패치노트**: v1.0.0부터 v1.7.1까지의 상세 기능 변경, 보안 패치 및 릴리스 히스토리 |
+| [`BLOG_v1.7.1.md`](./BLOG_v1.7.1.md) | **공식 구글 블로그 배포 통합 문서**: v1.7.1 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
+| [`BLOGGER_POST_COMPOSE_MODE.md`](./BLOGGER_POST_COMPOSE_MODE.md) | **구글 블로그 전용 원고 [작성 모드 (서식 있는 텍스트)]**: Blogger 에디터에 그대로 복사·붙여넣기하는 서식 지원 마크다운 원고 |
+| [`BLOGGER_POST_HTML_MODE.html`](./BLOGGER_POST_HTML_MODE.html) | **구글 블로그 전용 원고 [HTML 편집 모드]**: Blogger HTML 모드에 즉시 붙여넣기 가능한 반응형 모던 인라인 HTML 원고 |
 | [`BLOG_v1.7.0.md`](./BLOG_v1.7.0.md) | **공식 구글 블로그 배포 문서**: v1.7.0 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
 | [`BLOG_v1.6.5.md`](./BLOG_v1.6.5.md) | **공식 구글 블로그 배포 문서**: v1.6.5 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
 | [`BLOG_v1.5.0.md`](./BLOG_v1.5.0.md) | **공식 구글 블로그 배포 문서**: v1.5.0 공식 구글 블로그(Blogger) 게시용 10단계 표준 마크다운 원고 |

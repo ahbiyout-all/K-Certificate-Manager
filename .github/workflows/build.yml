@@ -24,7 +24,7 @@ jobs:
         id: version_step
         shell: pwsh
         run: |
-          $ver = "1.7.0"
+          $ver = "1.7.1"
           if ("${{ github.ref_name }}".StartsWith("v")) {
             $ver = "${{ github.ref_name }}".Substring(1)
           } elseif (Test-Path "package.json") {

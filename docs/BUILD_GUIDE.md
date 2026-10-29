@@ -97,7 +97,7 @@ build.bat net8
 Inno Setup Compiler GUI를 열거나 커맨드라인에서 직접 컴파일할 수도 있습니다:
 
 ```cmd
-"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=1.6.5 installer.iss
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=1.7.1 installer.iss
 ```
 
 ---
@@ -107,10 +107,10 @@ Inno Setup Compiler GUI를 열거나 커맨드라인에서 직접 컴파일할 �
 | 폴더 / 파일 | 빌드 단계 | 예상 용량 | 설명 및 특징 |
 | :--- | :--- | :--- | :--- |
 | `release\04_WebBundle\` | **Step 4** | ~2MB | Vite 프로덕션 번들 (HTML, CSS, JS 개별 에셋) |
-| `release\05_WpfDesktop\KCertManager_v1.6.5.exe` | **Step 5-1** | **~69MB** | **C# WPF 데스크톱 풀버전 (정식 독립 실행형)** (.NET 10 / .NET 8 런타임 내장) |
-| `release\05_WpfDesktop\KCertManager-Lite_v1.6.5.exe` | **Step 5-2** | **~6MB** | **C# WPF 초경량 라이트 에디션** (프레임워크 종속형 단일 실행 바이너리) |
+| `release\05_WpfDesktop\KCertManager_v1.7.1.exe` | **Step 5-1** | **~69MB** | **C# WPF 데스크톱 풀버전 (정식 독립 실행형)** (.NET 10 / .NET 8 런타임 내장) |
+| `release\05_WpfDesktop\KCertManager-Lite_v1.7.1.exe` | **Step 5-2** | **~6MB** | **C# WPF 초경량 라이트 에디션** (프레임워크 종속형 단일 실행 바이너리) |
 | `release\06_UnpackedApp\` | **Step 6** | ~75MB | 중복 파일이 제거된 슬림 무설치 폴더 풀림(Unpacked Multi-File) 포터블 패키지 |
-| `release\07_Installer\kcert-manager-v1.6.5-setup.exe` | **Step 7** | ~40MB | Inno Setup 공식 설치 인스톨러 (방화벽 자동 등록 및 무인 설치 지원) |
+| `release\07_Installer\kcert-manager-v1.7.1-setup.exe` | **Step 7** | ~40MB | Inno Setup 공식 설치 인스톨러 (방화벽 자동 등록 및 무인 설치 지원) |
 
 ---
 
@@ -126,8 +126,8 @@ push_to_github.bat
   - `push_to_github.bat`, `push_to_github.ps1`, `build.bat` 모두가 3단계 파이프라인으로 버전을 자동 판별합니다:
     1. **1차 기준**: `package.json`의 `"version"` 필드에서 동적 추출 (Node.js 및 PowerShell 지원)
     2. **2차 기준 (패치노트 직결)**: 누락 또는 비Node 환경 시 `docs/PATCHNOTES.md` 상단 최신 릴리스 헤더(`### 🚀 [vX.X.X]`)를 정규식으로 직접 추출
-    3. **3차 기준**: 안전 기본값 (`1.7.0`)
-  - 수동 버전 수정 없이도 패치노트 작성만으로 커밋 메시지, 창 타이틀, Git 태그(`v1.7.0`), 인스톨러 파일명이 100% 일괄 동기화됩니다.
+    3. **3차 기준**: 안전 기본값 (`1.7.1`)
+  - 수동 버전 수정 없이도 패치노트 작성만으로 커밋 메시지, 창 타이틀, Git 태그(`v1.7.1`), 인스톨러 파일명이 100% 일괄 동기화됩니다.
 - **GitHub Actions 클라우드 빌드 (`.github/workflows/*.yml`)**: GitHub Actions의 Node.js 20 공식 지원 종료(2026년 4월 EOL 및 2026년 가을 러너 Deprecation 경고 발생)에 따라, 모든 CI/CD 파이프라인(`.github/workflows/ci.yml`, `build.yml`)을 최신 **Node.js 22 LTS** 및 차세대 **Node.js 24** 환경으로 완벽하게 전환 구축하였습니다. 푸시 시 웹(Vite/TypeScript) 교차 매트릭스 검증과 Windows 러너 기반 C# WPF 데스크톱 앱 및 Inno Setup 인스톨러 컴파일 후 공식 인스톨러(`release/07_Installer/*.exe`)를 GitHub Releases에 안전하게 단독 배포합니다.
 - **용량 제한 및 보안 방어**: `.gitignore`를 통해 인증서/키(`*.der`, `*.key`, `*.pri` 등)와 대용량 빌드 폴더를 자동으로 Git 추적에서 제외(`git rm -r --cached`)합니다.
 

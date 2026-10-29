@@ -368,6 +368,35 @@
      - `docs/README.md`, `docs/LICENSE.md`, `docs/BUILD_GUIDE.md`: `v1.6.4` 동기화.
   5. **컴파일 및 린트 검증**: `compile_applet` 및 `lint_applet` 100% 무결 통과.
 
+### 📝 [작업 차수 106] v1.7.1 버전 범프 및 docs 폴더 최신 문서 동기화 & 구글 블로거 전용 배포 원고 생성
+- **작업 일시**: 2026-10-28 19:30 KST
+- **요청 사항**:
+  1. "버전업이 필요하지 않나요?"
+  2. "docs폴더 문서들에 수정된 최신 내용을 업데이트 합니다."
+  3. "문서폴더에 구글 블로거용 문서를 생성 해주세요. [작성 모드 (서식 있는 텍스트)] 및 [HTML 편집 모드]"
+- **수행 내용**:
+  1. **v1.7.1 버전 범프 및 전역 코드베이스 일체화**:
+     - `package.json`: `"version": "1.7.1"` 갱신.
+     - `src/version.ts`: `APP_VERSION = '1.7.1'`, `APP_RELEASE_DATE = '2026-10-28'` 동기화.
+     - C# 데스크톱 및 코어 라이브러리:
+       - `KCertManager.Wpf.csproj`: `<Version>1.7.1</Version>`, `<AssemblyVersion>1.7.1.0</AssemblyVersion>`, `<FileVersion>1.7.1.0</FileVersion>` 갱신.
+       - `KCert.Core.csproj`: `<Version>1.7.1</Version>`, `<AssemblyVersion>1.7.1.0</AssemblyVersion>`, `<FileVersion>1.7.1.0</FileVersion>` 갱신.
+       - `UpdateCheckerService.cs`: `CURRENT_VERSION = "1.7.1"`, 기본 인포 버전 갱신.
+     - 배포 인스톨러 및 빌드 스크립트:
+       - `installer.iss`: `#define MyAppVersion "1.7.1"` 갱신.
+       - `build.ps1`: 기본 버전 폴백 `1.7.1` 동기화.
+       - `.github/workflows/build.yml`: 기본 버전 `1.7.1` 동기화.
+  2. **docs 폴더 공식 기술 및 사용자 문서 최신화**:
+     - `docs/README.md`: 프로젝트 버전 v1.7.1 표기 및 신규 블로그 문서 명세 추가.
+     - `docs/USER_GUIDE.md`: 섹션 2.22 (v1.7.1 신규) 추가 - 만료 인증서 정리 시 휴지통 수량 100% 동기화, 매니페스트 메타데이터 보존, Node.js 24/22 런타임 명시.
+     - `docs/PATCHNOTES.md`: v1.7.1 패치노트 신설 - 휴지통 동기화 버그 픽스 및 워크플로 런타임 전환 상세 기록.
+     - `docs/BUILD_GUIDE.md`: v1.7.1 인스톨러 컴파일 및 산출물 명세 최신화.
+  3. **구글 블로거(Blogger) 전용 배포 문서 3종 신설 (`docs/`)**:
+     - `docs/BLOG_v1.7.1.md`: [1. 작성 모드]와 [2. HTML 편집 모드]가 통합 수록된 표준 마크다운 원고.
+     - `docs/BLOGGER_POST_COMPOSE_MODE.md`: 구글 블로거 글쓰기 **[작성 모드 (서식 있는 텍스트)]**에 원클릭 복사·붙여넣기 가능한 마크다운 서식 전용 원고.
+     - `docs/BLOGGER_POST_HTML_MODE.html`: 구글 블로거 글쓰기 **[HTML 편집 모드]**에 즉시 붙여넣을 수 있는 프로덕션급 인라인 CSS 기반 모던 반응형 HTML 원고.
+  4. **컴파일 및 린트 검증**: `compile_applet` 및 `lint_applet` 100% 통과.
+
 ### 📝 [작업 차수 105] 만료 인증서 정리 및 일괄 삭제 시 삭제 수량과 안전 격리 휴지통 수량 100% 동기화 개선
 - **작업 일시**: 2026-10-28 18:20 KST
 - **요청 사항**: "만료인증서 정리 전/후 숫자 차이남 (컴퓨터 로컬 만료 인증서 22개 정리 후 휴지통 항목 수량이 14개로 표시되는 숫 불일치 현상 개선)"

@@ -14,7 +14,23 @@
 
 ---
 
-## 📋 버전 릴리스 내역
+### 🚀 [v1.7.1] - 2026-10-28
+**변경 구분**: `PATCH` (만료 인증서 안전 정리 시 삭제 수량과 안전 격리 휴지통 수량 100% 동기화 개선, 휴지통 매니페스트 메타데이터 보존, GitHub Actions Node.js 24/22 LTS 런타임 전환)
+#### ✨ 주요 개선 및 신규 기능 (Improvements & Features)
+- **만료 인증서 정리 및 일괄 삭제 시 삭제 수량과 안전 격리 휴지통 수량 1:1 완벽 동기화 (Web & WPF)**:
+  - **사용자 요청 사항**: "만료인증서 정리 전/후 숫자 차이남 (컴퓨터 로컬 만료 인증서 22개 정리 후 휴지통 항목 수량이 14개로 표시되는 불일치 현상 개선)"
+  - **원인 해결 (`SafetyTrashManager.cs`)**:
+    - 동일 폴더 내 다수 키페어 또는 비표준 경로를 가진 인증서 22건을 일괄 삭제할 때, 앞선 인증서가 폴더를 이동하여 후속 인증서의 `Directory.Exists` 검사가 `false`가 되더라도 **모든 삭제 인증서 항목을 `trash_manifest.json`에 100% 누락 없이 격리 기록**하도록 `MoveToTrash` 엔진 수정.
+    - 활성 보관함에서 차감된 삭제 개수(22개)와 안전 격리 휴지통에 보관된 개수(22개)가 오차 없이 100% 일치하도록 정합성 확립.
+  - **휴지통 매니페스트 메타데이터 보존 (`TrashQuarantineItem`)**:
+    - `TrashQuarantineItem` 모델에 `IssuerName`, `Category`, `NotAfter` 필드를 신설하여, 휴지통 열람 시 발급기관명이 "알 수 없음" 대신 원본 인증서 정보(금융결제원, 행정안전부 등)로 정밀하게 표시되도록 보완.
+  - **웹 애플리케이션 ID 기반 1:1 동기화 정밀화 (`App.tsx`, `CertificateCleanupModal.tsx`)**:
+    - `handleDeleteCertificates`에서 시리얼번호 중복 필터링을 제거하고 고유 `id` 기준으로 엄격하게 매핑하여 삭제 개수와 휴지통 개수의 일치 보장.
+    - `isCertificateExpired` 통합 헬퍼 함수를 통해 메인 목록, 만료 모달, 휴지통 간 만료 판정 기준 일원화.
+- **GitHub Actions 워크플로 Node.js 24 Next-Gen / Node.js 22 LTS 전환 (`.github/workflows/build.yml`)**:
+  - GitHub Actions 환경의 Node.js 20 Deprecated (2026년 4월 EOL) 공식 경고에 선제 대응하여 최신 `node-version: '24'` 및 `node-version: '22'` 런타임으로 공식 전환 완료.
+- **문서화 및 구글 블로거 배포 원고 최신화 (`docs/`)**:
+  - 사용자 매뉴얼(`USER_GUIDE.md`), 패치노트(`PATCHNOTES.md`), 작업로그(`WORK_LOG.md`), 구글 블로그 포스팅 원고(`BLOG_v1.7.1.md`, `BLOGGER_POST_COMPOSE_MODE.md`, `BLOGGER_POST_HTML_MODE.html`) 최신 배포.
 
 ### 🚀 [v1.7.0] - 2026-10-27
 **변경 구분**: `MINOR` (인증서 복사·백업 성공 알림음(SuccessChime) ON/OFF 및 볼륨 조절 기능 추가, 보안 영구 삭제 증적 감사 로그 시스템 신설, 컬럼 최소 폭 30px 자유 조절 및 발급기관 공식 기관명 표시, 목록 세로 구분선 및 여백 밀도 컨트롤 구축)
