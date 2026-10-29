@@ -1,9 +1,9 @@
-# K-Certificate Manager (K-인증서 매니저) v1.7.0
+# K-Certificate Manager (K-인증서 매니저) v1.7.1
 
 <div align="center">
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Version](https://img.shields.io/badge/Version-v1.7.0-green.svg)
+![Version](https://img.shields.io/badge/Version-v1.7.1-green.svg)
 ![React](https://img.shields.io/badge/React-19.0-61dafb.svg)
 ![Vite](https://img.shields.io/badge/Vite-6.2-646cff.svg)
 ![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512bd4.svg)
@@ -17,19 +17,20 @@
 
 ---
 
-## 🚀 최신 릴리스 정보 (Latest Release: v1.7.0)
+## 🚀 최신 릴리스 정보 (Latest Release: v1.7.1)
 
-> **버전**: `v1.7.0` (최신 안정화 빌드)  
-> **출시일**: 2026-10-27  
+> **버전**: `v1.7.1` (최신 안정화 빌드)  
+> **출시일**: 2026-10-28  
 > **상세 변경 내역**: [docs/PATCHNOTES.md](./docs/PATCHNOTES.md)
 
-### 🌟 v1.7.0 핵심 업데이트 내용
+### 🌟 v1.7.1 핵심 업데이트 내용
+- **만료 인증서 정리 시 삭제 수량과 안전 격리 휴지통 수량 100% 동기화**: 동일 디렉터리 공유 및 비표준 경로 인증서 일괄 정리 시 매니페스트(`trash_manifest.json`) 누락을 차단하여 삭제 수량과 휴지통 보관 수량이 1:1로 완벽 일치되도록 고도화
+- **휴지통 매니페스트 메타데이터 완벽 복원**: 격리 보관소 열람 시 발급기관명(금융결제원, 행정안전부 등), 인증서 분류(NPKI/GPKI/EPKI), 만료일자가 "알 수 없음" 표기 없이 선명하게 출력
 - **인증서 복사·백업 성공 알림음(SuccessChime) ON/OFF 및 볼륨 조절 기능**: 환경 설정 모달(`SettingsModal`)에 복사 완료 알림음 스위치(ON/OFF), 0%~100% 범위 슬라이더, 볼륨 프리셋 버튼(음소거/25%/50%/80%/100%), 소리 미리듣기 테스트 연동
-- **보안 삭제 증적 로그 (Secure Deletion Audit Records) 감사 시스템 구축**: 영구 삭제된 인증서의 SubjectDN, 원본 디렉터리 경로, 파일 목록 및 SHA-256 전자포렌식 감사 증적을 독립 구조체로 영구 보존 및 클립보드 복사 지원
-- **인증서 명칭·저장 경로 및 상태 컬럼 최소 폭 자유 조절(30px)**: 마우스 드래그로 원하는 만큼 축소 가능한 30px 최소 폭 적용 및 대한민국 5대 공인/정부 CA 공식 기관명 완벽 매핑
 - **인증서 보관함 세로 구분선(Vertical Grid Lines) 전면 도입**: 데이터 셀 간 선명한 세로선 및 상단 툴바 좌우 여백 밀도 조절 컨트롤(좁게/보통/넓게) 구축
-- **만료 인증서 정리 시 휴지통 통계 1:1 완벽 동기화**: 만료 정리 대상과 휴지통 통계 카운터 간의 수량 불일치 근본 해소
-- **스크롤바 디자인 고도화**: 슬림한 테두리 및 마우스 호버/활성화 배경색 트랜지션 애니메이션 적용
+- **인증서 명칭·저장 경로 및 상태 컬럼 최소 폭 자유 조절(30px)**: 마우스 드래그로 원하는 만큼 축소 가능한 30px 최소 폭 적용 및 대한민국 5대 공인/정부 CA 공식 기관명 완벽 매핑
+- **보안 삭제 증적 로그 (Secure Deletion Audit Records) 감사 시스템 구축**: 영구 삭제된 인증서의 SubjectDN, 원본 디렉터리 경로, 파일 목록 및 SHA-256 전자포렌식 감사 증적을 독립 구조체로 영구 보존 및 클립보드 복사 지원
+- **GitHub Actions Node.js 24 Next-Gen / Node.js 22 LTS 전환**: Node.js 20 Deprecated & EOL 대응 완료 및 CI/CD 워크플로 현대화
 
 ---
 
