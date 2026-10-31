@@ -126,14 +126,11 @@
                             <TextBlock Text="시작 가이드 옵션" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
 
-                        <CheckBox x:Name="ChkShowStartupGuide"
-                                  Content="앱 실행 시 시작 가이드 창 자동 표시"
-                                  IsChecked="{Binding DontShowStartupWorkflowAgain, Mode=TwoWay, Converter={StaticResource InverseBoolConverter}}"
-                                  Checked="ChkShowStartupGuide_Changed" Unchecked="ChkShowStartupGuide_Changed"/>
-                        <CheckBox x:Name="ChkDontShowStartupGuide"
+                        <!-- 'Don't show startup workflow again' CheckBox bound with Mode=TwoWay -->
+                        <CheckBox x:Name="ChkDontShowStartupWorkflowAgain"
                                   Content="앱 시작 시 작업 선택(시작 가이드) 창을 다시 표시하지 않음 (Don't show again)"
                                   IsChecked="{Binding DontShowStartupWorkflowAgain, Mode=TwoWay}"
-                                  Margin="0,8,0,0" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                  FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
                 </Border>
             </StackPanel>

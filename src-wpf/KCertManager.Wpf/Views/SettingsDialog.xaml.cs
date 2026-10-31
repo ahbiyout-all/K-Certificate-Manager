@@ -47,8 +47,6 @@ namespace KCertManager.Wpf.Views
                 {
                     RbModeAdvanced.IsChecked = true;
                 }
-
-                ChkShowStartupGuide.IsChecked = !_vm.DontShowStartupWorkflowAgain;
             }
 
             _isInitializing = false;
@@ -107,12 +105,6 @@ namespace KCertManager.Wpf.Views
             }
         }
 
-        private void ChkShowStartupGuide_Changed(object sender, RoutedEventArgs e)
-        {
-            if (_isInitializing || _vm == null) return;
-            _vm.DontShowStartupWorkflowAgain = ChkShowStartupGuide.IsChecked != true;
-        }
-
         private void BtnResetDefaults_Click(object sender, RoutedEventArgs e)
         {
             if (_vm == null) return;
@@ -129,7 +121,7 @@ namespace KCertManager.Wpf.Views
             TxtSoundVolume.Text = "40%";
             RbThemeDark.IsChecked = true;
             RbModeSimple.IsChecked = true;
-            ChkShowStartupGuide.IsChecked = true;
+            ChkDontShowStartupWorkflowAgain.IsChecked = false;
             _isInitializing = false;
 
             _vm.ShowToast("⚙️ 환경 설정이 기본값으로 초기화되었습니다.");

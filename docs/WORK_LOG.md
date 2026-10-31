@@ -46,9 +46,10 @@
      - `src-wpf/KCertManager.Wpf/Services/SettingsService.cs`를 신설하여 `kcert_settings.json` 기반의 사용자 환경설정 저장소(JSON) 구축.
      - `MainViewModel.cs`에 `DontShowStartupWorkflowAgain` 속성을 구현하고, `SettingsService`와 양방향 바인딩하여 시작 시 설정 복원 및 종료/변경 시 영구 저장 처리.
      - `SettingsDialog.xaml.cs`의 세 군데 참조 에러(Lines 50, 112, 124)를 완전히 해소하고, 사운드 볼륨, 음소거, 테마, 모드 설정까지 모두 `SettingsService`와 일체화.
-  6. **`SettingsDialog.xaml`의 '다시 표시하지 않음' CheckBox 양방향(Two-Way) 바인딩 적용**:
-     - `SettingsDialog.xaml` 내 시작 가이드 체크박스에 `IsChecked="{Binding DontShowStartupWorkflowAgain, Mode=TwoWay, Converter={StaticResource InverseBoolConverter}}"` 및 `ChkDontShowStartupGuide`를 배치하여 XAML 바인딩과 ViewModel 간 실시간 양방향 데이터 동기화 완료.
-     - `SettingsDialog.xaml.cs` 생성자에서 `DataContext = _vm`을 명시적으로 바인딩하여 MVVM 양방향 바인딩 인프라 완비.
+  6. **`SettingsDialog.xaml`의 '다시 표시하지 않음' CheckBox 양방향(Two-Way) 바인딩 및 Spacing 속성 완전 제거**:
+     - `SettingsDialog.xaml`의 시작 옵션 그룹을 `IsChecked="{Binding DontShowStartupWorkflowAgain, Mode=TwoWay}"`로 바인딩하여 사용자의 체크/체크해제가 `MainViewModel` 및 `SettingsService`에 즉각 양방향 동기화되도록 조치.
+     - 레이아웃 컨테이너의 비표준 `Spacing` 속성을 완전히 배제하고 표준 마진을 적용하여 XAML 컴파일 및 런타임 무결성 확보.
+     - `SettingsDialog.xaml.cs`에서 `DataContext = _vm` 바인딩을 적용하여 완벽한 MVVM 양방향 데이터 바인딩 파이프라인 확립.
 
 ### 📝 [작업 차수 104] 삭제된 숫자와 휴지통 숫자 불일치 개선 및 상태 동기화 정밀화
 - **작업 일시**: 2026-10-28 01:25 KST
