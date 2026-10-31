@@ -14,6 +14,7 @@ namespace KCertManager.Wpf.Views
         {
             InitializeComponent();
             _vm = vm;
+            DataContext = _vm;
 
             if (_vm != null)
             {
