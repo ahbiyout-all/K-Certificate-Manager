@@ -50,6 +50,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [soundSettings, setSoundSettingsState] = useState<SoundSettings>(getSoundSettings);
   const [isPlayingTest, setIsPlayingTest] = useState(false);
   const [justSavedNotification, setJustSavedNotification] = useState(false);
+  const volumeDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sync state when modal opens or custom event fires
   useEffect(() => {
@@ -82,8 +83,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const handleVolumeChange = (newVolume: number) => {
-    const updated = saveSoundSettings({ volume: newVolume });
+    const newEnabled = newVolume > 0;
+    const updated = saveSoundSettings({ volume: newVolume, enabled: newEnabled });
     setSoundSettingsState(updated);
+
+    if (volumeDebounceRef.current) {
+      clearTimeout(volumeDebounceRef.current);
+    }
+    volumeDebounceRef.current = setTimeout(() => {
+      if (newVolume > 0) {
+        playTestChime(newVolume);
+      }
+    }, 150);
   };
 
   const handleTestChime = () => {

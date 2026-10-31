@@ -76,6 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const [soundSettings, setSoundSettings] = useState<SoundSettings>(getSoundSettings);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
+  const volumeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const handleSettingsChanged = (e: Event) => {
@@ -102,8 +103,18 @@ export const Header: React.FC<HeaderProps> = ({
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value, 10);
-    const updated = saveSoundSettings({ volume: val, enabled: val > 0 });
+    const newEnabled = val > 0;
+    const updated = saveSoundSettings({ volume: val, enabled: newEnabled });
     setSoundSettings(updated);
+
+    if (volumeDebounceRef.current) {
+      clearTimeout(volumeDebounceRef.current);
+    }
+    volumeDebounceRef.current = setTimeout(() => {
+      if (val > 0) {
+        playTestChime(val);
+      }
+    }, 150);
   };
 
   const handlePreviewChime = () => {
@@ -259,6 +270,7 @@ export const Header: React.FC<HeaderProps> = ({
             step="5"
             value={soundSettings.enabled ? soundSettings.volume : 0}
             onChange={handleVolumeChange}
+            onInput={handleVolumeChange}
             aria-label="성공 알림음 볼륨 가로 슬라이더 바"
             title={`알림음 볼륨: ${soundSettings.enabled ? `${soundSettings.volume}%` : '음소거'}`}
             className="w-16 sm:w-20 md:w-24 h-1.5 bg-slate-300 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"

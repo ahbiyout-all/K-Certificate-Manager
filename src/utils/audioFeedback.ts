@@ -36,7 +36,7 @@ function getAudioContext(): AudioContext | null {
     }
     
     if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
+      audioCtx.resume().catch(() => {});
     }
     
     return audioCtx;
@@ -44,6 +44,18 @@ function getAudioContext(): AudioContext | null {
     console.debug('[AudioFeedback] Web Audio not available or blocked:', e);
     return null;
   }
+}
+
+// Automatically unlock Web Audio API AudioContext on user gesture
+if (typeof window !== 'undefined') {
+  const unlockAudio = () => {
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+  };
+  ['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
+    window.addEventListener(evt, unlockAudio, { capture: true, passive: true });
+  });
 }
 
 /**
@@ -91,53 +103,51 @@ export function saveSoundSettings(partial: Partial<SoundSettings>): SoundSetting
  */
 export function playSuccessChime(options?: SoundOptions): void {
   const settings = getSoundSettings();
-  // If sound is disabled by user or volume is 0, do not play
   if (!settings.enabled || settings.volume <= 0) return;
 
   const ctx = getAudioContext();
   if (!ctx) return;
 
-  try {
-    if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
+  const executePlay = () => {
+    try {
+      const baseRatio = settings.volume / 100;
+      const volumeMultiplier = options?.volume !== undefined ? options.volume / 0.38 : 1.0;
+      const volume = Math.min(Math.max(baseRatio * volumeMultiplier * 0.95, 0), 1);
+      if (volume <= 0) return;
+
+      const now = ctx.currentTime;
+      const notes = [
+        { freq: 622.25, time: now + 0.00, duration: 0.18, gain: 0.25 },
+        { freq: 783.99, time: now + 0.09, duration: 0.22, gain: 0.35 },
+        { freq: 1046.50, time: now + 0.18, duration: 0.45, gain: 0.45 },
+      ];
+
+      notes.forEach(({ freq, time, duration, gain }) => {
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, time);
+
+        gainNode.gain.setValueAtTime(0.001, time);
+        gainNode.gain.exponentialRampToValueAtTime(gain * volume, time + 0.02);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        osc.start(time);
+        osc.stop(time + duration);
+      });
+    } catch (err) {
+      console.debug('[AudioFeedback] Error playing success chime:', err);
     }
+  };
 
-    const baseRatio = settings.volume / 100;
-    const volumeMultiplier = options?.volume !== undefined ? options.volume / 0.38 : 1.0;
-    const volume = Math.min(Math.max(baseRatio * volumeMultiplier * 0.95, 0), 1);
-    if (volume <= 0) return;
-
-    const now = ctx.currentTime;
-
-    // 3 harmonic notes for an uplifting "complete" feel
-    // Eb5 (622.25Hz), G5 (783.99Hz), C6 (1046.50Hz)
-    const notes = [
-      { freq: 622.25, time: now + 0.00, duration: 0.18, gain: 0.25 },
-      { freq: 783.99, time: now + 0.09, duration: 0.22, gain: 0.35 },
-      { freq: 1046.50, time: now + 0.18, duration: 0.45, gain: 0.45 },
-    ];
-
-    notes.forEach(({ freq, time, duration, gain }) => {
-      const osc = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-
-      // Sine wave with soft attack and exponential decay for a clean chime
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, time);
-
-      // Envelope: Instant attack, gentle decay
-      gainNode.gain.setValueAtTime(0.001, time);
-      gainNode.gain.exponentialRampToValueAtTime(gain * volume, time + 0.02);
-      gainNode.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-
-      osc.connect(gainNode);
-      gainNode.connect(ctx.destination);
-
-      osc.start(time);
-      osc.stop(time + duration);
-    });
-  } catch (err) {
-    console.debug('[AudioFeedback] Error playing success chime:', err);
+  if (ctx.state === 'suspended') {
+    ctx.resume().then(executePlay).catch(executePlay);
+  } else {
+    executePlay();
   }
 }
 
@@ -149,45 +159,49 @@ export function playTestChime(testVolumePercent?: number): void {
   const ctx = getAudioContext();
   if (!ctx) return;
 
-  try {
-    if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
+  const executePlay = () => {
+    try {
+      const vol = typeof testVolumePercent === 'number' 
+        ? Math.max(0, Math.min(100, testVolumePercent)) 
+        : getSoundSettings().volume;
+
+      const baseRatio = vol / 100;
+      const volume = Math.min(Math.max(baseRatio * 0.95, 0), 1);
+      if (volume <= 0) return;
+
+      const now = ctx.currentTime;
+      const notes = [
+        { freq: 622.25, time: now + 0.00, duration: 0.18, gain: 0.25 },
+        { freq: 783.99, time: now + 0.09, duration: 0.22, gain: 0.35 },
+        { freq: 1046.50, time: now + 0.18, duration: 0.45, gain: 0.45 },
+      ];
+
+      notes.forEach(({ freq, time, duration, gain }) => {
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, time);
+
+        gainNode.gain.setValueAtTime(0.001, time);
+        gainNode.gain.exponentialRampToValueAtTime(gain * volume, time + 0.02);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        osc.start(time);
+        osc.stop(time + duration);
+      });
+    } catch (err) {
+      console.debug('[AudioFeedback] Error playing test chime:', err);
     }
+  };
 
-    const vol = typeof testVolumePercent === 'number' 
-      ? Math.max(0, Math.min(100, testVolumePercent)) 
-      : getSoundSettings().volume;
-
-    const baseRatio = vol / 100;
-    const volume = Math.min(Math.max(baseRatio * 0.95, 0), 1);
-    if (volume <= 0) return;
-
-    const now = ctx.currentTime;
-    const notes = [
-      { freq: 622.25, time: now + 0.00, duration: 0.18, gain: 0.25 },
-      { freq: 783.99, time: now + 0.09, duration: 0.22, gain: 0.35 },
-      { freq: 1046.50, time: now + 0.18, duration: 0.45, gain: 0.45 },
-    ];
-
-    notes.forEach(({ freq, time, duration, gain }) => {
-      const osc = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, time);
-
-      gainNode.gain.setValueAtTime(0.001, time);
-      gainNode.gain.exponentialRampToValueAtTime(gain * volume, time + 0.02);
-      gainNode.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-
-      osc.connect(gainNode);
-      gainNode.connect(ctx.destination);
-
-      osc.start(time);
-      osc.stop(time + duration);
-    });
-  } catch (err) {
-    console.debug('[AudioFeedback] Error playing test chime:', err);
+  if (ctx.state === 'suspended') {
+    ctx.resume().then(executePlay).catch(executePlay);
+  } else {
+    executePlay();
   }
 }
 
@@ -206,27 +220,36 @@ export function playPingSound(options?: SoundOptions): void {
   const ctx = getAudioContext();
   if (!ctx) return;
 
-  try {
-    const baseRatio = settings.volume / 100;
-    const volume = Math.min(Math.max(baseRatio * (options?.volume ?? 0.25) / 0.25, 0), 1);
-    const now = ctx.currentTime;
+  const executePlay = () => {
+    try {
+      const baseRatio = settings.volume / 100;
+      const volume = Math.min(Math.max(baseRatio * (options?.volume ?? 0.25) / 0.25, 0), 1);
+      const now = ctx.currentTime;
 
-    const osc = ctx.createOscillator();
-    const gainNode = ctx.createGain();
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, now); // A5
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now); // A5
 
-    gainNode.gain.setValueAtTime(0.001, now);
-    gainNode.gain.exponentialRampToValueAtTime(0.3 * volume, now + 0.01);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+      gainNode.gain.setValueAtTime(0.001, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.3 * volume, now + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
 
-    osc.connect(gainNode);
-    gainNode.connect(ctx.destination);
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
 
-    osc.start(now);
-    osc.stop(now + 0.15);
-  } catch (err) {
-    console.debug('[AudioFeedback] Error playing ping sound:', err);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    } catch (err) {
+      console.debug('[AudioFeedback] Error playing ping sound:', err);
+    }
+  };
+
+  if (ctx.state === 'suspended') {
+    ctx.resume().then(executePlay).catch(executePlay);
+  } else {
+    executePlay();
   }
 }
+
