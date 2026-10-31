@@ -64,7 +64,15 @@ namespace KCertManager.Wpf.ViewModels
 
         public MainViewModel()
         {
-            // 앱 시작 시 초기 테마(다크) 리소스 완전 강제 적용 (시작 시 브러시 누락 방지)
+            // SettingsService로부터 저장된 사용자 환경설정(테마, 사운드, 시작가이드, 모드) 복원
+            var settings = SettingsService.Instance.Settings;
+            _currentTheme = settings.Theme ?? "dark";
+            _isSoundEnabled = settings.IsSoundEnabled;
+            _soundVolume = settings.SoundVolume;
+            _isSimpleMode = settings.IsSimpleMode;
+            _dontShowStartupWorkflowAgain = settings.DontShowStartupWorkflowAgain;
+
+            // 앱 시작 시 초기 테마 리소스 완전 강제 적용 (시작 시 브러시 누락 방지)
             ApplyTheme(_currentTheme);
 
             // Commands
@@ -186,6 +194,7 @@ namespace KCertManager.Wpf.ViewModels
             {
                 if (SetProperty(ref _isSimpleMode, value))
                 {
+                    SettingsService.Instance.IsSimpleMode = value;
                     OnPropertyChanged(nameof(IsAdvancedUIMode));
                 }
             }
@@ -265,9 +274,11 @@ namespace KCertManager.Wpf.ViewModels
             {
                 if (SetProperty(ref _soundVolume, value))
                 {
+                    SettingsService.Instance.SoundVolume = value;
                     if (value > 0 && !_isSoundEnabled)
                     {
                         _isSoundEnabled = true;
+                        SettingsService.Instance.IsSoundEnabled = true;
                         OnPropertyChanged(nameof(IsSoundEnabled));
                     }
                     OnPropertyChanged(nameof(SoundVolumeText));
@@ -286,6 +297,7 @@ namespace KCertManager.Wpf.ViewModels
             {
                 if (SetProperty(ref _isSoundEnabled, value))
                 {
+                    SettingsService.Instance.IsSoundEnabled = value;
                     OnPropertyChanged(nameof(SoundVolumeText));
                     OnPropertyChanged(nameof(SoundIcon));
                 }
@@ -296,7 +308,13 @@ namespace KCertManager.Wpf.ViewModels
         public bool DontShowStartupWorkflowAgain
         {
             get => _dontShowStartupWorkflowAgain;
-            set => SetProperty(ref _dontShowStartupWorkflowAgain, value);
+            set
+            {
+                if (SetProperty(ref _dontShowStartupWorkflowAgain, value))
+                {
+                    SettingsService.Instance.DontShowStartupWorkflowAgain = value;
+                }
+            }
         }
 
         public ObservableCollection<DriveItem> AllDrives
@@ -728,6 +746,7 @@ namespace KCertManager.Wpf.ViewModels
             {
                 if (SetProperty(ref _currentTheme, value))
                 {
+                    SettingsService.Instance.Theme = value;
                     ApplyTheme(value);
                     OnPropertyChanged(nameof(IsThemeDark));
                     OnPropertyChanged(nameof(IsThemeGray));
