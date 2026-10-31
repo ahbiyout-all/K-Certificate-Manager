@@ -32,7 +32,8 @@
 | [`AI_INSTRUCTIONS.md`](../AI_INSTRUCTIONS.md) | **AI 개발 행동 강령 & 유지보수 가이드**: 자아검증 수칙, 듀얼 아키텍처, 보안 하드닝, 빌드/배포 자동화 파이프라인 명세 |
 | [`LICENSE.md`](./LICENSE.md) | **소프트웨어 라이선스 & 법적 고지**: 한국어(`LICENSE_KR.txt`)·영어(`LICENSE_EN.txt`) 2종 라이선스 정의, 무상 이용 조건 및 보증 부인 |
 | [`USER_GUIDE.md`](./USER_GUIDE.md) | **사용자 매뉴얼**: 모던 일체형 타이틀바, 4종 테마, 인증서 탐색, USB 백업, USB➔PC 복사, 만료/타인 정리 및 휴지통 가이드 |
-| [`BUILD_GUIDE.md`](./BUILD_GUIDE.md) | **빌드 및 배포 가이드**: .NET 10 / .NET 8 자동 감지 빌드(`build.bat`), Inno Setup 단일 설치파일(`kcert-manager-v1.6.5-setup.exe`), GitHub 업로드(`push_to_github.bat`) 안내 |
+| [`BUILD_GUIDE.md`](./BUILD_GUIDE.md) | **빌드 및 배포 가이드**: .NET 10 / .NET 8 자동 감지 빌드(`build.bat`), Inno Setup 단일 설치파일(`kcert-manager-v1.7.2-setup.exe`), GitHub 업로드(`push_to_github.bat`) 안내 |
+| [`GITHUB_GUIDE.md`](./GITHUB_GUIDE.md) | **GitHub 운영·CI/CD 및 릴리스 배포 가이드**: 저장소 구조, GitHub Actions 매트릭스(`ci.yml`, `build.yml`), v1.7.2 릴리스 배포 파이프라인, 이슈/PR 기여 가이드 |
 | [`AUTO_UPDATE_GUIDE.md`](./AUTO_UPDATE_GUIDE.md) | **자동 업데이트 가이드**: GitHub Releases REST API 기반 실시간 버전 확인, SemVer 비교, 커스텀 업데이트 알림 팝업창(`UpdateNotificationDialog`) 및 릴리스 배포 파이프라인 |
 | [`WPF_NATIVE_GUIDE.md`](./WPF_NATIVE_GUIDE.md) | **C# WPF 데스크톱 개발 가이드**: MVVM 아키텍처, 모던 일체형 타이틀바(`WindowChrome`), 드롭다운 테마 선택기, 4대 테마 시스템 안내 |
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | **시스템 아키텍처**: 인증서 파일 쌍 규격, 경로 매핑, 양방향 전송 파이프라인, 5대 서브시스템 및 7대 보안 하드닝 설계 원칙 |

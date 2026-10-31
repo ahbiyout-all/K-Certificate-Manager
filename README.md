@@ -1,9 +1,9 @@
-# K-Certificate Manager (K-인증서 매니저) v1.7.1
+# K-Certificate Manager (K-인증서 매니저) v1.7.2
 
 <div align="center">
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Version](https://img.shields.io/badge/Version-v1.7.1-green.svg)
+![Version](https://img.shields.io/badge/Version-v1.7.2-green.svg)
 ![React](https://img.shields.io/badge/React-19.0-61dafb.svg)
 ![Vite](https://img.shields.io/badge/Vite-6.2-646cff.svg)
 ![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512bd4.svg)
@@ -17,19 +17,19 @@
 
 ---
 
-## 🚀 최신 릴리스 정보 (Latest Release: v1.7.1)
+## 🚀 최신 릴리스 정보 (Latest Release: v1.7.2)
 
-> **버전**: `v1.7.1` (최신 안정화 빌드)  
-> **출시일**: 2026-10-28  
-> **상세 변경 내역**: [docs/PATCHNOTES.md](./docs/PATCHNOTES.md)
+> **버전**: `v1.7.2` (최신 안정화 빌드)  
+> **출시일**: 2026-10-31  
+> **상세 변경 내역**: [docs/PATCHNOTES.md](./docs/PATCHNOTES.md) • [GitHub 배포 가이드](./docs/GITHUB_GUIDE.md)
 
-### 🌟 v1.7.1 핵심 업데이트 내용
-- **만료 인증서 정리 시 삭제 수량과 안전 격리 휴지통 수량 100% 동기화**: 동일 디렉터리 공유 및 비표준 경로 인증서 일괄 정리 시 매니페스트(`trash_manifest.json`) 누락을 차단하여 삭제 수량과 휴지통 보관 수량이 1:1로 완벽 일치되도록 고도화
-- **휴지통 매니페스트 메타데이터 완벽 복원**: 격리 보관소 열람 시 발급기관명(금융결제원, 행정안전부 등), 인증서 분류(NPKI/GPKI/EPKI), 만료일자가 "알 수 없음" 표기 없이 선명하게 출력
-- **인증서 복사·백업 성공 알림음(SuccessChime) ON/OFF 및 볼륨 조절 기능**: 환경 설정 모달(`SettingsModal`)에 복사 완료 알림음 스위치(ON/OFF), 0%~100% 범위 슬라이더, 볼륨 프리셋 버튼(음소거/25%/50%/80%/100%), 소리 미리듣기 테스트 연동
-- **인증서 보관함 세로 구분선(Vertical Grid Lines) 전면 도입**: 데이터 셀 간 선명한 세로선 및 상단 툴바 좌우 여백 밀도 조절 컨트롤(좁게/보통/넓게) 구축
-- **인증서 명칭·저장 경로 및 상태 컬럼 최소 폭 자유 조절(30px)**: 마우스 드래그로 원하는 만큼 축소 가능한 30px 최소 폭 적용 및 대한민국 5대 공인/정부 CA 공식 기관명 완벽 매핑
-- **보안 삭제 증적 로그 (Secure Deletion Audit Records) 감사 시스템 구축**: 영구 삭제된 인증서의 SubjectDN, 원본 디렉터리 경로, 파일 목록 및 SHA-256 전자포렌식 감사 증적을 독립 구조체로 영구 보존 및 클립보드 복사 지원
+### 🌟 v1.7.2 핵심 업데이트 내용
+- **상단 헤더 가로 볼륨 슬라이더 바 (Horizontal Sound Slider Bar) 상시 탑재**: 메인 상단 헤더 중앙에 원클릭 음소거/스피커 토글, 0%~100% 범위 슬라이더, 볼륨 수치(40% / OFF), 알림음 미리듣기(▶) 버튼을 일체형으로 배치하여 작업 중 언제든 즉각 음량 제어
+- **눈에 잘 띄는 [⚙️ 환경 설정] 버튼 상시 노출**: 가로 슬라이더 바 바로 옆에 시인성이 뛰어난 환경 설정 버튼을 영구 배치하여 설정 창 접근 편의성 극대화
+- **Windows C# WPF 데스크톱 전용 `SettingsDialog.xaml` 신설**: 알림음 ON/OFF, 가로 슬라이더 바, 효과음 미리듣기, 4대 테마(다크/회색/화이트/베이지) 선택, 간편/상세 모드 전환, 시작 가이드 옵션 대화상자 탑재
+- **로컬 환경 설정 영구 저장 서비스 (`SettingsService.cs`) 구축**: `%LocalAppData%\KCertManager\kcert_settings.json`을 통해 사용자 개인 환경설정 영구 보존
+- **'다시 표시하지 않음' CheckBox Two-Way 양방향 바인딩 및 CI 빌드 안정화**: `SettingsDialog.xaml`의 체크박스를 `MainViewModel.DontShowStartupWorkflowAgain`에 `Mode=TwoWay`로 양방향 바인딩하여 설정 상태 실시간 반영 및 XAML 비표준 `Spacing` 속성 완전 제거로 CI 컴파일 무결성 확보
+- **만료 인증서 안전 정리 시 삭제 수량과 안전 격리 휴지통 수량 100% 동기화 (v1.7.1 계승)**: PC 로컬 및 USB 메모리에서 만료 인증서 일괄 정리 시 삭제 수량과 휴지통 보관 수량이 오차 없이 1:1로 일치하며 발급기관명과 유효기간 메타데이터 완벽 복원
 - **GitHub Actions Node.js 24 Next-Gen / Node.js 22 LTS 전환**: Node.js 20 Deprecated & EOL 대응 완료 및 CI/CD 워크플로 현대화
 
 ---

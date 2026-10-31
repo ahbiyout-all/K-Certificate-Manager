@@ -17,6 +17,30 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 108] GitHub 공식 가이드 문서 신설 및 릴리스 배포 파이프라인 동기화
+- **작업 일시**: 2026-10-31 11:50 KST
+- **요청 사항**: "문서폴더에 깃허브문서 업데이트"
+- **배경 및 원인 분석**:
+  1. 프로젝트 버전이 v1.7.2로 상향됨에 따라 GitHub 저장소 메인 README, GitHub Actions CI/CD 워크플로, 인스톨러 배포 파이프라인의 변경 내역을 총괄 안내하는 전용 GitHub 문서 체계가 요구됨.
+  2. 기존에는 빌드 가이드(`BUILD_GUIDE.md`)와 자동 업데이트 가이드(`AUTO_UPDATE_GUIDE.md`)에 분산되어 있던 GitHub Actions 매트릭스, 3-Tier API 실시간 업데이트, Inno Setup Release 배포 파이프라인, 브랜치/태깅 전략 및 이슈/PR 기여 정책을 통합한 단일 공식 가이드 필요.
+- **수행 내용**:
+  1. **GitHub 종합 운영 가이드 신설 (`docs/GITHUB_GUIDE.md`)**:
+     - 공식 저장소 정보, 소유자 및 라이선스 정책 명시.
+     - `main`/`develop`/`feature/*` 브랜치 전략 및 SemVer 2.0.0 (`v1.7.2`) Git 태그 규칙 명세.
+     - GitHub Actions 워크플로 2종 (`ci.yml`: Node.js 22 LTS/24 매트릭스, `build.yml`: Windows C# WPF + Inno Setup 정식 인스톨러 컴파일 및 softprops/action-gh-release 릴리스 배포) 아키텍처 상세 정리.
+     - v1.7.2 릴리스 배포 자산(`kcert-manager-v1.7.2-setup.exe`) 및 주요 기능 하이라이트 정리.
+     - GitHub REST API 기반 3계층(3-Tier: releases/latest -> releases -> tags) 실시간 자동 업데이트 엔진 구조도 수록.
+     - `.gitignore`를 통한 인증서 개인키(`*.key`, `*.pri`), 공개키(`*.der`), 감사 로그, 100MB 초과 빌드 바이너리 Git 추적 원천 차단 보안 정책 명시.
+     - GitHub Issues 및 Pull Request 기여 가이드라인 수록.
+  2. **GitHub 저장소 메인 표지 (`/README.md`) v1.7.2 동기화**:
+     - 상단 타이틀, 버전 배지, 릴리스 정보, 출시일(2026-10-31), 핵심 업데이트 요약 갱신.
+  3. **문서 인덱스 (`docs/README.md`) 업데이트**:
+     - `/docs` 파일 명세 표에 `GITHUB_GUIDE.md` 공식 등록 및 Inno Setup 설치파일 명칭을 `kcert-manager-v1.7.2-setup.exe`로 동기화.
+  4. **GitHub Actions 릴리스 배포 본문 (`/.github/workflows/build.yml`) 최신화**:
+     - 릴리스 생성 시 배포되는 릴리스 노트 요약을 v1.7.2 신규 기능(헤더 가로 볼륨 슬라이더, ⚙️ 환경 설정 버튼, WPF SettingsDialog, SettingsService 로컬 영구저장, Two-Way 바인딩, CI 빌드 안정화)으로 갱신.
+  5. **빌드 가이드 및 자동 업데이트 가이드 동기화 (`docs/BUILD_GUIDE.md`, `docs/AUTO_UPDATE_GUIDE.md`)**:
+     - 잔여 구버전 참조를 `v1.7.2`로 일괄 정밀 동기화.
+
 ### 📝 [작업 차수 107] 상단 헤더 가로 슬라이더 바 구축 및 환경 설정(⚙️) 모달 접근성 직관화
 - **작업 일시**: 2026-10-29 01:30 KST
 - **요청 사항**: "⚙️ [환경 설정] 모달이 없음. 상단헤더에 가로 슬라이더 바 생성."
