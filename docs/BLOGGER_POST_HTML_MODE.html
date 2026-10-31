@@ -1,6 +1,6 @@
 <!--
   ==============================================================================
-  K-인증서 매니저 (K-Certificate Manager) v1.7.1 구글 블로거 전용 HTML 배포 코드
+  K-인증서 매니저 (K-Certificate Manager) v1.7.2 구글 블로거 전용 HTML 배포 코드
   [사용법]:
     1. 구글 블로거(Blogger) 글쓰기 화면으로 이동합니다.
     2. 에디터 좌측 상단의 연필/HTML 아이콘을 클릭하여 [HTML 보기]로 전환합니다.
@@ -9,147 +9,86 @@
   ==============================================================================
 -->
 
-<div style="font-family: 'Pretendard', 'Malgun Gothic', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.8; color: #1e293b; max-width: 860px; margin: 0 auto; padding: 12px 10px;">
+<!-- K-Certificate Manager v1.7.2 Google Blogger Post Body Start -->
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif; line-height: 1.7; color: #334155; max-width: 820px; margin: 0 auto; padding: 10px;">
 
-  <!-- Hero Header Banner -->
-  <div style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0284c7 100%); padding: 36px 26px; border-radius: 16px; text-align: center; color: #ffffff; box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.35); margin-bottom: 28px;">
-    <div style="display: inline-block; background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.45); padding: 5px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #7dd3fc; margin-bottom: 14px; letter-spacing: 0.5px;">
-      공식 정식 배포 릴리스 · v1.7.1
+  <!-- Hero Header Card -->
+  <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 14px; padding: 32px 26px; color: #ffffff; margin-bottom: 24px; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.3); border: 1px solid #334155; text-align: center;">
+    <div style="display: inline-block; background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; color: #60a5fa; font-size: 12px; font-weight: bold; padding: 4px 12px; border-radius: 20px; margin-bottom: 14px; letter-spacing: 0.5px;">
+      공식 정식 배포 릴리스 · v1.7.2
     </div>
-    <h1 style="font-size: 26px; font-weight: 800; margin: 0 0 12px 0; line-height: 1.4; color: #ffffff; word-break: keep-all;">
-      🛡️ K-인증서 매니저 (K-Certificate Manager) v1.7.1
+    <h1 style="color: #ffffff; font-size: 26px; font-weight: 800; margin: 0 0 10px 0; letter-spacing: -0.5px; line-height: 1.3;">
+      🛡️ K-인증서 매니저 (K-Certificate Manager) v1.7.2
     </h1>
-    <p style="font-size: 15.5px; margin: 0; color: #cbd5e1; font-weight: 400; word-break: keep-all;">
-      만료 인증서 정리-휴지통 수량 100% 동기화 개선 &amp; 성공 알림음 볼륨 조절 업데이트
-    </p>
+    <div style="color: #94a3b8; font-size: 14.5px; max-width: 650px; margin: 0 auto 18px auto;">
+      상단 헤더 가로 볼륨 슬라이더 바 &amp; ⚙️ 환경 설정 모달 신설, C# WPF Two-Way 바인딩 최적화 릴리스
+    </div>
+    <div style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
+      <span style="background: rgba(255, 255, 255, 0.1); padding: 5px 12px; border-radius: 6px; font-size: 12px; color: #e2e8f0;">⚡ 상단 헤더 볼륨 슬라이더</span>
+      <span style="background: rgba(255, 255, 255, 0.1); padding: 5px 12px; border-radius: 6px; font-size: 12px; color: #e2e8f0;">⚙️ WPF SettingsDialog 신설</span>
+      <span style="background: rgba(255, 255, 255, 0.1); padding: 5px 12px; border-radius: 6px; font-size: 12px; color: #e2e8f0;">💾 SettingsService 로컬 영구저장</span>
+      <span style="background: rgba(255, 255, 255, 0.1); padding: 5px 12px; border-radius: 6px; font-size: 12px; color: #e2e8f0;">🔒 휴지통 100% 동기화</span>
+    </div>
   </div>
 
-  <!-- Intro Callout Box -->
-  <div style="background: #f8fafc; border-left: 5px solid #2563eb; padding: 20px 22px; border-radius: 0 12px 12px 0; margin-bottom: 26px; font-size: 15px; color: #334155; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
-    대한민국 공무원·교직원 행정전자서명 인증서(<strong>GPKI, EPKI</strong>)와 금융 공동인증서(<strong>NPKI</strong>)를 안전하게 관리하는 오픈소스 데스크톱 보안 유틸리티 <strong>'K-인증서 매니저 v1.7.1'</strong> 정식 버전이 출시되었습니다.<br/><br/>
-    이번 v1.7.1 버전에서는 만료 인증서 일괄 정리 시 <strong>삭제된 인증서 수량(예: 22건)과 안전 격리 휴지통 수량이 정확히 1:1로 일치</strong>하도록 동기화 매니페스트 엔진을 전면 고도화하였으며, 휴지통 보관 시 발급기관명과 유효기간이 완벽하게 보존됩니다. 또한 <strong>성공 알림음(SuccessChime) ON/OFF 및 볼륨 조절 슬라이더</strong>, <strong>인증서 목록 세로 구분선 및 여백 밀도 컨트롤</strong>이 추가되었습니다.
+  <!-- Intro Text -->
+  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px; margin-bottom: 24px; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+    대한민국 공무원·교직원 행정전자서명 인증서(<strong>GPKI, EPKI</strong>)와 금융 공동인증서(<strong>NPKI</strong>)를 안전하게 관리하는 오픈소스 데스크톱 보안 유틸리티 <strong>'K-인증서 매니저 v1.7.2'</strong> 정식 버전이 출시되었습니다.<br/><br/>
+    이번 v1.7.2 릴리스에서는 <strong>상단 헤더 툴바에 가로 볼륨 조절 슬라이더 바를 직접 탑재</strong>하고, <strong>돋보이는 ⚙️ [환경 설정] 버튼을 상시 노출</strong>하여 작업 중 언제든 1-클릭으로 효과음을 제어하고 환경 설정 창을 호출할 수 있습니다. 또한 Windows C# WPF 데스크톱에 전용 <code>SettingsDialog.xaml</code>과 <code>SettingsService.cs</code> 영구 저장소가 구축되어 설정 상태가 완벽하게 유지됩니다.
   </div>
 
-  <!-- Key Updates Section -->
-  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 24px; margin-bottom: 26px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-    <h3 style="font-size: 18px; font-weight: bold; color: #0f172a; margin-top: 0; margin-bottom: 16px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
-      ✨ v1.7.1 핵심 신규 기능 및 주요 개선
+  <!-- Feature List -->
+  <div style="background: #f8fafc; border-left: 4px solid #2563eb; border-radius: 0 12px 12px 0; padding: 22px; margin-bottom: 24px;">
+    <h3 style="color: #0f172a; font-size: 18px; font-weight: 700; margin-top: 0; margin-bottom: 14px;">
+      ✨ v1.7.2 핵심 신규 기능 및 주요 개선
     </h3>
-    <ul style="padding-left: 20px; margin: 0; font-size: 14.5px; color: #334155; line-height: 1.85;">
-      <li style="margin-bottom: 10px;">
-        <strong>🗑️ 만료 인증서 안전 정리 시 삭제 수량과 안전 격리 휴지통 수량 100% 동기화</strong><br/>
-        22개 만료 인증서 정리 시 휴지통에도 정확히 22개가 1:1로 격리 보관되도록 매니페스트(<code>trash_manifest.json</code>) 생성 엔진을 개선하여 수량 불일치 현상을 완전히 해결했습니다.
-      </li>
-      <li style="margin-bottom: 10px;">
-        <strong>🏷️ 휴지통 매니페스트 메타데이터 완벽 복원 및 표시</strong><br/>
-        격리 보관소 열람 시 발급기관명(금융결제원, 행정안전부, 교육부 등), 인증서 분류, 만료일자가 원본 그대로 선명하게 출력되어 "알 수 없음" 표기 없이 상세 규격을 확인할 수 있습니다.
-      </li>
-      <li style="margin-bottom: 10px;">
-        <strong>🔔 성공 알림음(SuccessChime) ON/OFF 및 볼륨 조절 슬라이더</strong><br/>
-        환경 설정 모달(<code>SettingsModal</code>)에서 알림음 토글 스위치, 0%~100% 볼륨 슬라이더, 5종 음량 프리셋, 미리듣기 테스트를 지원하여 사무실이나 정숙한 환경에서도 편리하게 이용할 수 있습니다.
-      </li>
-      <li style="margin-bottom: 10px;">
-        <strong>📏 인증서 보관함 세로 구분선 및 여백 밀도 조절</strong><br/>
-        데이터 셀 간 세로선(<code>border-r</code>) 적용 및 [좌우 여백: 좁게 | 보통 | 넓게] 3단계 프리셋을 제공하여 대량의 인증서를 가독성 높게 열람할 수 있습니다.
-      </li>
-      <li style="margin-bottom: 10px;">
-        <strong>🔍 인증서 명칭·경로·상태 컬럼 최소 폭(30px) 자유 조절 및 공식 기관명 표기</strong><br/>
-        유연한 마우스 드래그 리사이징을 지원하여 최소 30px까지 자유롭게 폭을 줄일 수 있으며, 대한민국 주요 CA 공식 명칭 뱃지를 연동했습니다.
-      </li>
-      <li style="margin-bottom: 10px;">
-        <strong>🛡️ 보안 영구 삭제 증적 감사 로그 (SubjectDN 포렌식) 시스템 연동</strong><br/>
-        삭제 대상 인증서의 고유 식별자(SubjectDN), 원본 경로, SHA-256 전자지문을 영구 보존하고 1-클릭 클립보드 복사 및 감사 보고서(<code>.log</code>)로 내보낼 수 있습니다.
-      </li>
-      <li>
-        <strong>🚀 GitHub Actions 워크플로 Node.js 24 Next-Gen / Node.js 22 LTS 전환</strong><br/>
-        GitHub Actions 클라우드 러너의 Node.js 20 Deprecated &amp; EOL 공식 대응을 완료하여 안정적인 빌드 환경을 구축했습니다.
-      </li>
+    <ul style="padding-left: 20px; margin: 0; color: #334155; font-size: 14px;">
+      <li style="margin-bottom: 10px;"><strong>🎚️ 상단 헤더 가로 볼륨 슬라이더 바 상시 탑재</strong>: 헤더 중앙에 원클릭 음소거/스피커 토글, 0%~100% 범위 슬라이더, 볼륨 수치(40%/OFF) 및 미리듣기(▶) 버튼 배치.</li>
+      <li style="margin-bottom: 10px;"><strong>⚙️ 눈에 잘 띄는 [환경 설정] 버튼 상단 헤더 상시 노출</strong>: 가로 슬라이더 바로 옆에 돋보이는 ⚙️ 환경 설정 버튼을 영구 배치하여 설정 접근성 극대화.</li>
+      <li style="margin-bottom: 10px;"><strong>🖥️ C# WPF 데스크톱 전용 SettingsDialog 신설</strong>: 알림음 제어, 🎵 효과음 미리듣기, 4대 테마 선택, 간편/상세 모드 전환, 시작 가이드 옵션 대화상자 탑재.</li>
+      <li style="margin-bottom: 10px;"><strong>💾 SettingsService 로컬 영구 저장소 연동</strong>: <code>%LocalAppData%\KCertManager\kcert_settings.json</code>을 통해 사용자 개인 환경설정 영구 보존.</li>
+      <li style="margin-bottom: 10px;"><strong>🔗 '다시 표시하지 않음' Two-Way 바인딩 확립</strong>: 체크박스 조작 시 ViewModel 및 설정 파일에 즉시 양방향 반영, XAML Spacing 제거로 CI 빌드 오류 원천 차단.</li>
+      <li style="margin-bottom: 0;"><strong>🗑️ 만료 인증서 정리-안전 격리 휴지통 수량 1:1 완벽 일치 (v1.7.1 계승)</strong>: 22건 일괄 정리 시 휴지통에도 정확히 22건 격리 보관되며 발급기관명/유효기간 메타데이터 보존.</li>
     </ul>
   </div>
 
-  <!-- App Screenshot Guide Section -->
-  <div style="background: #f1f5f9; border-radius: 14px; padding: 22px; margin-bottom: 26px; text-align: center;">
-    <h4 style="font-size: 16px; font-weight: bold; color: #1e293b; margin: 0 0 12px 0;">
-      📸 K-인증서 매니저 v1.7.1 메인 대시보드 및 만료 정리 뷰
-    </h4>
-    <div style="border: 2px dashed #94a3b8; border-radius: 10px; padding: 36px 16px; background: #ffffff; color: #64748b; font-size: 14px;">
-      [구글 블로거 글쓰기 편집기에서 <strong>'이미지 삽입'</strong> 기능을 이용해 프로그램 스크린샷 이미지를 이곳에 등록하세요]
-      <div style="font-weight: bold; margin-top: 8px; color: #0284c7;">
-        🗑️ 만료 인증서 안전 정리 · 안전 격리 휴지통 수량 100% 일치 동기화 인터페이스
-      </div>
+  <!-- Download Action Banner -->
+  <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 22px; margin-bottom: 24px; text-align: center;">
+    <div style="font-size: 18px; font-weight: 800; color: #166534; margin-bottom: 8px;">
+      📥 K-인증서 매니저 v1.7.2 정식 설치파일 다운로드
     </div>
-  </div>
-
-  <!-- Download Section -->
-  <div style="background: linear-gradient(to right, #ecfdf5, #f0fdf4); border: 1px solid #a7f3d0; border-radius: 14px; padding: 24px; margin-bottom: 26px; text-align: center;">
-    <h3 style="font-size: 18px; font-weight: bold; color: #065f46; margin-top: 0; margin-bottom: 12px;">
-      📥 공식 단일 설치파일 (Setup.exe) 다운로드
-    </h3>
-    <p style="font-size: 14px; color: #047857; margin-bottom: 18px;">
-      방화벽 인바운드 규칙 자동 등록, 바탕화면/시작메뉴 바로가기 지원 정식 Inno Setup 인스톨러 배포본
-    </p>
-    <a href="https://github.com/AhBiYout-all/K-Certificate-Manager/releases/tag/v1.7.1" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #059669; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; font-size: 15px; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35); transition: background 0.2s;">
-      📥 kcert-manager-v1.7.1-setup.exe 다운로드 (GitHub)
+    <div style="font-size: 13.5px; color: #15803d; margin-bottom: 16px;">
+      Inno Setup 무인·슬림 단일 설치파일 (Windows 10 / 11 64-bit 지원)
+    </div>
+    <a href="https://github.com/AhBiYout-all/K-Certificate-Manager/releases/tag/v1.7.2" target="_blank" style="display: inline-block; background: #059669; color: #ffffff; text-decoration: none; padding: 13px 26px; border-radius: 8px; font-weight: bold; font-size: 15px; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);">
+      📥 kcert-manager-v1.7.2-setup.exe 다운로드 (GitHub)
     </a>
   </div>
 
-  <!-- Version & Requirements Table -->
-  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 22px; margin-bottom: 26px;">
-    <h3 style="font-size: 17px; font-weight: bold; color: #0f172a; margin-top: 0; margin-bottom: 14px;">
-      ⚙️ 버전 정보 및 시스템 요구 사항
+  <!-- Software Info Table -->
+  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px; margin-bottom: 24px;">
+    <h3 style="color: #0f172a; font-size: 16px; font-weight: 700; margin-top: 0; margin-bottom: 12px;">
+      📋 소프트웨어 명세
     </h3>
-    <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
-      <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 9px 0; font-weight: bold; color: #64748b; width: 140px;">소프트웨어 버전</td><td style="color: #1e293b; font-weight: bold;">v1.7.1 (Semantic Versioning 2.0.0)</td></tr>
-      <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 9px 0; font-weight: bold; color: #64748b;">릴리스 일자</td><td style="color: #1e293b;">2026년 10월 28일</td></tr>
-      <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 9px 0; font-weight: bold; color: #64748b;">지원 운영체제</td><td style="color: #1e293b;">Microsoft Windows 10 (1809+) / Windows 11 (x64 / ARM64)</td></tr>
-      <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 9px 0; font-weight: bold; color: #64748b;">런타임 환경</td><td style="color: #1e293b;">단일 설치 인스톨러 자체 내장 (별도 런타임 설치 불필요)</td></tr>
-      <tr><td style="padding: 9px 0; font-weight: bold; color: #64748b;">소프트웨어 라이선스</td><td style="color: #1e293b;">Free Use / MIT License (개인·기업·공공기관 100% 무료)</td></tr>
+    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+      <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #64748b; width: 140px;">소프트웨어 버전</td><td style="color: #1e293b; font-weight: bold;">v1.7.2 (Semantic Versioning 2.0.0)</td></tr>
+      <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #64748b;">개발자</td><td style="color: #1e293b;">AhBiYout (<a href="https://github.com/AhBiYout-all" target="_blank" style="color: #2563eb; text-decoration: none;">GitHub @AhBiYout-all</a>)</td></tr>
+      <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #64748b;">공식 블로그</td><td style="color: #1e293b;"><a href="https://ahbiyoutvibe.blogspot.com/" target="_blank" style="color: #2563eb; text-decoration: none;">https://ahbiyoutvibe.blogspot.com/</a></td></tr>
+      <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #64748b;">공식 홈페이지</td><td style="color: #1e293b;"><a href="https://www.cisnet.co.kr/" target="_blank" style="color: #2563eb; text-decoration: none;">https://www.cisnet.co.kr/</a> ((주)씨아이에스넷 CISNet)</td></tr>
+      <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #64748b;">라이선스</td><td style="color: #1e293b;">Free Use / MIT License (한국어·영어 2종 라이선스 공식 채택)</td></tr>
+      <tr><td style="padding: 8px 0; font-weight: bold; color: #64748b;">지원 운영체제</td><td style="color: #1e293b;">Microsoft Windows 10 / 11 (64-bit)</td></tr>
     </table>
   </div>
 
-  <!-- Author & Official Channels -->
-  <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 14px; padding: 20px 22px; margin-bottom: 26px; font-size: 14px;">
-    <h4 style="font-size: 15px; font-weight: bold; color: #0f172a; margin: 0 0 10px 0;">
-      👨‍💻 제작자 및 공식 채널
-    </h4>
-    <ul style="margin: 0; padding-left: 20px; line-height: 1.85; color: #475569;">
-      <li><strong>제작자</strong>: AhBiYout</li>
-      <li><strong>공식 블로그</strong>: <a href="https://ahbiyoutvibe.blogspot.com/" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: none; font-weight: 500;">https://ahbiyoutvibe.blogspot.com/</a></li>
-      <li><strong>공식 홈페이지</strong>: <a href="http://www.cisnet.co.kr/" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: none; font-weight: 500;">http://www.cisnet.co.kr/</a> ((주)씨아이에스넷 CISNet)</li>
-      <li><strong>GitHub 저장소</strong>: <a href="https://github.com/AhBiYout-all/K-Certificate-Manager" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: none; font-weight: 500;">https://github.com/AhBiYout-all/K-Certificate-Manager</a></li>
-    </ul>
-  </div>
-
-  <!-- Full Release History Box -->
-  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 22px; margin-bottom: 26px;">
-    <h3 style="font-size: 17px; font-weight: bold; color: #0f172a; margin-top: 0; margin-bottom: 12px;">
-      📜 전체 업데이트 (v1.0.0 ~ v1.7.1 기능 개선 히스토리)
-    </h3>
-    <div style="font-size: 13.5px; color: #475569; line-height: 1.75; max-height: 280px; overflow-y: auto; padding-right: 8px;">
-      <div style="margin-bottom: 10px;"><strong>v1.7.1 (2026-10-28)</strong>: 만료 인증서 정리-안전 격리 휴지통 수량 100% 동기화 개선, 휴지통 매니페스트 메타데이터 보존, GitHub Actions Node.js 24/22 LTS 런타임 전환.</div>
-      <div style="margin-bottom: 10px;"><strong>v1.7.0 (2026-10-27)</strong>: 보안 영구 삭제 증적 감사 로그(SubjectDN 포렌식), AppActivityLogModal 증적 전용 탭/검색, 성공 알림음 ON/OFF 및 볼륨 조절 슬라이더, 목록 세로 구분선 및 여백 밀도 조절, 컬럼 최소 폭 30px 자유 조절.</div>
-      <div style="margin-bottom: 10px;"><strong>v1.6.5 (2026-10-25)</strong>: 최좌측 1번 인덱스(1, 2, 3...) 시작 일원화, DataGrid 최좌측 고정열(Frozen/Sticky) 보장, 작업 감사 로그 1번 인덱스 열 신설 및 동적 재색인.</div>
-      <div style="margin-bottom: 10px;"><strong>v1.6.4 (2026-10-24)</strong>: 타이틀바 창 제어 버튼 상시 노출 독립 Auto 컬럼 격리, 보관함 DataGrid 확정 폭 및 물리 스크롤바 유지.</div>
-      <div style="margin-bottom: 10px;"><strong>v1.6.3 (2026-10-23)</strong>: 상세 사이드바 닫힘 시 DataGrid 자동 가로 반응형 확장, PC ➔ USB 복사하기 전용 대화상자(820x640) 개편.</div>
-      <div style="margin-bottom: 10px;"><strong>v1.6.2 (2026-10-22)</strong>: 작업 감사 로그(Activity Log) 전용 팝업 대화상자 신설, 백업/복원/삭제 전체 세부 이력 및 .log 내보내기 구축.</div>
-      <div style="margin-bottom: 10px;"><strong>v1.6.1 (2026-10-21)</strong>: 인스톨러 방화벽 인바운드 규칙 4종 자동 등록 및 삭제 시 완전 제거, 윈도우 알림 배너 차단 방지 가이드 연동.</div>
-      <div style="margin-bottom: 10px;"><strong>v1.6.0 (2026-10-20)</strong>: GitHub Releases REST API 기반 3계층(3-Tier) 실시간 자동 업데이트 감지 및 전용 알림창 구축.</div>
-      <div style="margin-bottom: 10px;"><strong>v1.5.0 (2026-10-18)</strong>: 100% C# 순수 창작 코어 라이브러리(KCert.Core.dll) 전환, ASN.1 바이너리 파서, 무결성 SHA-256 검증기.</div>
-      <div style="margin-bottom: 10px;"><strong>v1.4.0 (2026-10-15)</strong>: 4대 테마 시스템(스마트 다크, 클래식 라이트, 포레스트 에메랄드, 딥 오션 네이비), 일체형 커스텀 윈도우 크롬 적용.</div>
-      <div style="margin-bottom: 10px;"><strong>v1.3.0 (2026-10-12)</strong>: USB ➔ PC 역방향 가져오기 마법사, 중복 인증서 덮어쓰기 방지 스마트 가드 탑재.</div>
-      <div style="margin-bottom: 10px;"><strong>v1.2.0 (2026-10-10)</strong>: 만료/타인 인증서 안전 격리 휴지통 시스템, 1-클릭 원위치 복원 및 영구 파쇄 기능 신설.</div>
-      <div style="margin-bottom: 10px;"><strong>v1.1.0 (2026-10-08)</strong>: 대한민국 6대 발급기관 OID 역해석 엔진 탑재.</div>
-      <div><strong>v1.0.0 (2026-10-05)</strong>: GPKI/EPKI/NPKI 인증서 자동 탐색 및 이동식 디스크(USB) 1-클릭 백업 최초 정식 릴리스.</div>
+  <!-- Footer History Summary -->
+  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 22px; font-size: 12.5px; color: #64748b;">
+    <div style="font-weight: bold; color: #334155; margin-bottom: 8px;">
+      📜 최근 릴리스 히스토리 (v1.7.0 ~ v1.7.2)
     </div>
-  </div>
-
-  <!-- Recommended Tags Banner -->
-  <div style="background: #f1f5f9; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #64748b; line-height: 1.6;">
-    <strong style="color: #334155;">🏷️ 추천 태그 (Blogger 라벨 입력란에 붙여넣기):</strong><br/>
-    <code style="background: #e2e8f0; padding: 3px 6px; border-radius: 4px; color: #0f172a; font-family: monospace; display: inline-block; margin-top: 4px;">
-      인증서관리,인증서복사,공동인증서,GPKI,NPKI,인증서백업,만료인증서정리,휴지통동기화,알림음설정,C#WPF,윈도우앱,KCertManager,Certificate,Backup,TrashVault,VolumeControl,Node24,Windows11,OpenSource
-    </code>
+    <div style="margin-bottom: 6px;"><strong>v1.7.2 (2026-10-31)</strong>: 상단 헤더 가로 볼륨 슬라이더 바 &amp; ⚙️ 환경 설정 버튼 상시 노출, C# WPF SettingsDialog 신설, SettingsService 영구 저장소 연동, Two-Way 바인딩 및 CI 빌드 완전 안정화.</div>
+    <div style="margin-bottom: 6px;"><strong>v1.7.1 (2026-10-28)</strong>: 만료 인증서 정리-휴지통 수량 100% 동기화 개선, 휴지통 매니페스트 메타데이터 보존, GitHub Actions Node.js 24/22 LTS 런타임 전환.</div>
+    <div><strong>v1.7.0 (2026-10-27)</strong>: 보안 영구 삭제 증적 감사 로그(SubjectDN 포렌식), 알림음 제어 및 슬라이더, 컬럼 최소 폭 30px 자유 조절, 목록 세로 구분선 및 여백 밀도 조절.</div>
   </div>
 
 </div>
-<!-- K-Certificate Manager v1.7.1 Google Blogger Post Body End -->
+<!-- K-Certificate Manager v1.7.2 Google Blogger Post Body End -->

@@ -12,8 +12,8 @@ namespace KCertManager.Wpf.Services
     public class AppUpdateInfo
     {
         public bool HasUpdate { get; set; }
-        public string CurrentVersion { get; set; } = "1.7.1";
-        public string LatestVersion { get; set; } = "1.7.1";
+        public string CurrentVersion { get; set; } = "1.7.2";
+        public string LatestVersion { get; set; } = "1.7.2";
         public string ReleaseName { get; set; } = string.Empty;
         public string ReleaseNotes { get; set; } = string.Empty;
         public string ReleaseUrl { get; set; } = "https://github.com/AhBiYout-all/K-Certificate-Manager/releases";

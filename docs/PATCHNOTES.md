@@ -14,6 +14,29 @@
 
 ---
 
+### 🚀 [v1.7.2] - 2026-10-31
+**변경 구분**: `PATCH` (상단 헤더 가로 볼륨 슬라이더 바 & ⚙️ 환경 설정 모달 접근성 직관화, WPF 전용 SettingsDialog 신설 및 SettingsService 영구 설정 연동, '다시 표시하지 않음' Two-Way 바인딩 확립)
+#### ✨ 주요 개선 및 신규 기능 (Improvements & Features)
+- **상단 헤더 가로 볼륨 슬라이더 바(Horizontal Sound Slider Bar) 직접 구축 (Web & WPF)**:
+  - **사용자 요청 사항**: "상단헤더에 가로 슬라이더 바 생성. ⚙️ [환경 설정] 모달이 없음."
+  - **Web 헤더 툴바 (`src/components/Header.tsx`)**:
+    - 상단 헤더 중앙에 `[🔊/🔇 원클릭 음소거 토글]` + `알림음:` 라벨 + **`가로 범위 슬라이더(<input type="range" min="0" max="100"/>)`** + `볼륨 수치(40% / OFF)` + `[▶ 미리듣기]` 버튼 위젯을 상시 노출.
+    - 슬라이더 조작 시 `audioFeedback.ts`와 즉시 연동되며 `SOUND_SETTINGS_CHANGED_EVENT` 전역 이벤트를 발행하여 모든 모달 및 위젯과 실시간 동기화.
+  - **WPF 데스크톱 헤더 (`MainWindow.xaml`, `MainViewModel.cs`)**:
+    - 상단 헤더 툴바에 `<Slider Width="70" Minimum="0" Maximum="100" Value="{Binding SoundVolume, Mode=TwoWay}"/>` 가로 슬라이더 바, `SoundIcon`(🔊/🔉/🔇), `SoundVolumeText`(40%/OFF), `ToggleSoundCommand`, `TestSoundCommand` 연동.
+    - 인증서 복사/백업 완료 시 `IsSoundEnabled && SoundVolume > 0` 여부를 판별하여 청각 효과음 재생.
+- **돋보이는 ⚙️ [환경 설정] 버튼 상단 헤더 상시 노출 및 WPF SettingsDialog 신설**:
+  - Web 상단 헤더 툴바에 가로 슬라이더 바 바로 옆에 눈에 띄는 **`⚙️ 환경 설정`** 버튼을 영구 배치하여 언제든 1-클릭으로 설정 창 호출 가능.
+  - Windows C# WPF 데스크톱에 전용 **`SettingsDialog.xaml` / `SettingsDialog.xaml.cs`** 신설:
+    - 알림음(SuccessChime) 사용 여부 체크박스, 가로 슬라이더 바, 볼륨 실시간 표시, 🎵 효과음 미리듣기.
+    - 다크 / 회색 / 화이트 / 베이지 4대 테마 라디오 버튼 선택기.
+    - 초보자용 간편 모드 / 전문가용 상세 모드 UI 전환기.
+    - 기본값으로 복원(`ResetDefaults`) 및 닫기 액션 지원.
+- **WPF `SettingsService` 영구 설정 연동 및 '다시 표시하지 않음' Two-Way 바인딩**:
+  - `%LocalAppData%\KCertManager\kcert_settings.json` 기반의 전용 설정 관리 싱글톤 서비스(`SettingsService.cs`) 신설.
+  - `MainViewModel.DontShowStartupWorkflowAgain` 속성을 구현하고, `SettingsDialog.xaml`의 CheckBox에 `IsChecked="{Binding DontShowStartupWorkflowAgain, Mode=TwoWay}"`로 완벽한 양방향 데이터 바인딩 확립.
+  - XAML 컴파일 시 비표준 `Spacing` 속성을 완전히 배제하고 표준 마진을 적용하여 GitHub Actions 및 Release 컴파일 에러(`MC3072`, `CS1061`) 원천 차단.
+
 ### 🚀 [v1.7.1] - 2026-10-28
 **변경 구분**: `PATCH` (만료 인증서 안전 정리 시 삭제 수량과 안전 격리 휴지통 수량 100% 동기화 개선, 휴지통 매니페스트 메타데이터 보존, GitHub Actions Node.js 24/22 LTS 런타임 전환)
 #### ✨ 주요 개선 및 신규 기능 (Improvements & Features)

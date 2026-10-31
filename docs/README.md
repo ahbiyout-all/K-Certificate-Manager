@@ -7,7 +7,7 @@
 ## 📌 프로젝트 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v1.7.1` (Semantic Versioning: `1.7.1`)
+- **현재 버전**: `v1.7.2` (Semantic Versioning: `1.7.2`)
 - **개발자**: AhBiYout
 - **소속**: [http://www.cisnet.co.kr/](http://www.cisnet.co.kr/) (CISNet)
 - **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
@@ -21,10 +21,11 @@
 | 파일명 | 설명 |
 | :--- | :--- |
 | [`VERSIONING_POLICY.md`](./VERSIONING_POLICY.md) | **버전 관리 표준 정책**: SemVer 2.0.0 (MAJOR.MINOR.PATCH) 3단계 분류 및 코드 수정 시 동기화 체크리스트 |
-| [`PATCHNOTES.md`](./PATCHNOTES.md) | **버전 릴리스 패치노트**: v1.0.0부터 v1.7.1까지의 상세 기능 변경, 보안 패치 및 릴리스 히스토리 |
-| [`BLOG_v1.7.1.md`](./BLOG_v1.7.1.md) | **공식 구글 블로그 배포 통합 문서**: v1.7.1 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
-| [`BLOGGER_POST_COMPOSE_MODE.md`](./BLOGGER_POST_COMPOSE_MODE.md) | **구글 블로그 전용 원고 [작성 모드 (서식 있는 텍스트)]**: Blogger 에디터에 그대로 복사·붙여넣기하는 서식 지원 마크다운 원고 |
-| [`BLOGGER_POST_HTML_MODE.html`](./BLOGGER_POST_HTML_MODE.html) | **구글 블로그 전용 원고 [HTML 편집 모드]**: Blogger HTML 모드에 즉시 붙여넣기 가능한 반응형 모던 인라인 HTML 원고 |
+| [`PATCHNOTES.md`](./PATCHNOTES.md) | **버전 릴리스 패치노트**: v1.0.0부터 v1.7.2까지의 상세 기능 변경, 보안 패치 및 릴리스 히스토리 |
+| [`BLOG_v1.7.2.md`](./BLOG_v1.7.2.md) | **공식 구글 블로그 배포 통합 문서**: v1.7.2 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
+| [`BLOGGER_POST_COMPOSE_MODE.md`](./BLOGGER_POST_COMPOSE_MODE.md) | **구글 블로그 전용 원고 [작성 모드 (서식 있는 텍스트)]**: Blogger 에디터에 그대로 복사·붙여넣기하는 최신 v1.7.2 서식 지원 마크다운 원고 |
+| [`BLOGGER_POST_HTML_MODE.html`](./BLOGGER_POST_HTML_MODE.html) | **구글 블로그 전용 원고 [HTML 편집 모드]**: Blogger HTML 모드에 즉시 붙여넣기 가능한 최신 v1.7.2 반응형 모던 인라인 HTML 원고 |
+| [`BLOG_v1.7.1.md`](./BLOG_v1.7.1.md) | **공식 구글 블로그 배포 문서**: v1.7.1 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
 | [`BLOG_v1.7.0.md`](./BLOG_v1.7.0.md) | **공식 구글 블로그 배포 문서**: v1.7.0 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
 | [`BLOG_v1.6.5.md`](./BLOG_v1.6.5.md) | **공식 구글 블로그 배포 문서**: v1.6.5 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
 | [`BLOG_v1.5.0.md`](./BLOG_v1.5.0.md) | **공식 구글 블로그 배포 문서**: v1.5.0 공식 구글 블로그(Blogger) 게시용 10단계 표준 마크다운 원고 |
@@ -104,5 +105,10 @@
     - 만료 인증서 일괄 정리 시 휴지통 항목 및 카운트 불일치 근본 해소
     - 인증서 보관함 경로 상태 반응형 가변 너비(`Width="*" MinWidth="100"`) 교정 및 스크롤바 썸 두께·호버 트랜지션 디자인 개선
     - 앱 시작 시 상세 사이드바 기본 해제(닫힘)로 초기 로딩 시 시원한 전체 테이블 뷰 제공
+22. **상단 헤더 가로 볼륨 슬라이더 바 & ⚙️ 환경 설정 모달 접근성 직관화 (v1.7.2)**
+    - 상단 헤더 툴바에 가로 볼륨 슬라이더 바(0%~100%), 원클릭 음소거/스피커 토글, 실시간 볼륨 수치 및 알림음 미리듣기 버튼 상시 탑재
+    - 가로 슬라이더 바 바로 옆에 눈에 잘 띄는 `[⚙️ 환경 설정]` 버튼을 영구 배치하여 설정 창 호출 직관성 극대화
+    - C# WPF 데스크톱 전용 `SettingsDialog.xaml` 신설 및 `SettingsService`를 통한 로컬 환경설정(`kcert_settings.json`) 영구 동기화
+    - '다시 표시하지 않음' CheckBox를 `MainViewModel.DontShowStartupWorkflowAgain`에 Two-Way 양방향 바인딩하여 설정 상태 실시간 반영
 
 
