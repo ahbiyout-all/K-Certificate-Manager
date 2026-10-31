@@ -64,7 +64,7 @@
                         <StackPanel Grid.Column="0" HorizontalAlignment="Center">
                             <TextBlock Text="현재 설치 버전" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
                             <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="10,4" Margin="0,4,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                                <TextBlock x:Name="TxtCurrentVersion" Text="v1.4.5" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock x:Name="TxtCurrentVersion" Text="v1.7.2" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                             </Border>
                         </StackPanel>
 
@@ -73,7 +73,7 @@
                         <StackPanel Grid.Column="2" HorizontalAlignment="Center">
                             <TextBlock Text="GitHub 최신 버전" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
                             <Border Background="#2563EB" CornerRadius="6" Padding="10,4" Margin="0,4,0,0">
-                                <TextBlock x:Name="TxtLatestVersion" Text="v1.7.0" FontSize="13" FontWeight="Bold" Foreground="White"/>
+                                <TextBlock x:Name="TxtLatestVersion" Text="v1.7.2" FontSize="13" FontWeight="Bold" Foreground="White"/>
                             </Border>
                         </StackPanel>
                     </Grid>

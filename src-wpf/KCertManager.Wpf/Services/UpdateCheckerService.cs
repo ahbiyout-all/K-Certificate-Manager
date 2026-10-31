@@ -31,7 +31,7 @@ namespace KCertManager.Wpf.Services
     public static class UpdateCheckerService
     {
         private const string GITHUB_REPO = "AhBiYout-all/K-Certificate-Manager";
-        public const string CURRENT_VERSION = "1.7.1";
+        public const string CURRENT_VERSION = "1.7.2";
 
         public static async Task<AppUpdateInfo> CheckForUpdatesAsync()
         {

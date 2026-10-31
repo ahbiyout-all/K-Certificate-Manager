@@ -66,7 +66,7 @@ namespace KCertManager.Wpf.Views
             {
                 string krText =
                     "[한국어 라이선스 정의 - LICENSE_KR.txt]\r\n" +
-                    "K-Certificate Manager (K-인증서 매니저) v1.7.0\r\n" +
+                    "K-Certificate Manager (K-인증서 매니저) v1.7.2\r\n" +
                     "Copyright (c) 2026 AhBiYout (https://ahbiyoutvibe.blogspot.com/). All rights reserved.\r\n" +
                     "Company: CISNet (http://www.cisnet.co.kr/)\r\n" +
                     "1. 제1조(사용 허가): 개인, 공공기관, 교육기관, 기업 등 모든 사용자에게 영구 무료 사용 및 배포가 허가됩니다.\r\n" +
@@ -76,7 +76,7 @@ namespace KCertManager.Wpf.Views
 
                 string enText =
                     "[English License Definition - LICENSE_EN.txt]\r\n" +
-                    "K-Certificate Manager v1.7.0\r\n" +
+                    "K-Certificate Manager v1.7.2\r\n" +
                     "Copyright (c) 2026 AhBiYout (https://ahbiyoutvibe.blogspot.com/). All rights reserved.\r\n" +
                     "Company: CISNet (http://www.cisnet.co.kr/)\r\n" +
                     "1. Article 1 (Grant of License): Permanently distributed free of charge for individuals, public agencies, schools, and enterprises.\r\n" +
