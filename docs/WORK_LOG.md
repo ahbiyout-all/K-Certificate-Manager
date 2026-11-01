@@ -1400,3 +1400,27 @@
   - `WindowChrome` 일체형 커스텀 타이틀바 및 테마 동기화 적용.
   - 7대 전역 보안 취약점 하드닝 패치 적용.
   - 한/영 라이선스 문서 분리 및 공식 지원 채널 일원화.
+
+---
+
+### 📝 [작업 차수 112] 상단 툴바 영역 가로 스크롤바(Horizontal ScrollBar) 신설 및 마우스 휠 스크롤 연동
+- **작업 일시**: 2026-10-31 21:28 KST
+- **요청 사항**:
+  - `상단 빨간색 부분에 가로바 스크롤을 생성 해주세요. (첨부 이미지: image_11374738.png)`
+- **수행 내용**:
+  1. **C# .NET 8 WPF MainWindow 상단 툴바 가로 스크롤바 활성화 (`src-wpf/KCertManager.Wpf/Views/MainWindow.xaml`)**:
+     - 상단 헤더 행 높이를 60px에서 64px로 최적화하여 상단 버튼과 하단 가로 스크롤바 간의 여유 공간 확보.
+     - `Grid.Column="1"` 내의 `ScrollViewer` 설정을 `HorizontalScrollBarVisibility="Hidden"`에서 `HorizontalScrollBarVisibility="Visible"`로 전환하여 요청된 빨간색 하단 영역에 상시 명확한 가로 스크롤바가 표출되도록 구현.
+     - `HorizontalAlignment="Stretch"` 및 `VerticalAlignment="Stretch"`로 전개하여 브랜드 타이틀바와 우측 윈도우 캡션 버튼 사이의 전 영역을 커버.
+     - `PreviewMouseWheel="HeaderScrollViewer_PreviewMouseWheel"` 이벤트 연결.
+  2. **WPF 마우스 휠 가로 스크롤 & 창 드래그 간섭 차단 (`MainWindow.xaml.cs`)**:
+     - `HeaderScrollViewer_PreviewMouseWheel` 메서드를 추가하여 상단 툴바 위에서 마우스 휠을 돌릴 때 부드러운 가로 스크롤(`ScrollToHorizontalOffset`)이 즉시 수행되도록 구현.
+     - `Header_MouseLeftButtonDown`의 이벤트 원본 필터에 `ScrollBar`, `Thumb`, `ScrollViewer`, `RangeBase`를 추가하여 가로 스크롤바 조작 시 윈도우 이동(`DragMove`)이 가로채지 않도록 완벽 차단.
+  3. **WPF App.xaml 다이내믹 가로 스크롤바 스타일링 (`src-wpf/KCertManager.Wpf/App.xaml`)**:
+     - 가로 스크롤바 높이를 컴팩트한 11px로 조정하고, 배경 및 테두리에 `DynamicResource`를 적용하여 다크/회색/화이트/베이지 테마 변경 시에도 선명한 대비 유지.
+  4. **React Web 프리뷰 상단 헤더 가로 스크롤바 동등 지원 (`src/components/Header.tsx`)**:
+     - 상단 도구 모음 컨테이너에 `overflow-x-auto`, `scrollbar-thin` 및 마우스 휠 가로 스크롤 핸들러(`handleHeaderWheel`)를 적용하여 웹 환경에서도 화면 폭이 좁아지거나 도구가 많을 때 가로 스크롤바를 통한 원활한 탐색 지원.
+  5. **무결성 검증**:
+     - `xml.etree.ElementTree` 기반 전체 22개 WPF XAML 및 CSPROJ 파싱 검증 100% 통과 (오류 0건).
+     - `lint_applet` (TypeScript) 및 `compile_applet` (Vite) 빌드 성공.
+

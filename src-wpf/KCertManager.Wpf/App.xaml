@@ -457,14 +457,14 @@
             <Setter Property="OverridesDefaultStyle" Value="true"/>
             <Style.Triggers>
                 <Trigger Property="Orientation" Value="Horizontal">
-                    <Setter Property="Height" Value="14"/>
+                    <Setter Property="Height" Value="11"/>
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="{x:Type ScrollBar}">
-                                <Grid SnapsToDevicePixels="True" Background="#161B26">
-                                    <Border BorderThickness="0,1,0,0" BorderBrush="#2D3546" VerticalAlignment="Stretch"/>
+                                <Grid SnapsToDevicePixels="True" Background="{DynamicResource BgDarkBrush}">
+                                    <Border BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderBrush}" VerticalAlignment="Stretch"/>
                                     <!-- Inactive indicator so the horizontal bar structure never disappears even when content fits -->
-                                    <Border x:Name="InactiveThumb" Background="#334155" CornerRadius="4" Height="6" Margin="10,0" VerticalAlignment="Center" Visibility="Collapsed" Opacity="0.4"/>
+                                    <Border x:Name="InactiveThumb" Background="{DynamicResource BorderBrush}" CornerRadius="3" Height="4" Margin="10,0" VerticalAlignment="Center" Visibility="Collapsed" Opacity="0.6"/>
                                     <Track x:Name="PART_Track" IsDirectionReversed="False">
                                         <Track.DecreaseRepeatButton>
                                             <RepeatButton Command="{x:Static ScrollBar.PageLeftCommand}" Opacity="0" Focusable="False"/>
@@ -473,7 +473,7 @@
                                             <Thumb>
                                                 <Thumb.Template>
                                                     <ControlTemplate TargetType="{x:Type Thumb}">
-                                                        <Border Background="#475569" CornerRadius="4" Margin="0,2,0,2"/>
+                                                        <Border Background="#475569" CornerRadius="3" Margin="0,1,0,1"/>
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
                                                                 <Setter Property="Background" Value="#64748B"/>

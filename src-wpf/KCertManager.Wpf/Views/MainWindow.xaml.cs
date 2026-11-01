@@ -274,13 +274,18 @@ namespace KCertManager.Wpf.Views
 
         private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            // Ignore clicks originating from interactive controls (Buttons, RadioButtons) inside the header
+            // Ignore clicks originating from interactive controls (Buttons, RadioButtons, ScrollBar, Thumb, Sliders, ComboBox) inside the header
             if (e.OriginalSource is DependencyObject sourceObj)
             {
                 var current = sourceObj;
                 while (current != null && current != this)
                 {
-                    if (current is System.Windows.Controls.Primitives.ButtonBase)
+                    if (current is System.Windows.Controls.Primitives.ButtonBase ||
+                        current is System.Windows.Controls.Primitives.ScrollBar ||
+                        current is System.Windows.Controls.Primitives.Thumb ||
+                        current is System.Windows.Controls.Primitives.RangeBase ||
+                        current is System.Windows.Controls.ComboBox ||
+                        current is System.Windows.Controls.ScrollViewer)
                     {
                         return;
                     }
@@ -301,6 +306,26 @@ namespace KCertManager.Wpf.Views
                     DragMove();
                 }
                 catch { }
+            }
+        }
+
+        /// <summary>
+        /// Translates vertical mouse wheel scroll over the header toolbar into smooth horizontal scrolling.
+        /// </summary>
+        private void HeaderScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (HeaderScrollViewer != null)
+            {
+                // Smooth horizontal delta scroll (48px per notch)
+                if (e.Delta < 0)
+                {
+                    HeaderScrollViewer.ScrollToHorizontalOffset(HeaderScrollViewer.HorizontalOffset + 48);
+                }
+                else
+                {
+                    HeaderScrollViewer.ScrollToHorizontalOffset(HeaderScrollViewer.HorizontalOffset - 48);
+                }
+                e.Handled = true;
             }
         }
 

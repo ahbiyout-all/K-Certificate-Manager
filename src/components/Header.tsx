@@ -77,6 +77,13 @@ export const Header: React.FC<HeaderProps> = ({
   const [soundSettings, setSoundSettings] = useState<SoundSettings>(getSoundSettings);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const volumeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const headerScrollRef = useRef<HTMLDivElement>(null);
+
+  const handleHeaderWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (headerScrollRef.current && e.deltaY !== 0) {
+      headerScrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
 
   useEffect(() => {
     const handleSettingsChanged = (e: Event) => {
@@ -178,11 +185,17 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Right: Last scan & Actions */}
-      <div className="flex items-center space-x-2 sm:space-x-3">
-        <span className="text-xs sm:text-sm text-slate-500 hidden xl:inline">
-          마지막 스캔: <span className="font-medium text-slate-700">{lastScanTime}</span>
-        </span>
+      {/* Right: Last scan & Actions with Smooth Horizontal ScrollBar Container */}
+      <div
+        ref={headerScrollRef}
+        onWheel={handleHeaderWheel}
+        className="flex-1 flex items-center justify-end overflow-x-auto min-w-0 ml-3 sm:ml-6 py-1 select-none scrollbar-thin scrollbar-thumb-slate-400/50 hover:scrollbar-thumb-blue-500"
+        title="상단 메뉴 도구 모음 (마우스 휠 또는 드래그로 좌우 가로 스크롤 가능)"
+      >
+        <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+          <span className="text-xs sm:text-sm text-slate-500 hidden xl:inline shrink-0">
+            마지막 스캔: <span className="font-medium text-slate-700">{lastScanTime}</span>
+          </span>
 
         {/* Theme Dropdown Select (다크 / 회색 / 화이트 / 베이지) */}
         {onThemeChange && (
@@ -468,6 +481,7 @@ export const Header: React.FC<HeaderProps> = ({
           <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin text-blue-600' : 'text-blue-600'}`} />
           <span>{isScanning ? '새로고침 중...' : '새로고침'}</span>
         </button>
+        </div>
       </div>
     </header>
   );

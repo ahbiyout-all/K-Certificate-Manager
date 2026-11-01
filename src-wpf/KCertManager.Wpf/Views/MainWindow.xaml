@@ -25,7 +25,7 @@
     <Border x:Name="RootWindowBorder" Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" TextElement.Foreground="{DynamicResource TextPrimaryBrush}">
     <Grid x:Name="RootLayoutGrid" Background="{DynamicResource BgDarkBrush}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="60"/>
+            <RowDefinition Height="64"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="32"/>
         </Grid.RowDefinitions>
@@ -37,7 +37,7 @@
                 BorderThickness="0,0,0,1"
                 Padding="16,0,10,0"
                 MouseLeftButtonDown="Header_MouseLeftButtonDown">
-            <Grid VerticalAlignment="Center">
+            <Grid VerticalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
@@ -61,15 +61,18 @@
                     </StackPanel>
                 </StackPanel>
 
-                <!-- Header Action Tools & Theme Selector (Dedicated Column 1, Aligned Right) -->
-                <ScrollViewer Grid.Column="1"
-                              HorizontalScrollBarVisibility="Hidden"
+                <!-- Header Action Tools & Theme Selector (Dedicated Column 1 with Horizontal ScrollBar) -->
+                <ScrollViewer x:Name="HeaderScrollViewer"
+                              Grid.Column="1"
+                              HorizontalScrollBarVisibility="Visible"
                               VerticalScrollBarVisibility="Disabled"
                               Focusable="False"
-                              HorizontalAlignment="Right"
-                              VerticalAlignment="Center"
-                              Margin="10,0,4,0">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch"
+                              PreviewMouseWheel="HeaderScrollViewer_PreviewMouseWheel"
+                              Margin="10,0,4,0"
+                              ToolTip="마우스 휠 또는 하단 가로 스크롤바를 드래그하여 상단 메뉴 도구를 좌우로 이동할 수 있습니다.">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,4,0,2">
                         <!-- Theme Switcher Dropdown (ComboBox) -->
                         <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="4,2" Margin="0,0,10,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
