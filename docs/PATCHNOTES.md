@@ -14,6 +14,36 @@
 
 ---
 
+### 🚀 [v1.8.0] - 2026-10-31
+**변경 구분**: `MINOR` (순수 창작 독립 DLL 모듈화 분리(`KCert.Core.dll`, `KCert.Crypto.dll`), 상단 헤더 가로바 스크롤러(Horizontal ScrollBar) 및 마우스 휠 가로 탐색 연동, 4대 테마 전역 고대비 툴팁(ToolTip) 시스템 신설, Semantic Versioning 3단계 분리 원칙 확립)
+#### ✨ 주요 개선 및 신규 기능 (Improvements & Features)
+- **순수 창작 독립 C# 코어 & 암호화 DLL 2종 분리 및 솔루션 아키텍처 개편**:
+  - **`KCert.Core.dll`**: 대한민국 공인인증서(NPKI, GPKI, EPKI)의 X.509 v3 규격, ASN.1/DER 파서, 발급기관 고유 OID 판별, USB 자동 감시 및 안전 격리 휴지통 엔진을 외부 3rd-party 의존성 0%의 순수 C# 독립 라이브러리로 분리 구축.
+  - **`KCert.Crypto.dll`**: KISA 표준 대칭키 SEED-128-CBC 암호화, PKCS#8 개인키(`signPri.key`) 복호화, VID 무결성 검증, RSA-SHA256 전자서명 순수 C# 엔진을 독립 라이브러리로 구현.
+  - **`KCertManager.sln` 다중 프로젝트 구조 확립**: 메인 데스크톱 WPF 프로젝트와 2개 코어 DLL 프로젝트의 명확한 책임 분리 및 빌드 의존성 확립.
+  - 기술 설계 명세서 등록 (`docs/KCERT_CORE_DLL_SPEC.md`, `docs/KCERT_CORE_DLL_DESIGN_SPECIFICATION.md`, `docs/KCERT_CRYPTO_DLL_SPECIFICATION.md`).
+- **상단 헤더 가로바 스크롤(Horizontal ScrollBar) 신설 및 마우스 휠 연동 (Web & WPF)**:
+  - **사용자 요청 사항**: "상단 빨간색 부분에 가로바 스크롤을 생성 해주세요."
+  - **WPF 데스크톱 헤더 (`MainWindow.xaml`)**:
+    - 상단 헤더 높이를 `64px`로 최적화하고 상단 메뉴 ScrollViewer를 `HorizontalScrollBarVisibility="Visible"`로 설정하여 상시 가로 스크롤바 노출.
+    - `HorizontalAlignment="Stretch"`로 전개하여 윈도우 조작 버튼과 브랜드 로고 사이의 전 영역을 가로 스크롤 바로 커버.
+    - `PreviewMouseWheel="HeaderScrollViewer_PreviewMouseWheel"` 핸들러를 구축하여 툴바 위에서 마우스 휠 조작 시 좌우 가로 스크롤(`ScrollToHorizontalOffset`)이 부드럽게 동작하도록 지원.
+    - 윈도우 드래그(`Header_MouseLeftButtonDown`) 필터를 강화하여 스크롤바 및 썸 조작 시 창 이동 간섭을 완벽히 차단.
+  - **Web 프리뷰 (`src/components/Header.tsx`)**:
+    - 상단 액션 툴바에 `overflow-x-auto`, `scrollbar-thin` 및 마우스 휠 가로 스크롤러(`handleHeaderWheel`)를 탑재하여 화면 폭이 좁은 환경에서도 상단 툴의 가로 탐색 지원.
+- **4대 테마 전역 고대비 툴팁(ToolTip) 시스템 신설 및 글자 시인성 완벽 복원 (WPF & Web)**:
+  - **사용자 요청 사항**: "툴팁 글자색이 테마와 맞지 않아 글이 보이지 않음"
+  - **원인 해결**: Windows OS의 기본 백색 툴팁 배경과 WPF 전역 TextBlock 스타일의 백색 글자색(`TextPrimaryBrush`) 충돌로 인한 White on White 시인성 불량 해결.
+  - **`App.xaml` 전역 ToolTip 스타일 구축**: 전용 `ToolTipBgBrush`, `ToolTipTextBrush`, `ToolTipBorderBrush`를 신설하고, 템플릿 내부 `ContentPresenter.Resources`에 전용 TextBlock 스타일을 강제 적용하여 전역 폰트 색상의 간섭을 원천 차단.
+  - **4대 테마 동적 바인딩 (`MainViewModel.ApplyTheme`)**: 다크(Dark), 회색(Gray), 베이지(Beige), 화이트(White) 전 테마에서 WCAG AAA 12:1+ 고대비를 보장하는 다크 플로팅 카드 + 선명한 화이트 텍스트 조합 제공.
+  - **표시 품질 최적화**: 툴팁 반응 속도(250ms), 설명 읽기 시간(15초 유지), 버튼 간 전환 속도(100ms) 튜닝.
+- **소프트웨어 버전 관리(Semantic Versioning: MAJOR.MINOR.PATCH) 3단계 분리 정책 확립**:
+  - `docs/VERSIONING_POLICY.md`에 변경 규모별 의사결정 판정 매트릭스(Decision Tree) 및 8대 필수 동기화 영역 명문화.
+  - 신규 DLL 아키텍처 개편 및 네비게이션 가로바 스크롤러, 전역 툴팁 시스템 확장에 맞춰 **v1.8.0 MINOR 정식 승격**.
+- **MSBuild XML 파싱 및 빌드 파이프라인 무결성 확보**:
+  - `KCert.Crypto.csproj` 내 특수문자(`&amp;`) 엔티티 오류 `MSB4025` 완벽 해소.
+  - 전체 22개 WPF XAML 및 CSPROJ 유효성 검증 통과.
+
 ### 🚀 [v1.7.2] - 2026-10-31
 **변경 구분**: `PATCH` (상단 헤더 가로 볼륨 슬라이더 바 & ⚙️ 환경 설정 모달 접근성 직관화, WPF 전용 SettingsDialog 신설 및 SettingsService 영구 설정 연동, '다시 표시하지 않음' Two-Way 바인딩 확립)
 #### ✨ 주요 개선 및 신규 기능 (Improvements & Features)

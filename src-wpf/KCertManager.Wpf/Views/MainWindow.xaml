@@ -8,7 +8,10 @@
         Height="840" Width="1380"
         MinHeight="650" MinWidth="1100"
         WindowStartupLocation="CenterScreen"
-        StateChanged="Window_StateChanged">
+        StateChanged="Window_StateChanged"
+        ToolTipService.InitialShowDelay="250"
+        ToolTipService.ShowDuration="15000"
+        ToolTipService.BetweenShowDelay="100">
 
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="0"

@@ -23,6 +23,9 @@
         <Color x:Key="BorderColor">#2D3546</Color>
         <Color x:Key="AccentText">#60A5FA</Color>
         <Color x:Key="MutedText">#94A3B8</Color>
+        <Color x:Key="ToolTipBg">#1E293B</Color>
+        <Color x:Key="ToolTipText">#F8FAFC</Color>
+        <Color x:Key="ToolTipBorder">#3B82F6</Color>
 
         <SolidColorBrush x:Key="BgDarkBrush" Color="{StaticResource BgDark}"/>
         <SolidColorBrush x:Key="BgCardBrush" Color="{StaticResource BgCard}"/>
@@ -36,6 +39,9 @@
         <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
         <SolidColorBrush x:Key="AccentTextBrush" Color="{StaticResource AccentText}"/>
         <SolidColorBrush x:Key="MutedTextBrush" Color="{StaticResource MutedText}"/>
+        <SolidColorBrush x:Key="ToolTipBgBrush" Color="{StaticResource ToolTipBg}"/>
+        <SolidColorBrush x:Key="ToolTipTextBrush" Color="{StaticResource ToolTipText}"/>
+        <SolidColorBrush x:Key="ToolTipBorderBrush" Color="{StaticResource ToolTipBorder}"/>
 
         <!-- Global Font -->
         <FontFamily x:Key="AppFont">Segoe UI, Malgun Gothic, sans-serif</FontFamily>
@@ -52,6 +58,44 @@
 
         <Style TargetType="Label">
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+
+        <!-- Modern Theme-Adaptive High-Contrast ToolTip Style (Never Blends In) -->
+        <Style TargetType="ToolTip">
+            <Setter Property="Background" Value="{DynamicResource ToolTipBgBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ToolTipTextBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ToolTipBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
+            <Setter Property="HasDropShadow" Value="True"/>
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToolTip">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}"
+                                MaxWidth="460"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              TextElement.Foreground="{TemplateBinding Foreground}">
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{DynamicResource ToolTipTextBrush}"/>
+                                        <Setter Property="FontSize" Value="12"/>
+                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- Custom Button Style -->

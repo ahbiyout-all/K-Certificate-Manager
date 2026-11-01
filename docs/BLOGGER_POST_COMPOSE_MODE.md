@@ -8,71 +8,66 @@
 ---
 
 ## 📌 [글 제목 (Title)]
-[K-인증서 매니저 v1.7.2] 상단 헤더 가로 볼륨 슬라이더 바 & ⚙️ 환경 설정 모달 신설, C# WPF Two-Way 바인딩 최적화 업데이트
+[K-인증서 매니저 v1.8.0] 순수 창작 독립 DLL(KCert.Core / KCert.Crypto) 탑재, 상단 헤더 가로바 스크롤러 & 전역 고대비 툴팁 시스템 릴리스
 
 ---
 
 ## 📝 [본문 내용 (Body Content)]
 
-대한민국 공무원·교직원 행정전자서명 인증서(GPKI, EPKI)와 금융결제원 공동인증서(NPKI)를 안전하게 탐색하고 USB 드라이브 및 PC로 복사·백업하는 오픈소스 데스크톱 보안 솔루션 **'K-인증서 매니저(K-Certificate Manager) v1.7.2'** 정식 버전이 출시되었습니다!
+대한민국 공무원·교직원 행정전자서명 인증서(GPKI, EPKI)와 금융결제원 공동인증서(NPKI)를 안전하게 탐색하고 USB 드라이브 및 PC로 복사·백업하는 오픈소스 데스크톱 보안 솔루션 **'K-인증서 매니저(K-Certificate Manager) v1.8.0'** 정식 버전이 출시되었습니다!
 
-이번 v1.7.2 릴리스에서는 사용자 여러분의 작업 동선과 편의성을 극대화하기 위해, **메인 상단 헤더 툴바에 '가로 볼륨 조절 슬라이더 바'를 직접 탑재**하고 **눈에 잘 띄는 ⚙️ [환경 설정] 버튼**을 상시 노출하도록 인터페이스를 대폭 혁신하였습니다.
+이번 v1.8.0 릴리스는 **소프트웨어 버전 관리(Semantic Versioning: MAJOR.MINOR.PATCH) 원칙에 따른 공식 MINOR 판정**으로, 외부 라이브러리 의존성 0%의 **순수 창작 독립 C# 코어 DLL 2종(`KCert.Core.dll`, `KCert.Crypto.dll`)을 분리 구축**하고, 상단 헤더 메뉴의 접근성을 극대화하는 **'가로바 스크롤러(Horizontal ScrollBar)' 및 마우스 휠 네비게이션**, 그리고 다크/회색/화이트/베이지 전 테마에서 선명한 시인성을 보장하는 **'전역 고대비 툴팁(ToolTip) 시스템'**을 공식 탑재하였습니다.
 
-이제 환경 설정 창을 따로 찾아 열지 않고도 헤더에서 실시간으로 성공 알림음 볼륨을 드래그하여 조절하거나 원클릭 음소거/스피커 토글, 미리듣기 재생을 수행할 수 있습니다. 또한, Windows C# WPF 데스크톱 에디션에 전용 환경 설정 대화상자(`SettingsDialog.xaml`)와 로컬 설정 영구 저장 서비스(`SettingsService.cs`)가 구축되어, 앱 시작 가이드 '다시 표시하지 않음' 옵션 및 개인 설정이 완벽하게 보존됩니다.
-
----
-
-### ✨ v1.7.2 핵심 신규 기능 및 주요 개선 사항
-
-1. 🎚️ **상단 헤더 가로 볼륨 슬라이더 바 (Horizontal Sound Slider Bar) 상시 탑재**:
-   - 메인 화면 상단 헤더 중앙에 `[🔊/🔇 원클릭 음소거 토글]` + `알림음:` 라벨 + `가로 범위 슬라이더(0%~100%)` + `볼륨 수치(40% / OFF)` + `[▶ 미리듣기/테스트]` 버튼을 배치하여, 작업 중 언제든 즉시 음량을 확인하고 조절할 수 있습니다.
-
-2. ⚙️ **눈에 잘 띄는 [환경 설정] 버튼 상단 헤더 상시 노출**:
-   - 상단 헤더 가로 슬라이더 바 바로 옆에 시인성이 뛰어난 `[⚙️ 환경 설정]` 버튼을 영구 배치하여, 클릭 한 번으로 상세 환경 설정 창을 팝업할 수 있습니다.
-
-3. 🖥️ **Windows C# WPF 데스크톱 전용 `SettingsDialog.xaml` 신설**:
-   - 기존 WPF 앱에 부재했던 환경 설정 대화상자를 신설하여 알림음 ON/OFF, 가로 슬라이더 바, 🎵 효과음 미리듣기, 4대 테마(다크/회색/화이트/베이지) 선택, 간편/상세 모드 전환을 원스톱으로 제공합니다.
-
-4. 💾 **로컬 환경 설정 영구 저장 서비스 (`SettingsService.cs`) 구축**:
-   - `%LocalAppData%\KCertManager\kcert_settings.json`을 통해 사용자가 조절한 알림음 볼륨, 음소거 여부, 테마, 모드, 시작 가이드 옵션이 앱 종료 후에도 안전하게 유지됩니다.
-
-5. 🔗 **'다시 표시하지 않음' CheckBox Two-Way 양방향 바인딩 및 XAML 빌드 안정화**:
-   - `SettingsDialog.xaml`의 체크박스를 `MainViewModel.DontShowStartupWorkflowAgain`에 `Mode=TwoWay`로 양방향 바인딩하여 설정 변경이 실시간 동기화되며, XAML 비표준 `Spacing` 속성을 완전히 제거하여 GitHub Actions 릴리스 컴파일 무결성을 확보했습니다.
-
-6. 🗑️ **만료 인증서 안전 정리 시 삭제 수량과 안전 격리 휴지통 수량 100% 동기화 (v1.7.1 계승)**:
-   - PC 로컬 또는 USB 메모리에서 만료 인증서 일괄 정리 시 삭제 수량과 휴지통 보관 수량이 오차 없이 1:1로 일치하며, 발급기관명과 유효기간 메타데이터가 완벽 복원됩니다.
+이제 어떠한 3rd-party 보안 소프트웨어 없이도 순수 C# 네이티브 알고리즘을 통해 초고속 ASN.1 파싱과 KISA 표준 SEED-128 암호화 무결성 검증을 수행하며, 좁은 화면이나 다크 모드 환경에서도 모든 메뉴와 도움말을 쾌적하고 명확하게 탐색할 수 있습니다.
 
 ---
 
-### 📷 [스크린샷 안내]
-*(블로그 등록 시 메인 화면 및 상단 헤더 볼륨 슬라이더 바, ⚙️ 환경 설정 창 캡처 이미지를 본문에 삽입해 주세요)*
+### ✨ v1.8.0 핵심 신규 기능 및 주요 개선 사항
 
-- **[스크린샷 1]**: 상단 헤더 가로 슬라이더 바와 실시간 볼륨 수치 및 [⚙️ 환경 설정] 버튼 노출 화면
-- **[스크린샷 2]**: 신설된 Windows WPF 전용 `SettingsDialog.xaml` 환경 설정 대화상자 및 테마 선택 화면
+1. 🧩 **순수 창작 독립 C# 코어 & 암호화 DLL 2종 분리 (`KCert.Core.dll`, `KCert.Crypto.dll`)**:
+   - **`KCert.Core.dll`**: 대한민국 공인인증서 X.509 v3 바이너리 규격, 순수 ASN.1/DER 파서, 5대 공인기관 및 행안부/교육부 고유 OID 지능형 분류 엔진, USB 자동 감시 및 안전 격리 휴지통 엔진을 외부 의존성 0%의 C# 클래스 라이브러리로 전면 모듈화.
+   - **`KCert.Crypto.dll`**: KISA 표준 대칭키 SEED-128-CBC 암호화, PKCS#8 개인키(`signPri.key`) 복호화, VID 신원확인 및 RSA-SHA256 전자서명 순수 C# 엔진을 독립 라이브러리로 분리.
+   - **다중 프로젝트 솔루션 구조 (`KCertManager.sln`)**: 메인 데스크톱 WPF와 2개 코어 DLL 간의 명확한 아키텍처 계층화 및 유지보수성 확립.
+
+2. ↔️ **상단 헤더 가로바 스크롤(Horizontal ScrollBar) 신설 및 마우스 휠 연동 (Web & WPF)**:
+   - 상단 헤더 높이를 `64px`로 최적화하고 상단 메뉴 ScrollViewer에 `HorizontalScrollBarVisibility="Visible"`을 적용하여 가로 스크롤바를 직관적으로 상시 노출.
+   - 상단 메뉴 영역 어디서든 마우스 휠을 돌리면 좌우 가로 스크롤(`ScrollToHorizontalOffset`)이 즉각 동작하도록 `PreviewMouseWheel` 파이프라인 구축.
+   - 윈도우 캡션 드래그(`DragMove`)와 가로 스크롤바/썸/슬라이더 조작을 완벽히 분리하여 조작 시 창 이동 간섭 원천 차단.
+
+3. 💬 **4대 테마 전역 고대비 툴팁(ToolTip) 시스템 구축 (White on White 시인성 불량 완벽 해결)**:
+   - 다크 테마에서 Windows 기본 흰색 툴팁 배경과 흰색 글자색이 겹쳐 글씨가 보이지 않던 문제를 근본적으로 해소.
+   - `App.xaml`에 전용 `ToolTipBgBrush`, `ToolTipTextBrush`, `ToolTipBorderBrush`를 신설하고 `ContentPresenter.Resources` 스타일 격리를 통해 전역 글자색 간섭 차단.
+   - 다크, 회색, 베이지, 화이트 전 테마에서 WCAG AAA 12:1+ 고대비를 보장하는 다크 플로팅 카드 + 선명한 화이트 텍스트 조합 제공.
+   - 툴팁 반응 딜레이(250ms) 및 설명 지속 시간(15초)을 최적화하여 긴 한글 설명도 여유롭게 확인 가능.
+
+4. 📏 **소프트웨어 버전 관리(Semantic Versioning: MAJOR.MINOR.PATCH) 3단계 분리 정책 확립**:
+   - `docs/VERSIONING_POLICY.md`에 변경 규모별 3단계(MAJOR / MINOR / PATCH) 판정 매트릭스와 8대 필수 동기화 체크리스트를 체계화하여 엄격한 품질 보증 달성.
+
+5. 🛠️ **MSBuild XML 엔티티 파싱 오류 해결 및 CI 안정화**:
+   - `KCert.Crypto.csproj` 내 특수문자(`&amp;`) 엔티티 오류를 해결하고 전체 22개 WPF XAML 및 CSPROJ 유효성 검증 100% 통과.
+
+6. 🎚️ **상단 헤더 실시간 볼륨 슬라이더 및 WPF 전용 환경 설정 대화상자 (`SettingsDialog.xaml`) 계승**:
+   - 원클릭 음소거 토글, 0%~100% 볼륨 조절 슬라이더, 성공 알림음(SuccessChime) 테스트 청음 및 로컬 영구 설정 보존.
 
 ---
 
-### 📥 [다운로드 안내]
-공식 GitHub 릴리스 저장소에서 최신 단일 설치파일(`Setup.exe`)을 안전하게 내려받으실 수 있습니다.
+### 📥 [공식 다운로드 및 릴리스 링크]
 
-- 📥 **설치 관리자 다운로드 (GitHub)**: [kcert-manager-v1.7.2-setup.exe 다운로드](https://github.com/AhBiYout-all/K-Certificate-Manager/releases/tag/v1.7.2)
-- 🐙 **공식 GitHub 소스코드 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
-
----
-
-### 📋 [프로그램 사양 및 시스템 요구사항]
-- **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **소프트웨어 버전**: v1.7.2 (Semantic Versioning 2.0.0)
-- **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
-- **공식 웹사이트**: [https://www.cisnet.co.kr/](https://www.cisnet.co.kr/) ((주)씨아이에스넷 CISNet)
-- **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
-- **지원 운영체제**: Microsoft Windows 10 / 11 (64-bit 권장)
-- **라이선스**: Free Use / MIT License (한국어 `LICENSE_KR.txt` 및 영어 `LICENSE_EN.txt` 2종 라이선스 공식 채택)
-- **런타임 환경**: 단일 설치파일(`kcert-manager-v1.7.2-setup.exe`)에 자체 내장 (별도 런타임 설치 불필요)
+- **공식 설치 프로그램 다운로드 (GitHub)**: [kcert-manager-v1.8.0-setup.exe](https://github.com/AhBiYout-all/K-Certificate-Manager/releases/tag/v1.8.0)
+- **GitHub 오픈소스 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
+- **개발사 공식 웹사이트**: [(주)씨아이에스넷 (CISNet)](http://www.cisnet.co.kr/)
+- **공식 기술 블로그**: [AhBiYout Vibe Blog](https://ahbiyoutvibe.blogspot.com/)
 
 ---
 
-### 📜 [패치 내역 요약]
-- **v1.7.2 (2026-10-31)**: 상단 헤더 가로 볼륨 슬라이더 바 & ⚙️ 환경 설정 모달 상시 노출, C# WPF SettingsDialog 신설, SettingsService 로컬 영구 저장소 연동, '다시 표시하지 않음' Two-Way 바인딩 확립, XAML Spacing 제거로 CI 컴파일 완전 안정화.
-- **v1.7.1 (2026-10-28)**: 만료 인증서 안전 정리 시 삭제 수량과 안전 격리 휴지통 수량 100% 동기화 개선, 휴지통 매니페스트 메타데이터(발급기관명/유효기간) 복원 보존, GitHub Actions Node.js 24/22 LTS 런타임 전환.
-- **v1.7.0 (2026-10-27)**: 보안 영구 삭제 증적 감사 로그(SubjectDN 포렌식) 시스템 신설, 성공 알림음 ON/OFF 및 볼륨 조절 슬라이더 구축, 컬럼 최소 폭 30px 자유 조절, 목록 세로 구분선 및 여백 밀도 컨트롤 도입.
+### 📋 [소프트웨어 기술 사양]
+- **버전**: v1.8.0 (Semantic Versioning 2.0.0 MINOR Release)
+- **라이선스**: Free Use / MIT License (개인·기업·공공기관 누구나 무료 이용)
+- **지원 OS**: Windows 11 / Windows 10 (64-bit)
+- **개발 환경**: .NET 10.0 / .NET 8.0 WPF MVVM + React 19 TypeScript
+- **코어 엔진**: 순수 창작 `KCert.Core.dll` + `KCert.Crypto.dll` (외부 3rd-party 의존성 0%)
+
+---
+
+### 🏷️ [추천 검색 태그]
+공동인증서, 공인인증서복사, GPKI, EPKI, NPKI, USB인증서복사, 인증서백업, KCertCore, 순수창작DLL, 가로바스크롤, 고대비툴팁, K인증서매니저, 무료인증서관리프로그램, 행정전자서명, 오픈소스보안, 씨아이에스넷

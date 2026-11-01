@@ -814,6 +814,7 @@ namespace KCertManager.Wpf.ViewModels
 
                 var res = app.Resources;
                 System.Windows.Media.Color bgDark, bgCard, bgCardHover, textPrimary, textSecondary, borderColor, accentText, mutedText;
+                System.Windows.Media.Color toolTipBg, toolTipText, toolTipBorder;
 
                 if (themeName == "dark" || themeName == "pastel-black")
                 {
@@ -825,6 +826,10 @@ namespace KCertManager.Wpf.ViewModels
                     borderColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2D3546");
                     accentText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#60A5FA");
                     mutedText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#94A3B8");
+
+                    toolTipBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E293B");
+                    toolTipText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F8FAFC");
+                    toolTipBorder = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#3B82F6");
                 }
                 else if (themeName == "gray" || themeName == "pastel-gray")
                 {
@@ -836,6 +841,10 @@ namespace KCertManager.Wpf.ViewModels
                     borderColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#94A3B8");
                     accentText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1D4ED8");
                     mutedText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#475569");
+
+                    toolTipBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E293B");
+                    toolTipText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F8FAFC");
+                    toolTipBorder = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#475569");
                 }
                 else if (themeName == "beige" || themeName == "pastel-beige")
                 {
@@ -847,6 +856,10 @@ namespace KCertManager.Wpf.ViewModels
                     borderColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#D6CEBF");
                     accentText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E40AF");
                     mutedText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#44403C");
+
+                    toolTipBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#292524");
+                    toolTipText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FAFAF9");
+                    toolTipBorder = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#D97706");
                 }
                 else // white (pastel-white)
                 {
@@ -858,6 +871,10 @@ namespace KCertManager.Wpf.ViewModels
                     borderColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#CBD5E1");
                     accentText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1D4ED8");
                     mutedText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#475569");
+
+                    toolTipBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#0F172A");
+                    toolTipText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF");
+                    toolTipBorder = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2563EB");
                 }
 
                 res["BgDark"] = bgDark;
@@ -866,6 +883,9 @@ namespace KCertManager.Wpf.ViewModels
                 res["TextPrimary"] = textPrimary;
                 res["TextSecondary"] = textSecondary;
                 res["BorderColor"] = borderColor;
+                res["ToolTipBg"] = toolTipBg;
+                res["ToolTipText"] = toolTipText;
+                res["ToolTipBorder"] = toolTipBorder;
 
                 res["BgDarkBrush"] = new System.Windows.Media.SolidColorBrush(bgDark);
                 res["BgCardBrush"] = new System.Windows.Media.SolidColorBrush(bgCard);
@@ -875,6 +895,9 @@ namespace KCertManager.Wpf.ViewModels
                 res["BorderBrush"] = new System.Windows.Media.SolidColorBrush(borderColor);
                 res["AccentTextBrush"] = new System.Windows.Media.SolidColorBrush(accentText);
                 res["MutedTextBrush"] = new System.Windows.Media.SolidColorBrush(mutedText);
+                res["ToolTipBgBrush"] = new System.Windows.Media.SolidColorBrush(toolTipBg);
+                res["ToolTipTextBrush"] = new System.Windows.Media.SolidColorBrush(toolTipText);
+                res["ToolTipBorderBrush"] = new System.Windows.Media.SolidColorBrush(toolTipBorder);
             }
             catch (Exception ex)
             {

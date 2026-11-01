@@ -1424,3 +1424,66 @@
      - `xml.etree.ElementTree` 기반 전체 22개 WPF XAML 및 CSPROJ 파싱 검증 100% 통과 (오류 0건).
      - `lint_applet` (TypeScript) 및 `compile_applet` (Vite) 빌드 성공.
 
+---
+
+### 📝 [작업 차수 113] 테마 연동 고대비 툴팁(ToolTip) 전역 스타일 신설 및 텍스트 시인성 완벽 복원
+- **작업 일시**: 2026-10-31 21:55 KST
+- **요청 사항**:
+  - `툴팁 글자색이 테마와 맞지 않아 글이 보이지 않음`
+- **원인 분석**:
+  - WPF의 기본 `ToolTip`은 Windows OS 시스템 배경색(주로 백색 또는 연회색)을 상속받았으나, `App.xaml`의 암시적 `<Style TargetType="TextBlock">`이 다크 테마 시 `Foreground`를 백색 계열(`TextPrimaryBrush` = `#F8FAFC`)로 강제 주입함.
+  - 이로 인해 백색 툴팁 배경 위에 백색 글자가 출력되어 툴팁 글씨가 전혀 보이지 않는 현상(White on White) 발생.
+- **수행 내용**:
+  1. **WPF `App.xaml` 전역 고대비 ToolTip 스타일 정의**:
+     - `ToolTipBgBrush`, `ToolTipTextBrush`, `ToolTipBorderBrush` 리소스 신설.
+     - `<Style TargetType="ToolTip">`에 `OverridesDefaultStyle="True"`, `HasDropShadow="True"`, 모던 둥근 테두리(`CornerRadius="6"`), 패딩(`Padding="10,6"`), 최대 너비 제한(`MaxWidth="460"`) 적용.
+     - 툴팁 내부 `ContentPresenter.Resources`에 `<Style TargetType="TextBlock">`을 직접 명시하여 전역 TextBlock 스타일의 색상 간섭을 완전히 차단하고 항상 `ToolTipTextBrush`가 적용되도록 보장.
+  2. **WPF `MainViewModel.ApplyTheme` 4대 테마 동적 바인딩 연동**:
+     - **다크 테마 (Dark)**: 배경 `#1E293B`, 텍스트 `#F8FAFC`(밝은 백색), 테두리 `#3B82F6`(블루 악센트)
+     - **회색 테마 (Gray)**: 배경 `#1E293B`, 텍스트 `#F8FAFC`(밝은 백색), 테두리 `#475569`
+     - **베이지 테마 (Beige)**: 배경 `#292524`, 텍스트 `#FAFAF9`(웜 화이트), 테두리 `#D97706`(웜 앰버)
+     - **화이트 테마 (White)**: 배경 `#0F172A`, 텍스트 `#FFFFFF`(순백색), 테두리 `#2563EB`
+     - 모든 테마에서 플로팅 툴팁이 12:1 이상의 WCAG AAA 고대비를 만족하도록 다크 플로팅 카드 + 선명한 텍스트 조합으로 통일.
+  3. **WPF `MainWindow.xaml` ToolTipService 딜레이 및 지속 시간 최적화**:
+     - `ToolTipService.InitialShowDelay="250"` (빠른 툴팁 반응 0.25초)
+     - `ToolTipService.ShowDuration="15000"` (충분한 설명 읽기 시간 15초 유지)
+     - `ToolTipService.BetweenShowDelay="100"` (인접 버튼 간 매끄러운 툴팁 전환)
+  4. **React Web 프리뷰 `src/index.css` 고대비 툴팁 스타일 보강**:
+     - `[data-tooltip]` 선택자에 고대비 다크 툴팁 팝업 스타일 추가.
+  5. **무결성 검증**:
+     - 전체 22개 WPF XAML/CSPROJ XML 구문 검증 완료 (0 에러).
+     - `lint_applet` 및 `compile_applet` 빌드 성공.
+
+---
+
+### 📝 [작업 차수 114] Semantic Versioning(MAJOR.MINOR.PATCH) 3단계 분리 원칙 확립 및 v1.8.0 정식 승격
+- **작업 일시**: 2026-10-31 22:15 KST
+- **요청 사항**:
+  - `소프트웨어 버전 관리(Semantic Versioning: MAJOR.MINOR.PATCH) 원칙에 따라, 변경 규모에 맞춰 3단계로 명확히 분리하여 버전을 관리해야 합니다.`
+- **원칙 및 판정 근거 (Decision Matrix)**:
+  - **[1단계] MAJOR (주 버전: X.0.0)**: 하위 호환성을 파괴하는 대규모 아키텍처 재설계 / 비호환 마이그레이션.
+  - **[2단계] MINOR (부 버전: x.Y.0)**: 하위 호환성을 100% 유지하면서 **신규 모듈·엔진(순수 창작 DLL 분리), 신규 네비게이션 위젯(가로 스크롤바), 전역 서브시스템(고대비 툴팁 시스템) 등 주요 기능이 대규모로 확장**될 때 승격.
+  - **[3단계] PATCH (수정 버전: x.y.Z)**: 하위 호환성을 유지하면서 발견된 단순 결함(Bugfix), 빌드 에러 해결, 텍스트 오탈자 및 스타일 미세 조정.
+  - **승격 결정**: 최근 추가된 **순수 창작 독립 DLL 2종(`KCert.Core.dll`, `KCert.Crypto.dll`) 분리 구축 및 솔루션 구조 개편**, **상단 툴바 가로바 스크롤러(Horizontal ScrollBar) & 마우스 휠 연동**, **전역 고대비 툴팁 시스템 구축**은 하위 호환성을 완벽히 유지하는 새로운 모듈 및 기능 확장에 해당하므로 SemVer 2.0.0 규칙에 따라 **`v1.8.0 MINOR`**로 정식 승격.
+- **수행 내용**:
+  1. **8대 핵심 영역 전역 버전 일체화 (`1.8.0`)**:
+     - `package.json`: `"version": "1.8.0"`
+     - `src/version.ts`: `APP_VERSION = '1.8.0'`, `APP_RELEASE_DATE = '2026-10-31'`
+     - `KCertManager.Wpf.csproj`: `<Version>1.8.0</Version>`, `<AssemblyVersion>1.8.0.0</AssemblyVersion>`, `<FileVersion>1.8.0.0</FileVersion>`
+     - `KCert.Core.csproj`: `<Version>1.8.0</Version>`, `<AssemblyVersion>1.8.0.0</AssemblyVersion>`, `<FileVersion>1.8.0.0</FileVersion>`
+     - `KCert.Crypto.csproj`: `<Version>1.8.0</Version>`, `<AssemblyVersion>1.8.0.0</AssemblyVersion>`, `<FileVersion>1.8.0.0</FileVersion>`
+     - `UpdateCheckerService.cs`: `CURRENT_VERSION = "1.8.0"`
+     - `installer.iss`: `#define MyAppVersion "1.8.0"`
+     - `build.ps1`, `.github/workflows/build.yml`: 기본 폴백 버전 `1.8.0` 동기화
+  2. **문서 및 블로그 원고 최신화**:
+     - `docs/VERSIONING_POLICY.md`: 3단계 버전 분류 기준, 의사결정 트리(Decision Tree), 8대 동기화 체크리스트 전면 정비.
+     - `docs/PATCHNOTES.md`: v1.8.0 MINOR 릴리스 상세 패치노트 신설.
+     - `docs/README.md`: 현재 버전 v1.8.0 갱신 및 신규 문서 인덱스 등록.
+     - `docs/BLOG_v1.8.0.md`: [작성 모드] 및 [HTML 편집 모드] 듀얼 구글 블로그 전용 배포 원고 생성.
+     - `docs/BLOGGER_POST_COMPOSE_MODE.md`, `docs/BLOGGER_POST_HTML_MODE.html`: v1.8.0 최신 서식 동기화.
+  3. **무결성 검증**:
+     - `xml.etree.ElementTree` 기반 전체 22개 WPF XAML 및 CSPROJ 유효성 검증 100% 통과 (오류 0건).
+     - `lint_applet` (TypeScript) 및 `compile_applet` (Vite) 빌드 성공.
+
+
+
