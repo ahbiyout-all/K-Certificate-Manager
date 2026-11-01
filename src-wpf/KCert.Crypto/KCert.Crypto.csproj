@@ -14,7 +14,7 @@
     <FileVersion>1.7.2.0</FileVersion>
     <Authors>AhBiYout</Authors>
     <Company>AhBiYout</Company>
-    <Product>K-인증서 암호화 & 전자서명 순수 창작 코어 라이브러리 (KCert.Crypto)</Product>
+    <Product>K-인증서 암호화 &amp; 전자서명 순수 창작 코어 라이브러리 (KCert.Crypto)</Product>
     <Description>KISA 표준 SEED-128, ARIA 대칭키 블록 암호 알고리즘 100% 순수 C# 구현체, PKCS#8 signPri.key 복호화 엔진, VID 신원확인 및 RSA-SHA256 전자서명 순수 창작 DLL (외부 의존성 0%)</Description>
     <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
   </PropertyGroup>

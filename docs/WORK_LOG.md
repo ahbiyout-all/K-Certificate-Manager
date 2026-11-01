@@ -17,6 +17,26 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 111] CI/CD 및 MSBuild 'MSB4025' XML 엔티티 파싱 오류 수정 (KCert.Crypto.csproj)
+- **작업 일시**: 2026-10-31 22:30 KST
+- **요청 사항**:
+  - `dotnet restore KCertManager.sln` 실행 시 발생하는 MSBuild XML 파싱 오류 해결:
+    `D:\a\K-Certificate-Manager\K-Certificate-Manager\src-wpf\KCert.Crypto\KCert.Crypto.csproj(17,25): error MSB4025: The project file could not be loaded. An error occurred while parsing EntityName. Line 17, position 25.`
+- **원인 분석**:
+  - `src-wpf/KCert.Crypto/KCert.Crypto.csproj` 17번 라인의 `<Product>` 요소 내부에 비이스케이프된 앰퍼샌드(`&`) 문자가 포함되어 있었음:
+    `<Product>K-인증서 암호화 & 전자서명 순수 창작 코어 라이브러리 (KCert.Crypto)</Product>`
+  - XML 표준 규격(W3C XML 1.0) 및 MSBuild 파서 규격상 태그 내용 및 속성값에 포함되는 `&` 문자는 반드시 XML 엔티티 참조인 `&amp;`로 이스케이프되어야 함. 이스케이프되지 않은 단독 `&` 문자로 인해 MSBuild가 뒤따르는 문자열을 엔티티 이름으로 파싱하려다 `MSB4025 (An error occurred while parsing EntityName)` 예외를 발생시키며 솔루션 복원(`dotnet restore`) 실패.
+- **수행 내용**:
+  1. **`src-wpf/KCert.Crypto/KCert.Crypto.csproj` 17번 라인 수정**:
+     - 변경 전: `<Product>K-인증서 암호화 & 전자서명 순수 창작 코어 라이브러리 (KCert.Crypto)</Product>`
+     - 변경 후: `<Product>K-인증서 암호화 &amp; 전자서명 순수 창작 코어 라이브러리 (KCert.Crypto)</Product>`
+  2. **프로젝트 전체 XML 정합성 전수 검증**:
+     - `src-wpf/` 디렉터리 내 모든 `.csproj`, `.xaml`, `.xml` 파일에 대해 비이스케이프된 `&` 문자 탐색 및 XML 파서(`xml.etree.ElementTree`)를 통한 구문 유효성 전수 검사 실시.
+     - `KCert.Core.csproj`, `KCertManager.Wpf.csproj`, 19개 전체 XAML 뷰 파일 모두 정상적인 XML 구조임을 확인 완료.
+  3. **빌드 및 린트 검증**:
+     - `compile_applet` 및 `lint_applet` 통과 확인.
+
+
 ### 📝 [작업 차수 110] KCert.Core.dll 주요 설계 사양서(5대 핵심 영역) 작성 및 공식 문서 체계 등록
 - **작업 일시**: 2026-10-31 22:00 KST
 - **요청 사항**:
