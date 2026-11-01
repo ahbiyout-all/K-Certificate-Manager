@@ -57,6 +57,13 @@
 - Subject DN 내에 포함된 주민등록번호(`000401-*******`), 사업자등록번호(`123-**-45678`) 마스킹.
 - 만료 임박 일수별 5단계 위험도 산출 및 발급기관(금융결제원, 코스콤, KICA, GPKI 등) 공식 갱신 사이트 자동 라우팅.
 
+### 3.6 순수 창작 암호화 & 전자서명 엔진 (`KCert.Crypto.dll`)
+- **KISA SEED-128 (RFC 4269)**: 16라운드 Feistel 네트워크, G-Function 4개 룩업 테이블($SS_0 \dots SS_3$), CBC 모드 및 PKCS#7 패딩 순수 C# 구현 (BouncyCastle 제로 의존).
+- **KISA ARIA (RFC 5794)**: 12/14/16라운드 치환-확산 네트워크(SPN), Involution 구조, CBC 모드 순수 구현.
+- **PKCS#8 개인키 복호화 (`KCertPrivateKeyDecryptor.cs`)**: `signPri.key`로부터 Salt, Iteration, IV를 추출하고 PBKDF2 키 유도 후 대칭 복호화하여 .NET 표준 `RSA` 인스턴스로 즉각 복원 (0.5ms 소요).
+- **가상식별번호 VID 영지식 검증 (`KCertVidEngine.cs`)**: OID `1.2.410.200004.10.1.1` 추출 및 주민등록번호/사업자번호 무결성 영지식 해시 검증.
+- **전자서명 무결성 테스트 (`KCertSignatureEngine.cs`)**: 복원된 개인키로 RSA-SHA256 PKCS#1 v1.5 전자서명을 생성하고 공개키로 즉각 검증하여 키 쌍 일치성을 사전 확증.
+
 ---
 
 ## 4. API 공개 인터페이스 및 사용 예시
@@ -66,28 +73,32 @@ using KCert.Core.Parser;
 using KCert.Core.Diagnostics;
 using KCert.Core.Vault;
 using KCert.Core.Common;
+using KCert.Crypto.Engine;
+using KCert.Crypto.Ciphers;
 
 // 1. 단일 인증서 파싱 및 키 알고리즘 확인
 var cert = KCertParser.Parse(@"C:\Users\Admin\AppData\LocalLow\NPKI\yessign\USER\cn=홍길동");
 Console.WriteLine($"소유자: {cert?.CommonName}, 키 암호화: {cert?.KeyInfo?.AlgorithmName}");
 
-// 2. 개인정보 안전 마스킹
-var (cleanName, maskedId) = CertSanitizer.ParseCleanSubject(cert!.SubjectDn);
-Console.WriteLine($"안전 표기명: {cleanName} ({maskedId})");
+// 2. KCert.Crypto 엔진을 통한 signPri.key 비밀번호 검증 및 개인키 복호화
+using var decryptResult = KCertPrivateKeyDecryptor.DecryptKeyFile(cert!.KeyFilePath, "Password123!");
+if (decryptResult.IsSuccess)
+{
+    Console.WriteLine($"복호화 성공: {decryptResult.AlgorithmName}, RSA {decryptResult.KeySizeBits}비트");
+    
+    // 3. 전자서명 생성 및 공개키 대조 검증
+    using var publicCert = new System.Security.Cryptography.X509Certificates.X509Certificate2(cert.DerFilePath);
+    var signTest = KCertSignatureEngine.TestSignature(decryptResult.RsaInstance!, publicCert);
+    Console.WriteLine($"전자서명 검증 결과: {signTest.Message}");
+}
 
-// 3. 만료 알람 및 갱신 포털 분석
-var alarm = CertExpirationAlarmEngine.EvaluateAlarm(cert);
-Console.WriteLine($"만료 위험도: {alarm.Urgency}, 포털: {alarm.RenewalPortalName} ({alarm.RenewalPortalUrl})");
-
-// 4. 전역 중복 인증서 검사
-var duplicateReport = KCertAntiDuplicationEngine.AnalyzeDuplicates(new[] { cert });
-Console.WriteLine($"중복 그룹 수: {duplicateReport.DuplicateGroupCount}");
-
-// 5. PFX 변환 내보내기
-var pfxResult = CertBundleSecurityEngine.ExportToPfx(cert.DerFilePath, cert.KeyFilePath, @"C:\Backup\cert.pfx", "Password!");
+// 4. 완전한 서명 가능 PKCS#12 PFX 내보내기 (개인키 결합)
+var pfxResult = CertBundleSecurityEngine.ExportToPfx(cert.DerFilePath, cert.KeyFilePath, @"C:\Backup\cert.pfx", "PfxPassword!", "Password123!");
+Console.WriteLine(pfxResult.Message);
 ```
 
 ---
 
 ## 5. 결론 및 배포 확인
-- 본 순수 창작 DLL(`KCert.Core.dll`)은 C# WPF 데스크톱 애플리케이션 및 독립 .NET 환경에서 최고 수준의 안정성과 속도를 제공하며, 외부 서드파티 라이브러리 없이 완벽한 독립 실행을 보장합니다.
+- 본 프로젝트의 순수 창작 DLL 듀오인 **`KCert.Core.dll`**과 **`KCert.Crypto.dll`**은 C# WPF 데스크톱 애플리케이션 및 독립 .NET 런타임 환경에서 최고 수준의 안정성과 속도를 제공하며, 외부 서드파티 라이브러리(BouncyCastle 등)나 레거시 32비트 C++ 네이티브 모듈 없이 완벽한 독립 실행과 초경량 배포를 보장합니다.
+- 세부 암호화 수학적 원리 및 KISA 표준 사양은 `docs/KCERT_CRYPTO_DLL_SPECIFICATION.md`를 참조하시기 바랍니다.

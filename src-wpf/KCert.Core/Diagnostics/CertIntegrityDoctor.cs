@@ -270,7 +270,34 @@ namespace KCert.Core.Diagnostics
                     if (fileName.Equals("kmpri.key", StringComparison.OrdinalIgnoreCase)) fileName = "kmPri.key";
 
                     targetFilePath = Path.Combine(targetDir, fileName);
+
+                    // 기존 파일이 읽기 전용인 경우 속성 해제
+                    if (File.Exists(targetFilePath))
+                    {
+                        try
+                        {
+                            var attr = File.GetAttributes(targetFilePath);
+                            if ((attr & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                            {
+                                File.SetAttributes(targetFilePath, FileAttributes.Normal);
+                            }
+                        }
+                        catch { }
+                    }
+
                     File.Copy(file, targetFilePath, true);
+
+                    // 복사된 대상 파일의 읽기 전용 속성 해제
+                    try
+                    {
+                        var attr = File.GetAttributes(targetFilePath);
+                        if ((attr & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                        {
+                            File.SetAttributes(targetFilePath, FileAttributes.Normal);
+                        }
+                    }
+                    catch { }
+
                     movedCount++;
                 }
 

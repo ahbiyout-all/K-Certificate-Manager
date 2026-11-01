@@ -46,6 +46,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KCert.Core\KCert.Core.csproj" />
+    <ProjectReference Include="..\KCert.Crypto\KCert.Crypto.csproj" />
   </ItemGroup>
 
 </Project>

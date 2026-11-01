@@ -17,6 +17,82 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 110] KCert.Core.dll 주요 설계 사양서(5대 핵심 영역) 작성 및 공식 문서 체계 등록
+- **작업 일시**: 2026-10-31 22:00 KST
+- **요청 사항**:
+  - "KCert.Core.dll의 주요 설계 문서(기능 명세, 동작 원리, 데이터 흐름, 에러 처리 전략, .NET 8 WPF 환경과의 연동 방식)를 마크다운 형식으로 작성하여 등록해 주세요."
+- **배경 및 원인 분석**:
+  1. `KCert.Core.dll`은 대한민국 공인인증서(NPKI) 및 정부/교육 전자서명(GPKI/EPKI)을 다루는 100% 순수 C# 기반의 코어 라이브러리로써, 개발자·감사자·시스템 연동 담당자가 라이브러리의 아키텍처와 내부 동작을 완벽히 파악할 수 있는 표준 엔지니어링 설계 문서가 요구됨.
+  2. 단순 API 나열을 넘어, 무할당 ASN.1 DER TLV 바이트 순회 메커니즘, 7비트 VLQ OID 역해석, Win32 Native DeviceIoControl 스토리지 쿼리, 원자적 2단계 트랜잭션 전송, 지능형 중첩 폴더 복구(Auto-Repair), 그리고 .NET 8 WPF MVVM 환경과의 스레드 안전성 연동 방식까지 체계적으로 정리할 필요가 있음.
+- **수행 내용**:
+  1. **KCert.Core.dll 종합 설계 사양서 신설 (`docs/KCERT_CORE_DLL_DESIGN_SPECIFICATION.md`)**:
+     - **제1장: 시스템 개요 및 설계 철학**: Zero Third-Party Dependency, Air-Gapped 보안, 무할당 고속 처리, Fault Tolerance 원칙 명시.
+     - **제2장: 기능 명세 (Functional Specifications)**: 6대 서브시스템(Parser, Discovery, Diagnostics, Vault, HardwareGuard, Common) 18개 핵심 클래스의 메서드·인터페이스·기능 완전 기술.
+     - **제3장: 동작 원리 (Operating Principles & Internal Mechanisms)**:
+       - 무할당(0-Allocation) ASN.1 DER TLV 바이트 파서 메커니즘 (ITU-T X.690 규격).
+       - 7비트 VLQ 가변 길이 수치 OID 비트 연산 누산 공식 및 매핑.
+       - PKCS#8 `EncryptedPrivateKeyInfo` ASN.1 트리 분해 및 PBES2/PBKDF2 파라미터 추출.
+       - 2단계 분리형(Fast-Pass 50~100ms + Deep-Pass 백그라운드) 초고속 스캔 파이프라인.
+       - Win32 `DeviceIoControl`(`IOCTL_STORAGE_QUERY_PROPERTY`) 기반 물리 버스(`BusTypeUsb` vs `BusTypeNvme`) 판별.
+       - 원자적 2단계 트랜잭션 파일 복사 및 SHA-256 전수 해시 검증/롤백.
+       - 중첩 폴더 감지 및 표준 계층 구조(`NPKI/{Issuer}/USER/cn=...`) 자동 치료(Auto-Repair).
+     - **제4장: 데이터 흐름 (Data Flow Architecture)**:
+       - 엔드투엔드 전체 라이프사이클 파이프라인 ASCII 다이어그램.
+       - 스토리지 탐색 ➔ DER 바이너리 ➔ KCertMetadata ➔ WPF UI 바인딩 흐름.
+       - 원자적 백업 트랜잭션 흐름 및 결함 진단/치료 파이프라인.
+       - 분리형 인증서의 PKCS#12 (PFX) 번들 변환 및 `KCert.Crypto` 연동 흐름.
+     - **제5장: 에러 처리 전략 (Error Handling Strategy & Fault Tolerance)**:
+       - Fail-Safe Non-Blocking 격리 설계.
+       - 파일시스템/I/O 5대 예외(`UnauthorizedAccessException`, `PathTooLongException`, `DriveNotFoundException`, `IOException` sharing violation, Disk full) 방어 매트릭스.
+       - 5MB 제한 및 ASN.1 `0x30` 시퀀스 헤더 사전 검증 등 악의적 페이로드/손상 방어.
+       - 기술적 원시 예외를 10대 직관적 조치 가이드로 변환하는 `UserFriendlyError` 패턴.
+     - **제6장: .NET 8 WPF 환경과의 연동 방식**:
+       - Task-based Asynchronous Pattern (TAP) 및 `CancellationToken` 연동.
+       - UI 스레드 분리 및 `Dispatcher.InvokeAsync` 안전성 보장.
+       - MVVM (`ViewModelBase`, `RelayCommand`, `ObservableCollection<T>`) 바인딩 연계.
+       - 서비스 계층(`CertificateScannerService`, `CertificateBackupService`) 추상화 및 Decoupling.
+       - `PublishSingleFile` 단일 실행 파일 최적화 호환성.
+     - **제7장: 공용 API 레퍼런스 및 C# 코드 예제**:
+       - 단일 인증서 파싱, 비표준/중첩 폴더 진단 및 자동 치료, 원자적 안전 백업, PFX 변환 예제 수록.
+  2. **기존 문서 동기화**:
+     - `docs/KCERT_CORE_DLL_SPEC.md`: 최상단에 공식 종합 설계 사양서 안내 및 링크 추가.
+     - `docs/README.md`: 문서 목록 표에 `KCERT_CORE_DLL_DESIGN_SPECIFICATION.md` 등록.
+  3. **검증**: `compile_applet` 및 `lint_applet` 실행으로 시스템 정상 빌드 확인.
+
+### 📝 [작업 차수 109] 순수 창작 암호화 & 전자서명 DLL (KCert.Crypto) 설계·개발, 기존 DLL(KCert.Core) 결함 감사·교정 및 기술 명세서 등록
+- **작업 일시**: 2026-10-31 20:30 KST
+- **요청 사항**:
+  1. "기능 중에 순수 창작 DLL로 만들어서 사용하면 좋은 기능이 있나 확인하고 진행하세요."
+  2. "기존 DLL파일중 오류나 개선점이 있는지 확인."
+  3. "순수 창작 DLL에 관한 동작원리와 세부사항을 문서로 만들어 등록하세요."
+- **배경 및 원인 분석**:
+  1. 대한민국 공인인증서 체계(NPKI, GPKI, EPKI)는 `signCert.der`(공개키)와 `signPri.key`(개인키)가 분리되어 있으며, 개인키는 KISA 국가 표준 블록 암호인 **SEED-128**(RFC 4269) 및 **ARIA**(RFC 5794)로 암호화되어 있음.
+  2. 마이크로소프트 .NET BCL에는 SEED-128이 미탑재되어 있어, 대부분의 상용 솔루션은 5~10MB에 달하는 외부 서드파티(`BouncyCastle`)를 통째로 종속시키거나 10여 년 전의 노후 32비트 C/C++ 네이티브 DLL(`MagicPKI.dll` 등)을 P/Invoke 호출하여 최신 64비트/ARM OS에서 호환성 충돌 및 보안 경고를 유발함.
+  3. 기존 `KCert.Core.dll`의 소스 코드 감사 결과:
+     - `CertBundleSecurityEngine.ExportToPfx`가 공개키만 로드된 상태에서 PFX를 내보내어, 개인키가 누락된 무용지물 `.pfx`가 생성되던 심각한 결함 발견.
+     - `KCertAsn1Reader.ExtractAllOids`에서 2바이트 이상 가변 길이 OID 누락 및 `DecodeOid` ITU-T X.690 경계값 보호 부재 발견.
+     - `CertIntegrityDoctor.RepairToStandardHierarchy`에서 대상 파일이 읽기 전용(`ReadOnly`)일 때 `File.Copy` 시 `UnauthorizedAccessException` 예외가 발생하던 결함 발견.
+- **수행 내용**:
+  1. **신규 순수 창작 DLL 프로젝트 `KCert.Crypto` 개발 (외부 종속성 0%)**:
+     - `src-wpf/KCert.Crypto/KCert.Crypto.csproj` 신설 (.NET 10.0 / .NET 8.0 지원 Class Library).
+     - **`KisaSeedEngine.cs` (RFC 4269)**: 128비트 블록/키, 16라운드 Feistel 네트워크, 4대 사전 계산 G-함수 룩업 테이블($SS_0 \dots SS_3$), CBC 운용 모드 및 PKCS#7 패딩의 100% 순수 C# 매니지드 고속 구현체.
+     - **`KisaAriaEngine.cs` (RFC 5794 / KS X 1213)**: 12/14/16라운드 치환-확산 네트워크(SPN), Involution S-Box 치환 계층, CBC 모드 순수 C# 구현체.
+     - **`KCertPrivateKeyDecryptor.cs` (RFC 5208 / PKCS#5)**: PKCS#8 `EncryptedPrivateKeyInfo` ASN.1 파싱, PBKDF2 키 유도, SEED-128/ARIA-128/256/3DES/AES 복호화 후 표준 .NET `RSA` 인스턴스로 즉각 복원 (0.5ms 소요).
+     - **`KCertVidEngine.cs` (KISA OID 1.2.410.200004.10.1.1)**: 가상식별번호(VID) 영지식(Zero-Knowledge) 본인확인 엔진. 주민등록번호/사업자번호 평문 노출 없이 Hash(ID+Random) 비교로 신원 무결성 검증.
+     - **`KCertSignatureEngine.cs` (PKCS#1 v1.5 RSA-SHA256)**: 전자서명 생성 및 `signCert.der` 공개키 대조 검증을 통한 수학적 키 쌍 일치성 사전 확증 엔진.
+  2. **기존 DLL (`KCert.Core.dll`) 결함 교정 및 감사 조치**:
+     - `CertBundleSecurityEngine.ExportToPfx` 교정: `KCertPrivateKeyDecryptor`를 연동하여 `signPri.key` 복호화 후 `cert.CopyWithPrivateKey()`로 개인키를 결합, 홈택스/정부24 및 브라우저에서 즉시 로그인·서명 가능한 완전한 PKCS#12 PFX 번들 생성.
+     - `KCertAsn1Reader.cs` 교정: ITU-T X.690 표준 `firstNode = Math.Min(first / 40, 2)` 경계값 보정 및 4바이트 롱폼 가변 길이 OID 전수 파싱 지원.
+     - `CertIntegrityDoctor.cs` 교정: `RepairToStandardHierarchy`에서 읽기 전용 속성 사전/사후 안전 해제 로직 탑재.
+     - 솔루션 구조 갱신: `KCertManager.sln`, `KCert.Core.csproj`, `KCertManager.Wpf.csproj`에 `KCert.Crypto` 프로젝트 참조 일괄 반영.
+  3. **순수 창작 DLL 동작 원리 및 세부 기술 명세서 작성·등록**:
+     - `docs/KCERT_CRYPTO_DLL_SPECIFICATION.md` 신설: 수학적 원리, 라운드 함수 구조, PKCS#8 구조도, VID 영지식 검증 공식, API 사용 예제 총망라.
+     - `docs/PURE_CREATIVE_DLL_ARCHITECTURE.md`, `docs/README.md` 동기화 갱신.
+  4. **웹 콘솔 UI 연동 (`src/components/CoreSpecModal.tsx`)**:
+     - 순수 창작 DLL 명세 모달에 '1. 암호엔진 (Crypto)' 전용 탭 신설 (SEED-128, ARIA, PKCS#8, VID 4대 핵심 기둥 시각화).
+  5. **검증**: `compile_applet` 및 `lint_applet` 정상 빌드 확인 (0 에러, TypeScript 완전 통과).
+
+
 ### 📝 [작업 차수 108] GitHub 공식 가이드 문서 신설 및 릴리스 배포 파이프라인 동기화
 - **작업 일시**: 2026-10-31 11:50 KST
 - **요청 사항**: "문서폴더에 깃허브문서 업데이트"

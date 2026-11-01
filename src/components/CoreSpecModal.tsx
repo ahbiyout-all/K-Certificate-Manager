@@ -26,20 +26,21 @@ interface CoreSpecModalProps {
 }
 
 export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose }) => {
-  const [activeEngine, setActiveEngine] = useState<'PARSER' | 'DISCOVERY' | 'HARDWARE'>('PARSER');
+  const [activeEngine, setActiveEngine] = useState<'PARSER' | 'CRYPTO' | 'DISCOVERY' | 'HARDWARE'>('CRYPTO');
   const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
 
   const copySpecSummary = () => {
-    const text = `[KCert.Core.dll 기술 명세 요약]
-- 버전: v${APP_VERSION} (.NET 10.0 / .NET 8.0 제로 의존성 순수 창작 DLL)
+    const text = `[KCert.Core.dll & KCert.Crypto.dll 순수 창작 기술 명세 요약]
+- 버전: v${APP_VERSION} (.NET 10.0 / .NET 8.0 제로 의존성 순수 창작 DLL 듀오)
 - 저작권: ${DEVELOPER_INFO.author} (${DEVELOPER_INFO.blog})
 - 홈페이지: ${DEVELOPER_INFO.homepage}
-- 3대 모듈:
-  1. KCert.Core.Parser: OID 역해석 (5대 NPKI 기관 및 GPKI/EPKI) 및 키페어 검증
-  2. KCert.Core.Discovery: AppData\\LocalLow 등 표준 경로 BFS 안전 탐색
-  3. KCert.Core.HardwareGuard: WMI VolumeChange 감시, 600ms 마운트 디바운스, 읽기전용 락 감지`;
+- 핵심 라이브러리:
+  1. KCert.Crypto: KISA SEED-128 & ARIA 블록암호 순수 C# 구현체, PKCS#8 signPri.key 복호화, VID 영지식 본인확인, RSA-SHA256 전자서명 시뮬레이션
+  2. KCert.Core.Parser: OID 역해석 (5대 NPKI 기관 및 GPKI/EPKI), 고속 ASN.1 DER 디코더
+  3. KCert.Core.Discovery: AppData\\LocalLow 등 2단계 초고속 Fast-Pass/Deep-Pass 안전 탐색
+  4. KCert.Core.HardwareGuard: Win32 DeviceIoControl 버스 식별(USB/NVMe), WMI 핫플러그 감시, 쓰기방지 락 프로브`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -56,12 +57,12 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-bold">KCert.Core.dll 순수 창작 코어 명세</h3>
+                <h3 className="text-base sm:text-lg font-bold">KCert 순수 창작 핵심 DLL 명세</h3>
                 <span className="text-[10px] font-mono px-2 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded font-semibold">
-                  .NET 10.0 / .NET 8.0 Class Library
+                  KCert.Core + KCert.Crypto
                 </span>
               </div>
-              <p className="text-xs text-slate-400">외부 서드파티 제로(Zero-Dependency) · 네트워크 통신 제로(Zero-Network)</p>
+              <p className="text-xs text-slate-400">외부 서드파티 제로(Zero BouncyCastle) · 순수 100% C# 독립 실행</p>
             </div>
           </div>
 
@@ -74,8 +75,21 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
           </button>
         </div>
 
-        {/* 3 Engine Navigation Tabs */}
-        <div className="grid grid-cols-3 border-b border-slate-200 bg-slate-50 text-xs font-bold shrink-0">
+        {/* 4 Engine Navigation Tabs */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 border-b border-slate-200 bg-slate-50 text-xs font-bold shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveEngine('CRYPTO')}
+            className={`p-3 text-center border-b-2 transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+              activeEngine === 'CRYPTO'
+                ? 'border-indigo-600 bg-white text-indigo-700'
+                : 'border-transparent text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+            <span>1. 암호엔진 (Crypto)</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setActiveEngine('PARSER')}
@@ -86,7 +100,7 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
             }`}
           >
             <KeyRound className="w-3.5 h-3.5" />
-            <span>1. 파서 (Parser)</span>
+            <span>2. 파서 (Parser)</span>
           </button>
 
           <button
@@ -99,7 +113,7 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
             }`}
           >
             <FolderSearch className="w-3.5 h-3.5" />
-            <span>2. 탐색 (Discovery)</span>
+            <span>3. 탐색 (Discovery)</span>
           </button>
 
           <button
@@ -112,12 +126,80 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
             }`}
           >
             <HardDrive className="w-3.5 h-3.5" />
-            <span>3. 가드 (Hardware)</span>
+            <span>4. 가드 (Hardware)</span>
           </button>
         </div>
 
         {/* Body Content */}
         <div className="p-6 space-y-5 overflow-y-auto flex-1 text-xs sm:text-sm text-slate-700">
+          {activeEngine === 'CRYPTO' && (
+            <div className="space-y-4">
+              <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl space-y-1 text-indigo-950">
+                <div className="font-bold text-indigo-900 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                  <span>KCert.Crypto : 대한민국 국가 암호화 & 전자서명 순수 창작 DLL (BouncyCastle 제로 의존)</span>
+                </div>
+                <p className="text-xs text-indigo-800 leading-relaxed">
+                  국내 최초 수준의 100% C# 순수 창작 구현체로, 외부 거대 라이브러리(BouncyCastle)나 노후 32비트 C++ DLL 없이 KISA SEED-128, ARIA 대칭키 암복호화, PKCS#8 개인키 파싱 및 복호화, VID 영지식 본인확인을 단독 처리합니다.
+                </p>
+              </div>
+
+              {/* 4 Core Pillars of KCert.Crypto */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-3 rounded-xl border border-indigo-100 bg-indigo-50/40 space-y-1.5">
+                  <div className="font-bold text-xs text-indigo-900 flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
+                    <span>KisaSeedEngine (RFC 4269)</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-normal">
+                    128비트 블록/키, 16라운드 Feistel 네트워크. 4개 사전 계산 룩업 테이블(SS0~SS3)을 통한 0-오버헤드 G-함수 및 CBC/PKCS#7 순수 C# 구현체.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl border border-blue-100 bg-blue-50/40 space-y-1.5">
+                  <div className="font-bold text-xs text-blue-900 flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                    <span>KisaAriaEngine (RFC 5794)</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-normal">
+                    차세대 국가 표준 치환-확산 네트워크(SPN) 블록 암호. 12/14/16 라운드 및 Involution S-Box 치환 계층 순수 C# 탑재.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl border border-emerald-100 bg-emerald-50/40 space-y-1.5">
+                  <div className="font-bold text-xs text-emerald-900 flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                    <span>KCertPrivateKeyDecryptor</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-normal">
+                    PKCS#8 EncryptedPrivateKeyInfo 파싱 및 PBKDF2 키 유도 후 signPri.key를 0.5ms 만에 복호화하여 표준 .NET RSA 인스턴스로 복원.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl border border-purple-100 bg-purple-50/40 space-y-1.5">
+                  <div className="font-bold text-xs text-purple-900 flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-purple-600"></span>
+                    <span>KCertVidEngine (OID 1.2.410.200004.10.1.1)</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-normal">
+                    가상식별번호(VID) 영지식(Zero-Knowledge) 본인확인. 주민/사업자등록번호 평문 노출 없이 Hash(ID+Random) 비교로 신원 무결성 검증.
+                  </p>
+                </div>
+              </div>
+
+              {/* Bug fix & Enhancement Banner */}
+              <div className="border border-emerald-200 bg-emerald-50/60 rounded-xl p-3 space-y-1 text-emerald-950">
+                <div className="font-bold text-xs text-emerald-900 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>기존 DLL 결함 교정: 개인키 결합 완전한 PFX (.pfx) 생성 지원</span>
+                </div>
+                <p className="text-[11px] text-emerald-800 leading-relaxed">
+                  기존 공개키 전용 내보내기 결함을 완벽히 교정하여, signPri.key 복호화 후 RSA 개인키를 cert.CopyWithPrivateKey()로 결합함으로써 금융권/정부24 및 브라우저에서 즉시 작동하는 완전한 PKCS#12 인증서 번들을 생성합니다.
+                </p>
+              </div>
+            </div>
+          )}
+
           {activeEngine === 'PARSER' && (
             <div className="space-y-4">
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-1 text-blue-950">
@@ -266,7 +348,7 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
           <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
             <span>문서 위치:</span>
             <code className="bg-white px-2 py-0.5 rounded border border-slate-300 font-mono text-[11px] text-slate-700">
-              docs/KCERT_CORE_DLL_SPEC.md
+              {activeEngine === 'CRYPTO' ? 'docs/KCERT_CRYPTO_DLL_SPECIFICATION.md' : 'docs/KCERT_CORE_DLL_SPEC.md'}
             </code>
           </div>
 

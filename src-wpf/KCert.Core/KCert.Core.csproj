@@ -22,4 +22,8 @@
   <ItemGroup>
     <PackageReference Include="System.Management" Version="8.0.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KCert.Crypto\KCert.Crypto.csproj" />
+  </ItemGroup>
 </Project>

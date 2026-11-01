@@ -135,10 +135,10 @@ namespace KCert.Core.Parser
 
             var sb = new StringBuilder();
 
-            // 첫 번째 바이트는 (first_node * 40 + second_node)
+            // 첫 번째 바이트는 ITU-T X.690 표준: firstNode * 40 + secondNode (firstNode <= 2)
             byte first = oidBytes[0];
-            int firstNode = first / 40;
-            int secondNode = first % 40;
+            int firstNode = Math.Min(first / 40, 2);
+            int secondNode = first - (firstNode * 40);
             sb.Append(firstNode).Append('.').Append(secondNode);
 
             long currentValue = 0;
@@ -177,9 +177,13 @@ namespace KCert.Core.Parser
                     if ((len & 0x80) != 0)
                     {
                         int lenBytes = len & 0x7F;
-                        if (lenBytes == 1 && contentStart < data.Length)
+                        if (lenBytes > 0 && lenBytes <= 4 && contentStart + lenBytes <= data.Length)
                         {
-                            len = data[contentStart++];
+                            len = 0;
+                            for (int k = 0; k < lenBytes; k++)
+                            {
+                                len = (len << 8) | data[contentStart++];
+                            }
                         }
                         else
                         {

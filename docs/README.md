@@ -37,7 +37,9 @@
 | [`AUTO_UPDATE_GUIDE.md`](./AUTO_UPDATE_GUIDE.md) | **자동 업데이트 가이드**: GitHub Releases REST API 기반 실시간 버전 확인, SemVer 비교, 커스텀 업데이트 알림 팝업창(`UpdateNotificationDialog`) 및 릴리스 배포 파이프라인 |
 | [`WPF_NATIVE_GUIDE.md`](./WPF_NATIVE_GUIDE.md) | **C# WPF 데스크톱 개발 가이드**: MVVM 아키텍처, 모던 일체형 타이틀바(`WindowChrome`), 드롭다운 테마 선택기, 4대 테마 시스템 안내 |
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | **시스템 아키텍처**: 인증서 파일 쌍 규격, 경로 매핑, 양방향 전송 파이프라인, 5대 서브시스템 및 7대 보안 하드닝 설계 원칙 |
-| [`PURE_CREATIVE_DLL_ARCHITECTURE.md`](./PURE_CREATIVE_DLL_ARCHITECTURE.md) | **순수 창작 DLL 아키텍처 및 세부 동작 원리서**: 100% C# 순수 창작 `KCert.Core.dll`의 5대 서브시스템, ASN.1 바이너리 파서, PKCS#8 키 분석기, 중복 탐지, PFX 변환 엔진 기술 명세 |
+| [`PURE_CREATIVE_DLL_ARCHITECTURE.md`](./PURE_CREATIVE_DLL_ARCHITECTURE.md) | **순수 창작 DLL 아키텍처 및 세부 동작 원리서**: 100% C# 순수 창작 `KCert.Core.dll` 및 `KCert.Crypto.dll`의 5대 서브시스템, ASN.1 바이너리 파서, PKCS#8 키 분석기, 중복 탐지, PFX 변환 엔진 기술 명세 |
+| [`KCERT_CRYPTO_DLL_SPECIFICATION.md`](./KCERT_CRYPTO_DLL_SPECIFICATION.md) | **KCert.Crypto.dll 순수 창작 암호화 & 전자서명 엔진 기술 명세서**: KISA SEED-128 (RFC 4269), KISA ARIA (RFC 5794), PKCS#8 signPri.key 복호화, VID 영지식 본인확인, RSA-SHA256 전자서명 시뮬레이션 동작 원리 및 기존 DLL 결함 교정 상세서 |
+| [`KCERT_CORE_DLL_DESIGN_SPECIFICATION.md`](./KCERT_CORE_DLL_DESIGN_SPECIFICATION.md) | **KCert.Core.dll 주요 설계 사양서**: 5대 핵심 영역(기능 명세, 동작 원리, 데이터 흐름, 에러 처리 전략, .NET 8 WPF 환경과의 연동 방식)을 총망라한 엔지니어링 종합 설계서 |
 | [`KCERT_CORE_DLL_SPEC.md`](./KCERT_CORE_DLL_SPEC.md) | **KCert.Core.dll 기술 명세서**: 순수 창작 코어 라이브러리 동작 원리, OID 역해석, 화이트리스트 안전 전송, WMI 가드 및 C#/C++/Rust/Python 타 언어 연동 명세 |
 | [`WORK_LOG.md`](./WORK_LOG.md) | **공식 작업 일지**: 개발 요구사항, 차수별 구현 내역, 보안 감사 및 검증 이력 |
 

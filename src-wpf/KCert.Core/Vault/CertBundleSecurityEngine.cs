@@ -25,13 +25,14 @@ namespace KCert.Core.Vault
     {
         /// <summary>
         /// signCert.der 공개키와 signPri.key 개인키를 결합하여 표준 PFX (.pfx) 파일로 내보냅니다.
-        /// (비암호화 RSA 키인 경우 직접 패킹, PKCS#8인 경우 메타데이터 유지)
+        /// (KCert.Crypto 순수 창작 SEED/ARIA 복호화 엔진을 통해 개인키를 결합하여 완전한 서명 가능 PFX 생성)
         /// </summary>
         public static BundleOperationResult ExportToPfx(
             string derPath,
             string keyPath,
             string pfxOutputPath,
-            string pfxPassword)
+            string pfxPassword,
+            string? certPassword = null)
         {
             if (!File.Exists(derPath))
                 return new BundleOperationResult { IsSuccess = false, Message = "signCert.der 파일이 존재하지 않습니다." };
@@ -43,9 +44,32 @@ namespace KCert.Core.Vault
 
                 // 개인키 분석
                 var keyAnalysis = File.Exists(keyPath) ? KCertKeyAnalyzer.AnalyzeKeyFile(keyPath) : null;
+                bool hasPrivateKeyAttached = false;
+                string usedPassword = !string.IsNullOrEmpty(certPassword) ? certPassword : pfxPassword;
 
-                // X.509 기본 내보내기 (.pfx)
-                byte[] pfxBytes = cert.Export(X509ContentType.Pfx, pfxPassword);
+                byte[] pfxBytes;
+
+                // 개인키가 존재하면 KCert.Crypto 엔진으로 복호화 시도 후 결합
+                if (File.Exists(keyPath) && !string.IsNullOrEmpty(usedPassword))
+                {
+                    using var decryptedResult = KCert.Crypto.Engine.KCertPrivateKeyDecryptor.DecryptKeyFile(keyPath, usedPassword);
+                    if (decryptedResult.IsSuccess && decryptedResult.RsaInstance != null)
+                    {
+                        using var certWithKey = cert.CopyWithPrivateKey(decryptedResult.RsaInstance);
+                        pfxBytes = certWithKey.Export(X509ContentType.Pfx, pfxPassword);
+                        hasPrivateKeyAttached = true;
+                    }
+                    else
+                    {
+                        // 복호화 비밀번호 불일치 시 공개키 전용으로 패킹
+                        pfxBytes = cert.Export(X509ContentType.Pfx, pfxPassword);
+                    }
+                }
+                else
+                {
+                    pfxBytes = cert.Export(X509ContentType.Pfx, pfxPassword);
+                }
+
                 var outDir = Path.GetDirectoryName(pfxOutputPath);
                 if (!string.IsNullOrEmpty(outDir) && !Directory.Exists(outDir))
                 {
@@ -54,12 +78,16 @@ namespace KCert.Core.Vault
 
                 File.WriteAllBytes(pfxOutputPath, pfxBytes);
 
+                string keyStatusMsg = hasPrivateKeyAttached
+                    ? $"개인키 결합 성공 ({keyAnalysis?.AlgorithmName ?? "SEED/ARIA"}) - 서명 및 로그인 완벽 호환"
+                    : "인증서 공개키 패키징 (개인키 미결합)";
+
                 return new BundleOperationResult
                 {
                     IsSuccess = true,
                     OutputPath = pfxOutputPath,
                     CommonName = cert.Subject,
-                    Message = $"표준 PKCS#12 PFX 내보내기 완료 (키 암호화: {keyAnalysis?.AlgorithmName ?? "표준"})"
+                    Message = $"표준 PKCS#12 PFX 내보내기 완료 ({keyStatusMsg})"
                 };
             }
             catch (Exception ex)

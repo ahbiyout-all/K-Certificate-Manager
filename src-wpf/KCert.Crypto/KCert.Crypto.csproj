@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Dynamic TargetFramework: Defaults to net10.0-windows on .NET 10+ SDK, with automatic net8.0-windows support -->
+    <ChosenTfm Condition="'$(TargetFramework)' != ''">$(TargetFramework)</ChosenTfm>
+    <ChosenTfm Condition="'$(ChosenTfm)' == '' and $([MSBuild]::VersionGreaterThanOrEquals('$(NETCoreSdkVersion)', '10.0'))">net10.0-windows</ChosenTfm>
+    <ChosenTfm Condition="'$(ChosenTfm)' == '' and $([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '9.0'))">net8.0-windows</ChosenTfm>
+    <ChosenTfm Condition="'$(ChosenTfm)' == ''">net10.0-windows</ChosenTfm>
+    <TargetFramework>$(ChosenTfm)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <Version>1.7.2</Version>
+    <AssemblyVersion>1.7.2.0</AssemblyVersion>
+    <FileVersion>1.7.2.0</FileVersion>
+    <Authors>AhBiYout</Authors>
+    <Company>AhBiYout</Company>
+    <Product>K-인증서 암호화 & 전자서명 순수 창작 코어 라이브러리 (KCert.Crypto)</Product>
+    <Description>KISA 표준 SEED-128, ARIA 대칭키 블록 암호 알고리즘 100% 순수 C# 구현체, PKCS#8 signPri.key 복호화 엔진, VID 신원확인 및 RSA-SHA256 전자서명 순수 창작 DLL (외부 의존성 0%)</Description>
+    <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
+  </PropertyGroup>
+</Project>

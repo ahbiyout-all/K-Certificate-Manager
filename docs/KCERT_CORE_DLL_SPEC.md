@@ -1,5 +1,7 @@
 # KCert.Core.dll 순수 창작 코어 라이브러리 상세 기술 명세 및 동작 원리서
 
+> 📘 **공식 정밀 설계 사양서 안내**: 5대 핵심 영역(기능 명세, 동작 원리, 데이터 흐름, 에러 처리 전략, .NET 8 WPF 환경과의 연동 방식)을 총망라한 종합 아키텍처 문서는 [`KCERT_CORE_DLL_DESIGN_SPECIFICATION.md`](./KCERT_CORE_DLL_DESIGN_SPECIFICATION.md)를 참조하십시오.
+
 대한민국 공인/공동인증서(NPKI), 행정전자서명(GPKI), 교육기관전자서명(EPKI), 국방전자서명(MPKI) 처리를 위해 순수 C#과 .NET 표준 암호화 프리미티브만으로 100% 독자 설계·구현된 **`KCert.Core.dll`**의 내부 동작 원리, 기존 결함 교정 내역, 5대 핵심 서브시스템 아키텍처 및 상세 API 명세서입니다.
 
 ---
