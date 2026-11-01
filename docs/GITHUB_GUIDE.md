@@ -24,12 +24,12 @@
 * **`feature/*` / `bugfix/*`**: 신규 기능 구현 및 결함 수정을 위한 작업 브랜치.
 
 ### 2) 시맨틱 버저닝 (SemVer 2.0.0) 태깅
-* 태그 형식: `v{MAJOR}.{MINOR}.{PATCH}` (예: `v1.7.2`)
+* 태그 형식: `v{MAJOR}.{MINOR}.{PATCH}` (예: `v1.8.0`)
 * 태그 생성 시 GitHub Actions가 버전 문자열을 추출하여 Inno Setup 인스톨러 컴파일 및 GitHub Release 본문을 자동 생성합니다.
 * 동적 버전 판별 3단계 파이프라인:
-  1. **1차 기준**: Git Tag 문자열 (예: `v1.7.2` ➔ `1.7.2`)
+  1. **1차 기준**: Git Tag 문자열 (예: `v1.8.0` ➔ `1.8.0`)
   2. **2차 기준**: `package.json`의 `"version"` 필드
-  3. **3차 기준**: `docs/PATCHNOTES.md` 상단 최신 릴리스 헤더 (`### 🚀 [v1.7.2]`)
+  3. **3차 기준**: `docs/PATCHNOTES.md` 상단 최신 릴리스 헤더 (`### 🚀 [v1.8.0]`)
 
 ---
 
@@ -59,37 +59,35 @@
 * **트리거**: `v*` 태그 푸시, `main` 브랜치 푸시 또는 수동 실행(`workflow_dispatch`)
 * **러너 환경**: `windows-latest`
 * **주요 단계**:
-  1. **버전 자동 감지**: `package.json` 및 Git 참조에서 릴리스 버전(`1.7.2`) 추출
+  1. **버전 자동 감지**: `package.json` 및 Git 참조에서 릴리스 버전(`1.8.0`) 추출
   2. **런타임 환경 구성**: Node.js 24 런타임 및 .NET 10.0 / 8.0 SDK 설치
   3. **Web 콘솔 빌드**: `npm run build`를 통해 `dist/` 정적 번들 생성
   4. **C# WPF 데스크톱 컴파일**:
-     * 순수 코어 라이브러리 `KCert.Core.dll` 빌드
-     * 정식 독립 실행형 데스크톱 앱 `KCertManager_v1.7.2.exe` (Self-Contained) 빌드
-     * 초경량 에디션 `KCertManager-Lite_v1.7.2.exe` (Framework-Dependent) 빌드
+     * 순수 코어 라이브러리 `KCert.Core.dll` 및 암호화 라이브러리 `KCert.Crypto.dll` 빌드
+     * 정식 독립 실행형 데스크톱 앱 `KCertManager_v1.8.0.exe` (Self-Contained) 빌드
+     * 초경량 에디션 `KCertManager-Lite_v1.8.0.exe` (Framework-Dependent) 빌드
   5. **Inno Setup 인스톨러 패키징**:
      * Inno Setup 6 자동 다운로드 및 ISCC 컴파일
-     * 폴더 풀림(Unpacked Multi-File) 레이아웃 설치 프로그램 `kcert-manager-v1.7.2-setup.exe` 생성
+     * 폴더 풀림(Unpacked Multi-File) 레이아웃 설치 프로그램 `kcert-manager-v1.8.0-setup.exe` 생성
      * Windows 방화벽 인바운드 규칙 사전 등록 및 무인 설치 스위치 검증
   6. **GitHub Release 자동 발행 (`softprops/action-gh-release@v2`)**:
      * 태그 기반 Release 생성 및 릴리스 노트 자동 등록
-     * 공식 설치 파일(`release/07_Installer/kcert-manager-v1.7.2-setup.exe`) 단독 첨부 배포
+     * 공식 설치 파일(`release/07_Installer/kcert-manager-v1.8.0-setup.exe`) 단독 첨부 배포
 
 ---
 
-## 📦 4. 최신 v1.7.2 GitHub Release 배포 명세
+## 📦 4. 최신 v1.8.0 GitHub Release 배포 명세
 
-* **릴리스 태그**: `v1.7.2`
-* **릴리스 타이틀**: `K-Certificate Manager v1.7.2`
+* **릴리스 태그**: `v1.8.0`
+* **릴리스 타이틀**: `K-Certificate Manager v1.8.0`
 * **공식 첨부 자산 (Assets)**:
-  * `kcert-manager-v1.7.2-setup.exe` (~40MB, Inno Setup 윈도우 정식 설치 프로그램)
+  * `kcert-manager-v1.8.0-setup.exe` (~40MB, Inno Setup 윈도우 정식 설치 프로그램)
 * **핵심 기능 요약**:
-  1. **상단 헤더 가로 볼륨 슬라이더 바 상시 탑재**: 원클릭 음소거 토글, 0%~100% 범위 슬라이더, 볼륨 수치, 미리듣기(▶) 버튼 일체형 배치
-  2. **눈에 잘 띄는 [⚙️ 환경 설정] 버튼 상시 노출**: 가로 슬라이더 바 바로 옆에 배치하여 설정 창 접근 편의성 극대화
-  3. **Windows C# WPF 데스크톱 전용 `SettingsDialog.xaml` 신설**: 알림음 ON/OFF, 미리듣기, 4대 테마, 모드 전환
-  4. **로컬 환경 설정 영구 저장 서비스 (`SettingsService.cs`) 구축**: `%LocalAppData%\KCertManager\kcert_settings.json` 연동
-  5. **'다시 표시하지 않음' CheckBox Two-Way 양방향 바인딩 및 XAML Spacing 제거로 CI 빌드 무결성 확보**
-  6. **만료 인증서 안전 정리 시 삭제 수량과 안전 격리 휴지통 수량 100% 동기화 (v1.7.1 계승)**
-  7. **Node.js 24 Next-Gen 및 Node.js 22 LTS CI/CD 런타임 최신화**
+  1. **순수 창작 독립 C# 코어 & 암호화 DLL 2종 분리 구축 (`KCert.Core.dll`, `KCert.Crypto.dll`)**: 외부 3rd-party 의존성 0%의 순수 네비게이션/암호화/파싱 라이브러리 구축
+  2. **상단 헤더 가로바 스크롤(Horizontal ScrollBar) 신설 및 마우스 휠 연동 (Web & WPF)**: 헤더 ScrollViewer 상시 가로 스크롤바 노출, 마우스 휠 조작 연동 및 윈도우 드래그 간섭 완전 차단
+  3. **4대 테마 전역 고대비 툴팁(ToolTip) 시스템 구축**: 다크 테마 White on White 시인성 불량 완벽 해결 (WCAG AAA 12:1+ 고대비 다크 카드 적용)
+  4. **소프트웨어 버전 관리(Semantic Versioning: MAJOR.MINOR.PATCH) 3단계 분리 정책 확립**: `docs/VERSIONING_POLICY.md` 판정 매트릭스 및 8대 체크리스트 명문화
+  5. **헤더 실시간 볼륨 슬라이더 및 WPF 전용 `SettingsDialog.xaml` 환경설정 대화상자 계승**
 
 ---
 
@@ -107,7 +105,7 @@ K-인증서 매니저는 사용자가 최신 버전을 놓치지 않도록 GitHu
 [ 3단계: /repos/:owner/:repo/tags (Git 태그 직결 엔드포인트) ]
        │
        ▼
-[ 최신 v1.7.2 버전 즉각 감지 & 상단 헤더 업데이트 알림 배지 점등 ]
+[ 최신 v1.8.0 버전 즉각 감지 & 상단 헤더 업데이트 알림 배지 점등 ]
 ```
 
 * **타임스탬프 캐시 버스팅**: `?_t=Date.now()` 파라미터 및 `Cache-Control: no-cache` 헤더를 적용하여 GitHub API의 로컬 브라우저/프록시 캐시 문제를 완전 해결
@@ -137,7 +135,7 @@ GitHub 공개 저장소 운영 시 민감한 개인 인증서 정보가 원격�
 
 1. **버그 제보 (Bug Report)**:
    * [GitHub Issues](https://github.com/AhBiYout-all/K-Certificate-Manager/issues)에서 새로운 이슈를 생성합니다.
-   * 운영체제 버전(Windows 10 / 11), 사용 중인 K-인증서 매니저 버전(예: `v1.7.2`), 오류 발생 경로 및 스크린샷을 첨부해 주시면 신속히 반영됩니다.
+   * 운영체제 버전(Windows 10 / 11), 사용 중인 K-인증서 매니저 버전(예: `v1.8.0`), 오류 발생 경로 및 스크린샷을 첨부해 주시면 신속히 반영됩니다.
 2. **기능 제안 (Feature Request)**:
    * 새로운 공인인증서 경로 지원, UI 편의 기능 등 다양한 아이디어를 Issue로 남겨주세요.
 3. **Pull Request (PR) 가이드**:

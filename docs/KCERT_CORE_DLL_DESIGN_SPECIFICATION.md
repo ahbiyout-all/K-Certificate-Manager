@@ -1,7 +1,7 @@
 # KCert.Core.dll 주요 설계 사양서 (Core Design Specification)
 
 > **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)  
-> **핵심 컴포넌트**: `KCert.Core.dll` (v1.7.2 / Core v1.4.5)  
+> **핵심 컴포넌트**: `KCert.Core.dll` (v1.8.0 / Core v1.4.5)  
 > **개발자**: AhBiYout (CISNet: [http://www.cisnet.co.kr/](http://www.cisnet.co.kr/), 블로그: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/))  
 > **대상 프레임워크**: `.NET 8.0` (`net8.0-windows`) & `.NET 10.0` (`net10.0-windows`) 멀티 타깃  
 > **의존성 규격**: 외부 서드파티 라이브러리 참조 0개 (**Zero Third-Party Dependency**, Pure C# Managed Implementation)  

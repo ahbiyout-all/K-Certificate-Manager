@@ -1,9 +1,9 @@
-# K-Certificate Manager (K-인증서 매니저) v1.7.2
+# K-Certificate Manager (K-인증서 매니저) v1.8.0
 
 <div align="center">
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Version](https://img.shields.io/badge/Version-v1.7.2-green.svg)
+![Version](https://img.shields.io/badge/Version-v1.8.0-green.svg)
 ![React](https://img.shields.io/badge/React-19.0-61dafb.svg)
 ![Vite](https://img.shields.io/badge/Vite-6.2-646cff.svg)
 ![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512bd4.svg)
@@ -17,20 +17,18 @@
 
 ---
 
-## 🚀 최신 릴리스 정보 (Latest Release: v1.7.2)
+## 🚀 최신 릴리스 정보 (Latest Release: v1.8.0)
 
-> **버전**: `v1.7.2` (최신 안정화 빌드)  
+> **버전**: `v1.8.0` (Semantic Versioning 2.0.0 MINOR Release)  
 > **출시일**: 2026-10-31  
-> **상세 변경 내역**: [docs/PATCHNOTES.md](./docs/PATCHNOTES.md) • [GitHub 배포 가이드](./docs/GITHUB_GUIDE.md)
+> **상세 변경 내역**: [docs/PATCHNOTES.md](./docs/PATCHNOTES.md) • [GitHub 배포 가이드](./docs/GITHUB_GUIDE.md) • [버전 관리 정책](./docs/VERSIONING_POLICY.md)
 
-### 🌟 v1.7.2 핵심 업데이트 내용
-- **상단 헤더 가로 볼륨 슬라이더 바 (Horizontal Sound Slider Bar) 상시 탑재**: 메인 상단 헤더 중앙에 원클릭 음소거/스피커 토글, 0%~100% 범위 슬라이더, 볼륨 수치(40% / OFF), 알림음 미리듣기(▶) 버튼을 일체형으로 배치하여 작업 중 언제든 즉각 음량 제어
-- **눈에 잘 띄는 [⚙️ 환경 설정] 버튼 상시 노출**: 가로 슬라이더 바 바로 옆에 시인성이 뛰어난 환경 설정 버튼을 영구 배치하여 설정 창 접근 편의성 극대화
-- **Windows C# WPF 데스크톱 전용 `SettingsDialog.xaml` 신설**: 알림음 ON/OFF, 가로 슬라이더 바, 효과음 미리듣기, 4대 테마(다크/회색/화이트/베이지) 선택, 간편/상세 모드 전환, 시작 가이드 옵션 대화상자 탑재
-- **로컬 환경 설정 영구 저장 서비스 (`SettingsService.cs`) 구축**: `%LocalAppData%\KCertManager\kcert_settings.json`을 통해 사용자 개인 환경설정 영구 보존
-- **'다시 표시하지 않음' CheckBox Two-Way 양방향 바인딩 및 CI 빌드 안정화**: `SettingsDialog.xaml`의 체크박스를 `MainViewModel.DontShowStartupWorkflowAgain`에 `Mode=TwoWay`로 양방향 바인딩하여 설정 상태 실시간 반영 및 XAML 비표준 `Spacing` 속성 완전 제거로 CI 컴파일 무결성 확보
-- **만료 인증서 안전 정리 시 삭제 수량과 안전 격리 휴지통 수량 100% 동기화 (v1.7.1 계승)**: PC 로컬 및 USB 메모리에서 만료 인증서 일괄 정리 시 삭제 수량과 휴지통 보관 수량이 오차 없이 1:1로 일치하며 발급기관명과 유효기간 메타데이터 완벽 복원
-- **GitHub Actions Node.js 24 Next-Gen / Node.js 22 LTS 전환**: Node.js 20 Deprecated & EOL 대응 완료 및 CI/CD 워크플로 현대화
+### 🌟 v1.8.0 핵심 업데이트 내용
+- **순수 창작 독립 C# 코어 & 암호화 DLL 2종 분리 구축 (`KCert.Core.dll`, `KCert.Crypto.dll`)**: 외부 3rd-party 의존성 0%의 C# 순수 X.509/ASN.1 파서, OID 식별자 분류기, SEED-128 암호화 및 PKCS#8 개인키 복호화 라이브러리 탑재
+- **상단 헤더 가로바 스크롤(Horizontal ScrollBar) 신설 및 마우스 휠 연동 (Web & WPF)**: 메인 상단 헤더 메뉴 높이 최적화(64px) 및 상시 가로 스크롤바 제공, 마우스 휠(`PreviewMouseWheel`) 연동 및 윈도우 드래그 조작과의 간섭 완벽 차단
+- **4대 테마 전역 고대비 툴팁(ToolTip) 시스템 탑재**: 다크 테마에서 흰색 배경에 흰색 글씨가 겹치던 시인성 결함을 완벽 해결하고, WCAG AAA 12:1+ 고대비 다크 플로팅 카드 스타일 전 테마 적용
+- **소프트웨어 버전 관리(Semantic Versioning: MAJOR.MINOR.PATCH) 3단계 분리 정책 확립**: `docs/VERSIONING_POLICY.md` 판정 의사결정 트리 및 8대 체크리스트 명문화
+- **상단 헤더 실시간 볼륨 슬라이더 및 WPF 전용 `SettingsDialog.xaml` 환경설정 대화상자 계승**: 원클릭 음소거, 볼륨 조절 슬라이더, 성공 알림음(SuccessChime) 테스트 및 영구 보존
 
 ---
 
@@ -80,9 +78,12 @@ K-Certificate-Manager/
 │   ├── types.ts                  # 핵심 인터페이스 및 데이터 모델
 │   └── App.tsx                   # 메인 애플리케이션 컴포넌트
 ├── src-wpf/                      # [데스크톱 에디션] Windows C# WPF
-│   ├── KCert.Core/               # 순수 .NET 암호화 및 인증서 탐색 코어 DLL
+│   ├── KCert.Core/               # X.509 파서, ASN.1, OID, USB 감시 순수 C# 코어 DLL
+│   ├── KCert.Crypto/             # SEED-128, PKCS#8 복호화, RSA-SHA256 순수 암호화 DLL
 │   └── KCertManager.Wpf/         # WPF 네이티브 데스크톱 UI 앱
 ├── docs/                         # 상세 기술 및 아키텍처 문서
+│   ├── VERSIONING_POLICY.md      # SemVer 2.0.0 (MAJOR.MINOR.PATCH) 3단계 버전 관리 정책
+│   ├── GITHUB_GUIDE.md           # GitHub CI/CD 및 릴리스 배포 가이드
 │   ├── ARCHITECTURE.md           # 파일 시스템 규격 및 보안 설계 원칙
 │   ├── KCERT_CORE_DLL_SPEC.md    # KCert.Core.dll 기술 명세서
 │   └── BUILD_GUIDE.md            # Windows 자동화 빌드 가이드

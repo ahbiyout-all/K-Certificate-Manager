@@ -7,7 +7,7 @@
 ## 📌 프로젝트 기본 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v1.7.2` (Semantic Versioning 2.0.0)
+- **현재 버전**: `v1.8.0` (Semantic Versioning 2.0.0 MINOR Release)
 - **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
 - **구글 공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **공식 홈페이지**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr) ((주)씨아이에스넷 CISNet)
@@ -1484,6 +1484,25 @@
   3. **무결성 검증**:
      - `xml.etree.ElementTree` 기반 전체 22개 WPF XAML 및 CSPROJ 유효성 검증 100% 통과 (오류 0건).
      - `lint_applet` (TypeScript) 및 `compile_applet` (Vite) 빌드 성공.
+
+---
+
+### 📝 [작업 차수 115] GitHub 공식 문서 (`docs/GITHUB_GUIDE.md` & 루트 `README.md`) v1.8.0 전면 업데이트
+- **작업 일시**: 2026-10-31 22:58 KST
+- **요청 사항**:
+  - `문서폴더에 깃허브용 문서 업데이트.`, `계속`
+- **수행 내용**:
+  1. **GitHub 가이드 전면 개정 (`docs/GITHUB_GUIDE.md`)**:
+     - Git 태그 및 릴리스 배포 버전을 `v1.8.0`으로 갱신.
+     - CI/CD 파이프라인 단계에 `KCert.Core.dll` 및 `KCert.Crypto.dll` 2종 순수 창작 C# 독립 DLL 컴파일 과정 반영.
+     - v1.8.0 릴리스 배포 명세(순수 창작 DLL 분리, 상단 헤더 가로바 스크롤러 & 마우스 휠 연동, 4대 테마 전역 고대비 툴팁 시스템, SemVer 3단계 정책) 반영.
+  2. **GitHub 저장소 메인 표지 최신화 (`/README.md`)**:
+     - 배지, 최신 릴리스 정보, 릴리스 노트 요약 및 프로젝트 구조(`src-wpf/KCert.Core`, `src-wpf/KCert.Crypto`)를 v1.8.0 사양에 맞춰 동기화.
+  3. **전체 문서 동기화 (`docs/AUTO_UPDATE_GUIDE.md`, `BUILD_GUIDE.md`, `USER_GUIDE.md`, `KCERT_CORE_DLL_DESIGN_SPECIFICATION.md`)**:
+     - 자동 업데이트 가이드, 빌드 가이드, 사용자 매뉴얼의 잔여 `v1.7.2` 표기를 `v1.8.0` 및 산출물 파일명(`kcert-manager-v1.8.0-setup.exe`)으로 일괄 갱신.
+  4. **빌드 무결성 재확인**:
+     - 전체 22개 WPF XAML/CSPROJ XML 파싱 및 `compile_applet` 검증 100% 통과.
+
 
 
 
