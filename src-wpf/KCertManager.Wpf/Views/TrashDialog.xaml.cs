@@ -12,7 +12,9 @@ namespace KCertManager.Wpf.Views
     public partial class TrashDialog : Window
     {
         private readonly SafetyTrashManager _trashManager = new();
+        private readonly CertificateBackupService _backupService = new();
         private ObservableCollection<TrashItem> _items = new();
+        private ObservableCollection<RestoredTrashItem> _restoredItems = new();
 
         public bool AnyItemRestored { get; private set; }
 
@@ -20,6 +22,7 @@ namespace KCertManager.Wpf.Views
         {
             InitializeComponent();
             LoadTrashItems();
+            LoadRestoredItems();
         }
 
         private void LoadTrashItems()
@@ -54,8 +57,87 @@ namespace KCertManager.Wpf.Views
             }
 
             GridTrash.ItemsSource = _items;
-            TxtTrashCount.Text = $"격리 보관된 인증서: {_items.Count}개";
+            BtnTabDeleted.Content = $"🗑️ 삭제된 항목 (격리 보관 중 {_items.Count}건)";
+            UpdateFooterCount();
             UpdateSelectedState();
+        }
+
+        private void LoadRestoredItems()
+        {
+            _restoredItems.Clear();
+            var rawRestored = _backupService.GetRestoredTrashItems();
+            for (int i = 0; i < rawRestored.Count; i++)
+            {
+                rawRestored[i].IndexNumber = i + 1;
+                _restoredItems.Add(rawRestored[i]);
+            }
+
+            ListRestoredCards.ItemsSource = _restoredItems;
+            BtnTabRestored.Content = $"🔄 복원된 항목 (보관소 {_restoredItems.Count}건)";
+            UpdateFooterCount();
+        }
+
+        private void UpdateFooterCount()
+        {
+            TxtTrashCount.Text = $"격리 보관된 인증서: {_items.Count}개 | 복원 보관소: {_restoredItems.Count}개";
+        }
+
+        private void BtnTabDeleted_Click(object sender, RoutedEventArgs e)
+        {
+            BtnTabDeleted.Style = (Style)FindResource("PrimaryButton");
+            BtnTabRestored.Style = (Style)FindResource("SecondaryButton");
+
+            PanelDeletedToolbar.Visibility = Visibility.Visible;
+            PanelDeletedContent.Visibility = Visibility.Visible;
+
+            PanelRestoredToolbar.Visibility = Visibility.Collapsed;
+            PanelRestoredContent.Visibility = Visibility.Collapsed;
+        }
+
+        private void BtnTabRestored_Click(object sender, RoutedEventArgs e)
+        {
+            BtnTabDeleted.Style = (Style)FindResource("SecondaryButton");
+            BtnTabRestored.Style = (Style)FindResource("PrimaryButton");
+
+            PanelDeletedToolbar.Visibility = Visibility.Collapsed;
+            PanelDeletedContent.Visibility = Visibility.Collapsed;
+
+            PanelRestoredToolbar.Visibility = Visibility.Visible;
+            PanelRestoredContent.Visibility = Visibility.Visible;
+        }
+
+        private void BtnClearRestored_Click(object sender, RoutedEventArgs e)
+        {
+            if (_restoredItems.Count == 0)
+            {
+                UserFriendlyMessageHelper.ShowInfo("복원 보관소가 이미 비어 있습니다.", "안내", this);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                this,
+                "복원된 인증서 항목의 모든 이력 기록을 삭제하시겠습니까?",
+                "복원 이력 전체 비우기 확인",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (confirm == MessageBoxResult.Yes)
+            {
+                _backupService.ClearRestoredTrashHistory();
+                LoadRestoredItems();
+                UserFriendlyMessageHelper.ShowInfo("복원 이력 보관소를 완전히 비웠습니다.", "비우기 완료", this);
+            }
+        }
+
+        private void BtnDeleteRestoredItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is RestoredTrashItem item)
+            {
+                if (_backupService.DeleteRestoredTrashItem(item.Id))
+                {
+                    LoadRestoredItems();
+                }
+            }
         }
 
         private void UpdateSelectedState()
@@ -134,6 +216,7 @@ namespace KCertManager.Wpf.Views
             {
                 UserFriendlyMessageHelper.ShowInfo($"선택한 {restoredCount}개의 인증서가 원래 경로로 성공적으로 복원되었습니다.", "선택 복원 완료", this);
                 LoadTrashItems();
+                LoadRestoredItems();
             }
             else
             {
@@ -184,6 +267,7 @@ namespace KCertManager.Wpf.Views
             {
                 UserFriendlyMessageHelper.ShowInfo($"휴지통의 모든 인증서({restoredCount}건)가 원래 경로로 성공적으로 복원되었습니다.", "전체 복원 완료", this);
                 LoadTrashItems();
+                LoadRestoredItems();
             }
         }
 
@@ -205,6 +289,7 @@ namespace KCertManager.Wpf.Views
 
                     UserFriendlyMessageHelper.ShowInfo($"인증서 [{item.CertCommonName}]가 원래 경로로 성공적으로 복원되었습니다.", "복원 완료", this);
                     LoadTrashItems();
+                    LoadRestoredItems();
                 }
                 else
                 {

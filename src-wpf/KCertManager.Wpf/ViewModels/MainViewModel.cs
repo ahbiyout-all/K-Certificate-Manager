@@ -487,36 +487,59 @@ namespace KCertManager.Wpf.ViewModels
                 GuidedWorkflowStepTitle = "1단계: 복사할 PC 인증서 선택 및 대상 USB 지정";
                 GuidedWorkflowStepDescription = "컴퓨터에 보관된 공인인증서를 USB 메모리로 안전하게 복사/백업하는 대화창을 실행합니다.";
 
-                // PC 로컬 보관 인증서(복사 원본) 전체 자동 선택 체크
-                var pcCerts = FilteredCertificates.Where(c => !c.IsRemovableMedia).ToList();
+                // 1. 카테고리 필터 및 검색어 전체 초기화 (기본 C: 및 PC 인증서가 숨겨지지 않고 온전히 나타나도록 보장)
+                SelectedFilter = "ALL";
+                SearchKeyword = string.Empty;
+                ApplyFilter();
+
+                // 2. PC 로컬 보관 인증서 (C: 드라이브 및 내장 디스크) 전수 수집
+                var pcCerts = _allCertificates
+                    .Where(c => !c.IsRemovableMedia || c.DriveLetter == "C:" || (!string.IsNullOrEmpty(c.DirectoryPath) && c.DirectoryPath.StartsWith("C:", StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+
+                // _allCertificates가 아직 비어 있거나 스캔 대기 중인 경우 표준 C: 경로 즉시 고속 스캔 보장
+                if (!pcCerts.Any())
+                {
+                    try
+                    {
+                        var fastList = _scannerService.ScanCertificates(CertLocationScanner.GetFastStandardRoots());
+                        pcCerts = fastList
+                            .Where(c => !c.IsRemovableMedia || c.DriveLetter == "C:" || (!string.IsNullOrEmpty(c.DirectoryPath) && c.DirectoryPath.StartsWith("C:", StringComparison.OrdinalIgnoreCase)))
+                            .ToList();
+                        foreach (var item in pcCerts)
+                        {
+                            if (!_allCertificates.Any(x => x.DerFilePath.Equals(item.DerFilePath, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                _allCertificates.Add(item);
+                            }
+                        }
+                        ApplyFilter();
+                    }
+                    catch { }
+                }
+
+                // 3. PC 원본 C: 인증서들을 모두 체크하여 한 번에 백업할 수 있도록 지원
+                foreach (var c in pcCerts)
+                {
+                    c.IsSelected = true;
+                }
+                foreach (var c in FilteredCertificates)
+                {
+                    c.IsSelected = !c.IsRemovableMedia || c.DriveLetter == "C:" || (!string.IsNullOrEmpty(c.DirectoryPath) && c.DirectoryPath.StartsWith("C:", StringComparison.OrdinalIgnoreCase));
+                }
+
                 if (pcCerts.Any())
                 {
-                    foreach (var c in FilteredCertificates)
-                    {
-                        // PC 원본 인증서들을 모두 체크하여 한 번에 백업할 수 있도록 지원
-                        c.IsSelected = !c.IsRemovableMedia;
-                    }
                     SelectedCertificate = pcCerts.FirstOrDefault(c => c.Status != ExpiryStatus.Expired) ?? pcCerts.First();
                 }
-                else if (FilteredCertificates.Any())
-                {
-                    foreach (var c in FilteredCertificates)
-                    {
-                        c.IsSelected = true;
-                    }
-                    SelectedCertificate = FilteredCertificates.First();
-                }
+
                 OnPropertyChanged(nameof(SelectedCertificatesCount));
                 (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
 
-                // USB ➔ PC 가져오기와 동일한 모달 대화창 형식으로 PC ➔ USB 복사창 직접 실행
+                // 4. 모달 대화창(PcToUsbTransferDialog)에 전체 PC/C: 인증서 목록(pcCerts) 전달하여 전수 표시
                 Application.Current?.Dispatcher?.Invoke(() =>
                 {
-                    var targets = FilteredCertificates.Where(c => c.IsSelected).ToList();
-                    if (!targets.Any())
-                    {
-                        targets = pcCerts.Any() ? pcCerts : FilteredCertificates.ToList();
-                    }
+                    var targets = pcCerts.Any() ? pcCerts : (FilteredCertificates.Any() ? FilteredCertificates.ToList() : _allCertificates.ToList());
                     var dlg = new Views.PcToUsbTransferDialog(this, targets, AvailableTargetDrives)
                     {
                         Owner = Application.Current?.MainWindow

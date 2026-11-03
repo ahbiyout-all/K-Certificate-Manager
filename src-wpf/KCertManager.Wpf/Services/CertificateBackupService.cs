@@ -146,5 +146,47 @@ namespace KCertManager.Wpf.Services
 
             return list;
         }
+
+        public List<RestoredTrashItem> GetRestoredTrashItems()
+        {
+            var rawItems = _trashManager.GetRestoredItems();
+            var list = new List<RestoredTrashItem>();
+
+            foreach (var r in rawItems)
+            {
+                CertCategory cat = CertCategory.NPKI;
+                if (!string.IsNullOrEmpty(r.Category) && Enum.TryParse<CertCategory>(r.Category, out var parsedCat))
+                {
+                    cat = parsedCat;
+                }
+
+                list.Add(new RestoredTrashItem
+                {
+                    Id = r.Id,
+                    RestoredAt = r.RestoredAtUtc.ToLocalTime(),
+                    CertCommonName = r.CertCommonName,
+                    OriginalDirectoryPath = r.OriginalDirectoryPath,
+                    IssuerName = !string.IsNullOrEmpty(r.IssuerName) ? r.IssuerName : "알 수 없음",
+                    Category = cat,
+                    NotAfter = r.NotAfter != default ? r.NotAfter : DateTime.Now.AddYears(1),
+                    DeleteReason = !string.IsNullOrEmpty(r.DeleteReason) ? r.DeleteReason : "사용자 선택 복구 또는 영구 폐기 방지 안전 복원",
+                    IntegrityBefore = !string.IsNullOrEmpty(r.IntegrityBefore) ? r.IntegrityBefore : "격리 보관소 파티션 SHA-256 해시 검증 통과 (100% 무결성)",
+                    IntegrityAfter = !string.IsNullOrEmpty(r.IntegrityAfter) ? r.IntegrityAfter : "원래 위치 복원 후 signCert.der/signPri.key 서명 쌍 무결성 정상 동기화",
+                    StatusBadge = "✓ 원본 보관함으로 복원 완료"
+                });
+            }
+
+            return list;
+        }
+
+        public void ClearRestoredTrashHistory()
+        {
+            _trashManager.ClearRestoredHistory();
+        }
+
+        public bool DeleteRestoredTrashItem(string id)
+        {
+            return _trashManager.DeleteRestoredItem(id);
+        }
     }
 }

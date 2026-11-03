@@ -38,6 +38,7 @@ export interface CertificateItem {
   isInstitutional?: boolean; // 기관용/전자관인/특수목적용 공용 인증서 여부
   keyEncryptionAlgorithm?: string;
   files: CertFileDetail;
+  isRemovableMedia?: boolean;
   isCustomAdded?: boolean;
   isCustomPath?: boolean; // 일반 인증서 창(은행/정부 ActiveX) 미인식 비표준 경로 여부
   locationNotice?: string;
@@ -133,6 +134,18 @@ export interface TrashItem {
   deletedAt: string;
   deleteReason: string;
   cert: CertificateItem;
+}
+
+export interface RestoredTrashItem {
+  id: string;
+  restoredAt: string;
+  deleteReason: string;
+  cert: CertificateItem;
+  integrityBeforeAfter?: {
+    beforeStatus: string; // e.g. "격리 보관 검증 완료 (SHA-256 무결성 일치)"
+    afterStatus: string;  // e.g. "원래 보관함 복원 후 인증서/개인키 Pair 검증 정상"
+    sha256?: string;
+  };
 }
 
 export type AppLogCategory = 'BACKUP' | 'IMPORT' | 'DELETE' | 'RESTORE' | 'SCAN' | 'SYSTEM' | 'SECURITY' | 'RENEWAL';

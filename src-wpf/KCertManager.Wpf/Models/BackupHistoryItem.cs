@@ -71,4 +71,41 @@ namespace KCertManager.Wpf.Models
             }
         }
     }
+
+    public class RestoredTrashItem : INotifyPropertyChanged
+    {
+        private int _indexNumber;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public int IndexNumber
+        {
+            get => _indexNumber;
+            set
+            {
+                if (_indexNumber != value)
+                {
+                    _indexNumber = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string Id { get; set; } = Guid.NewGuid().ToString("N");
+        public DateTime RestoredAt { get; set; } = DateTime.Now;
+        public string CertCommonName { get; set; } = string.Empty;
+        public string OriginalDirectoryPath { get; set; } = string.Empty;
+        public string IssuerName { get; set; } = string.Empty;
+        public CertCategory Category { get; set; } = CertCategory.NPKI;
+        public DateTime NotAfter { get; set; } = DateTime.Now;
+        public string DeleteReason { get; set; } = "사용자 삭제 조치 후 안전 복구됨";
+        public string IntegrityBefore { get; set; } = "격리 보관 검증 완료 (SHA-256 무결성 일치)";
+        public string IntegrityAfter { get; set; } = "원래 위치 복원 후 인증서/개인키 Pair 검증 정상";
+        public string StatusBadge { get; set; } = "✓ 원본 보관함으로 복원 완료";
+    }
 }

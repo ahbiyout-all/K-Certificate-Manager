@@ -168,3 +168,34 @@ export function isSameDriveSelfCopy(
 
   return false;
 }
+
+/**
+ * Checks whether a certificate is stored on the local PC (C: drive, local AppData/ProgramData/Desktop/Documents).
+ */
+export function isPcCertificate(
+  cert: { sourceDrive?: string; sourceLocation?: string; isRemovableMedia?: boolean }
+): boolean {
+  if (cert.isRemovableMedia === true) return false;
+  if (cert.isRemovableMedia === false) return true;
+
+  const sourceDrive = (cert.sourceDrive || '').toUpperCase();
+  const sourceLoc = (cert.sourceLocation || '').toUpperCase();
+
+  // Explicit removable flags
+  if (sourceDrive.includes('이동식') || sourceDrive.includes('USB') || sourceDrive.includes('REMOVABLE')) {
+    return false;
+  }
+  if (sourceLoc.startsWith('E:') || sourceLoc.startsWith('G:') || sourceLoc.startsWith('H:')) {
+    if (sourceDrive.includes('USB') || sourceDrive.includes('이동식')) return false;
+  }
+
+  // PC / C: drive standard indicators
+  if (sourceDrive.includes('C:') || sourceDrive.includes('컴퓨터') || sourceDrive.includes('로컬')) {
+    return true;
+  }
+  if (sourceLoc.startsWith('C:') || sourceLoc.includes('APPDATA') || sourceLoc.includes('LOCALLOW') || sourceLoc.includes('PROGRAMDATA') || sourceLoc.includes('USERS')) {
+    return true;
+  }
+
+  return !sourceDrive.includes('USB') && !sourceDrive.includes('이동식');
+}

@@ -290,6 +290,7 @@ export const INITIAL_CERTIFICATES: CertificateItem[] = [
     daysRemaining: 160,
     sourceLocation: 'C:\\Users\\Admin\\AppData\\LocalLow\\NPKI\\yessign\\USER\\cn=홍길동(Hong Gildong)0000001004',
     sourceDrive: 'C: (로컬 디스크)',
+    isRemovableMedia: false,
     departmentOrOrg: '하나은행 개인인터넷뱅킹',
     files: {
       certName: 'signCert.der',
@@ -315,6 +316,7 @@ export const INITIAL_CERTIFICATES: CertificateItem[] = [
     daysRemaining: 254,
     sourceLocation: 'C:\\GPKI\\Certificate\\class2\\cn=이영희(Lee Younghee)0000002048',
     sourceDrive: 'C: (로컬 디스크)',
+    isRemovableMedia: false,
     departmentOrOrg: '행정안전부 디지털정부국 행정사무관',
     files: {
       certName: 'SignCert.der',
@@ -342,6 +344,7 @@ export const INITIAL_CERTIFICATES: CertificateItem[] = [
     daysRemaining: 26,
     sourceLocation: 'C:\\Users\\Admin\\AppData\\LocalLow\\NPKI\\KICA\\USER\\cn=(주)한국테크-김철수0000009876',
     sourceDrive: 'C: (로컬 디스크)',
+    isRemovableMedia: false,
     departmentOrOrg: '(주)한국테크 대표이사',
     files: {
       certName: 'signCert.der',
@@ -367,6 +370,7 @@ export const INITIAL_CERTIFICATES: CertificateItem[] = [
     daysRemaining: 179,
     sourceLocation: 'C:\\Users\\Admin\\AppData\\LocalLow\\EPKI\\Certificate\\class2\\cn=박민수(Park Minsu)0000003312',
     sourceDrive: 'C: (로컬 디스크)',
+    isRemovableMedia: false,
     departmentOrOrg: '서울서초고등학교 교사',
     files: {
       certName: 'SignCert.der',
@@ -394,6 +398,7 @@ export const INITIAL_CERTIFICATES: CertificateItem[] = [
     daysRemaining: 221,
     sourceLocation: 'E:\\NPKI\\SignKorea\\USER\\cn=최재호(Choi Jaeho)0000004521',
     sourceDrive: 'E: (이동식 USB)',
+    isRemovableMedia: true,
     departmentOrOrg: 'KB증권 HTS/MTS',
     files: {
       certName: 'signCert.der',
@@ -419,6 +424,7 @@ export const INITIAL_CERTIFICATES: CertificateItem[] = [
     daysRemaining: -429,
     sourceLocation: 'C:\\Users\\Admin\\AppData\\LocalLow\\NPKI\\yessign\\USER\\cn=정수진(Jung Sujin)0000007890',
     sourceDrive: 'C: (로컬 디스크)',
+    isRemovableMedia: false,
     departmentOrOrg: '신한은행 개인인터넷뱅킹',
     files: {
       certName: 'signCert.der',
@@ -444,6 +450,7 @@ export const INITIAL_CERTIFICATES: CertificateItem[] = [
     daysRemaining: 489,
     sourceLocation: 'C:\\GPKI\\Certificate\\class2\\cn=강태석(Kang Taeseok)0000005519',
     sourceDrive: 'C: (로컬 디스크)',
+    isRemovableMedia: false,
     departmentOrOrg: '기획재정부 예산총괄과 행정관',
     files: {
       certName: 'SignCert.der',
@@ -471,6 +478,7 @@ export const INITIAL_CERTIFICATES: CertificateItem[] = [
     daysRemaining: -540,
     sourceLocation: 'E:\\NPKI\\yessign\\USER\\cn=김만료(Kim Manryo)0000009999',
     sourceDrive: 'E: (이동식 USB - SanDisk)',
+    isRemovableMedia: true,
     departmentOrOrg: '우리은행 인터넷뱅킹',
     files: {
       certName: 'signCert.der',
@@ -496,6 +504,7 @@ export const INITIAL_CERTIFICATES: CertificateItem[] = [
     daysRemaining: -108,
     sourceLocation: 'G:\\GPKI\\Certificate\\class2\\cn=한세진(Han Sejin)0000008888',
     sourceDrive: 'G: (이동식 USB - Dual Drive)',
+    isRemovableMedia: true,
     departmentOrOrg: '환경부 기후탄소정책실 사무관',
     files: {
       certName: 'SignCert.der',
@@ -523,6 +532,7 @@ export const INITIAL_CERTIFICATES: CertificateItem[] = [
     daysRemaining: 180,
     sourceLocation: 'C:\\Users\\Admin\\Desktop\\인증서임시백업\\NPKI\\yessign\\USER\\cn=최비표준(Choi Bipyo)0000007777',
     sourceDrive: 'C: (바탕화면 임시폴더 - 비표준)',
+    isRemovableMedia: false,
     departmentOrOrg: '하나은행 개인인터넷뱅킹 (비표준 경로)',
     isCustomPath: true,
     locationNotice: '일반 인증서 프로그램(은행/정부)이 인식하지 못하는 비표준 위치입니다. [정 위치 복사]가 필요합니다.',
@@ -550,6 +560,7 @@ export const INITIAL_CERTIFICATES: CertificateItem[] = [
     daysRemaining: 615,
     sourceLocation: 'C:\\GPKI\\Certificate\\class1\\cn=001행정안전부001',
     sourceDrive: 'C: (로컬 디스크)',
+    isRemovableMedia: false,
     departmentOrOrg: '행정안전부 / 중앙행정기관',
     isInstitutional: true,
     files: {
@@ -578,6 +589,7 @@ export const INITIAL_CERTIFICATES: CertificateItem[] = [
     daysRemaining: 1560,
     sourceLocation: 'C:\\GPKI\\Certificate\\class1\\cn=CA134040001',
     sourceDrive: 'C: (로컬 디스크)',
+    isRemovableMedia: false,
     departmentOrOrg: '행정안전부 (정부GPKI)',
     isSystemCa: true,
     files: {
@@ -604,6 +616,7 @@ export const INITIAL_CERTIFICATES: CertificateItem[] = [
     daysRemaining: 474,
     sourceLocation: 'C:\\Users\\Admin\\AppData\\LocalLow\\EPKI\\Certificate\\class1\\cn=경상북도교육감001',
     sourceDrive: 'C: (로컬 디스크)',
+    isRemovableMedia: false,
     departmentOrOrg: '경상북도교육청 / 교육행정기관',
     isInstitutional: true,
     files: {

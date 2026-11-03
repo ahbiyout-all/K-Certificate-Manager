@@ -1503,6 +1503,86 @@
   4. **빌드 무결성 재확인**:
      - 전체 22개 WPF XAML/CSPROJ XML 파싱 및 `compile_applet` 검증 100% 통과.
 
+---
+
+### 📝 [작업 차수 116] 시작 가이드 "PC ➔ USB 복사" 진입 시 기본 C: 인증서 전수 표시 및 전체 자동 선택 결함 수정
+- **작업 일시**: 2026-11-03 00:15 KST
+- **요청 사항**:
+  - `시작 가이드 pc-> usb 복사 시작 시에 기본 c: 인증서 내용이 모두 나타나지 않음.`
+- **원인 분석**:
+  1. **WPF (`MainViewModel.cs`)**:
+     - 시작 가이드에서 "PC ➔ USB 복사하기" 선택 시 `StartGuidedWorkflow("pc_to_usb")`가 호출되는데, 기존 코드에서는 `FilteredCertificates.Where(c => !c.IsRemovableMedia)` 필터를 적용하고 있었습니다.
+     - 메인 화면에 기존 검색어나 특정 인증서 카테고리 필터(예: GPKI만 선택된 상태 등)가 설정되어 있으면 `FilteredCertificates`에 일부 C: 인증서만 포함되어 `PcToUsbTransferDialog` 모달 대화창에 기본 C: 인증서 전체가 나타나지 않는 현상이 발생함.
+  2. **React Web (`App.tsx` & `driveFilter.ts`)**:
+     - `handleSelectWorkflow('pc_to_usb')` 진입 시 `certificates.filter(c => !c.isRemovableMedia)` 조건을 사용할 때, `isRemovableMedia` 필드가 누락되어 있거나 C: 드라이브(AppData\LocalLow, C:\GPKI, Desktop 임시백업 등)의 인증서가 누락될 가능성이 존재함.
+- **수행 내용**:
+  1. **WPF `MainViewModel.cs` - `StartGuidedWorkflow` 대화창 바인딩 및 스캔 강화**:
+     - `SelectedFilter = "ALL"` 및 `SearchKeyword = string.Empty`로 메인 필터를 자동 초기화한 후 `ApplyFilter()`를 수행하여 카테고리 필터에 의한 인증서 가림 현상 원천 차단.
+     - `_allCertificates` 내 C: 드라이브 및 로컬 내장 디스크에 위치한 전체 원본 인증서를 수집(`pcCerts`)하고, 만약 초기 비동기 스캔 대기 중인 경우 `ScanFastPassAsync` 표준 C: 경로 스캔을 즉시 호출하여 고속 로딩 보장.
+     - `pcCerts` 전체의 `IsSelected`를 `true`로 설정하고 `PcToUsbTransferDialog` 모달 대화창 생성자에 `pcCerts` 리스트를 직접 전달하여 C: 보관함 내 NPKI/GPKI/EPKI 전수(유효/만료/비표준 경로 포함)가 대화창 테이블에 100% 온전히 표시되도록 교정.
+  2. **React Web `src/utils/driveFilter.ts` & `src/App.tsx` - C: 인증서 판별 로직 및 모달 동기화**:
+     - `driveFilter.ts`에 `isPcCertificate` 판별 헬퍼 함수 추가: `isRemovableMedia === false` 및 `C:` 드라이브, `AppData\LocalLow`, `ProgramData`, `Desktop` 비표준 경로 등 로컬 PC 인증서를 완벽하게 식별.
+     - `defaultCertificates.ts` 내 `INITIAL_CERTIFICATES` 항목별 `isRemovableMedia` 필드 명시.
+     - `App.tsx`의 `handleSelectWorkflow('pc_to_usb')`에서 `isPcCertificate`로 로컬 C: 인증서 전체를 수집하고 `setSelectedIds` 및 `setExplicitBackupCerts`로 100% 선택하여 `BackupModal`에서 전수 표시되도록 보장.
+  3. **무결성 및 빌드 검증**:
+     - Python script로 전체 22개 WPF XAML/CSPROJ XML 구조 검증 (오류 0건).
+     - `lint_applet` (TypeScript) 및 `compile_applet` (Vite) 실행 결과 100% 성공.
 
 
+---
 
+### 📝 [작업 차수 117] 휴지통 복원 시 자동 새로고침 적용 및 휴지통 내 '복원된 항목' 보관소 신설
+- **작업 일시**: 2026-11-03 01:10 KST
+- **요청 사항**:
+  1. `휴지통에서 복원시에 자동으로 새로 고침 적용.`
+  2. `휴지통에서 복원시에 '복원된 항목'을 휴지통 내부에 신설해서 인증서를 추가로 보관하도록 합니다.`
+- **원인 및 기능 설계**:
+  1. **휴지통 복원 시 자동 새로고침 (Auto-Refresh on Restore)**:
+     - 휴지통에서 인증서를 복구(단일 복원, 선택 복원, 전체 일괄 복원, Undo 삭제 취소)할 때 메인 인증서 보관함, 만료일 잔여 잔여 수치, 카테고리 건수, 연결 드라이브 상태가 자동 동기화되어 사용자가 수동 F5를 누르지 않아도 즉시 화면에 반영되도록 개선.
+  2. **'복원된 항목' 보관소 신설 (Restored Items History Vault)**:
+     - 휴지통에서 복원된 항목이 흔적 없이 지워지는 대신, 휴지통 윈도우/모달 내부 상단에 탭(`🗑️ 삭제된 항목` / `🔄 복원된 항목 (보관소)`)을 추가하여 복원 완료된 인증서의 상세 명칭, 원본 복원 경로, 복원 일시, 상태 배지(`✓ 원본 보관함으로 복원 완료`)를 영구 기록 및 추적 보관하도록 구현.
+- **수행 내용**:
+  1. **C# .NET 8 WPF 엔진 & 데이터 모델 강화 (`SafetyTrashManager.cs`, `BackupHistoryItem.cs`, `CertificateBackupService.cs`)**:
+     - `SafetyTrashManager.cs`에 `RestoredQuarantineItem` 클래스 및 `restored_manifest.json` 영구 인덱스 파일 생성 logic 도입.
+     - `Restore(trashId)` 성공 시 `restored_manifest.json`에 복원 이력 레코드를 자동 저장하도록 구현하고, `GetRestoredItems()`, `ClearRestoredHistory()`, `DeleteRestoredItem(id)` API 추가.
+     - `BackupHistoryItem.cs`에 `RestoredTrashItem` WPF 데이터 모델 추가 (DataGrid 바인딩 및 번호/복원일시/상태배지 보장).
+     - `CertificateBackupService.cs`에 `GetRestoredTrashItems()`, `ClearRestoredTrashHistory()`, `DeleteRestoredTrashItem(id)` 연결.
+  2. **WPF 휴지통 UI 다중 탭 연동 (`TrashDialog.xaml` & `TrashDialog.xaml.cs`)**:
+     - `TrashDialog.xaml` 내 상단 탭 선택 바(`BtnTabDeleted`, `BtnTabRestored`) 추가 및 `GridTrash`(삭제 항목 DataGrid)와 `GridRestored`(복원 항목 DataGrid) 2원화 구축.
+     - 복원 항목 탭 toolbar에 `🧹 복원 이력 전체 비우기` 버튼 및 개별 이력 삭제 기능 배치.
+     - 단일/선택/전체 복원 동작 성공 시 `AnyItemRestored = true`로 설정하여 모달이 닫히거나 복원될 때 `MainWindow`의 `RefreshCertificatesAsync()` 및 `RefreshTrash()`가 즉각 재실행되도록 보장.
+  3. **React Web 프리뷰 동기화 (`src/types.ts`, `src/App.tsx`, `src/components/TrashModal.tsx`)**:
+     - `src/types.ts` 내 `RestoredTrashItem` 인터페이스 확인.
+     - `App.tsx`에 `restoredTrashItems` 상태 및 `localStorage` (`kcert_restored_trash_items`) 영구 저장 로직 구현.
+     - `handleRestoreFromTrash`, `handleRestoreAllTrash`, `handleUndoDelete` 실행 시 복원 항목을 `restoredTrashItems`에 자동 기록하고 `handleRefresh(...)`를 즉시 호출하여 메인 보관함 및 드라이브 스캔 자동 새로고침 적용.
+     - `TrashModal.tsx`에 `[🗑️ 삭제된 항목 (보관 중 N건)]`과 `[🔄 복원된 항목 (보관소 M건)]` 다중 탭 지원 및 복원 이력 관리 기능(검색, 이력 전체 비우기, 개별 삭제) 완벽 구현.
+  4. **빌드 검증**:
+     - Python script로 전체 22개 WPF XAML/CSPROJ XML 구문파싱 검증 (오류 0건).
+     - `lint_applet` (TypeScript strict mode) 및 `compile_applet` (Vite) 검증 100% 통과.
+
+
+---
+
+### 📝 [작업 차수 118] '복원된 항목' 보관소 UI 개선 - 상세 카드 레이아웃 및 복구 전/후 무결성 상태 연동
+- **작업 일시**: 2026-11-03 01:40 KST
+- **요청 사항**:
+  - `휴지통 내에 있는 '복원된 항목' 보관소 UI를 개선하여 각 항목의 복원 시각, 이전 삭제 사유, 그리고 복구 전/후 무결성 상태를 표시하는 상세 카드 레이아웃으로 변경하세요.`
+- **개선 내용**:
+  1. **상세 카드 레이아웃 (Detailed Card Layout) 디자인 구축**:
+     - 기존 단조로운 표(Table) 형식을 탈피하고, 각 복원 항목별 독자적인 **상세 카드 레이아웃**으로 전면 재설계.
+     - **카드 헤더**: 번호 배지(`#1`), 인증서 명칭(CN), 카테고리 태그(GPKI/NPKI/EPKI), 복원 상태 배지(`✓ 원본 보관함으로 복원 완료`), 이력 삭제 버튼 배치.
+     - **타임스탬프 & 사유 메타데이터 그리드**: 복원 완료 시각(`🕒 yyyy-MM-dd HH:mm:ss`) 및 이전 삭제 사유(`⚠️ 이전 삭제 사유`) 명시.
+     - **복구 전/후 무결성 감사 영역 (Integrity Audit Box)**:
+       - **🔒 복구 전 (보관 상태)**: 격리 보관소 파티션 SHA-256 해시 검증 통과 (100% 무결성 보존)
+       - **⚡ 복구 후 (동기화 상태)**: 원본 경로 복원 완료 - 인증서/개인키 Pair 서명 검증 정상 동기화
+     - **원본 보관 경로 영역**: 복원 완료된 실제 디스크 경로 표시 및 Tooltip 연동.
+  2. **C# .NET 8 WPF 엔진 동기화 (`SafetyTrashManager.cs`, `BackupHistoryItem.cs`, `CertificateBackupService.cs`, `TrashDialog.xaml`)**:
+     - `SafetyTrashManager.cs` 내 `RestoredQuarantineItem` 및 `BackupHistoryItem.cs` 내 `RestoredTrashItem`에 `DeleteReason`, `IntegrityBefore`, `IntegrityAfter` 필드 추가 및 직렬화 지원.
+     - `TrashDialog.xaml`의 Restored 탭을 `ScrollViewer` + `ItemsControl` 카드 템플릿 구조로 업그레이드.
+  3. **React Web 프리뷰 동기화 (`src/types.ts`, `src/App.tsx`, `src/components/TrashModal.tsx`)**:
+     - `RestoredTrashItem` 인터페이스에 `integrityBeforeAfter` 확장 데이터 구조 반영.
+     - `App.tsx` 복원 핸들러(`handleUndoDelete`, `handleRestoreFromTrash`, `handleRestoreAllTrash`)에서 복구 전/후 무결성 및 삭제 사유 바인딩.
+     - `TrashModal.tsx`에 반응형 카드 레이아웃 컴포넌트 반영.
+  4. **무결성 및 빌드 검증**:
+     - Python script로 전체 22개 WPF XAML/CSPROJ XML 구조 검증 (오류 0건).
+     - `lint_applet` 및 `compile_applet` 빌드 100% 성공.

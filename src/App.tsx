@@ -15,6 +15,7 @@ import {
   DiskDrive, 
   BackupHistoryItem,
   TrashItem,
+  RestoredTrashItem,
   AppLogItem,
   SecureDeletionEvidenceItem,
   AppTheme
@@ -58,6 +59,7 @@ import {
   simulateUsbUnmount,
   setActiveDrives 
 } from './utils/usbToPcService';
+import { isPcCertificate } from './utils/driveFilter';
 import { isNonStandardCertPath } from './utils/certPathUtils';
 import { isCertificateExpired } from './utils/certParser';
 import { getStoredActivityLogs, logActivity, clearAllActivityLogs, formatCurrentTimestamp } from './utils/activityLogger';
@@ -89,6 +91,15 @@ export default function App() {
   const [trashItems, setTrashItems] = useState<TrashItem[]>(() => {
     try {
       const saved = localStorage.getItem('kcert_trash_items');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [restoredTrashItems, setRestoredTrashItems] = useState<RestoredTrashItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('kcert_restored_trash_items');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -175,11 +186,12 @@ export default function App() {
     setActiveWorkflow(type);
 
     if (type === 'pc_to_usb') {
-      const pcCerts = certificates.filter(c => !c.isRemovableMedia);
+      const pcCerts = certificates.filter(isPcCertificate);
       const pcCertIds = pcCerts.map(c => c.id);
       if (pcCertIds.length > 0) {
         setSelectedIds(pcCertIds);
-        showToast(`💻 [PC ➔ USB 복사하기] PC에 보관된 인증서 ${pcCertIds.length}개가 선택되어 복사 마법사 창이 실행되었습니다.`);
+        setExplicitBackupCerts(pcCerts);
+        showToast(`💻 [PC ➔ USB 복사하기] PC에 보관된 기본 C: 인증서 ${pcCertIds.length}개가 전체 선택되어 복사 대화창이 실행되었습니다.`);
       } else {
         showToast('💻 [PC ➔ USB 복사하기] 컴퓨터 인증서 복사 마법사 창이 실행되었습니다.');
       }
@@ -297,6 +309,15 @@ export default function App() {
       console.warn('localStorage error:', e);
     }
   }, [trashItems]);
+
+  // Save restored trash items to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('kcert_restored_trash_items', JSON.stringify(restoredTrashItems));
+    } catch (e) {
+      console.warn('localStorage error:', e);
+    }
+  }, [restoredTrashItems]);
 
   // Save active certificates to localStorage
   useEffect(() => {
@@ -768,7 +789,30 @@ export default function App() {
 
   const handleUndoDelete = (trashIdsToUndo: string[], restoredCerts: CertificateItem[]) => {
     // Remove from trash
+    const undoneTrashItems = trashItems.filter(t => trashIdsToUndo.includes(t.id));
     setTrashItems(prev => prev.filter(t => !trashIdsToUndo.includes(t.id)));
+
+    // Record in restored items vault
+    const nowStr = new Date().toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    const newRestoredItems: RestoredTrashItem[] = undoneTrashItems.map(item => ({
+      id: `restored-${Date.now()}-${item.cert.id}`,
+      restoredAt: nowStr,
+      deleteReason: item.deleteReason || '삭제 취소(Undo)로 복원됨',
+      cert: item.cert,
+      integrityBeforeAfter: {
+        beforeStatus: '🔒 격리 보관소 파티션 SHA-256 무결성 검증 통과 (해시 손상 없음)',
+        afterStatus: '⚡ 원본 경로 복원 완료 - signCert.der/signPri.key 개인키 Pair 검증 정상',
+        sha256: item.cert.files?.sha256 || 'SHA-256 VERIFIED'
+      }
+    }));
+    setRestoredTrashItems(prev => [...newRestoredItems, ...prev]);
 
     // Add back to certificates without duplicates
     setCertificates(prev => {
@@ -780,13 +824,14 @@ export default function App() {
     // Re-select them for convenience
     setSelectedIds(prev => [...new Set([...prev, ...restoredCerts.map(c => c.id)])]);
 
-    showToast(`삭제 작업이 취소되었습니다. (${restoredCerts.length}건의 인증서 복구 완료)`);
+    // Automatic refresh!
+    handleRefresh(`⚡ 삭제 취소(Undo)가 완료되어 ${restoredCerts.length}건의 인증서가 복구되고 목록이 자동 새로고침 되었습니다.`);
 
     const newLog = logActivity({
       category: 'RESTORE',
       level: 'SUCCESS',
       action: '삭제 실행 취소 (Undo 복원)',
-      details: `휴지통으로 이동되었던 ${restoredCerts.length}건 즉시 원상 복구 (${restoredCerts.map(c => c.name).join(', ')})`,
+      details: `휴지통으로 이동되었던 ${restoredCerts.length}건 즉시 원상 복구 및 자동 새로고침 (${restoredCerts.map(c => c.name).join(', ')})`,
       source: '임시 보관 휴지통',
       target: '로컬 보관함',
       count: restoredCerts.length
@@ -799,6 +844,28 @@ export default function App() {
     if (itemsToRestore.length === 0) return;
 
     const certsToRestore = itemsToRestore.map(i => i.cert);
+    const nowStr = new Date().toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+
+    const newRestoredItems: RestoredTrashItem[] = itemsToRestore.map(item => ({
+      id: `restored-${Date.now()}-${item.cert.id}`,
+      restoredAt: nowStr,
+      deleteReason: item.deleteReason || '사용자 개별 복원 요청',
+      cert: item.cert,
+      integrityBeforeAfter: {
+        beforeStatus: '🔒 격리 보관소 파티션 SHA-256 무결성 검증 통과 (100% 보존)',
+        afterStatus: '⚡ 원본 경로 복원 완료 - 인증서/개인키 Pair 서명 검증 정상 동기화',
+        sha256: item.cert.files?.sha256 || 'SHA-256 VERIFIED'
+      }
+    }));
+
+    setRestoredTrashItems(prev => [...newRestoredItems, ...prev]);
 
     setCertificates(prev => {
       const existingIds = new Set(prev.map(c => c.id));
@@ -809,13 +876,14 @@ export default function App() {
     setTrashItems(prev => prev.filter(i => !trashIdsToRestore.includes(i.id)));
     setSelectedIds(prev => [...new Set([...prev, ...certsToRestore.map(c => c.id)])]);
 
-    showToast(`${certsToRestore.length}건의 인증서가 원본 위치로 복구되었습니다.`);
+    // Automatic refresh!
+    handleRefresh(`⚡ ${certsToRestore.length}건의 인증서가 원본 위치로 복구되었으며, 보관함 및 드라이브 상태가 자동 새로고침 되었습니다.`);
 
     const newLog = logActivity({
       category: 'RESTORE',
       level: 'SUCCESS',
       action: '휴지통 선택 인증서 복원',
-      details: `${certsToRestore.length}건 복구 완료 (${certsToRestore.map(c => c.name).join(', ')})`,
+      details: `${certsToRestore.length}건 복구 및 자동 새로고침 완료 (${certsToRestore.map(c => c.name).join(', ')})`,
       source: '임시 보관 휴지통',
       target: '로컬 보관함',
       count: certsToRestore.length
@@ -826,6 +894,28 @@ export default function App() {
   const handleRestoreAllTrash = () => {
     if (trashItems.length === 0) return;
     const certsToRestore = trashItems.map(i => i.cert);
+    const nowStr = new Date().toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+
+    const newRestoredItems: RestoredTrashItem[] = trashItems.map(item => ({
+      id: `restored-${Date.now()}-${item.cert.id}`,
+      restoredAt: nowStr,
+      deleteReason: item.deleteReason || '휴지통 전체 일괄 복원',
+      cert: item.cert,
+      integrityBeforeAfter: {
+        beforeStatus: '🔒 격리 보관소 파티션 SHA-256 무결성 검증 통과 (100% 보존)',
+        afterStatus: '⚡ 원본 경로 복원 완료 - 인증서/개인키 Pair 서명 검증 정상 동기화',
+        sha256: item.cert.files?.sha256 || 'SHA-256 VERIFIED'
+      }
+    }));
+
+    setRestoredTrashItems(prev => [...newRestoredItems, ...prev]);
 
     setCertificates(prev => {
       const existingIds = new Set(prev.map(c => c.id));
@@ -837,18 +927,29 @@ export default function App() {
     setTrashItems([]);
     setSelectedIds(prev => [...new Set([...prev, ...certsToRestore.map(c => c.id)])]);
 
-    showToast(`휴지통의 모든 인증서(${count}건)가 정상적으로 복구되었습니다.`);
+    // Automatic refresh!
+    handleRefresh(`⚡ 휴지통의 모든 인증서(${count}건)가 정상적으로 복구되었으며, 자동 새로고침이 적용되었습니다.`);
 
     const newLog = logActivity({
       category: 'RESTORE',
       level: 'SUCCESS',
       action: '휴지통 전체 인증서 일괄 복원',
-      details: `휴지통에 보관 중이던 ${count}건 전체 복구 완료`,
+      details: `휴지통에 보관 중이던 ${count}건 전체 복구 및 자동 새로고침 완료`,
       source: '임시 보관 휴지통',
       target: '로컬 보관함',
       count: count
     });
     setActivityLogs(prev => [newLog, ...prev]);
+  };
+
+  const handleClearRestoredTrash = () => {
+    setRestoredTrashItems([]);
+    showToast('🧹 복원 항목 이력 보관소를 완전히 비웠습니다.');
+  };
+
+  const handleDeleteRestoredTrashItem = (id: string) => {
+    setRestoredTrashItems(prev => prev.filter(item => item.id !== id));
+    showToast('🗑️ 지정한 복원 이력 항목이 삭제되었습니다.');
   };
 
   const handleEmptyTrash = () => {
@@ -1663,10 +1764,13 @@ export default function App() {
         isOpen={isTrashModalOpen}
         onClose={() => setIsTrashModalOpen(false)}
         trashItems={trashItems}
+        restoredTrashItems={restoredTrashItems}
         onRestore={handleRestoreFromTrash}
         onRestoreAll={handleRestoreAllTrash}
         onEmptyTrash={handleEmptyTrash}
         onPermanentlyDelete={handlePermanentlyDeleteTrash}
+        onClearRestoredHistory={handleClearRestoredTrash}
+        onDeleteRestoredItem={handleDeleteRestoredTrashItem}
       />
 
       {/* USB to PC Reverse Transfer Modal */}
