@@ -1586,3 +1586,51 @@
   4. **무결성 및 빌드 검증**:
      - Python script로 전체 22개 WPF XAML/CSPROJ XML 구조 검증 (오류 0건).
      - `lint_applet` 및 `compile_applet` 빌드 100% 성공.
+
+### 📝 [작업 차수 119] 시작 가이드 PC -> USB 복사 시 유효한 C: 인증서만 표시 필터링 적용
+- **작업 일시**: 2026-11-03 16:05 KST
+- **요청 사항**: "시작 가이드 pc-> usb 복사 시작 시에 기본 c: 인증서 중에서 유효한 인증서만 보이도록 합니다."
+- **배경 및 원인 분석**:
+  1. 시작 가이드 modal/dialog에서 "PC ➔ USB 복사" 워크플로우를 선택하여 진행할 때, 기본적으로 C: 드라이브(로컬 보관함)에서 탐지된 인증서 전체(만료된 인증서 포함)가 전송 목록에 포함되는 현상이 존재함.
+  2. 사용자가 유효한 인증서만 빠르게 USB로 백업/복사하려는 본래 목적에 맞추어 만료된 인증서(`status === 'expired'` / `Status == ExpiryStatus.Expired`)를 자동으로 제외하고, 유효하거나 만료 임박인 인증서만 선택 목록에 표시되어 백업 대상으로 지정되도록 개선이 필요함.
+- **수행 내용**:
+  1. **React Web preview 동기화 (`src/App.tsx`, `src/components/StartupWorkflowModal.tsx`)**:
+     - `handleSelectWorkflow('pc_to_usb')` 호출 시 C: 드라이브 보관함 인증서 목록 중 `isPcCertificate(c) && c.status !== 'expired'` 조건을 적용하여 만료된 인증서를 자동 필터링.
+     - `StartupWorkflowModal.tsx` 안내 문구 갱신: "PC(C: 드라이브) 내 유효한 공인인증서를 자동으로 탐지하여 이동식 USB 메모리로 안전하게 복사/백업합니다."
+  2. **C# .NET 8 WPF 데스크톱 동기화 (`src-wpf/KCertManager.Wpf/ViewModels/MainViewModel.cs`, `PcToUsbTransferViewModel.cs`)**:
+     - `MainViewModel.cs` 내 `StartGuidedWorkflow("pc_to_usb")`에서 PC 인증서 추출 시 `c.Status != ExpiryStatus.Expired` 조건 필터링 추가.
+     - `PcToUsbTransferViewModel.cs` 내 `LoadCertificates` 메쏘드에서도 전달받은 initialCertificates 및 폴백 PC 경로 스캔 결과(`_scannerService.ScanCertificates`) 모두 `c.Status != ExpiryStatus.Expired` 조건 적용.
+  3. **빌드 무결성 및 XML 규격 검증**:
+     - WPF 22개 XAML/CSPROJ XML 구문 검증 100% 통과.
+     - React / TypeScript `lint_applet` 및 `compile_applet` 100% 통과.
+
+### 📝 [작업 차수 120] 시작 가이드 창 가로 크기 20% 증가 및 인증서 창 가로세로 격자 구분줄·열 너비 최적화
+- **작업 일시**: 2026-11-04 14:55 KST
+- **요청 사항**:
+  - "시작 가이드 창 가로 크기를 20%증가."
+  - "시작 가이드 에서 인증서 창에 가로세로 구분줄 추가 및 목록 가로크기 조절."
+- **배경 및 원인 분석**:
+  1. 시작 가이드 창의 기본 가로폭이 다소 좁아 3개 워크플로우 카드 및 하단 안내 문구가 빽빽하게 배치되는 경향이 있어 가로폭을 20% 확장하여 시인성과 여유 공간을 확보할 필요가 있었음.
+  2. 시작 가이드에서 실행되는 인증서 복사/가져오기 대화상자(`PcToUsbTransferDialog`, `BackupModal`, `UsbTransferDialog`, `UsbToPcModal`)에서 기존 목록이 가로 구분선만 있거나 느슨한 카드 형태로 배치되어 있어 각 항목별 셀 간의 구분이 명확하지 않았음.
+  3. 이에 가로세로 격자 구분줄(Vertical & Horizontal Grid Lines / Dividers)을 명시적으로 적용하고, 번호, 체크박스, 구분, 인증서 명칭(CN), 발급기관, 만료일 열 너비를 정밀하게 조절하여 안정적인 그리드 레이아웃을 제공함.
+- **수행 내용**:
+  1. **시작 가이드 창 가로 크기 20% 확장**:
+     - **React Web (`src/components/StartupWorkflowModal.tsx`)**:
+       - 모달 컨테이너 가로 최대폭을 기존 `max-w-3xl` (768px)에서 20% 증가한 `max-w-[924px]`로 확장.
+       - 감지된 PC(C:) 유효 인증서 미리보기 테이블을 신설하여 가이드 창 내부에서도 유효 인증서들을 가로세로 구분줄(`divide-x divide-y border`)과 함께 즉시 확인 가능하도록 지원.
+     - **C# .NET 8 WPF (`StartupWorkflowDialog.xaml`)**:
+       - 기본 `Width="760"`을 20% 확장한 `Width="912"` (Height 580)로 확대하여 카드 배치 및 여백 시인성 대폭 개선.
+  2. **인증서 창 가로세로 격자 구분줄 추가 및 열 너비 정밀 조절**:
+     - **C# .NET 8 WPF (`PcToUsbTransferDialog.xaml`, `UsbTransferDialog.xaml`)**:
+       - 대화상자 가로 크기 확장: `Width="980"`, `MinWidth="900"`.
+       - DataGrid 가로세로 구분선 동시 활성화: `GridLinesVisibility="All"`, `HorizontalGridLinesBrush="{DynamicResource BorderBrush}"`, `VerticalGridLinesBrush="{DynamicResource BorderBrush}"`.
+       - 헤더 및 데이터 셀에 수직 우측 구분선(`BorderThickness="0,0,1,1"`) 적용으로 완벽한 셀 격자선 구현.
+       - 컬럼 너비 정밀 재조정: 번호(48px), 선택(52px), 구분(120px), 인증서 명칭(`*` MinWidth 240px), 발급기관(165px), 만료일(115px).
+     - **React Web (`src/components/BackupModal.tsx`, `src/components/UsbToPcModal.tsx`)**:
+       - 모달 가로폭 20% 확장: `max-w-3xl` ➔ `max-w-[924px]`.
+       - 기존 단순 태그/카드 목록을 W3C 표준 시맨틱 격자 테이블로 전환:
+         - `divide-x divide-slate-200` 및 `divide-y divide-slate-200`을 통해 행과 열 모두 명확한 가로세로 구분줄 구현.
+         - 반응형 가로 스크롤(`overflow-x-auto`) 및 컬럼 너비 최적화: 번호(w-12), 구분(w-28), 인증서 명칭(min-w-[200px]), 발급기관(w-36), 만료일(w-28), 상태(w-20).
+  3. **빌드 무결성 및 규격 검증**:
+     - 전체 22개 WPF XAML 및 CSPROJ XML 파싱 검증 완료 (100% Valid).
+     - React / TypeScript `lint_applet` (오류 0건) 및 `compile_applet` 빌드 100% 통과.

@@ -294,7 +294,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-[924px] overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4.5 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -722,74 +722,80 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                   </div>
                 </div>
 
-                <div className="space-y-2 max-h-52 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs max-h-56 overflow-y-auto">
                   {detectedCerts.length === 0 ? (
                     <div className="p-6 text-center text-xs text-slate-500">
                       USB에서 감지된 인증서가 없습니다. 위의 'USB 폴더 직접 열기'를 이용해 주세요.
                     </div>
                   ) : (
-                    detectedCerts.map((cert, index) => {
-                      const isSelected = selectedCertIds.includes(cert.id);
-                      const isAlreadyInPc = existingCertificates.some(
-                        c => c.serialNumber === cert.serialNumber || (c.name === cert.name && c.category === cert.category)
-                      );
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-slate-100 text-slate-700 font-bold sticky top-0 z-10 border-b border-slate-300">
+                        <tr className="divide-x divide-slate-200">
+                          <th className="py-2.5 px-3 w-12 text-center">번호</th>
+                          <th className="py-2.5 px-3 w-12 text-center">선택</th>
+                          <th className="py-2.5 px-3 w-28">구분</th>
+                          <th className="py-2.5 px-3 min-w-[200px]">인증서 명칭 (CN)</th>
+                          <th className="py-2.5 px-3 w-36">발급기관</th>
+                          <th className="py-2.5 px-3 w-28 text-center">유효기간</th>
+                          <th className="py-2.5 px-3 w-28 text-center">보관 경로</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 text-slate-800">
+                        {detectedCerts.map((cert, index) => {
+                          const isSelected = selectedCertIds.includes(cert.id);
+                          const isAlreadyInPc = existingCertificates.some(
+                            c => c.serialNumber === cert.serialNumber || (c.name === cert.name && c.category === cert.category)
+                          );
 
-                      return (
-                          <div
-                            key={cert.id}
-                            onClick={() => handleToggleCert(cert.id)}
-                            className={`p-3 rounded-lg border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                              isSelected
-                                ? 'bg-white border-blue-500 shadow-2xs ring-1 ring-blue-500/20'
-                                : 'bg-white/80 border-slate-200 hover:border-slate-300'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <span className="w-5 text-center font-mono font-bold text-xs text-slate-500 shrink-0 sticky left-0 z-10 bg-white group-hover:bg-slate-50">{index + 1}</span>
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => {}} // Handled by outer div
-                              className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
-                            />
-
-                            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
-                              <FileKey className="w-4 h-4" />
-                            </div>
-
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs sm:text-sm font-bold text-slate-900">
-                                  {cert.name}
-                                </span>
-                                <span className="text-[10px] px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded font-medium border border-slate-200">
+                          return (
+                            <tr
+                              key={cert.id}
+                              onClick={() => handleToggleCert(cert.id)}
+                              className={`divide-x divide-slate-200 cursor-pointer transition-colors ${
+                                isSelected ? 'bg-blue-50/50 hover:bg-blue-100/40' : 'hover:bg-slate-50'
+                              }`}
+                            >
+                              <td className="py-2 px-3 text-center font-mono font-bold text-slate-500 text-[11px] bg-slate-50/50">
+                                {index + 1}
+                              </td>
+                              <td className="py-2 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => handleToggleCert(cert.id)}
+                                  className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
+                                />
+                              </td>
+                              <td className="py-2 px-3">
+                                <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-blue-50 text-blue-700 border border-blue-200">
                                   {cert.category === 'GPKI_GOV' ? '공무원(GPKI)' : cert.category === 'EPKI_EDU' ? '교육행정(EPKI)' : '은행(NPKI)'}
                                 </span>
-                                {isAlreadyInPc && (
-                                  <span className="text-[10px] px-1.5 py-0.2 bg-amber-50 text-amber-700 border border-amber-200 rounded font-semibold">
-                                    PC에 기존 존재
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-[11px] text-slate-500 font-mono flex items-center gap-2 mt-0.5">
-                                <span>발급: {cert.issuer}</span>
-                                <span>·</span>
-                                <span>유효기간: {cert.validTo}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="text-right shrink-0 hidden sm:block">
-                            <div className="text-[10px] text-slate-400 font-mono truncate max-w-[200px]">
-                              {cert.usbPath}
-                            </div>
-                            <div className="text-[10px] text-emerald-600 font-medium">
-                              키페어(DER+KEY) 정상
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
+                              </td>
+                              <td className="py-2 px-3 font-semibold text-slate-900">
+                                <div className="flex items-center gap-1.5">
+                                  <FileKey className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                  <span className="truncate">{cert.name}</span>
+                                  {isAlreadyInPc && (
+                                    <span className="text-[9px] px-1.5 py-0.2 bg-amber-100 text-amber-800 border border-amber-300 rounded font-semibold shrink-0">
+                                      PC 기존 존재
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-slate-600 truncate text-[11px]">
+                                {cert.issuer}
+                              </td>
+                              <td className="py-2 px-3 text-center font-mono text-[11px] text-slate-600">
+                                {cert.validTo}
+                              </td>
+                              <td className="py-2 px-3 text-center font-mono text-[10px] text-slate-500 truncate max-w-[120px]">
+                                {cert.usbPath}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   )}
                 </div>
               </div>

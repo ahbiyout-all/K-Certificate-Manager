@@ -186,14 +186,15 @@ export default function App() {
     setActiveWorkflow(type);
 
     if (type === 'pc_to_usb') {
-      const pcCerts = certificates.filter(isPcCertificate);
+      // 시작 가이드 pc-> usb 복사 시작 시 기본 C: 인증서 중 유효한 인증서만 수집 (만료 항목 제외)
+      const pcCerts = certificates.filter(c => isPcCertificate(c) && c.status !== 'expired');
       const pcCertIds = pcCerts.map(c => c.id);
       if (pcCertIds.length > 0) {
         setSelectedIds(pcCertIds);
         setExplicitBackupCerts(pcCerts);
-        showToast(`💻 [PC ➔ USB 복사하기] PC에 보관된 기본 C: 인증서 ${pcCertIds.length}개가 전체 선택되어 복사 대화창이 실행되었습니다.`);
+        showToast(`💻 [PC ➔ USB 복사하기] 컴퓨터 기본 C: 보관함의 유효한 인증서 ${pcCertIds.length}개가 자동 선택되었습니다.`);
       } else {
-        showToast('💻 [PC ➔ USB 복사하기] 컴퓨터 인증서 복사 마법사 창이 실행되었습니다.');
+        showToast('💻 [PC ➔ USB 복사하기] 유효한 C: 인증서 복사 마법사 창이 실행되었습니다.');
       }
       // USB ➔ PC 가져오기와 동일한 창(모달) 형식으로 PC ➔ USB 백업 마법사 창 직접 실행
       handleOpenGeneralBackupModal(undefined, pcCerts.length > 0 ? pcCerts : undefined);
@@ -1853,6 +1854,7 @@ export default function App() {
         onSelectWorkflow={handleSelectWorkflow}
         dontShowAgain={dontShowStartupAgain}
         onToggleDontShowAgain={handleToggleDontShowStartupAgain}
+        validPcCerts={certificates.filter(c => isPcCertificate(c) && c.status !== 'expired')}
       />
 
       {/* Guided Step-by-Step Workflow Motion Overlay */}

@@ -563,7 +563,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl overflow-hidden relative">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-[924px] overflow-hidden relative">
         {/* Duplicate Prevention Check Modal Overlay ('중복 방지 체크' 및 덮어쓰기 여부 확인) */}
         {showDuplicateModal && duplicateResult && (
           <div className="absolute inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
@@ -949,23 +949,69 @@ export const BackupModal: React.FC<BackupModalProps> = ({
             </div>
           ) : (
             <>
-              {/* Selected Users Pill list */}
+              {/* Selected Certificates Table with Horizontal and Vertical Divider Grid Lines */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-2">
-                  선택된 사용자 및 인증서 ({selectedCerts.length}개):
-                </label>
-                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  {selectedCerts.map((cert, index) => (
-                    <div
-                      key={cert.id}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs shadow-2xs"
-                    >
-                      <span className="px-1.5 py-0.2 bg-blue-100 text-blue-800 rounded font-bold text-[10px] font-mono shrink-0">{index + 1}</span>
-                      <FileKey className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                      <span className="font-semibold text-slate-900">{cert.name}</span>
-                      <span className="text-[11px] text-slate-500 font-mono">({cert.issuer})</span>
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                    <span>복사 대상 인증서 목록 ({selectedCerts.length}개)</span>
+                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
+                      격자 가로세로 구분선 적용
+                    </span>
+                  </label>
+                  <span className="text-[11px] text-slate-500">
+                    좌우 가로 크기 최적화 및 열 너비 정렬
+                  </span>
+                </div>
+                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs max-h-48 overflow-y-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-slate-100 text-slate-700 font-bold sticky top-0 z-10 border-b border-slate-300">
+                      <tr className="divide-x divide-slate-200">
+                        <th className="py-2 px-3 w-12 text-center">번호</th>
+                        <th className="py-2 px-3 w-28">구분</th>
+                        <th className="py-2 px-3 min-w-[200px]">인증서 명칭 (CN)</th>
+                        <th className="py-2 px-3 w-36">발급기관</th>
+                        <th className="py-2 px-3 w-28 text-center">만료일</th>
+                        <th className="py-2 px-3 w-20 text-center">상태</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 text-slate-800">
+                      {selectedCerts.map((cert, index) => (
+                        <tr key={cert.id} className="divide-x divide-slate-200 hover:bg-blue-50/40 transition-colors">
+                          <td className="py-2 px-3 text-center font-mono font-bold text-slate-500 text-[11px] bg-slate-50/50">
+                            {index + 1}
+                          </td>
+                          <td className="py-2 px-3">
+                            <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-blue-50 text-blue-700 border border-blue-200">
+                              {cert.category === 'GPKI_GOV' ? 'GPKI(행정)' : cert.category === 'EPKI_EDU' ? 'EPKI(교육)' : 'NPKI(공동)'}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 font-semibold text-slate-900">
+                            <div className="flex items-center gap-1.5">
+                              <FileKey className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                              <span className="truncate">{cert.name}</span>
+                            </div>
+                          </td>
+                          <td className="py-2 px-3 text-slate-600 truncate text-[11px]">
+                            {cert.issuer}
+                          </td>
+                          <td className="py-2 px-3 text-center font-mono text-[11px] text-slate-600">
+                            {cert.expiryDate}
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              cert.status === 'valid'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : cert.status === 'expiring'
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-rose-100 text-rose-800'
+                            }`}>
+                              {cert.status === 'valid' ? '정상' : cert.status === 'expiring' ? '만료임박' : '만료'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 

@@ -243,7 +243,7 @@ namespace KCertManager.Wpf.ViewModels
 
             if (initialCertificates != null && initialCertificates.Any())
             {
-                list.AddRange(initialCertificates);
+                list.AddRange(initialCertificates.Where(c => c.Status != ExpiryStatus.Expired));
             }
             else
             {
@@ -262,7 +262,7 @@ namespace KCertManager.Wpf.ViewModels
                     };
 
                     var scanned = _scannerService.ScanCertificates(pcPaths);
-                    list.AddRange(scanned.Where(c => !c.IsRemovableMedia));
+                    list.AddRange(scanned.Where(c => !c.IsRemovableMedia && c.Status != ExpiryStatus.Expired));
                 }
                 catch (Exception ex)
                 {

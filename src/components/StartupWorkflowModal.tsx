@@ -24,6 +24,7 @@ interface StartupWorkflowModalProps {
   onSelectWorkflow: (type: WorkflowType) => void;
   dontShowAgain?: boolean;
   onToggleDontShowAgain?: (val: boolean) => void;
+  validPcCerts?: any[];
 }
 
 export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
@@ -32,12 +33,13 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
   onSelectWorkflow,
   dontShowAgain = false,
   onToggleDontShowAgain,
+  validPcCerts = [],
 }) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
-      <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-3xl overflow-hidden relative animate-scaleIn">
+      <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-[924px] overflow-hidden relative animate-scaleIn">
         {/* Top Decorative Gradient Header */}
         <div className="px-6 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 text-white flex items-center justify-between relative overflow-hidden">
           <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
@@ -105,7 +107,7 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                     <ArrowRight className="w-4 h-4 text-blue-600 group-hover:translate-x-1 transition-transform" />
                   </h3>
                   <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1.5">
-                    컴퓨터(AppData)에 보관된 공인인증서를 USB 메모리로 안전하게 복사/백업합니다.
+                    컴퓨터(AppData)에 보관된 유효한 공인인증서만 자동으로 필터링하여 USB 메모리로 안전하게 복사/백업합니다.
                   </p>
                 </div>
               </div>
@@ -192,6 +194,75 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
               </div>
             </button>
           </div>
+
+          {/* Detected Valid PC Certificates Table with Horizontal & Vertical Grid Lines */}
+          {validPcCerts && validPcCerts.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-xs font-bold text-slate-800">
+                    💻 내 컴퓨터(C:) 기본 보관함의 유효 인증서 ({validPcCerts.length}개 감지)
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                    격자 가로세로 구분줄 · 유효 항목만 표시
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onSelectWorkflow('pc_to_usb')}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-bold hover:underline cursor-pointer flex items-center gap-1"
+                >
+                  <span>이 인증서들로 USB 복사 시작</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Table with crisp horizontal & vertical grid divider lines and calibrated column widths */}
+              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs max-h-40 overflow-y-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-slate-100/90 text-slate-700 font-bold sticky top-0 z-10 border-b border-slate-300">
+                    <tr className="divide-x divide-slate-200">
+                      <th className="py-2 px-3 w-12 text-center">번호</th>
+                      <th className="py-2 px-3 w-28">구분</th>
+                      <th className="py-2 px-3 min-w-[200px]">인증서 명칭 (CN)</th>
+                      <th className="py-2 px-3 w-36">발급기관</th>
+                      <th className="py-2 px-3 w-28 text-center">만료일</th>
+                      <th className="py-2 px-3 w-20 text-center">상태</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 text-slate-800">
+                    {validPcCerts.map((cert, index) => (
+                      <tr key={cert.id || index} className="divide-x divide-slate-200 hover:bg-blue-50/40 transition-colors">
+                        <td className="py-2 px-3 text-center font-mono font-bold text-slate-500 text-[11px] bg-slate-50/50">
+                          {index + 1}
+                        </td>
+                        <td className="py-2 px-3">
+                          <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-blue-50 text-blue-700 border border-blue-200">
+                            {cert.category === 'GPKI_GOV' ? 'GPKI(행정)' : cert.category === 'EPKI_EDU' ? 'EPKI(교육)' : 'NPKI(공동)'}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 font-bold text-slate-900">
+                          <span className="truncate block max-w-xs">{cert.name || cert.commonName}</span>
+                        </td>
+                        <td className="py-2 px-3 text-slate-600 truncate text-[11px]">
+                          {cert.issuer || cert.issuerName}
+                        </td>
+                        <td className="py-2 px-3 text-center font-mono text-[11px] text-slate-600">
+                          {cert.expiryDate || (cert.notAfter ? new Date(cert.notAfter).toISOString().slice(0, 10) : '-')}
+                        </td>
+                        <td className="py-2 px-3 text-center">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                            정상
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Bottom Features & Settings Bar */}
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">

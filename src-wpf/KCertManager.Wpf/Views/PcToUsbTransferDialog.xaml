@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:KCertManager.Wpf.ViewModels"
         Title="내 컴퓨터(PC) ➔ USB 메모리 / 디스크 인증서 복사하기" 
-        Height="660" Width="840"
-        MinWidth="800" MinHeight="600"
+        Height="680" Width="980"
+        MinWidth="900" MinHeight="620"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResizeWithGrip"
         Background="{DynamicResource BgDarkBrush}">
@@ -97,11 +97,12 @@
                         </Grid>
                     </Border>
 
-                    <!-- Main DataGrid -->
+                    <!-- Main DataGrid with horizontal and vertical grid divider lines -->
                     <DataGrid Grid.Row="1" ItemsSource="{Binding FoundPcCertificates}" AutoGenerateColumns="False" CanUserAddRows="False"
                               Background="Transparent" RowBackground="{DynamicResource BgCardBrush}" AlternatingRowBackground="{DynamicResource BgDarkBrush}"
-                              Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" GridLinesVisibility="Horizontal"
+                              Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" GridLinesVisibility="All"
                               HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
+                              VerticalGridLinesBrush="{DynamicResource BorderBrush}"
                               FrozenColumnCount="1"
                               ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <DataGrid.Resources>
@@ -111,14 +112,14 @@
                             <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#1D4ED8"/>
                             <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#FFFFFF"/>
 
-                            <!-- DataGrid Column Header Style -->
+                            <!-- DataGrid Column Header Style with Horizontal & Vertical Dividers -->
                             <Style TargetType="DataGridColumnHeader">
                                 <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
                                 <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
                                 <Setter Property="FontSize" Value="12"/>
                                 <Setter Property="Padding" Value="12,10"/>
-                                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                <Setter Property="BorderThickness" Value="0,0,1,1"/>
                                 <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
                                 <Setter Property="Template">
                                     <Setter.Value>
@@ -146,14 +147,16 @@
                                     </Trigger>
                                 </Style.Triggers>
                             </Style>
+                            <!-- DataGrid Cell Style with Horizontal & Vertical Dividers -->
                             <Style TargetType="DataGridCell">
                                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
                                 <Setter Property="Padding" Value="8,6"/>
                                 <Setter Property="Template">
                                     <Setter.Value>
                                         <ControlTemplate TargetType="DataGridCell">
-                                            <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderThickness="0">
+                                            <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}">
                                                 <ContentPresenter VerticalAlignment="Center"/>
                                             </Border>
                                         </ControlTemplate>
@@ -168,12 +171,12 @@
                             </Style>
                         </DataGrid.Resources>
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="번호" Binding="{Binding IndexNumber}" Width="45" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                            <DataGridCheckBoxColumn Header="선택" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="55"/>
-                            <DataGridTextColumn Header="구분" Binding="{Binding CategoryBadgeText}" Width="110" Foreground="{DynamicResource AccentTextBrush}"/>
-                            <DataGridTextColumn Header="인증서 명칭 (CN)" Binding="{Binding CommonName}" Width="*" FontWeight="Bold"/>
-                            <DataGridTextColumn Header="발급기관" Binding="{Binding IssuerName}" Width="145" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                            <DataGridTextColumn Header="만료일" Binding="{Binding NotAfter, StringFormat='{}{0:yyyy-MM-dd}'}" Width="105" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <DataGridTextColumn Header="번호" Binding="{Binding IndexNumber}" Width="48" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <DataGridCheckBoxColumn Header="선택" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="52"/>
+                            <DataGridTextColumn Header="구분" Binding="{Binding CategoryBadgeText}" Width="120" Foreground="{DynamicResource AccentTextBrush}"/>
+                            <DataGridTextColumn Header="인증서 명칭 (CN)" Binding="{Binding CommonName}" Width="*" MinWidth="240" FontWeight="Bold"/>
+                            <DataGridTextColumn Header="발급기관" Binding="{Binding IssuerName}" Width="165" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <DataGridTextColumn Header="만료일" Binding="{Binding NotAfter, StringFormat='{}{0:yyyy-MM-dd}'}" Width="115" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
