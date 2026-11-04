@@ -388,7 +388,14 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                           </span>
                         </td>
                         <td style={{ width: `${colWidths.name}px` }} className="w-[260px] min-w-[200px] py-2 px-3 font-bold text-slate-900">
-                          <span className="truncate block" title={cert.name || cert.commonName}>{cert.name || cert.commonName}</span>
+                          <div className="flex flex-col min-w-0">
+                            <span className="truncate block" title={cert.name || cert.commonName}>{cert.name || cert.commonName}</span>
+                            {(cert.sourceLocation || cert.directoryPath) && (
+                              <span className="text-[10px] text-slate-400 font-mono truncate max-w-full block font-normal" title={cert.sourceLocation || cert.directoryPath}>
+                                {cert.sourceLocation || cert.directoryPath}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td style={{ width: `${colWidths.issuer}px` }} className="w-[170px] py-2 px-3 text-slate-600 text-[11px]">
                           <span className="truncate block" title={cert.issuer || cert.issuerName}>{cert.issuer || cert.issuerName}</span>

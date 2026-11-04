@@ -71,6 +71,7 @@ namespace KCertManager.Wpf.ViewModels
             _soundVolume = settings.SoundVolume;
             _isSimpleMode = settings.IsSimpleMode;
             _dontShowStartupWorkflowAgain = settings.DontShowStartupWorkflowAgain;
+            _excludeLocalLowGpkiScan = settings.ExcludeLocalLowGpkiScan;
 
             // 앱 시작 시 초기 테마 리소스 완전 강제 적용 (시작 시 브러시 누락 방지)
             ApplyTheme(_currentTheme);
@@ -313,6 +314,21 @@ namespace KCertManager.Wpf.ViewModels
                 if (SetProperty(ref _dontShowStartupWorkflowAgain, value))
                 {
                     SettingsService.Instance.DontShowStartupWorkflowAgain = value;
+                }
+            }
+        }
+
+        private bool _excludeLocalLowGpkiScan = true;
+        public bool ExcludeLocalLowGpkiScan
+        {
+            get => _excludeLocalLowGpkiScan;
+            set
+            {
+                if (SetProperty(ref _excludeLocalLowGpkiScan, value))
+                {
+                    SettingsService.Instance.ExcludeLocalLowGpkiScan = value;
+                    KCert.Core.Discovery.CertLocationScanner.ExcludeLocalLowGpkiScan = value;
+                    _ = RefreshCertificatesAsync();
                 }
             }
         }

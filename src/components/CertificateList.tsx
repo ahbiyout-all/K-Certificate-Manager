@@ -4,7 +4,7 @@ import {
   CertCategory,
   DiskDrive
 } from '../types';
-import { isNonStandardCertPath } from '../utils/certPathUtils';
+import { isNonStandardCertPath, isRareLocalLowGpkiPath } from '../utils/certPathUtils';
 import { isCertificateExpired } from '../utils/certParser';
 import { filterPhysicalDrivesOnly } from '../utils/driveFilter';
 import { getDriveColorInfo } from '../utils/driveColors';
@@ -1561,7 +1561,8 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                   const isRecentlyCopied = recentlyCopiedIds.includes(cert.id);
                   const isUsb = isUsbCertificate(cert);
                   const driveLetter = getDriveLetter(cert);
-                  const isNonStandard = cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation);
+                  const isRareGpki = isRareLocalLowGpkiPath(cert.sourceLocation);
+                  const isNonStandard = isRareGpki || cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation);
                   const cellPadding = paddingDensity === "compact"
                     ? (isSelected ? "px-2.5 py-3" : "px-2.5 py-2")
                     : paddingDensity === "spacious"
@@ -1703,12 +1704,17 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                             <Copy className="w-3 h-3" />
                           </button>
                         </div>
-                        {isNonStandard && (
+                        {isRareGpki ? (
+                          <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.2 bg-amber-100/90 text-amber-900 border border-amber-300 rounded text-[10px] font-bold shadow-2xs overflow-hidden max-w-full truncate shrink-0" title="실제 사용 환경에서 거의 사용되지 않는 비권장 경로입니다. 공무원 행정전자서명(GPKI)의 정부 정규 표준 위치는 [C:\GPKI\Certificate\class2]입니다. 온-나라, 새올 등 행정망에서 인식되지 않을 수 있습니다.">
+                            <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                            <span className="truncate">⚠️ 실무 미사용 경로 (GPKI 예외)</span>
+                          </div>
+                        ) : isNonStandard ? (
                           <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.2 bg-amber-100/80 text-amber-900 border border-amber-300 rounded text-[10px] font-bold shadow-2xs overflow-hidden max-w-full truncate shrink-0" title="일반 인증서 프로그램(은행/정부)이 인식하지 못하는 위치입니다. [USB ➔ PC] 또는 [정 위치 복사]가 필요합니다.">
                             <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
                             <span className="truncate">⚠️ 비표준 위치</span>
                           </div>
-                        )}
+                        ) : null}
                       </td>
 
                       {/* Col 5: 사용자명 / 소속 */}
@@ -1717,7 +1723,11 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                         className={`${cellPadding} border-r border-slate-200/90 dark:border-slate-800 overflow-hidden min-w-0`}
                       >
                         <div className="flex items-center gap-2 overflow-hidden min-w-0">
-                          {isNonStandard ? (
+                          {isRareGpki ? (
+                            <div className="p-1.5 bg-amber-100 text-amber-900 rounded-md border border-amber-300 shadow-2xs shrink-0" title="실무 미사용 GPKI 예외 경로 보관 인증서">
+                              <FileKey className="w-4 h-4 text-amber-700" />
+                            </div>
+                          ) : isNonStandard ? (
                             <div className="p-1.5 bg-amber-100 text-amber-800 rounded-md border border-amber-300 shadow-2xs shrink-0" title="비표준 경로 보관 인증서">
                               <FileKey className="w-4 h-4 text-amber-600" />
                             </div>
@@ -1729,11 +1739,15 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                           <div className="min-w-0 overflow-hidden">
                             <div className="font-semibold text-slate-900 flex items-center gap-1.5 overflow-hidden">
                               <span className="truncate">{cert.name}</span>
-                              {isNonStandard && (
+                              {isRareGpki ? (
+                                <span className="text-[10px] px-1.5 py-0.2 bg-amber-100 text-amber-900 border border-amber-300 rounded font-bold shrink-0" title="정부 공식 표준: C:\GPKI\Certificate\class2">
+                                  ⚠️ GPKI 예외
+                                </span>
+                              ) : isNonStandard ? (
                                 <span className="text-[10px] px-1.5 py-0.2 bg-amber-100 text-amber-800 border border-amber-300 rounded font-bold shrink-0">
                                   ⚠️ 비표준
                                 </span>
-                              )}
+                              ) : null}
                             </div>
                             {cert.departmentOrOrg && (
                               <div className="text-xs text-slate-500 truncate" title={cert.departmentOrOrg}>

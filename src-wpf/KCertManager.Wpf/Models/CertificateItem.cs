@@ -101,6 +101,39 @@ namespace KCertManager.Wpf.Models
             }
         }
 
+        private int _duplicateLocationsCount = 1;
+        public int DuplicateLocationsCount
+        {
+            get => _duplicateLocationsCount;
+            set
+            {
+                if (_duplicateLocationsCount != value)
+                {
+                    _duplicateLocationsCount = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(HasDuplicateLocations));
+                    OnPropertyChanged(nameof(DuplicateBadgeText));
+                }
+            }
+        }
+
+        public bool HasDuplicateLocations => DuplicateLocationsCount > 1;
+        public string DuplicateBadgeText => HasDuplicateLocations ? $"중복 {DuplicateLocationsCount}개소" : string.Empty;
+
+        private string _duplicateLocationsDetails = string.Empty;
+        public string DuplicateLocationsDetails
+        {
+            get => _duplicateLocationsDetails;
+            set
+            {
+                if (_duplicateLocationsDetails != value)
+                {
+                    _duplicateLocationsDetails = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public int RemainingDays
         {
             get
@@ -332,6 +365,19 @@ namespace KCertManager.Wpf.Models
             };
         }
 
+        /// <summary>
+        /// 실제 공공 행정 실무 환경에서 거의 사용되지 않는 AppData\LocalLow\GPKI 예외 경로인지 여부
+        /// </summary>
+        public bool IsRareLocalLowGpkiPath
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(DirectoryPath)) return false;
+                string p = DirectoryPath.Replace('/', '\\').ToUpperInvariant();
+                return p.Contains(@"\APPDATA\LOCALLOW\GPKI");
+            }
+        }
+
         public bool IsStandardPath
         {
             get
@@ -348,9 +394,15 @@ namespace KCertManager.Wpf.Models
                     return false;
                 }
 
-                // 2. AppData\LocalLow (금융결제원, 행정안전부, 교육부 최우선 표준)
+                // 1-1. AppData\LocalLow\GPKI 경로는 공무원 행정전자서명(GPKI) 정부 공식 표준(C:\GPKI\Certificate\class2)이 아니며
+                // 실무 행정망(온-나라, 새올 등)에서 미인식되는 예외 경로이므로 비표준 처리
+                if (p.Contains(@"\APPDATA\LOCALLOW\GPKI"))
+                {
+                    return false;
+                }
+
+                // 2. AppData\LocalLow (금융결제원 NPKI, 교육부 EPKI 최우선 표준)
                 if (p.Contains(@"\APPDATA\LOCALLOW\NPKI") ||
-                    p.Contains(@"\APPDATA\LOCALLOW\GPKI") ||
                     p.Contains(@"\APPDATA\LOCALLOW\EPKI"))
                 {
                     return true;
@@ -382,11 +434,23 @@ namespace KCertManager.Wpf.Models
 
         public bool IsCustomPath => !IsStandardPath;
 
-        public string StandardLocationBadgeText => IsStandardPath ? "✅ 정 위치" : "⚠️ 비표준 위치";
+        public string StandardLocationBadgeText
+        {
+            get
+            {
+                if (IsRareLocalLowGpkiPath)
+                    return "⚠️ 실무 미사용 경로 (GPKI 예외)";
+                return IsStandardPath ? "✅ 정 위치" : "⚠️ 비표준 위치";
+            }
+        }
+
         public string LocationNoticeText
         {
             get
             {
+                if (IsRareLocalLowGpkiPath)
+                    return "실제 행정 실무 환경에서 거의 사용되지 않는 비권장 경로입니다. 공무원 행정전자서명(GPKI)의 정부 정규 표준 위치는 [C:\\GPKI\\Certificate\\class2]입니다. 온-나라, 새올 등 행정망 프로그램에서 인식되지 않을 수 있으므로 표준 경로로 이동을 권장합니다.";
+
                 if (IsStandardPath)
                     return "일반 인증서 프로그램(은행/정부)이 정상 인식하는 표준 위치입니다.";
 

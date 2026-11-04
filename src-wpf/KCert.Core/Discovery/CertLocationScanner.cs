@@ -35,8 +35,14 @@ namespace KCert.Core.Discovery
         }
 
         /// <summary>
+        /// 실제 공공 업무 환경에서 거의 사용되지 않는 AppData\LocalLow\GPKI 경로의 탐색 제외 여부 (기본값: true - 탐색 제외)
+        /// (공무원 행정전자서명 GPKI 공식 표준은 C:\GPKI\Certificate\class2)
+        /// </summary>
+        public static bool ExcludeLocalLowGpkiScan { get; set; } = true;
+
+        /// <summary>
         /// [1단계 Fast-Pass] 0.05~0.1초 만에 즉시 스캔할 핵심 표준 인증서 경로만 반환합니다.
-        /// (LocalLow NPKI/GPKI/EPKI, C:\GPKI, C:\EPKI 및 각 드라이브 최상위 \NPKI)
+        /// (LocalLow NPKI/EPKI, C:\GPKI, C:\EPKI 및 각 드라이브 최상위 \NPKI)
         /// </summary>
         public static List<string> GetFastStandardRoots()
         {
@@ -48,6 +54,12 @@ namespace KCert.Core.Discovery
             // 1. AppData\LocalLow (금융결제원, 행안부, 교육부 최우선 표준)
             foreach (var name in FastDirNames)
             {
+                // AppData\LocalLow\GPKI는 실무 행정망(온-나라, 새올 등)에서 사용되지 않는 예외 경로이므로 옵션에 따라 제외
+                if (name.Equals("GPKI", StringComparison.OrdinalIgnoreCase) && ExcludeLocalLowGpkiScan)
+                {
+                    continue;
+                }
+
                 var dir = Path.Combine(localLow, name);
                 if (Directory.Exists(dir)) roots.Add(dir);
             }
@@ -209,6 +221,7 @@ namespace KCert.Core.Discovery
 
         /// <summary>
         /// 지정된 경로가 윈도우 OS/한국 금융/행정 표준 인증서 저장 위치인지 검사합니다.
+        /// (참고: AppData\LocalLow\GPKI는 실무에서 쓰이지 않는 비권장 경로로 표준에서 제외됩니다)
         /// </summary>
         public static bool IsStandardPath(string path)
         {
@@ -216,12 +229,19 @@ namespace KCert.Core.Discovery
             try
             {
                 var normPath = Path.GetFullPath(path).Replace('/', '\\').TrimEnd('\\');
+                var upper = normPath.ToUpperInvariant();
+
+                // 1. AppData\LocalLow\GPKI는 공무원 행정전자서명(GPKI) 정부 공식 표준(C:\GPKI\Certificate\class2)이 아니며
+                // 실무 행정망(온-나라, 새올 등)에서 미인식되는 예외 경로이므로 표준에서 제외
+                if (upper.Contains(@"\APPDATA\LOCALLOW\GPKI"))
+                {
+                    return false;
+                }
+
                 var fastRoots = GetFastStandardRoots().Select(r => Path.GetFullPath(r).Replace('/', '\\').TrimEnd('\\'));
                 if (fastRoots.Any(r => normPath.StartsWith(r, StringComparison.OrdinalIgnoreCase))) return true;
 
-                var upper = normPath.ToUpperInvariant();
                 if (upper.Contains(@"\APPDATA\LOCALLOW\NPKI") ||
-                    upper.Contains(@"\APPDATA\LOCALLOW\GPKI") ||
                     upper.Contains(@"\APPDATA\LOCALLOW\EPKI"))
                     return true;
 
@@ -235,6 +255,16 @@ namespace KCert.Core.Discovery
             }
             catch { }
             return false;
+        }
+
+        /// <summary>
+        /// 경로가 실무 환경에서 거의 사용되지 않는 예외 경로(AppData\LocalLow\GPKI)인지 검사합니다.
+        /// </summary>
+        public static bool IsRareLocalLowGpkiPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            var upper = path.Replace('/', '\\').ToUpperInvariant();
+            return upper.Contains(@"\APPDATA\LOCALLOW\GPKI");
         }
 
         /// <summary>

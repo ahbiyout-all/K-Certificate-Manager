@@ -47,9 +47,17 @@ namespace KCertManager.Wpf.Views
                 {
                     RbModeAdvanced.IsChecked = true;
                 }
+
+                ChkExcludeLocalLowGpkiScan.IsChecked = _vm.ExcludeLocalLowGpkiScan;
             }
 
             _isInitializing = false;
+        }
+
+        private void ChkExcludeLocalLowGpkiScan_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing || _vm == null) return;
+            _vm.ExcludeLocalLowGpkiScan = ChkExcludeLocalLowGpkiScan.IsChecked == true;
         }
 
         private void ChkSoundEnabled_Changed(object sender, RoutedEventArgs e)
@@ -115,6 +123,7 @@ namespace KCertManager.Wpf.Views
             _vm.CurrentTheme = "dark";
             _vm.IsSimpleMode = true;
             _vm.DontShowStartupWorkflowAgain = false;
+            _vm.ExcludeLocalLowGpkiScan = true;
 
             ChkSoundEnabled.IsChecked = true;
             SliderSoundVolume.Value = 40;
@@ -122,6 +131,7 @@ namespace KCertManager.Wpf.Views
             RbThemeDark.IsChecked = true;
             RbModeSimple.IsChecked = true;
             ChkDontShowStartupWorkflowAgain.IsChecked = false;
+            ChkExcludeLocalLowGpkiScan.IsChecked = true;
             _isInitializing = false;
 
             _vm.ShowToast("⚙️ 환경 설정이 기본값으로 초기화되었습니다.");

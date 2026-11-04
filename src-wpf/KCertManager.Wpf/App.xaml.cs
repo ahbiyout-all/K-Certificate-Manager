@@ -8,6 +8,9 @@ namespace KCertManager.Wpf
 {
     public partial class App : Application
     {
+        private static System.Threading.Mutex? _appMutex;
+        private const string AppMutexName = "KCertManager_Singleton_Mutex_8F5B123A";
+
         public App()
         {
             // Register global handlers immediately in constructor before any XAML or ViewModel is instantiated
@@ -20,6 +23,12 @@ namespace KCertManager.Wpf
         {
             base.OnStartup(e);
             ShutdownMode = ShutdownMode.OnMainWindowClose;
+
+            try
+            {
+                _appMutex = new System.Threading.Mutex(true, AppMutexName, out _);
+            }
+            catch { }
 
             try
             {
@@ -46,6 +55,18 @@ namespace KCertManager.Wpf
                 }
                 catch { }
             }
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            try
+            {
+                _appMutex?.ReleaseMutex();
+                _appMutex?.Dispose();
+                _appMutex = null;
+            }
+            catch { }
+            base.OnExit(e);
         }
 
         private static void LogStartup(string msg)

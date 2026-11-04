@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using KCert.Core.Discovery;
 
 namespace KCertManager.Wpf.Services
 {
@@ -11,6 +12,7 @@ namespace KCertManager.Wpf.Services
         public bool DontShowStartupWorkflowAgain { get; set; } = false;
         public string Theme { get; set; } = "dark";
         public bool IsSimpleMode { get; set; } = true;
+        public bool ExcludeLocalLowGpkiScan { get; set; } = true;
     }
 
     public class SettingsService
@@ -34,6 +36,7 @@ namespace KCertManager.Wpf.Services
             }
             _settingsFilePath = Path.Combine(appDir, "kcert_settings.json");
             _currentSettings = LoadSettings();
+            CertLocationScanner.ExcludeLocalLowGpkiScan = _currentSettings.ExcludeLocalLowGpkiScan;
         }
 
         public AppSettingsData LoadSettings()
@@ -137,6 +140,20 @@ namespace KCertManager.Wpf.Services
                 if (_currentSettings.IsSimpleMode != value)
                 {
                     _currentSettings.IsSimpleMode = value;
+                    SaveSettings();
+                }
+            }
+        }
+
+        public bool ExcludeLocalLowGpkiScan
+        {
+            get => _currentSettings.ExcludeLocalLowGpkiScan;
+            set
+            {
+                if (_currentSettings.ExcludeLocalLowGpkiScan != value)
+                {
+                    _currentSettings.ExcludeLocalLowGpkiScan = value;
+                    CertLocationScanner.ExcludeLocalLowGpkiScan = value;
                     SaveSettings();
                 }
             }

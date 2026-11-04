@@ -24,6 +24,8 @@ namespace KCertManager.Wpf.ViewModels
         private ObservableCollection<DriveItem> _availableDrives = new();
         private DriveItem? _selectedTargetDrive;
         private ObservableCollection<CertificateItem> _foundPcCertificates = new();
+        private List<CertificateItem> _allPcCertificates = new();
+        private bool _isSmartDeduplicated = true;
         private string _conflictOption = "overwrite";
         private bool _isBusy;
         private bool _hasDrives = true;
@@ -32,6 +34,18 @@ namespace KCertManager.Wpf.ViewModels
         private string _confirmButtonText = "선택한 인증서 복사 시작";
 
         public event Action? TransferCompleted;
+
+        public bool IsSmartDeduplicated
+        {
+            get => _isSmartDeduplicated;
+            set
+            {
+                if (SetProperty(ref _isSmartDeduplicated, value))
+                {
+                    ApplyDeduplicationFilter();
+                }
+            }
+        }
 
         public PcToUsbTransferViewModel() : this(null, null, null)
         {
@@ -270,11 +284,8 @@ namespace KCertManager.Wpf.ViewModels
                 }
             }
 
-            for (int i = 0; i < list.Count; i++)
+            foreach (var c in list)
             {
-                var c = list[i];
-                c.IndexNumber = i + 1;
-                c.IsSelected = true;
                 c.PropertyChanged += (s, e) =>
                 {
                     if (e.PropertyName == nameof(CertificateItem.IsSelected))
@@ -288,7 +299,87 @@ namespace KCertManager.Wpf.ViewModels
                 };
             }
 
-            FoundPcCertificates = new ObservableCollection<CertificateItem>(list);
+            _allPcCertificates = list;
+            ApplyDeduplicationFilter();
+        }
+
+        private void ApplyDeduplicationFilter()
+        {
+            if (_allPcCertificates == null || _allPcCertificates.Count == 0)
+            {
+                FoundPcCertificates = new ObservableCollection<CertificateItem>();
+                OnPropertyChanged(nameof(HasCertificates));
+                UpdateStatusMessage();
+                return;
+            }
+
+            var resultList = new List<CertificateItem>();
+
+            if (_isSmartDeduplicated)
+            {
+                // 동일 인증서 그룹핑: 시리얼번호 + 소유자DN (또는 CommonName + IssuerName + NotAfter)
+                var groups = _allPcCertificates.GroupBy(c =>
+                {
+                    var s = (c.SerialNumber ?? string.Empty).Trim().ToUpperInvariant();
+                    var dn = (c.SubjectDn ?? string.Empty).Trim().ToUpperInvariant();
+                    var cn = (c.CommonName ?? string.Empty).Trim().ToUpperInvariant();
+                    var issuer = (c.IssuerName ?? string.Empty).Trim().ToUpperInvariant();
+                    var exp = c.NotAfter.ToString("yyyyMMdd");
+                    return !string.IsNullOrEmpty(s) && !string.IsNullOrEmpty(dn)
+                        ? $"{s}|{dn}|{exp}"
+                        : $"{cn}|{issuer}|{exp}";
+                });
+
+                foreach (var grp in groups)
+                {
+                    var count = grp.Count();
+                    // 최적의 정규 표준 위치 우선 선정 로직
+                    // 1순위: IsStandardPath && (C:\GPKI 또는 C:\EPKI)
+                    // 2순위: IsStandardPath && AppData\LocalLow
+                    // 3순위: 기타 IsStandardPath
+                    // 4순위: 첫 번째 항목
+                    var primary = grp.OrderByDescending(c =>
+                    {
+                        int score = 0;
+                        var dir = (c.DirectoryPath ?? string.Empty).ToUpperInvariant();
+                        if (c.IsStandardPath) score += 100;
+                        if (dir.StartsWith(@"C:\GPKI") || dir.StartsWith(@"C:\EPKI")) score += 50;
+                        else if (dir.Contains(@"APPDATA\LOCALLOW")) score += 30;
+                        return score;
+                    }).First();
+
+                    primary.DuplicateLocationsCount = count;
+                    if (count > 1)
+                    {
+                        var otherDirs = grp.Where(x => x != primary).Select(x => x.DirectoryPath).Take(3);
+                        primary.DuplicateLocationsDetails = $"동일 인증서 {count}개소 감지됨. 정규 표준 위치({primary.DirectoryPath}) 우선 선택됨. (기타 저장 위치: {string.Join(", ", otherDirs)})";
+                    }
+                    else
+                    {
+                        primary.DuplicateLocationsDetails = string.Empty;
+                    }
+
+                    resultList.Add(primary);
+                }
+            }
+            else
+            {
+                foreach (var c in _allPcCertificates)
+                {
+                    c.DuplicateLocationsCount = 1;
+                    c.DuplicateLocationsDetails = string.Empty;
+                    resultList.Add(c);
+                }
+            }
+
+            for (int i = 0; i < resultList.Count; i++)
+            {
+                var c = resultList[i];
+                c.IndexNumber = i + 1;
+                c.IsSelected = true;
+            }
+
+            FoundPcCertificates = new ObservableCollection<CertificateItem>(resultList);
             OnPropertyChanged(nameof(HasCertificates));
             UpdateStatusMessage();
             (TransferToUsbCommand as RelayCommand)?.RaiseCanExecuteChanged();

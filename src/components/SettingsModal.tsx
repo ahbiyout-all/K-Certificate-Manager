@@ -13,7 +13,8 @@ import {
   Layout,
   Bell,
   Check,
-  HardDrive
+  HardDrive,
+  FolderSearch
 } from 'lucide-react';
 import {
   getSoundSettings,
@@ -105,9 +106,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }, 600);
   };
 
+  const [excludeLocalLowGpki, setExcludeLocalLowGpki] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('kcert_exclude_locallow_gpki');
+      return saved === null ? true : saved === 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  const handleToggleExcludeLocalLowGpki = (checked: boolean) => {
+    setExcludeLocalLowGpki(checked);
+    try {
+      localStorage.setItem('kcert_exclude_locallow_gpki', String(checked));
+    } catch {}
+    triggerSaveBadge();
+  };
+
   const handleResetToDefaults = () => {
     const reset = saveSoundSettings(DEFAULT_SOUND_SETTINGS);
     setSoundSettingsState(reset);
+    setExcludeLocalLowGpki(true);
+    try {
+      localStorage.setItem('kcert_exclude_locallow_gpki', 'true');
+    } catch {}
     if (onToggleDontShowStartupAgain) {
       onToggleDontShowStartupAgain(false);
     }
@@ -313,7 +335,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
-          {/* SECTION 3: 테마 및 화면 표시 모드 */}
+          {/* SECTION 3: 인증서 탐색 및 GPKI 경로 최적화 */}
+          <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-3">
+            <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+              <FolderSearch className="w-4 h-4 text-blue-600" />
+              인증서 탐색 및 GPKI(행정전자서명) 경로 최적화
+            </h4>
+
+            <label className="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors">
+              <input
+                type="checkbox"
+                checked={excludeLocalLowGpki}
+                onChange={(e) => handleToggleExcludeLocalLowGpki(e.target.checked)}
+                className="w-4 h-4 mt-0.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+              />
+              <div>
+                <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                  <span>AppData\LocalLow\GPKI 경로 탐색 제외</span>
+                  <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">권장</span>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                  공무원 행정전자서명(GPKI)의 정부 공식 표준 경로는 <strong className="text-slate-700">C:\GPKI\Certificate\class2</strong>입니다. 온-나라, 새올 등 행정망에서 사용되지 않는 비권장 폴더(<code className="font-mono text-slate-600 bg-slate-100 px-1 rounded">AppData\LocalLow\GPKI</code>)를 탐색 대상에서 배제합니다. (체크 해제 시 탐색을 수행하되 &apos;⚠️ 실무 미사용 경로&apos; 안내 경고가 표시됩니다)
+                </p>
+              </div>
+            </label>
+          </div>
+
+          {/* SECTION 4: 테마 및 화면 표시 모드 */}
           <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-4">
             <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
               <Palette className="w-4 h-4 text-purple-600" />

@@ -694,7 +694,8 @@ export function getLocalPcStandardPath(cert: UsbDetectedCert, targetUsername: st
 
   if (cert.category === 'GPKI_GOV') {
     const cn = cert.subjectDn.startsWith('cn=') ? cert.subjectDn : `cn=${cert.name}`;
-    return `${userFolder}\\GPKI\\Certificate\\class2\\${cn}`;
+    // 공무원 행정전자서명(GPKI) 정부 공식 표준 경로는 C:\GPKI\Certificate\class2 (AppData\LocalLow\GPKI는 실무 미사용 비권장 경로)
+    return `C:\\GPKI\\Certificate\\class2\\${cn}`;
   }
 
   if (cert.category === 'EPKI_EDU') {

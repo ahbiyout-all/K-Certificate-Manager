@@ -89,7 +89,14 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="복사할 인증서를 체크(선택)해 주세요:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="복사할 인증서를 체크(선택)해 주세요:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                                <CheckBox IsChecked="{Binding IsSmartDeduplicated, Mode=TwoWay}" VerticalAlignment="Center" Cursor="Hand" Margin="0,0,10,0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="⚡ 동일 인증서 자동 묶기 (정규 표준 위치 우선)" FontSize="11" FontWeight="SemiBold" Foreground="#38BDF8"/>
+                                    </StackPanel>
+                                </CheckBox>
+                            </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Button Command="{Binding SelectAllCommand}" Style="{StaticResource SecondaryButton}" Content="전체 선택" Padding="8,2" Margin="0,0,6,0" FontSize="11"/>
                                 <Button Command="{Binding ClearSelectionCommand}" Style="{StaticResource SecondaryButton}" Content="선택 해제" Padding="8,2" FontSize="11"/>
@@ -165,7 +172,56 @@
                             <DataGridTextColumn Header="번호" Binding="{Binding IndexNumber}" Width="52" MinWidth="35" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             <DataGridCheckBoxColumn Header="선택" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="52" MinWidth="35"/>
                             <DataGridTextColumn Header="구분" Binding="{Binding CategoryBadgeText}" Width="120" MinWidth="60" Foreground="{DynamicResource AccentTextBrush}"/>
-                            <DataGridTextColumn Header="인증서 명칭 (CN)" Binding="{Binding CommonName}" Width="280" MinWidth="200" FontWeight="Bold"/>
+                            <DataGridTemplateColumn Header="인증서 명칭 (CN) 및 보관 위치" Width="360" MinWidth="220">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel VerticalAlignment="Center" Margin="2,2">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding CommonName}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12.5" Margin="0,0,6,0"/>
+                                                <!-- Standard / Non-Standard Path Badge -->
+                                                <Border CornerRadius="3" Padding="4,1" Margin="0,0,4,0" VerticalAlignment="Center">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Background" Value="#065F46"/>
+                                                            <Setter Property="BorderBrush" Value="#10B981"/>
+                                                            <Setter Property="BorderThickness" Value="1"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsStandardPath}" Value="False">
+                                                                    <Setter Property="Background" Value="#78350F"/>
+                                                                    <Setter Property="BorderBrush" Value="#D97706"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <TextBlock FontSize="9.5" FontWeight="Bold">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Text" Value="✅ 정 위치"/>
+                                                                <Setter Property="Foreground" Value="#6EE7B7"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsStandardPath}" Value="False">
+                                                                        <Setter Property="Text" Value="⚠️ 비표준 위치"/>
+                                                                        <Setter Property="Foreground" Value="#FDE68A"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Border>
+                                                <!-- Duplicate Locations Badge (if duplicate exists) -->
+                                                <Border Visibility="{Binding HasDuplicateLocations, Converter={StaticResource BoolToVis}}"
+                                                        Background="#1E3A8A" BorderBrush="#3B82F6" BorderThickness="1" CornerRadius="3" Padding="4,1" VerticalAlignment="Center"
+                                                        ToolTip="{Binding DuplicateLocationsDetails}">
+                                                    <TextBlock Text="{Binding DuplicateBadgeText}" FontSize="9.5" Foreground="#93C5FD" FontWeight="Bold"/>
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding DirectoryPath}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" 
+                                                       FontFamily="Consolas, monospace" TextTrimming="CharacterEllipsis" MaxHeight="16" Margin="0,2,0,0"
+                                                       ToolTip="{Binding DirectoryPath}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                             <DataGridTextColumn Header="발급기관" Binding="{Binding IssuerName}" Width="170" MinWidth="80" Foreground="{DynamicResource TextPrimaryBrush}"/>
                             <DataGridTextColumn Header="만료일" Binding="{Binding NotAfter, StringFormat='{}{0:yyyy-MM-dd}'}" Width="120" MinWidth="70" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </DataGrid.Columns>

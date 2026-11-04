@@ -33,12 +33,31 @@ namespace KCertManager.Wpf.Services
                 string cleanTarget = targetDriveLetter.TrimEnd('\\').ToUpperInvariant();
                 string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\').ToUpperInvariant();
 
-                // 대상 드라이브가 윈도우 시스템 드라이브(C:)인 경우, 관리자 권한 제한을 방지하고
-                // 윈도우 공인인증서 보관 표준인 AppData\LocalLow 경로로 안전 배치
+                // 대상 드라이브가 윈도우 시스템 드라이브(C:)인 경우
+                // 1) GPKI인 경우: 공무원 행정전자서명 정부 정규 표준 위치는 C:\GPKI\Certificate\class2 이므로
+                //    destinationRoot는 C:\ 루트 유지 (권한 제한 등 예외 발생 시에만 LocalLow 폴백)
+                // 2) NPKI/기타인 경우: 윈도우 공인인증서 보관 표준인 AppData\LocalLow 경로로 안전 배치
                 if (string.Equals(cleanTarget, sysRoot, StringComparison.OrdinalIgnoreCase))
                 {
-                    var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                    destinationRoot = Path.Combine(userProfile, "AppData", "LocalLow");
+                    if (cert.Category == CertCategory.GPKI)
+                    {
+                        try
+                        {
+                            var gpkiDir = Path.Combine(sysRoot + "\\", "GPKI", "Certificate", "class2");
+                            if (!Directory.Exists(gpkiDir)) Directory.CreateDirectory(gpkiDir);
+                            destinationRoot = sysRoot + "\\";
+                        }
+                        catch
+                        {
+                            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                            destinationRoot = Path.Combine(userProfile, "AppData", "LocalLow");
+                        }
+                    }
+                    else
+                    {
+                        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                        destinationRoot = Path.Combine(userProfile, "AppData", "LocalLow");
+                    }
                 }
 
                 var transfer = CertTransferEngine.Transfer(cert.DirectoryPath, destinationRoot, relativePath);
@@ -73,8 +92,29 @@ namespace KCertManager.Wpf.Services
                 if (string.IsNullOrEmpty(username))
                     username = Environment.UserName;
 
-                var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                var targetRoot = Path.Combine(userProfile, "AppData", "LocalLow");
+                string targetRoot;
+                string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\') + "\\";
+
+                if (string.Equals(targetCategory, "GPKI", StringComparison.OrdinalIgnoreCase))
+                {
+                    // GPKI 공무원 행정전자서명의 정부 정규 표준 위치는 C:\GPKI\Certificate\class2
+                    try
+                    {
+                        var gpkiDir = Path.Combine(sysRoot, "GPKI", "Certificate", "class2");
+                        if (!Directory.Exists(gpkiDir)) Directory.CreateDirectory(gpkiDir);
+                        targetRoot = sysRoot;
+                    }
+                    catch
+                    {
+                        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                        targetRoot = Path.Combine(userProfile, "AppData", "LocalLow");
+                    }
+                }
+                else
+                {
+                    var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                    targetRoot = Path.Combine(userProfile, "AppData", "LocalLow");
+                }
 
                 string relativePath = CertTransferEngine.ResolveRelativePath(sourceDirectory);
                 var transfer = CertTransferEngine.Transfer(sourceDirectory, targetRoot, relativePath);

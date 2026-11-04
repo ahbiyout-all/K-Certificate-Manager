@@ -45,7 +45,9 @@ WizardStyle=modern
 ; Installation Privileges & Silent / Unattended Operation
 PrivilegesRequired=admin
 PrivilegesRequiredOverridesAllowed=dialog
+AppMutex=KCertManager_Singleton_Mutex_8F5B123A
 CloseApplications=yes
+CloseApplicationsFilter=*.exe,KCertManager.exe
 RestartApplications=no
 DisableDirPage=no
 DisableProgramGroupPage=no
@@ -251,6 +253,37 @@ begin
   Result := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#SetupSetting("AppId")}_is1';
 end;
 
+// Check if a specific process is currently running in Windows
+function IsAppProcessRunning(const ExeName: String): Boolean;
+var
+  ResultCode: Integer;
+begin
+  Result := False;
+  if Exec(ExpandConstant('{cmd}'), '/C tasklist /FI "IMAGENAME eq ' + ExeName + '" | findstr /I /C:"' + ExeName + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+  begin
+    Result := (ResultCode = 0);
+  end;
+end;
+
+// Terminate running application processes safely and completely (Release file locks)
+procedure TerminateAppProcesses();
+var
+  ResultCode: Integer;
+  WaitCount: Integer;
+begin
+  // 1. Force terminate native WPF and legacy executable instances (/F: Force, /T: Tree)
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /T /IM {#MyAppExeName}', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /T /IM KCertManager-Lite.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+
+  // 2. Give Windows up to 1.5 seconds to fully release file locks and clean up process handles
+  WaitCount := 0;
+  while IsAppProcessRunning('{#MyAppExeName}') and (WaitCount < 15) do
+  begin
+    Sleep(100);
+    WaitCount := WaitCount + 1;
+  end;
+end;
+
 // Detect existing installation and prompt user for clean install vs overwrite
 function InitializeSetup(): Boolean;
 var
@@ -265,10 +298,38 @@ begin
   InstallDir := '';
   IsCleanInstallRequested := False;
 
-  // 1. Check HKCU registry for existing installation
+  // =========================================================================
+  // 1. 기존 실행 중인 앱(KCertManager.exe) 감지 및 먼저 종료 처리
+  // =========================================================================
+  if IsAppProcessRunning('{#MyAppExeName}') then
+  begin
+    // 대화형(GUI) 모드에서는 사용자에게 친절히 알리고 동의 후 자동 종료 진행
+    if not WizardSilent() then
+    begin
+      MsgPrompt := '현재 {#MyAppNameKR} ({#MyAppName}) 프로그램이 실행 중입니다.' + #13#10 + #13#10 +
+                   '새 버전 설치 및 업데이트를 안전하게 진행하기 위해 실행 중인 프로그램을 종료해야 합니다.' + #13#10 + #13#10 +
+                   '실행 중인 프로그램을 자동으로 종료하고 설치를 계속하시겠습니까?' + #13#10 + #13#10 +
+                   '  [예 (Yes)]    : 실행 중인 앱을 즉시 종료하고 설치를 계속합니다 (권장).' + #13#10 +
+                   '  [아니오 (No)] : 설치를 중단하고 마법사를 종료합니다.';
+
+      if MsgBox(MsgPrompt, mbConfirmation, MB_YESNO) <> IDYES then
+      begin
+        Result := False;
+        Exit;
+      end;
+    end;
+
+    // 실행 중인 프로그램 프로세스 즉각 종료 및 파일 잠금(Lock) 해제
+    TerminateAppProcesses();
+  end;
+
+  // =========================================================================
+  // 2. 기존 설치 레지스트리 및 언인스톨러 조회
+  // =========================================================================
+  // 2-1. Check HKCU registry for existing installation
   if not RegQueryStringValue(HKCU, GetUninstallRegistryKey(), 'UninstallString', UninstPath) then
   begin
-    // 2. Check HKLM registry
+    // 2-2. Check HKLM registry
     RegQueryStringValue(HKLM, GetUninstallRegistryKey(), 'UninstallString', UninstPath);
   end;
 
@@ -277,7 +338,7 @@ begin
     RegQueryStringValue(HKLM, GetUninstallRegistryKey(), 'InstallLocation', InstallDir);
   end;
 
-  // 3. Check fallback default folder if unins000.exe exists
+  // 2-3. Check fallback default folder if unins000.exe exists
   if (UninstPath = '') and FileExists(ExpandConstant('{autopf}\K-Certificate Manager\unins000.exe')) then
   begin
     UninstPath := ExpandConstant('"{autopf}\K-Certificate Manager\unins000.exe"');
@@ -312,6 +373,8 @@ begin
       IsCleanInstallRequested := True;
       if FileExists(ExistingUninstallString) then
       begin
+        // 언인스톨러 실행 전 프로세스 종료 확실히 보장
+        TerminateAppProcesses();
         Exec(ExistingUninstallString, '/SILENT /NORESTART /SUPPRESSMSGBOXES', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
       end;
       Result := True;
@@ -325,6 +388,39 @@ begin
     begin
       Result := False;
     end;
+  end;
+end;
+
+// Pre-installation hook: Ensure processes are dead before extracting files
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssInstall then
+  begin
+    // 파일 복사 직전 혹시 모를 잔여 프로세스 확실히 종료
+    TerminateAppProcesses();
+  end;
+end;
+
+// Uninstallation hook: Close app if user runs uninstaller while app is open
+function InitializeUninstall(): Boolean;
+var
+  MsgPrompt: String;
+begin
+  Result := True;
+  if IsAppProcessRunning('{#MyAppExeName}') then
+  begin
+    if not UninstallSilent() then
+    begin
+      MsgPrompt := '현재 {#MyAppNameKR} ({#MyAppName}) 프로그램이 실행 중입니다.' + #13#10 + #13#10 +
+                   '프로그램 제거(삭제)를 안전하게 진행하기 위해 실행 중인 프로그램을 종료합니다.' + #13#10 +
+                   '계속하시겠습니까?';
+      if MsgBox(MsgPrompt, mbConfirmation, MB_YESNO) <> IDYES then
+      begin
+        Result := False;
+        Exit;
+      end;
+    end;
+    TerminateAppProcesses();
   end;
 end;
 

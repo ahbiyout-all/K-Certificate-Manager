@@ -17,6 +17,31 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 125] C:\Users\<계정>\AppData\LocalLow\GPKI 실무 미사용 경로 탐색 제외 옵션 및 비표준 경고 강화
+- **작업 일시**: 2026-11-04 19:30 KST
+- **요청 사항**:
+  - 인증서 탐색 및 백업 로직에서 `C:\Users\<계정>\AppData\LocalLow\GPKI` 경로가 실제 공무원 행정망(온-나라, 새올 등) 실무 환경에서 거의 사용되지 않음을 고려하여, 해당 경로 탐색 제외 옵션 및 탐색 시 '실무 미사용 경로' 알림 경고 옵션 구현.
+- **원인 및 배경 분석**:
+  - 공무원 행정전자서명(GPKI)의 정부 공식 정규 표준 경로는 strictly `C:\GPKI\Certificate\class2`입니다.
+  - `AppData\LocalLow\GPKI` 경로는 일부 예외적인 모듈에서만 생성될 뿐 온-나라, 새올, 행정포털 등 실제 행정망 클라이언트에서 인식되지 않는 비권장 경로입니다.
+- **수행 내용**:
+  1. **C# WPF 스캐너 & 탐색 제외 옵션 구현 (`CertLocationScanner.cs`, `SettingsService.cs`, `MainViewModel.cs`)**:
+     - `CertLocationScanner.ExcludeLocalLowGpkiScan` (기본값: `true`) 옵션 신설. 탐색 시 `AppData\LocalLow\GPKI` 루트를 자동으로 스캔 대상에서 차단.
+     - `IsStandardPath`에서 `AppData\LocalLow\GPKI`를 표준 경로에서 제외.
+     - `IsRareLocalLowGpkiPath` 헬퍼 메서드 추가.
+  2. **C# WPF 모델 및 경고 뱃지 강화 (`CertificateItem.cs`)**:
+     - `IsRareLocalLowGpkiPath` 프로퍼티 구현.
+     - 뱃지 문구: `⚠️ 실무 미사용 경로 (GPKI 예외)` 노출.
+     - 안내 문구: `"실제 행정 실무 환경에서 거의 사용되지 않는 비권장 경로입니다. 공무원 행정전자서명(GPKI)의 정부 정규 표준 위치는 [C:\GPKI\Certificate\class2]입니다. 온-나라, 새올 등 행정망 프로그램에서 인식되지 않을 수 있으므로 표준 경로로 이동을 권장합니다."`
+  3. **C# WPF 환경 설정 UI 및 이관 경로 보정 (`SettingsDialog.xaml`, `SettingsDialog.xaml.cs`, `CertificateBackupService.cs`)**:
+     - `SettingsDialog`에 `AppData\LocalLow\GPKI 경로 탐색 제외 (실무 미사용 경로 차단, 권장)` 토글 체크박스 추가.
+     - PC 이관/복사 시 GPKI 인증서 기본 목적지를 `C:\GPKI\Certificate\class2`로 보정.
+  4. **React Web 대시보드 동기화 (`certPathUtils.ts`, `usbToPcService.ts`, `CertificateList.tsx`, `SettingsModal.tsx`)**:
+     - `isStandardCertPath` 및 `getLocalPcStandardPath`에서 GPKI 표준 위치를 `C:\GPKI\Certificate\class2`로 설정.
+     - 목록 테이블에 `⚠️ 실무 미사용 경로 (GPKI 예외)` 및 `⚠️ GPKI 예외` 경고 뱃지 출력.
+     - 환경 설정 모달에 `AppData\LocalLow\GPKI 경로 탐색 제외` 설정 섹션 추가.
+  5. **검증**: XML 파싱, `lint_applet` (0 오류), `compile_applet` (성공 완료).
+
 ### 📝 [작업 차수 111] CI/CD 및 MSBuild 'MSB4025' XML 엔티티 파싱 오류 수정 (KCert.Crypto.csproj)
 - **작업 일시**: 2026-10-31 22:30 KST
 - **요청 사항**:
@@ -1695,3 +1720,68 @@
      - Python XML 파서로 22개 WPF XAML/CSPROJ 구문 유효성 검증 완료 (0 error).
      - `lint_applet` (TypeScript noEmit) 무결점 통과 (0 TS Error).
      - `compile_applet` 프로덕션 번들 빌드 100% 성공.
+
+---
+
+### 📝 [작업 차수 123] 동일 인증서 중복 노출 방지 스마트 묶기(Deduplication) 엔진 및 보관 폴더 경로·정위치 배지 전면 반영
+- **작업 일시**: 2026-11-04 19:05 KST
+- **요청 사항**:
+  - `같은 이름이 많음.` (PC ➔ USB 복사창에서 `865진정애001` 동일 공무원 GPKI 인증서가 4건 중복 노출되는 문제)
+  - 스마트 중복 묶기 및 저장 경로 표시 개선 승인 ("네")
+- **배경 및 원인 분석**:
+  1. **실제 PC 다중 폴더 중복 보관**: 대한민국 행정 PC 특성상 `C:\GPKI\Certificate\class2`, `AppData\LocalLow\GPKI`, `C:\GPKI\GPKI`(중첩 복사본), `바탕화면/다운로드/문서` 등 여러 위치에 동일 인증서가 분산 저장되어 있어 스캐너가 이를 모두 감지함.
+  2. **대화창 내 저장 경로(위치) 컬럼 부재**: 대화창에 폴더 경로가 표시되지 않아 사용자가 볼 때 프로그램 오류로 동일 항목이 4개 복제된 것처럼 보였음.
+- **수행 내용**:
+  1. **C# .NET 8 WPF 스마트 중복 묶기(Deduplication) 엔진 구축 (`PcToUsbTransferViewModel.cs`, `CertificateItem.cs`)**:
+     - `CertificateItem` 모델에 `DuplicateLocationsCount`, `HasDuplicateLocations`, `DuplicateBadgeText`(`[중복 N개소]`), `DuplicateLocationsDetails` 프로퍼티 추가.
+     - `ApplyDeduplicationFilter()` 엔진 탑재:
+       - 동일 인증서(`SerialNumber` + `SubjectDn` + `NotAfter`) 그룹핑.
+       - 정규 표준 위치 가중 점수제(`C:\GPKI` / `C:\EPKI` = 150점 > `AppData\LocalLow` = 130점 > 기타 표준 = 100점 > 일반 폴더)로 정규 1순위 대표 1건을 자동 선별.
+       - 감지된 중복 위치 개수를 `[중복 4개소]` 배지 및 툴팁으로 안내.
+  2. **복사 대화창 UI 저장 경로 및 정위치 배지 일체형 렌더링 (`PcToUsbTransferDialog.xaml`, `UsbTransferDialog.xaml`)**:
+     - 상단 바에 `⚡ 동일 인증서 자동 묶기 (정규 표준 위치 우선)` 체크박스 신설 (토글 해제 시 전체 폴더 개별 보기 가능).
+     - `인증서 명칭 (CN) 및 보관 위치` 템플릿 컬럼 적용:
+       - 1행: 인증서 명칭 (`CommonName`) + `[✅ 정 위치]` / `[⚠️ 비표준 위치]` 배지 + `[중복 N개소]` 배지.
+       - 2행: 실제 저장된 전체 디렉터리 경로(`DirectoryPath`, Consolas 폰트, 말줄임 및 전체 경로 툴팁).
+     - `UsbTransferDialog.xaml` (USB ➔ PC) 에도 USB 경로 및 정위치 배지 적용 완료.
+  3. **React Web 프리뷰 모달 동기화 (`BackupModal.tsx`, `StartupWorkflowModal.tsx`)**:
+     - `BackupModal.tsx`: 헤더를 `인증서 명칭 (CN) 및 보관 위치`로 개편하고, 셀 내에 `cert.name`과 함께 `cert.sourceLocation` 및 `✅ 정 위치` / `⚠️ 비표준 위치` 배지 렌더링.
+     - `StartupWorkflowModal.tsx`: 인증서 명칭 아래에 `cert.sourceLocation` 또는 `cert.directoryPath` 폴더 경로 표시 추가.
+  4. **빌드 검증**:
+     - Python XML 파서로 WPF XAML 22개 파일 구문 무결성 통과 (0 error).
+     - `lint_applet` (TypeScript noEmit) 0 error 통과.
+     - `compile_applet` 프로덕션 번들 빌드 100% 성공.
+
+---
+
+### 📝 [작업 차수 124] Inno Setup 윈도우 인스톨러 앱 설치/업데이트 시 기존 실행 중인 앱 선행 종료(Process Termination) 로직 완비
+- **작업 일시**: 2026-11-04 19:15 KST
+- **요청 사항**: "innosetup 으로 빌드된 앱 설치시 기존앱 먼저 종료하는 로직 추가."
+- **배경 및 원인 분석**:
+  1. **파일 잠금(File in Use / Lock) 및 덮어쓰기 거부 문제**:
+     - 기존 버전의 `KCertManager.exe`가 실행 중인 상태에서 사용자가 새 버전 인스톨러(`setup.exe`)를 실행하거나 자동 업데이트를 진행할 경우, Windows 운영체제가 실행 중인 실행 파일(`{app}\KCertManager.exe`)에 대해 쓰기 및 삭제 락(Sharing Violation / Access Denied)을 걸어 설치가 실패하거나 오류 대화상자가 발생함.
+     - 클린 설치(기존 버전 언인스톨 후 재설치) 시에도 언인스톨러(`unins000.exe`)가 실행 중인 `KCertManager.exe`를 삭제하지 못해 이전 잔여 파일이 남는 현상 발생.
+- **수행 내용**:
+  1. **Inno Setup 스크립트 선행 프로세스 종료 엔진 탑재 (`installer.iss`)**:
+     - `IsAppProcessRunning(const ExeName: String): Boolean`: `tasklist` 및 `findstr`를 활용하여 Windows 프로세스 메모리에 `KCertManager.exe`가 활성화되어 있는지 실시간 검사.
+     - `TerminateAppProcesses()`:
+       - `taskkill.exe /F /T /IM {#MyAppExeName}` 및 `taskkill.exe /F /T /IM KCertManager-Lite.exe`를 무음(`SW_HIDE`) 및 자식 프로세스 트리 동시 종료(`/T`) 플래그로 즉각 강제 종료(`/F`).
+       - 프로세스 핸들과 파일 잠금이 OS 커널에서 완전히 릴리즈될 때까지 최대 1.5초(100ms 폴링 루프) 동안 안전 대기.
+     - `InitializeSetup()`:
+       - 설치 마법사 시작 최우선 단계에서 기존 실행 중인 앱을 즉시 감지.
+       - 대화형 GUI 모드: 사용자에게 "새 버전 설치를 위해 실행 중인 프로그램을 종료합니다" 안내 및 확인 후 즉각 종료.
+       - 무인 자동설치 모드(`WizardSilent()`): 별도 대화상자 없이 즉시 자동 종료 후 업데이트 진행.
+       - 클린 설치 선택 시 `unins000.exe` 실행 직전 프로세스를 먼저 종료하여 언인스톨러가 파일 락 없이 100% 완벽 삭제되도록 보장.
+     - `CurStepChanged(ssInstall)`:
+       - 실제 파일 압축 해제 및 복사 직전 혹시 모를 잔여 프로세스를 재차 종료 보장.
+     - `InitializeUninstall()`:
+       - 제어판에서 프로그램 삭제 시에도 실행 중인 앱을 먼저 종료하고 언인스톨 진행.
+     - `[Setup]` 지시어 보강:
+       - `AppMutex=KCertManager_Singleton_Mutex_8F5B123A` 등록 (Windows Restart Manager 및 네이티브 뮤텍스 상호 배타적 감지).
+       - `CloseApplications=yes`, `CloseApplicationsFilter=*.exe,KCertManager.exe`, `RestartApplications=no`.
+  2. **C# WPF 메인 앱 싱글톤 뮤텍스 연동 (`src-wpf/KCertManager.Wpf/App.xaml.cs`)**:
+     - `App.xaml.cs`의 `OnStartup`에 `KCertManager_Singleton_Mutex_8F5B123A` Mutex 획득 로직 구현.
+     - `OnExit`에서 Mutex를 안전하게 해제(`ReleaseMutex`, `Dispose`)하도록 보장.
+  3. **빌드 검증**:
+     - `lint_applet` (TypeScript noEmit) 0 error 통과.
+     - `compile_applet` 프로덕션 번들 빌드 성공.

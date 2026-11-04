@@ -1098,12 +1098,12 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                           </div>
                         </th>
 
-                        {/* 4. 인증서 명칭 (CN) - min-w-[200px] 고정 스타일 */}
+                        {/* 4. 인증서 명칭 (CN) 및 보관 위치 - min-w-[200px] 고정 스타일 */}
                         <th
                           style={{ width: `${colWidths.name}px`, minWidth: `${Math.max(colWidths.name, 200)}px`, maxWidth: `${Math.max(colWidths.name, 200)}px` }}
                           className="w-[260px] min-w-[200px] py-2.5 px-3 relative select-none group bg-slate-100"
                         >
-                          <span className="truncate block" title="인증서 명칭 (최소 너비 200px 유지)">인증서 명칭 (CN)</span>
+                          <span className="truncate block" title="인증서 명칭 및 보관 위치 (최소 너비 200px 유지)">인증서 명칭 (CN) 및 보관 위치</span>
                           <div
                             onMouseDown={(e) => handleStartResize('name', e)}
                             className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
@@ -1207,11 +1207,27 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                               </span>
                             </td>
 
-                            {/* 4. 인증서 명칭 (CN) - min-w-[200px] */}
+                            {/* 4. 인증서 명칭 (CN) 및 보관 위치 - min-w-[200px] */}
                             <td style={{ width: `${colWidths.name}px` }} className="w-[260px] min-w-[200px] py-2 px-3 font-semibold text-slate-900">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <FileKey className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                                <span className="truncate" title={cert.name}>{cert.name}</span>
+                              <div className="flex flex-col min-w-0">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <FileKey className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                  <span className="truncate text-xs font-bold" title={cert.name}>{cert.name}</span>
+                                  {cert.isCustomPath ? (
+                                    <span className="px-1.5 py-0.2 bg-amber-100 text-amber-800 border border-amber-300 rounded text-[9px] font-bold shrink-0">
+                                      ⚠️ 비표준 위치
+                                    </span>
+                                  ) : (
+                                    <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded text-[9px] font-bold shrink-0">
+                                      ✅ 정 위치
+                                    </span>
+                                  )}
+                                </div>
+                                {cert.sourceLocation && (
+                                  <span className="text-[10px] text-slate-400 font-mono truncate max-w-full block mt-0.5" title={cert.sourceLocation}>
+                                    {cert.sourceLocation}
+                                  </span>
+                                )}
                               </div>
                             </td>
 
