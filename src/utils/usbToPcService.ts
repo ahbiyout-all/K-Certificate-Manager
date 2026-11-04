@@ -762,6 +762,14 @@ export async function copyUsbCertificatesToComputer(
 
       for (const usbCert of selectedCerts) {
         let localPath = getLocalPcStandardPath(usbCert, targetUsername);
+
+        // 자가 복사 금지 검증: USB 원본 경로와 PC 대상 경로가 완전히 동일한 경우
+        if (usbCert.usbPath && usbCert.usbPath.replace(/\//g, '\\').trim().toUpperCase() === localPath.replace(/\//g, '\\').trim().toUpperCase()) {
+          logs.push(`[⏭️ 건너뜀 (자가 복사 금지)] ${usbCert.name} - 이미 컴퓨터 로컬 저장소(${localPath})의 동일 위치에 보관 중인 원본입니다.`);
+          importedCount++;
+          continue;
+        }
+
         const existingIndex = existingCerts.findIndex(
           c => c.serialNumber === usbCert.serialNumber || (c.name === usbCert.name && c.category === usbCert.category)
         );

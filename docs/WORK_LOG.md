@@ -17,6 +17,23 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 126] 시작 가이드 모션(Guided Workflow) 및 대화상자 내 자가 복제(자가 복사) 원천 차단 강화
+- **작업 일시**: 2026-11-04 19:45 KST
+- **요청 사항**:
+  - "시작 가이드에서도 자가 복제 금지."
+- **원인 분석**:
+  - 시작 가이드 모션(PC ➔ USB, USB ➔ PC)을 통해 실행되는 대화상자(`PcToUsbTransferDialog` / `UsbTransferDialog`) 및 서비스에서, 선택한 목적지 경로와 원본 경로가 100% 동일할 경우 `CertTransferEngine.Transfer`가 "자가 복사 금지" 실패 결과를 반환하여 전체 작업 실패 메시지가 노출되는 불편함 존재.
+- **수행 내용**:
+  1. **C# WPF PC ➔ USB 대화상자 자가 복제 차단 (`PcToUsbTransferViewModel.cs`)**:
+     - `TransferToUsbAsync` 실행 전 선택된 모든 인증서의 원본 경로와 목적지 경로가 동일한지 사전에 검증하여, 사전 차단 경고 메세지(`[자가 복사 금지] 선택한 모든 인증서가 이미 목적지 드라이브의 동일한 경로에 보관 중인 원본입니다.`) 출력 후 무의미한 I/O 진행 중단.
+     - 개별 항목 복사 루프 내에서 자가 복사 대상 검출 시 오류 처리 대신 안전한 자가 복사 생략(`continue`) 처리.
+  2. **C# WPF USB ➔ PC 대화상자 자가 복제 차단 (`UsbTransferViewModel.cs`)**:
+     - `TransferToPcAsync` 실행 전 사전 전체 자가 복사 검증 및 차단 안내 경고창 적용.
+     - 복사 루프 내에서 로컬 PC 보관함 목적지와 원본 경로가 동일한 경우 자가 복사 생략 처리.
+  3. **React Web 가져오기 서비스 자가 복사 보정 (`usbToPcService.ts`)**:
+     - `copyUsbCertificatesToComputer` 내에서 원본 `usbPath`와 대상 `localPath`가 동일할 경우 `[⏭️ 건너뜀 (자가 복사 금지)]` 안내 로그를 남기고 안전 건너뛰기 수행.
+  4. **검증**: `lint_applet` 및 `compile_applet` 100% 성공 완료.
+
 ### 📝 [작업 차수 125] C:\Users\<계정>\AppData\LocalLow\GPKI 실무 미사용 경로 탐색 제외 옵션 및 비표준 경고 강화
 - **작업 일시**: 2026-11-04 19:30 KST
 - **요청 사항**:

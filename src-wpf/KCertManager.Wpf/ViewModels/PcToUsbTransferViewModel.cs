@@ -421,9 +421,46 @@ namespace KCertManager.Wpf.ViewModels
             var selected = FoundPcCertificates.Where(x => x.IsSelected).ToList();
             if (!selected.Any() || SelectedTargetDrive == null) return;
 
-            IsBusy = true;
             string targetDriveName = SelectedTargetDrive.Name;
             bool isTargetUsb = SelectedTargetDrive.IsRemovable;
+            string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\').ToUpperInvariant();
+            string cleanTarget = targetDriveName.TrimEnd('\\').ToUpperInvariant();
+
+            // 0. 자가 복사(동일 위치 복사) 사전 전체 검증
+            bool isAllSelfCopy = selected.All(cert =>
+            {
+                if (string.IsNullOrWhiteSpace(cert.DirectoryPath)) return false;
+                string relativePath = CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
+                string destinationRoot = targetDriveName;
+                if (string.Equals(cleanTarget, sysRoot, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (cert.Category == CertCategory.GPKI)
+                    {
+                        destinationRoot = sysRoot + "\\";
+                    }
+                    else
+                    {
+                        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                        destinationRoot = Path.Combine(userProfile, "AppData", "LocalLow");
+                    }
+                }
+                string destDir = Path.Combine(destinationRoot, relativePath);
+                string fullSourceDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar);
+                string fullTargetDir = Path.GetFullPath(destDir).TrimEnd(Path.DirectorySeparatorChar);
+                return fullSourceDir.Equals(fullTargetDir, StringComparison.OrdinalIgnoreCase);
+            });
+
+            if (isAllSelfCopy)
+            {
+                MessageBox.Show(
+                    $"[자가 복사 금지]\n\n선택한 모든 인증서가 이미 목적지 드라이브({targetDriveName})의 동일한 경로에 보관 중인 원본입니다.\n\n자기 자신으로의 복사는 금지되어 있으니, 목적지 목록에서 연결된 이동식 USB 메모리 등 다른 드라이브를 선택해 주세요.",
+                    "자가 복사 차단 안내",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            IsBusy = true;
             StatusMessage = $"{targetDriveName} 드라이브로 {selected.Count}건의 인증서 복사 진행 중...";
 
             int success = 0;
@@ -432,9 +469,6 @@ namespace KCertManager.Wpf.ViewModels
 
             await Task.Run(() =>
             {
-                string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\').ToUpperInvariant();
-                string cleanTarget = targetDriveName.TrimEnd('\\').ToUpperInvariant();
-
                 foreach (var cert in selected)
                 {
                     try
@@ -452,11 +486,29 @@ namespace KCertManager.Wpf.ViewModels
                         // 대상이 C: 시스템 드라이브인 경우 표준 AppData\LocalLow로 안전 매핑
                         if (string.Equals(cleanTarget, sysRoot, StringComparison.OrdinalIgnoreCase))
                         {
-                            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                            destinationRoot = Path.Combine(userProfile, "AppData", "LocalLow");
+                            if (cert.Category == CertCategory.GPKI)
+                            {
+                                destinationRoot = sysRoot + "\\";
+                            }
+                            else
+                            {
+                                var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                                destinationRoot = Path.Combine(userProfile, "AppData", "LocalLow");
+                            }
                         }
 
                         string destDir = Path.Combine(destinationRoot, relativePath);
+
+                        // 자가 복사 금지 검증: 원본 경로와 대상 경로가 완전히 동일한 경우 생략
+                        string fullSourceDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar);
+                        string fullTargetDir = Path.GetFullPath(destDir).TrimEnd(Path.DirectorySeparatorChar);
+                        if (fullSourceDir.Equals(fullTargetDir, StringComparison.OrdinalIgnoreCase))
+                        {
+                            success++;
+                            cert.IsRecentlyCopied = true;
+                            continue;
+                        }
+
                         if (Directory.Exists(destDir))
                         {
                             if (ConflictOption == "skip")

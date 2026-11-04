@@ -260,6 +260,34 @@ namespace KCertManager.Wpf.ViewModels
             var selected = FoundUsbCertificates.Where(x => x.IsSelected).ToList();
             if (!selected.Any()) return;
 
+            string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\') + "\\";
+            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+            // 0. 자가 복사(동일 위치 복사) 사전 전체 검증
+            bool isAllSelfCopy = selected.All(cert =>
+            {
+                if (string.IsNullOrWhiteSpace(cert.DirectoryPath)) return false;
+                string cat = cert.Category.ToString();
+                string targetRoot = string.Equals(cat, "GPKI", StringComparison.OrdinalIgnoreCase)
+                    ? sysRoot
+                    : Path.Combine(userProfile, "AppData", "LocalLow");
+                string relativePath = CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
+                string destDir = Path.Combine(targetRoot, relativePath);
+                string fullSourceDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar);
+                string fullTargetDir = Path.GetFullPath(destDir).TrimEnd(Path.DirectorySeparatorChar);
+                return fullSourceDir.Equals(fullTargetDir, StringComparison.OrdinalIgnoreCase);
+            });
+
+            if (isAllSelfCopy)
+            {
+                MessageBox.Show(
+                    "[자가 복사 금지]\n\n선택한 모든 인증서가 이미 컴퓨터 로컬 저장소(AppData\\LocalLow 또는 C:\\GPKI)의 동일한 위치에 보관 중인 원본입니다.\n\n동일한 위치로는 복사할 수 없으니, 다른 인증서나 USB 드라이브를 선택해 주세요.",
+                    "자가 복사 차단 안내",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
             IsBusy = true;
             StatusMessage = $"PC 보관함으로 {selected.Count}개 인증서 가져오는 중...";
 
@@ -271,6 +299,20 @@ namespace KCertManager.Wpf.ViewModels
                     try
                     {
                         var cat = cert.Category.ToString();
+                        string targetRoot = string.Equals(cat, "GPKI", StringComparison.OrdinalIgnoreCase)
+                            ? sysRoot
+                            : Path.Combine(userProfile, "AppData", "LocalLow");
+                        string relativePath = CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
+                        string destDir = Path.Combine(targetRoot, relativePath);
+                        string fullSourceDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar);
+                        string fullTargetDir = Path.GetFullPath(destDir).TrimEnd(Path.DirectorySeparatorChar);
+
+                        if (fullSourceDir.Equals(fullTargetDir, StringComparison.OrdinalIgnoreCase))
+                        {
+                            success++;
+                            continue;
+                        }
+
                         if (_backupService.CopyCertificateToLocalPc(cert.DirectoryPath, cat, TargetUsername))
                         {
                             success++;
