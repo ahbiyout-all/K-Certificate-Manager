@@ -88,6 +88,7 @@
                       AutoGenerateColumns="False"
                       CanUserAddRows="False"
                       CanUserDeleteRows="False"
+                      CanUserResizeColumns="True"
                       IsReadOnly="True"
                       SelectionMode="Extended"
                       Background="{DynamicResource BgCardBrush}"
@@ -95,10 +96,14 @@
                       AlternatingRowBackground="{DynamicResource BgDarkBrush}"
                       Foreground="{DynamicResource TextPrimaryBrush}"
                       BorderThickness="0"
-                      GridLinesVisibility="Horizontal"
+                      GridLinesVisibility="All"
                       HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
+                      VerticalGridLinesBrush="{DynamicResource BorderBrush}"
                       HeadersVisibility="Column"
-                      RowHeight="38">
+                      RowHeight="38"
+                      ScrollViewer.HorizontalScrollBarVisibility="Visible"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      ScrollViewer.CanContentScroll="False">
                 <DataGrid.Resources>
                     <Style TargetType="DataGridColumnHeader">
                         <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
@@ -125,10 +130,12 @@
                     <Style TargetType="DataGridCell">
                         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                         <Setter Property="Padding" Value="8,4"/>
+                        <Setter Property="BorderThickness" Value="0,0,1,0"/>
+                        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="DataGridCell">
-                                    <Border Background="{TemplateBinding Background}" SnapsToDevicePixels="True" Padding="{TemplateBinding Padding}">
+                                    <Border Background="{TemplateBinding Background}" SnapsToDevicePixels="True" Padding="{TemplateBinding Padding}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}">
                                         <ContentPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="Center"/>
                                     </Border>
                                 </ControlTemplate>
@@ -137,12 +144,12 @@
                     </Style>
                 </DataGrid.Resources>
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="번호" Binding="{Binding IndexNumber}" Width="45" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                    <DataGridTextColumn Header="저장 위치" Binding="{Binding StorageLocationBadge}" Width="120"/>
-                    <DataGridTextColumn Header="인증서 명칭" Binding="{Binding CommonName}" Width="180"/>
-                    <DataGridTextColumn Header="분류" Binding="{Binding CategoryBadgeText}" Width="110"/>
-                    <DataGridTextColumn Header="만료 일시" Binding="{Binding NotAfter, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="140"/>
-                    <DataGridTextColumn Header="상태" Binding="{Binding StatusDisplayText}" Width="80"/>
+                    <DataGridTextColumn Header="번호" Binding="{Binding IndexNumber}" Width="50" MinWidth="35" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <DataGridTextColumn Header="저장 위치" Binding="{Binding StorageLocationBadge}" Width="120" MinWidth="70"/>
+                    <DataGridTextColumn Header="인증서 명칭" Binding="{Binding CommonName}" Width="200" MinWidth="200"/>
+                    <DataGridTextColumn Header="분류" Binding="{Binding CategoryBadgeText}" Width="110" MinWidth="60"/>
+                    <DataGridTextColumn Header="만료 일시" Binding="{Binding NotAfter, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="140" MinWidth="80"/>
+                    <DataGridTextColumn Header="상태" Binding="{Binding StatusDisplayText}" Width="80" MinWidth="50"/>
                     <DataGridTemplateColumn Header="보관 경로" Width="*">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>

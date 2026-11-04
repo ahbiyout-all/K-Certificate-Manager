@@ -1634,3 +1634,64 @@
   3. **빌드 무결성 및 규격 검증**:
      - 전체 22개 WPF XAML 및 CSPROJ XML 파싱 검증 완료 (100% Valid).
      - React / TypeScript `lint_applet` (오류 0건) 및 `compile_applet` 빌드 100% 통과.
+
+### 📝 [작업 차수 121] 인증서 테이블 헤더 열 너비 마우스 드래그 조절 기능 및 상시 가로 스크롤바 구현
+- **작업 일시**: 2026-11-04 15:40 KST
+- **요청 사항**:
+  1. "'번호/선택/구분/인증서 명칭/발급기관/만료일' 등 제목 크기조절되게 해주세요."
+  2. "그리고 가로 스크롤바를 만들어 주세요."
+- **배경 및 원인 분석**:
+  1. **컬럼 제목(헤더) 크기 조절 미동작 원인**:
+     - **WPF 데스크톱**: `DataGridColumnHeader` 스타일에 커스텀 `<ControlTemplate>`을 덮어씌우는 과정에서 WPF의 네이티브 열 리사이즈 그리퍼(`PART_LeftHeaderGripper`, `PART_RightHeaderGripper`) 템플릿 파트가 누락되어 헤더 우측 경계선을 마우스로 드래그해도 열 너비 조절 커서(`SizeWE`) 및 크기 변경이 동작하지 않았음.
+     - **React Web**: 순수 HTML `<th>` 태그로 구성되어 마우스 드래그를 감지하는 리사이징 핸들러와 동적 인라인 너비 제어 엔진이 미탑재 상태였음.
+  2. **가로 스크롤바(Horizontal Scrollbar) 부재 원인**:
+     - **WPF 데스크톱**: DataGrid 컬럼에 `Width="*"`(Star) 비율 너비가 적용되어 있으면 Viewport 폭에 맞추어 컬럼이 자동 축소/확장되어 `ScrollableWidth = 0`이 되며 가로 스크롤바가 생성되지 않거나 비활성화됨.
+     - **React Web**: 테이블이 유동 폭으로 수축되고 상위 래퍼가 `overflow-x-auto` 또는 기본 상태로 되어 있어, 컬럼이 강제로 줄어들 뿐 전용 가로 스크롤 레일이 명시적으로 노출되지 않았음.
+- **수행 내용**:
+  1. **C# .NET 8 WPF 데스크톱 DataGrid 열 리사이즈 복구 및 상시 가로 스크롤바 완비 (`PcToUsbTransferDialog.xaml`, `UsbTransferDialog.xaml`, `ExpiredCleanupDialog.xaml`)**:
+     - `CanUserResizeColumns="True"`, `ScrollViewer.HorizontalScrollBarVisibility="Visible"`, `ScrollViewer.CanContentScroll="False"` 설정.
+     - `DataGridColumnHeader`의 커스텀 템플릿을 제거하고 프로퍼티 세터(Background, Foreground, Border, Padding)로 스타일을 일원화하여 WPF 기본 열 리사이즈 그리퍼 썸(`PART_RightHeaderGripper`, `PART_LeftHeaderGripper`)을 100% 정상 복원.
+     - 각 컬럼별 고정 너비 및 최소 너비(`MinWidth`)를 명시하여 열 크기 조절 범위를 보장:
+       - 번호: `Width="52" MinWidth="35"`
+       - 선택: `Width="52" MinWidth="35"`
+       - 구분: `Width="120" MinWidth="60"`
+       - 인증서 명칭: `Width="280" MinWidth="120"`
+       - 발급기관: `Width="170" MinWidth="80"`
+       - 만료일: `Width="120" MinWidth="70"`
+     - 열을 드래그하여 넓힐 경우 전체 컬럼 폭이 대화상자 너비를 자연스럽게 초과하며, 하단에 상시 배치된 가로 스크롤바를 통해 좌우로 부드럽게 탐색 가능.
+  2. **React Web 프리뷰 열 드래그 리사이징 엔진 및 상시 가로 스크롤바 구현 (`BackupModal.tsx`, `UsbToPcModal.tsx`, `StartupWorkflowModal.tsx`)**:
+     - 헤더 마우스 드래그 리사이징 엔진 탑재:
+       - 상태 관리: `colWidths` (컬럼별 픽셀 너비 맵), `resizingCol` (현재 드래그 중인 컬럼 키), `handleStartResize` (window 마우스 이벤트 리스너 기반 실시간 너비 계산), `handleResetColWidths` ('너비 초기화 ↺' 버튼).
+       - 대상 컬럼: `번호`, `선택`, `구분`, `인증서 명칭`, `발급기관`, `만료일(유효기간)`, `상태(보관 경로)`.
+       - 각 `<th>` 우측 끝단에 눈에 띄는 드래그 핸들 바(`cursor-col-resize`, 호버 시 블루 하이라이트 표시) 배치.
+     - `totalTableWidth` 계산 및 `table style={{ width: `${totalTableWidth}px`, minWidth: '100%' }}` 적용.
+     - 테이블 컨테이너에 `overflow-x-scroll`을 적용하여 브라우저 환경과 무관하게 횡스크롤 트랙과 썸이 상시 렌더링되도록 보장.
+  3. **빌드 무결성 검증**:
+     - Python XML 파서로 22개 WPF XAML/CSPROJ 구문 유효성 검증 완료 (오류 0건).
+     - `lint_applet` (TypeScript noEmit) 무결점 통과 (0 TS Error).
+     - `compile_applet` 정상 빌드 성공.
+
+### 📝 [작업 차수 122] 인증서 목록 테이블 헤더 고정 너비 클래스 부여 및 '인증서 명칭' 열 `min-w-[200px]` 스타일 완비
+- **작업 일시**: 2026-11-04 16:35 KST
+- **요청 사항**: "인증서 목록 테이블 헤더(번호/선택/구분/인증서 명칭/발급기관/만료일)에 고정된 가로 너비 클래스를 추가하고, '인증서 명칭' 열에 `min-w-[200px]` 스타일을 적용하여 제목들이 겹치지 않고 가로 스크롤 시에도 깔끔하게 유지되도록 조정해 주세요."
+- **배경 및 원인 분석**:
+  1. 테이블 컬럼에 인라인 폭(`style={{ width }}`)만 지정되어 있을 경우, 특정 브라우저 뷰포트나 가로 스크롤 환경에서 flex/grid 수축 특성에 따라 헤더 텍스트(`<th>`)가 과도하게 압축되어 제목 글자가 겹치거나 잘려 보이는 현상이 발생할 수 있음.
+  2. 특히 가장 많은 정보와 한글/영문 식별자가 포함되는 '인증서 명칭 (CN)' 열은 최소 가로폭 200px(`min-w-[200px]`)이 강제되어야 가로 스크롤 시에도 글자가 뭉개지지 않고 안정적인 시인성을 유지함.
+- **수행 내용**:
+  1. **React Web 프리뷰 고정 너비 클래스 및 `min-w-[200px]` 스타일 전면 반영 (`BackupModal.tsx`, `StartupWorkflowModal.tsx`, `UsbToPcModal.tsx`, `CertificateList.tsx`)**:
+     - **고정 너비 클래스 체계화**:
+       - 번호: `w-[52px] min-w-[52px]`
+       - 선택: `w-[52px] min-w-[52px]` (또는 `w-[46px] min-w-[46px]`)
+       - 구분: `w-[120px] min-w-[90px]`
+       - **인증서 명칭**: `w-[260px] min-w-[200px]` (명칭 열 최소 200px 상시 보장)
+       - 발급기관: `w-[170px] min-w-[120px]`
+       - 만료일: `w-[120px] min-w-[90px]`
+       - 상태/보관 경로: `w-[90px] min-w-[70px]` (또는 `w-[160px] min-w-[120px]`)
+     - 테이블 헤더(`<th>`)뿐만 아니라 본문 셀(`<td>`)에도 일치하는 너비 클래스를 일관되게 부여하여 열 너비와 셀 내용의 정렬 어긋남을 원천 차단.
+     - 마우스 드래그 리사이징 핸들러(`handleStartResize`)에서도 'name' 컬럼의 최소 축소 한계를 `minW = 200`으로 제한하여 200px 이하로 찌그러지지 않도록 방어.
+  2. **C# .NET 8 WPF 데스크톱 네이티브 DataGrid 동기화 (`PcToUsbTransferDialog.xaml`, `UsbTransferDialog.xaml`, `ExpiredCleanupDialog.xaml`)**:
+     - '인증서 명칭 (CN)' DataGridColumn의 `MinWidth`를 기존 `120` 또는 `100`에서 `200`(`Width="280" MinWidth="200"`)으로 상향 조정하여 데스크톱 환경에서도 200px 최소 너비 및 제목 겹침 방지 보장.
+  3. **빌드 무결성 검증**:
+     - Python XML 파서로 22개 WPF XAML/CSPROJ 구문 유효성 검증 완료 (0 error).
+     - `lint_applet` (TypeScript noEmit) 무결점 통과 (0 TS Error).
+     - `compile_applet` 프로덕션 번들 빌드 100% 성공.

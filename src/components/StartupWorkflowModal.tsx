@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   X, 
   ArrowRight, 
@@ -35,6 +35,51 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
   onToggleDontShowAgain,
   validPcCerts = [],
 }) => {
+  // Column resizing state for valid PC certificates preview table
+  const DEFAULT_STARTUP_COL_WIDTHS = useMemo(() => ({
+    index: 52,
+    category: 120,
+    name: 260,
+    issuer: 170,
+    notAfter: 120,
+    status: 90,
+  }), []);
+
+  const [colWidths, setColWidths] = useState<Record<string, number>>(DEFAULT_STARTUP_COL_WIDTHS);
+  const [resizingCol, setResizingCol] = useState<string | null>(null);
+
+  const handleStartResize = (colKey: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startWidth = colWidths[colKey] || 100;
+    setResizingCol(colKey);
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const minW = colKey === 'index' ? 35 : (colKey === 'name' ? 200 : 55);
+      const newWidth = Math.max(minW, startWidth + deltaX);
+      setColWidths(prev => ({ ...prev, [colKey]: newWidth }));
+    };
+
+    const onMouseUp = () => {
+      setResizingCol(null);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  const handleResetColWidths = () => {
+    setColWidths(DEFAULT_STARTUP_COL_WIDTHS);
+  };
+
+  const totalTableWidth = useMemo(() => {
+    return Object.values(colWidths).reduce((sum: number, w: number) => sum + w, 0);
+  }, [colWidths]);
+
   if (!isOpen) return null;
 
   return (
@@ -195,10 +240,10 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
             </button>
           </div>
 
-          {/* Detected Valid PC Certificates Table with Horizontal & Vertical Grid Lines */}
+          {/* Detected Valid PC Certificates Table with Horizontal & Vertical Grid Lines & Resizable Headers */}
           {validPcCerts && validPcCerts.length > 0 && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-xs font-bold text-slate-800">
@@ -208,50 +253,150 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                     격자 가로세로 구분줄 · 유효 항목만 표시
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onSelectWorkflow('pc_to_usb')}
-                  className="text-xs text-blue-600 hover:text-blue-800 font-bold hover:underline cursor-pointer flex items-center gap-1"
-                >
-                  <span>이 인증서들로 USB 복사 시작</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleResetColWidths}
+                    className="text-slate-500 hover:text-blue-600 font-medium cursor-pointer text-[11px] hover:underline"
+                    title="모든 열 너비를 초기 기본 크기로 복원합니다"
+                  >
+                    너비 초기화 ↺
+                  </button>
+                  <span className="text-slate-300">|</span>
+                  <button
+                    type="button"
+                    onClick={() => onSelectWorkflow('pc_to_usb')}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-bold hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <span>이 인증서들로 USB 복사 시작</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
 
-              {/* Table with crisp horizontal & vertical grid divider lines and calibrated column widths */}
-              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs max-h-40 overflow-y-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-slate-100/90 text-slate-700 font-bold sticky top-0 z-10 border-b border-slate-300">
+              {/* Table with Always Visible Horizontal Scrollbar and Column Resizers */}
+              <div className="overflow-x-scroll overflow-y-auto max-h-44 rounded-xl border border-slate-300 dark:border-slate-700 bg-white shadow-2xs pb-1 scrollbar-thin">
+                <table
+                  className={`table-fixed text-left text-xs border-collapse ${resizingCol ? 'select-none' : ''}`}
+                  style={{ width: `${totalTableWidth}px`, minWidth: '100%' }}
+                >
+                  <thead className="bg-slate-100/95 text-slate-700 font-bold sticky top-0 z-10 border-b-2 border-slate-300 shadow-2xs">
                     <tr className="divide-x divide-slate-200">
-                      <th className="py-2 px-3 w-12 text-center">번호</th>
-                      <th className="py-2 px-3 w-28">구분</th>
-                      <th className="py-2 px-3 min-w-[200px]">인증서 명칭 (CN)</th>
-                      <th className="py-2 px-3 w-36">발급기관</th>
-                      <th className="py-2 px-3 w-28 text-center">만료일</th>
-                      <th className="py-2 px-3 w-20 text-center">상태</th>
+                      {/* 1. 번호 */}
+                      <th
+                        style={{ width: `${colWidths.index}px`, minWidth: `${colWidths.index}px`, maxWidth: `${colWidths.index}px` }}
+                        className="w-[52px] min-w-[52px] py-2.5 px-2 text-center relative select-none group bg-slate-100"
+                      >
+                        <span className="truncate block">번호</span>
+                        <div
+                          onMouseDown={(e) => handleStartResize('index', e)}
+                          className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                          title="드래그하여 번호 열 너비 조절"
+                        >
+                          <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                        </div>
+                      </th>
+
+                      {/* 2. 구분 */}
+                      <th
+                        style={{ width: `${colWidths.category}px`, minWidth: `${colWidths.category}px`, maxWidth: `${colWidths.category}px` }}
+                        className="w-[120px] min-w-[90px] py-2.5 px-3 relative select-none group bg-slate-100"
+                      >
+                        <span className="truncate block">구분</span>
+                        <div
+                          onMouseDown={(e) => handleStartResize('category', e)}
+                          className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                          title="드래그하여 구분 열 너비 조절"
+                        >
+                          <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                        </div>
+                      </th>
+
+                      {/* 3. 인증서 명칭 (CN) - min-w-[200px] */}
+                      <th
+                        style={{ width: `${colWidths.name}px`, minWidth: `${Math.max(colWidths.name, 200)}px`, maxWidth: `${Math.max(colWidths.name, 200)}px` }}
+                        className="w-[260px] min-w-[200px] py-2.5 px-3 relative select-none group bg-slate-100"
+                      >
+                        <span className="truncate block" title="인증서 명칭 (최소 너비 200px 유지)">인증서 명칭 (CN)</span>
+                        <div
+                          onMouseDown={(e) => handleStartResize('name', e)}
+                          className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                          title="드래그하여 인증서 명칭 열 너비 조절 (최소 200px)"
+                        >
+                          <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                        </div>
+                      </th>
+
+                      {/* 4. 발급기관 */}
+                      <th
+                        style={{ width: `${colWidths.issuer}px`, minWidth: `${colWidths.issuer}px`, maxWidth: `${colWidths.issuer}px` }}
+                        className="w-[170px] min-w-[120px] py-2.5 px-3 relative select-none group bg-slate-100"
+                      >
+                        <span className="truncate block">발급기관</span>
+                        <div
+                          onMouseDown={(e) => handleStartResize('issuer', e)}
+                          className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                          title="드래그하여 발급기관 열 너비 조절"
+                        >
+                          <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                        </div>
+                      </th>
+
+                      {/* 5. 만료일 */}
+                      <th
+                        style={{ width: `${colWidths.notAfter}px`, minWidth: `${colWidths.notAfter}px`, maxWidth: `${colWidths.notAfter}px` }}
+                        className="w-[120px] min-w-[90px] py-2.5 px-3 text-center relative select-none group bg-slate-100"
+                      >
+                        <span className="truncate block">만료일</span>
+                        <div
+                          onMouseDown={(e) => handleStartResize('notAfter', e)}
+                          className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                          title="드래그하여 만료일 열 너비 조절"
+                        >
+                          <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                        </div>
+                      </th>
+
+                      {/* 6. 상태 */}
+                      <th
+                        style={{ width: `${colWidths.status}px`, minWidth: `${colWidths.status}px`, maxWidth: `${colWidths.status}px` }}
+                        className="w-[90px] min-w-[70px] py-2.5 px-3 text-center relative select-none group bg-slate-100"
+                      >
+                        <span className="truncate block">상태</span>
+                        <div
+                          onMouseDown={(e) => handleStartResize('status', e)}
+                          className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                          title="드래그하여 상태 열 너비 조절"
+                        >
+                          <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 text-slate-800">
                     {validPcCerts.map((cert, index) => (
                       <tr key={cert.id || index} className="divide-x divide-slate-200 hover:bg-blue-50/40 transition-colors">
-                        <td className="py-2 px-3 text-center font-mono font-bold text-slate-500 text-[11px] bg-slate-50/50">
+                        <td
+                          style={{ width: `${colWidths.index}px` }}
+                          className="w-[52px] py-2 px-2 text-center font-mono font-bold text-slate-500 text-[11px] bg-slate-50/50"
+                        >
                           {index + 1}
                         </td>
-                        <td className="py-2 px-3">
-                          <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-blue-50 text-blue-700 border border-blue-200">
+                        <td style={{ width: `${colWidths.category}px` }} className="w-[120px] py-2 px-3">
+                          <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-blue-50 text-blue-700 border border-blue-200 inline-block truncate max-w-full">
                             {cert.category === 'GPKI_GOV' ? 'GPKI(행정)' : cert.category === 'EPKI_EDU' ? 'EPKI(교육)' : 'NPKI(공동)'}
                           </span>
                         </td>
-                        <td className="py-2 px-3 font-bold text-slate-900">
-                          <span className="truncate block max-w-xs">{cert.name || cert.commonName}</span>
+                        <td style={{ width: `${colWidths.name}px` }} className="w-[260px] min-w-[200px] py-2 px-3 font-bold text-slate-900">
+                          <span className="truncate block" title={cert.name || cert.commonName}>{cert.name || cert.commonName}</span>
                         </td>
-                        <td className="py-2 px-3 text-slate-600 truncate text-[11px]">
-                          {cert.issuer || cert.issuerName}
+                        <td style={{ width: `${colWidths.issuer}px` }} className="w-[170px] py-2 px-3 text-slate-600 text-[11px]">
+                          <span className="truncate block" title={cert.issuer || cert.issuerName}>{cert.issuer || cert.issuerName}</span>
                         </td>
-                        <td className="py-2 px-3 text-center font-mono text-[11px] text-slate-600">
-                          {cert.expiryDate || (cert.notAfter ? new Date(cert.notAfter).toISOString().slice(0, 10) : '-')}
+                        <td style={{ width: `${colWidths.notAfter}px` }} className="w-[120px] py-2 px-3 text-center font-mono text-[11px] text-slate-600">
+                          <span className="truncate block">{cert.expiryDate || (cert.notAfter ? new Date(cert.notAfter).toISOString().slice(0, 10) : '-')}</span>
                         </td>
-                        <td className="py-2 px-3 text-center">
+                        <td style={{ width: `${colWidths.status}px` }} className="w-[90px] py-2 px-3 text-center">
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
                             정상
                           </span>

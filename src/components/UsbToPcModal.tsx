@@ -73,6 +73,52 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
   const [showCelebration, setShowCelebration] = useState(false);
   const [copyErrorModalInfo, setCopyErrorModalInfo] = useState<CopyErrorContext | null>(null);
 
+  // Column width resizing state for detected certificates table (번호/선택/구분/인증서 명칭/발급기관/유효기간/보관 경로)
+  const DEFAULT_USB_COL_WIDTHS = useMemo(() => ({
+    index: 52,
+    select: 52,
+    category: 120,
+    name: 260,
+    issuer: 170,
+    validTo: 120,
+    usbPath: 160,
+  }), []);
+
+  const [colWidths, setColWidths] = useState<Record<string, number>>(DEFAULT_USB_COL_WIDTHS);
+  const [resizingCol, setResizingCol] = useState<string | null>(null);
+
+  const handleStartResize = (colKey: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startWidth = colWidths[colKey] || 100;
+    setResizingCol(colKey);
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const minW = (colKey === 'index' || colKey === 'select') ? 35 : (colKey === 'name' ? 200 : 55);
+      const newWidth = Math.max(minW, startWidth + deltaX);
+      setColWidths(prev => ({ ...prev, [colKey]: newWidth }));
+    };
+
+    const onMouseUp = () => {
+      setResizingCol(null);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  const handleResetColWidths = () => {
+    setColWidths(DEFAULT_USB_COL_WIDTHS);
+  };
+
+  const totalTableWidth = useMemo(() => {
+    return Object.values(colWidths).reduce((sum: number, w: number) => sum + w, 0);
+  }, [colWidths]);
+
   // Analyze all connected removable drives and sort with priority (drives with certs first)
   const usbDrivesWithStats = useMemo(() => {
     const removableDrives = availableDrives.filter(
@@ -719,25 +765,135 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                     >
                       선택 해제
                     </button>
+                    <span className="text-slate-300">|</span>
+                    <button
+                      type="button"
+                      onClick={handleResetColWidths}
+                      className="text-slate-500 hover:text-blue-600 font-medium cursor-pointer text-[11px] hover:underline"
+                      title="모든 열 너비를 초기 기본 크기로 복원합니다"
+                    >
+                      너비 초기화 ↺
+                    </button>
                   </div>
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs max-h-56 overflow-y-auto">
+                {/* Table with Always Visible Horizontal Scrollbar and Column Resizers */}
+                <div className="overflow-x-scroll overflow-y-auto max-h-56 rounded-xl border border-slate-300 dark:border-slate-700 bg-white shadow-2xs pb-1 scrollbar-thin">
                   {detectedCerts.length === 0 ? (
                     <div className="p-6 text-center text-xs text-slate-500">
                       USB에서 감지된 인증서가 없습니다. 위의 'USB 폴더 직접 열기'를 이용해 주세요.
                     </div>
                   ) : (
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead className="bg-slate-100 text-slate-700 font-bold sticky top-0 z-10 border-b border-slate-300">
+                    <table
+                      className={`table-fixed text-left text-xs border-collapse ${resizingCol ? 'select-none' : ''}`}
+                      style={{ width: `${totalTableWidth}px`, minWidth: '100%' }}
+                    >
+                      <thead className="bg-slate-100/95 text-slate-700 font-bold sticky top-0 z-10 border-b-2 border-slate-300 shadow-2xs">
                         <tr className="divide-x divide-slate-200">
-                          <th className="py-2.5 px-3 w-12 text-center">번호</th>
-                          <th className="py-2.5 px-3 w-12 text-center">선택</th>
-                          <th className="py-2.5 px-3 w-28">구분</th>
-                          <th className="py-2.5 px-3 min-w-[200px]">인증서 명칭 (CN)</th>
-                          <th className="py-2.5 px-3 w-36">발급기관</th>
-                          <th className="py-2.5 px-3 w-28 text-center">유효기간</th>
-                          <th className="py-2.5 px-3 w-28 text-center">보관 경로</th>
+                          {/* 1. 번호 */}
+                          <th
+                            style={{ width: `${colWidths.index}px`, minWidth: `${colWidths.index}px`, maxWidth: `${colWidths.index}px` }}
+                            className="w-[52px] min-w-[52px] py-2.5 px-2 text-center relative select-none group bg-slate-100"
+                          >
+                            <span className="truncate block">번호</span>
+                            <div
+                              onMouseDown={(e) => handleStartResize('index', e)}
+                              className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                              title="드래그하여 번호 열 너비 조절"
+                            >
+                              <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                            </div>
+                          </th>
+
+                          {/* 2. 선택 */}
+                          <th
+                            style={{ width: `${colWidths.select}px`, minWidth: `${colWidths.select}px`, maxWidth: `${colWidths.select}px` }}
+                            className="w-[52px] min-w-[52px] py-2.5 px-2 text-center relative select-none group bg-slate-100"
+                          >
+                            <span className="truncate block">선택</span>
+                            <div
+                              onMouseDown={(e) => handleStartResize('select', e)}
+                              className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                              title="드래그하여 선택 열 너비 조절"
+                            >
+                              <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                            </div>
+                          </th>
+
+                          {/* 3. 구분 */}
+                          <th
+                            style={{ width: `${colWidths.category}px`, minWidth: `${colWidths.category}px`, maxWidth: `${colWidths.category}px` }}
+                            className="w-[120px] min-w-[90px] py-2.5 px-3 relative select-none group bg-slate-100"
+                          >
+                            <span className="truncate block">구분</span>
+                            <div
+                              onMouseDown={(e) => handleStartResize('category', e)}
+                              className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                              title="드래그하여 구분 열 너비 조절"
+                            >
+                              <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                            </div>
+                          </th>
+
+                          {/* 4. 인증서 명칭 (CN) - min-w-[200px] */}
+                          <th
+                            style={{ width: `${colWidths.name}px`, minWidth: `${Math.max(colWidths.name, 200)}px`, maxWidth: `${Math.max(colWidths.name, 200)}px` }}
+                            className="w-[260px] min-w-[200px] py-2.5 px-3 relative select-none group bg-slate-100"
+                          >
+                            <span className="truncate block" title="인증서 명칭 (최소 너비 200px 유지)">인증서 명칭 (CN)</span>
+                            <div
+                              onMouseDown={(e) => handleStartResize('name', e)}
+                              className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                              title="드래그하여 인증서 명칭 열 너비 조절 (최소 200px)"
+                            >
+                              <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                            </div>
+                          </th>
+
+                          {/* 5. 발급기관 */}
+                          <th
+                            style={{ width: `${colWidths.issuer}px`, minWidth: `${colWidths.issuer}px`, maxWidth: `${colWidths.issuer}px` }}
+                            className="w-[170px] min-w-[120px] py-2.5 px-3 relative select-none group bg-slate-100"
+                          >
+                            <span className="truncate block">발급기관</span>
+                            <div
+                              onMouseDown={(e) => handleStartResize('issuer', e)}
+                              className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                              title="드래그하여 발급기관 열 너비 조절"
+                            >
+                              <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                            </div>
+                          </th>
+
+                          {/* 6. 유효기간 */}
+                          <th
+                            style={{ width: `${colWidths.validTo}px`, minWidth: `${colWidths.validTo}px`, maxWidth: `${colWidths.validTo}px` }}
+                            className="w-[120px] min-w-[90px] py-2.5 px-3 text-center relative select-none group bg-slate-100"
+                          >
+                            <span className="truncate block">유효기간</span>
+                            <div
+                              onMouseDown={(e) => handleStartResize('validTo', e)}
+                              className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                              title="드래그하여 유효기간 열 너비 조절"
+                            >
+                              <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                            </div>
+                          </th>
+
+                          {/* 7. 보관 경로 */}
+                          <th
+                            style={{ width: `${colWidths.usbPath}px`, minWidth: `${colWidths.usbPath}px`, maxWidth: `${colWidths.usbPath}px` }}
+                            className="w-[160px] min-w-[120px] py-2.5 px-3 text-center relative select-none group bg-slate-100"
+                          >
+                            <span className="truncate block">보관 경로</span>
+                            <div
+                              onMouseDown={(e) => handleStartResize('usbPath', e)}
+                              className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                              title="드래그하여 보관 경로 열 너비 조절"
+                            >
+                              <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                            </div>
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200 text-slate-800">
@@ -755,10 +911,20 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                                 isSelected ? 'bg-blue-50/50 hover:bg-blue-100/40' : 'hover:bg-slate-50'
                               }`}
                             >
-                              <td className="py-2 px-3 text-center font-mono font-bold text-slate-500 text-[11px] bg-slate-50/50">
+                              {/* 1. 번호 */}
+                              <td
+                                style={{ width: `${colWidths.index}px` }}
+                                className="w-[52px] py-2 px-2 text-center font-mono font-bold text-slate-500 text-[11px] bg-slate-50/50"
+                              >
                                 {index + 1}
                               </td>
-                              <td className="py-2 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+
+                              {/* 2. 선택 */}
+                              <td
+                                style={{ width: `${colWidths.select}px` }}
+                                className="w-[52px] py-2 px-2 text-center"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
@@ -766,15 +932,19 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                                   className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
                                 />
                               </td>
-                              <td className="py-2 px-3">
-                                <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-blue-50 text-blue-700 border border-blue-200">
+
+                              {/* 3. 구분 */}
+                              <td style={{ width: `${colWidths.category}px` }} className="w-[120px] py-2 px-3">
+                                <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-blue-50 text-blue-700 border border-blue-200 inline-block truncate max-w-full">
                                   {cert.category === 'GPKI_GOV' ? '공무원(GPKI)' : cert.category === 'EPKI_EDU' ? '교육행정(EPKI)' : '은행(NPKI)'}
                                 </span>
                               </td>
-                              <td className="py-2 px-3 font-semibold text-slate-900">
-                                <div className="flex items-center gap-1.5">
+
+                              {/* 4. 인증서 명칭 (CN) - min-w-[200px] */}
+                              <td style={{ width: `${colWidths.name}px` }} className="w-[260px] min-w-[200px] py-2 px-3 font-semibold text-slate-900">
+                                <div className="flex items-center gap-1.5 min-w-0">
                                   <FileKey className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                                  <span className="truncate">{cert.name}</span>
+                                  <span className="truncate" title={cert.name}>{cert.name}</span>
                                   {isAlreadyInPc && (
                                     <span className="text-[9px] px-1.5 py-0.2 bg-amber-100 text-amber-800 border border-amber-300 rounded font-semibold shrink-0">
                                       PC 기존 존재
@@ -782,14 +952,20 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                                   )}
                                 </div>
                               </td>
-                              <td className="py-2 px-3 text-slate-600 truncate text-[11px]">
-                                {cert.issuer}
+
+                              {/* 5. 발급기관 */}
+                              <td style={{ width: `${colWidths.issuer}px` }} className="w-[170px] py-2 px-3 text-slate-600 text-[11px]">
+                                <span className="truncate block" title={cert.issuer}>{cert.issuer}</span>
                               </td>
-                              <td className="py-2 px-3 text-center font-mono text-[11px] text-slate-600">
-                                {cert.validTo}
+
+                              {/* 6. 유효기간 */}
+                              <td style={{ width: `${colWidths.validTo}px` }} className="w-[120px] py-2 px-3 text-center font-mono text-[11px] text-slate-600">
+                                <span className="truncate block">{cert.validTo}</span>
                               </td>
-                              <td className="py-2 px-3 text-center font-mono text-[10px] text-slate-500 truncate max-w-[120px]">
-                                {cert.usbPath}
+
+                              {/* 7. 보관 경로 */}
+                              <td style={{ width: `${colWidths.usbPath}px` }} className="w-[160px] py-2 px-3 text-center font-mono text-[10px] text-slate-500">
+                                <span className="truncate block" title={cert.usbPath}>{cert.usbPath}</span>
                               </td>
                             </tr>
                           );

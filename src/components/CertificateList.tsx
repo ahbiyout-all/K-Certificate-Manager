@@ -1411,7 +1411,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                   {/* 1. 번호 (Number) */}
                   <th 
                     style={{ width: `${colWidths.index}px`, minWidth: `${colWidths.index}px`, maxWidth: `${colWidths.index}px` }}
-                    className={`${thPadding} text-center sticky left-0 bg-slate-100 z-30 border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                    className={`w-[52px] min-w-[52px] ${thPadding} text-center sticky left-0 bg-slate-100 z-30 border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
                   >
                     <span>번호</span>
                     {renderColResizer("index")}
@@ -1420,7 +1420,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                   {/* 2. 체크박스 (Selection Checkbox) */}
                   <th 
                     style={{ width: `${colWidths.select}px`, minWidth: `${colWidths.select}px`, maxWidth: `${colWidths.select}px` }}
-                    className={`${thPadding} text-center border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                    className={`w-[46px] min-w-[46px] ${thPadding} text-center border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
                   >
                     <input
                       type="checkbox"
@@ -1435,7 +1435,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                   {/* 3. 보관 위치 (Storage) */}
                   <th 
                     style={{ width: `${colWidths.storage}px`, minWidth: `${colWidths.storage}px`, maxWidth: `${colWidths.storage}px` }}
-                    className={`${thPadding} border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                    className={`w-[130px] min-w-[100px] ${thPadding} border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
                   >
                     <button
                       type="button"
@@ -1451,16 +1451,16 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                     {renderColResizer("storage")}
                   </th>
 
-                  {/* 4. 인증서 명칭 및 저장 경로 (Category) - 최소 크기로 자유자재 축소 가능 */}
+                  {/* 4. 인증서 명칭 및 저장 경로 (Category) - min-w-[200px] 보장 */}
                   <th 
-                    style={{ width: `${colWidths.category}px`, minWidth: `${colWidths.category}px`, maxWidth: `${colWidths.category}px` }}
-                    className={`${thPadding} border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                    style={{ width: `${colWidths.category}px`, minWidth: `${Math.max(colWidths.category, 200)}px`, maxWidth: `${colWidths.category}px` }}
+                    className={`w-[320px] min-w-[200px] ${thPadding} border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
                   >
                     <button
                       type="button"
                       onClick={() => handleSort("category")}
                       className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors max-w-full overflow-hidden"
-                      title="인증서 명칭 및 저장 경로 (자유로운 최소 크기 조절 가능)"
+                      title="인증서 명칭 및 저장 경로 (최소 200px 유지)"
                     >
                       <span className="truncate">인증서 명칭 및 저장 경로</span>
                       <span className="text-[10px] text-slate-400 group-hover:text-blue-500 shrink-0">

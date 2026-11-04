@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, 
   Check,
@@ -115,6 +115,59 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const [retryHistory, setRetryHistory] = useState<{ attempt: number; reason: string; delayMs: number }[]>([]);
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
   const [copyErrorModalInfo, setCopyErrorModalInfo] = useState<CopyErrorContext | null>(null);
+
+  // Column width resizing state for certificate table (번호/선택/구분/인증서 명칭/발급기관/만료일/상태)
+  const DEFAULT_BACKUP_COL_WIDTHS = useMemo(() => ({
+    index: 52,
+    select: 52,
+    category: 120,
+    name: 260,
+    issuer: 170,
+    notAfter: 120,
+    status: 90,
+  }), []);
+
+  const [colWidths, setColWidths] = useState<Record<string, number>>(DEFAULT_BACKUP_COL_WIDTHS);
+  const [resizingCol, setResizingCol] = useState<string | null>(null);
+  const [activeSelectedCertIds, setActiveSelectedCertIds] = useState<string[]>(() => selectedCerts.map(c => c.id));
+
+  useEffect(() => {
+    if (selectedCerts) {
+      setActiveSelectedCertIds(selectedCerts.map(c => c.id));
+    }
+  }, [selectedCerts]);
+
+  const handleStartResize = (colKey: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startWidth = colWidths[colKey] || 100;
+    setResizingCol(colKey);
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const minW = (colKey === 'index' || colKey === 'select') ? 35 : (colKey === 'name' ? 200 : 55);
+      const newWidth = Math.max(minW, startWidth + deltaX);
+      setColWidths(prev => ({ ...prev, [colKey]: newWidth }));
+    };
+
+    const onMouseUp = () => {
+      setResizingCol(null);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  const handleResetColWidths = () => {
+    setColWidths(DEFAULT_BACKUP_COL_WIDTHS);
+  };
+
+  const totalTableWidth = useMemo(() => {
+    return Object.values(colWidths).reduce((sum: number, w: number) => sum + w, 0);
+  }, [colWidths]);
 
   // Sync drive selection when modal opens or available drives change
   useEffect(() => {
@@ -949,67 +1002,244 @@ export const BackupModal: React.FC<BackupModalProps> = ({
             </div>
           ) : (
             <>
-              {/* Selected Certificates Table with Horizontal and Vertical Divider Grid Lines */}
+              {/* Selected Certificates Table with Horizontal and Vertical Divider Grid Lines & Resizable Headers */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                    <span>복사 대상 인증서 목록 ({selectedCerts.length}개)</span>
-                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
-                      격자 가로세로 구분선 적용
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                      <span>복사 대상 인증서 목록 ({selectedCerts.length}개)</span>
+                      <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
+                        선택됨 {activeSelectedCertIds.length}건
+                      </span>
+                    </label>
+                    <span className="text-[11px] text-blue-600 font-medium hidden sm:inline">
+                      (제목 우측 경계선을 드래그하여 열 너비 조절 가능)
                     </span>
-                  </label>
-                  <span className="text-[11px] text-slate-500">
-                    좌우 가로 크기 최적화 및 열 너비 정렬
-                  </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setActiveSelectedCertIds(selectedCerts.map(c => c.id))}
+                      className="text-blue-600 hover:underline font-bold cursor-pointer text-[11px]"
+                    >
+                      전체 선택
+                    </button>
+                    <span className="text-slate-300">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSelectedCertIds([])}
+                      className="text-slate-500 hover:underline font-bold cursor-pointer text-[11px]"
+                    >
+                      선택 해제
+                    </button>
+                    <span className="text-slate-300">|</span>
+                    <button
+                      type="button"
+                      onClick={handleResetColWidths}
+                      className="text-slate-500 hover:text-blue-600 font-medium cursor-pointer text-[11px] hover:underline"
+                      title="모든 열 너비를 초기 기본 크기로 복원합니다"
+                    >
+                      너비 초기화 ↺
+                    </button>
+                  </div>
                 </div>
-                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs max-h-48 overflow-y-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead className="bg-slate-100 text-slate-700 font-bold sticky top-0 z-10 border-b border-slate-300">
+
+                {/* Table with Always Visible Horizontal Scrollbar and Column Resizers */}
+                <div className="overflow-x-scroll overflow-y-auto max-h-52 rounded-xl border border-slate-300 dark:border-slate-700 bg-white shadow-2xs pb-1 scrollbar-thin">
+                  <table
+                    className={`table-fixed text-left text-xs border-collapse ${resizingCol ? 'select-none' : ''}`}
+                    style={{ width: `${totalTableWidth}px`, minWidth: '100%' }}
+                  >
+                    <thead className="bg-slate-100/95 text-slate-700 font-bold sticky top-0 z-10 border-b-2 border-slate-300 shadow-2xs">
                       <tr className="divide-x divide-slate-200">
-                        <th className="py-2 px-3 w-12 text-center">번호</th>
-                        <th className="py-2 px-3 w-28">구분</th>
-                        <th className="py-2 px-3 min-w-[200px]">인증서 명칭 (CN)</th>
-                        <th className="py-2 px-3 w-36">발급기관</th>
-                        <th className="py-2 px-3 w-28 text-center">만료일</th>
-                        <th className="py-2 px-3 w-20 text-center">상태</th>
+                        {/* 1. 번호 */}
+                        <th
+                          style={{ width: `${colWidths.index}px`, minWidth: `${colWidths.index}px`, maxWidth: `${colWidths.index}px` }}
+                          className="w-[52px] min-w-[52px] py-2.5 px-2 text-center relative select-none group bg-slate-100"
+                        >
+                          <span className="truncate block">번호</span>
+                          <div
+                            onMouseDown={(e) => handleStartResize('index', e)}
+                            className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                            title="드래그하여 번호 열 너비 조절"
+                          >
+                            <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                          </div>
+                        </th>
+
+                        {/* 2. 선택 */}
+                        <th
+                          style={{ width: `${colWidths.select}px`, minWidth: `${colWidths.select}px`, maxWidth: `${colWidths.select}px` }}
+                          className="w-[52px] min-w-[52px] py-2.5 px-2 text-center relative select-none group bg-slate-100"
+                        >
+                          <span className="truncate block">선택</span>
+                          <div
+                            onMouseDown={(e) => handleStartResize('select', e)}
+                            className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                            title="드래그하여 선택 열 너비 조절"
+                          >
+                            <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                          </div>
+                        </th>
+
+                        {/* 3. 구분 */}
+                        <th
+                          style={{ width: `${colWidths.category}px`, minWidth: `${colWidths.category}px`, maxWidth: `${colWidths.category}px` }}
+                          className="w-[120px] min-w-[90px] py-2.5 px-3 relative select-none group bg-slate-100"
+                        >
+                          <span className="truncate block">구분</span>
+                          <div
+                            onMouseDown={(e) => handleStartResize('category', e)}
+                            className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                            title="드래그하여 구분 열 너비 조절"
+                          >
+                            <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                          </div>
+                        </th>
+
+                        {/* 4. 인증서 명칭 (CN) - min-w-[200px] 고정 스타일 */}
+                        <th
+                          style={{ width: `${colWidths.name}px`, minWidth: `${Math.max(colWidths.name, 200)}px`, maxWidth: `${Math.max(colWidths.name, 200)}px` }}
+                          className="w-[260px] min-w-[200px] py-2.5 px-3 relative select-none group bg-slate-100"
+                        >
+                          <span className="truncate block" title="인증서 명칭 (최소 너비 200px 유지)">인증서 명칭 (CN)</span>
+                          <div
+                            onMouseDown={(e) => handleStartResize('name', e)}
+                            className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                            title="드래그하여 인증서 명칭 열 너비 조절 (최소 200px)"
+                          >
+                            <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                          </div>
+                        </th>
+
+                        {/* 5. 발급기관 */}
+                        <th
+                          style={{ width: `${colWidths.issuer}px`, minWidth: `${colWidths.issuer}px`, maxWidth: `${colWidths.issuer}px` }}
+                          className="w-[170px] min-w-[120px] py-2.5 px-3 relative select-none group bg-slate-100"
+                        >
+                          <span className="truncate block">발급기관</span>
+                          <div
+                            onMouseDown={(e) => handleStartResize('issuer', e)}
+                            className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                            title="드래그하여 발급기관 열 너비 조절"
+                          >
+                            <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                          </div>
+                        </th>
+
+                        {/* 6. 만료일 */}
+                        <th
+                          style={{ width: `${colWidths.notAfter}px`, minWidth: `${colWidths.notAfter}px`, maxWidth: `${colWidths.notAfter}px` }}
+                          className="w-[120px] min-w-[90px] py-2.5 px-3 text-center relative select-none group bg-slate-100"
+                        >
+                          <span className="truncate block">만료일</span>
+                          <div
+                            onMouseDown={(e) => handleStartResize('notAfter', e)}
+                            className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                            title="드래그하여 만료일 열 너비 조절"
+                          >
+                            <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                          </div>
+                        </th>
+
+                        {/* 7. 상태 */}
+                        <th
+                          style={{ width: `${colWidths.status}px`, minWidth: `${colWidths.status}px`, maxWidth: `${colWidths.status}px` }}
+                          className="w-[90px] min-w-[70px] py-2.5 px-3 text-center relative select-none group bg-slate-100"
+                        >
+                          <span className="truncate block">상태</span>
+                          <div
+                            onMouseDown={(e) => handleStartResize('status', e)}
+                            className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-blue-500/50 z-20 flex items-center justify-center select-none"
+                            title="드래그하여 상태 열 너비 조절"
+                          >
+                            <div className="w-0.5 h-3 bg-slate-300 group-hover:bg-blue-500" />
+                          </div>
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 text-slate-800">
-                      {selectedCerts.map((cert, index) => (
-                        <tr key={cert.id} className="divide-x divide-slate-200 hover:bg-blue-50/40 transition-colors">
-                          <td className="py-2 px-3 text-center font-mono font-bold text-slate-500 text-[11px] bg-slate-50/50">
-                            {index + 1}
-                          </td>
-                          <td className="py-2 px-3">
-                            <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-blue-50 text-blue-700 border border-blue-200">
-                              {cert.category === 'GPKI_GOV' ? 'GPKI(행정)' : cert.category === 'EPKI_EDU' ? 'EPKI(교육)' : 'NPKI(공동)'}
-                            </span>
-                          </td>
-                          <td className="py-2 px-3 font-semibold text-slate-900">
-                            <div className="flex items-center gap-1.5">
-                              <FileKey className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                              <span className="truncate">{cert.name}</span>
-                            </div>
-                          </td>
-                          <td className="py-2 px-3 text-slate-600 truncate text-[11px]">
-                            {cert.issuer}
-                          </td>
-                          <td className="py-2 px-3 text-center font-mono text-[11px] text-slate-600">
-                            {cert.expiryDate}
-                          </td>
-                          <td className="py-2 px-3 text-center">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                              cert.status === 'valid'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : cert.status === 'expiring'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-rose-100 text-rose-800'
-                            }`}>
-                              {cert.status === 'valid' ? '정상' : cert.status === 'expiring' ? '만료임박' : '만료'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                      {selectedCerts.map((cert, index) => {
+                        const isChecked = activeSelectedCertIds.includes(cert.id);
+                        return (
+                          <tr
+                            key={cert.id}
+                            onClick={() => {
+                              setActiveSelectedCertIds(prev =>
+                                prev.includes(cert.id) ? prev.filter(id => id !== cert.id) : [...prev, cert.id]
+                              );
+                            }}
+                            className={`divide-x divide-slate-200 cursor-pointer transition-colors ${
+                              isChecked ? 'hover:bg-blue-50/50' : 'bg-slate-50/60 opacity-60 hover:opacity-100'
+                            }`}
+                          >
+                            {/* 1. 번호 */}
+                            <td
+                              style={{ width: `${colWidths.index}px` }}
+                              className="w-[52px] py-2 px-2 text-center font-mono font-bold text-slate-500 text-[11px] bg-slate-50/50"
+                            >
+                              {index + 1}
+                            </td>
+
+                            {/* 2. 선택 */}
+                            <td
+                              style={{ width: `${colWidths.select}px` }}
+                              className="w-[52px] py-2 px-2 text-center"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {
+                                  setActiveSelectedCertIds(prev =>
+                                    prev.includes(cert.id) ? prev.filter(id => id !== cert.id) : [...prev, cert.id]
+                                  );
+                                }}
+                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
+                              />
+                            </td>
+
+                            {/* 3. 구분 */}
+                            <td style={{ width: `${colWidths.category}px` }} className="w-[120px] py-2 px-3">
+                              <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-blue-50 text-blue-700 border border-blue-200 inline-block truncate max-w-full">
+                                {cert.category === 'GPKI_GOV' ? 'GPKI(행정)' : cert.category === 'EPKI_EDU' ? 'EPKI(교육)' : 'NPKI(공동)'}
+                              </span>
+                            </td>
+
+                            {/* 4. 인증서 명칭 (CN) - min-w-[200px] */}
+                            <td style={{ width: `${colWidths.name}px` }} className="w-[260px] min-w-[200px] py-2 px-3 font-semibold text-slate-900">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <FileKey className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                <span className="truncate" title={cert.name}>{cert.name}</span>
+                              </div>
+                            </td>
+
+                            {/* 5. 발급기관 */}
+                            <td style={{ width: `${colWidths.issuer}px` }} className="w-[170px] py-2 px-3 text-slate-600 text-[11px]">
+                              <span className="truncate block" title={cert.issuer}>{cert.issuer}</span>
+                            </td>
+
+                            {/* 6. 만료일 */}
+                            <td style={{ width: `${colWidths.notAfter}px` }} className="w-[120px] py-2 px-3 text-center font-mono text-[11px] text-slate-600">
+                              <span className="truncate block">{cert.expiryDate}</span>
+                            </td>
+
+                            {/* 7. 상태 */}
+                            <td style={{ width: `${colWidths.status}px` }} className="w-[90px] py-2 px-3 text-center">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                cert.status === 'valid'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : cert.status === 'expiring'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-rose-100 text-rose-800'
+                              }`}>
+                                {cert.status === 'valid' ? '정상' : cert.status === 'expiring' ? '만료임박' : '만료'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
