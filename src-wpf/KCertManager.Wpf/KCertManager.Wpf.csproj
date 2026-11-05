@@ -14,7 +14,7 @@
     <AssemblyName>KCertManager</AssemblyName>
     <RootNamespace>KCertManager.Wpf</RootNamespace>
     <AssemblyTitle>K-Certificate Manager (K-인증서 매니저)</AssemblyTitle>
-    <Company>AhBiYout</Company>
+    <Company>(주)청운정보시스템</Company>
     <Authors>AhBiYout</Authors>
     <Product>K-Certificate Manager</Product>
     <Copyright>Copyright (c) 2026 AhBiYout. All rights reserved.</Copyright>

@@ -13,7 +13,7 @@
     <AssemblyVersion>1.8.0.0</AssemblyVersion>
     <FileVersion>1.8.0.0</FileVersion>
     <Authors>AhBiYout</Authors>
-    <Company>AhBiYout</Company>
+    <Company>(주)청운정보시스템</Company>
     <Product>K-인증서 코어 라이브러리 (KCert.Core)</Product>
     <Description>대한민국 NPKI, GPKI, EPKI 전자서명 공인인증서 고유 OID 파싱, 지능형 무결성 탐색, 안전 격리 휴지통 및 USB 감시 순수 창작 C# DLL 라이브러리 (.NET 10.0 / .NET 8.0 지원)</Description>
     <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>

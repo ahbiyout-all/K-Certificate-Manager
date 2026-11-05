@@ -158,11 +158,37 @@ namespace KCertManager.Wpf.Views
                 var spInfo = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
                 var spNameRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 2) };
 
+                // Bold Drive Letter Badge
+                try
+                {
+                    string driveBgHex = DriveItem.GetDriveBgColorHex(drive.DriveLetterChar);
+                    string driveBorderHex = DriveItem.GetDriveBorderColorHex(drive.DriveLetterChar);
+                    var letterBadge = new Border
+                    {
+                        CornerRadius = new CornerRadius(4),
+                        Padding = new Thickness(6, 1.5, 6, 1.5),
+                        Margin = new Thickness(0, 0, 6, 0),
+                        Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(driveBgHex)),
+                        BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(driveBorderHex)),
+                        BorderThickness = new Thickness(1)
+                    };
+                    letterBadge.Child = new TextBlock
+                    {
+                        Text = $"{drive.DriveLetterChar}:",
+                        FontSize = 11,
+                        FontWeight = FontWeights.ExtraBold,
+                        FontFamily = new FontFamily("Consolas, Segoe UI, sans-serif"),
+                        Foreground = Brushes.White
+                    };
+                    spNameRow.Children.Add(letterBadge);
+                }
+                catch { }
+
                 var txtName = new TextBlock
                 {
                     Text = string.IsNullOrEmpty(drive.VolumeLabel) ? drive.Name : $"{drive.Name} [{drive.VolumeLabel}]",
                     FontSize = 13.5,
-                    FontWeight = FontWeights.Bold,
+                    FontWeight = FontWeights.ExtraBold,
                     Foreground = isSelfCopy ? textSecondary : textPrimary,
                     Margin = new Thickness(0, 0, 8, 0)
                 };
@@ -186,7 +212,7 @@ namespace KCertManager.Wpf.Views
                 {
                     Text = drive.IsRemovable ? "추천 USB 메모리" : "로컬 디스크",
                     FontSize = 10.5,
-                    FontWeight = FontWeights.SemiBold,
+                    FontWeight = FontWeights.ExtraBold,
                     Foreground = drive.IsRemovable
                         ? new SolidColorBrush(Color.FromRgb(52, 211, 153))
                         : new SolidColorBrush(Color.FromRgb(147, 197, 253))

@@ -272,7 +272,7 @@ namespace KCertManager.Wpf.ViewModels
                 string targetRoot = string.Equals(cat, "GPKI", StringComparison.OrdinalIgnoreCase)
                     ? sysRoot
                     : Path.Combine(userProfile, "AppData", "LocalLow");
-                string relativePath = CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
+                string relativePath = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
                 string destDir = Path.Combine(targetRoot, relativePath);
                 string fullSourceDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar);
                 string fullTargetDir = Path.GetFullPath(destDir).TrimEnd(Path.DirectorySeparatorChar);
@@ -304,7 +304,7 @@ namespace KCertManager.Wpf.ViewModels
                         string targetRoot = string.Equals(cat, "GPKI", StringComparison.OrdinalIgnoreCase)
                             ? sysRoot
                             : Path.Combine(userProfile, "AppData", "LocalLow");
-                        string relativePath = CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
+                        string relativePath = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
                         string destDir = Path.Combine(targetRoot, relativePath);
                         string fullSourceDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar);
                         string fullTargetDir = Path.GetFullPath(destDir).TrimEnd(Path.DirectorySeparatorChar);

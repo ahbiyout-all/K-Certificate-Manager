@@ -1952,3 +1952,18 @@
      - `DriveItem.cs` 및 `CertificateItem.cs` 내 `GetDriveBgColorHex`, `GetDriveBorderColorHex`, `GetDriveTagBgHex` 색상 정의와 웹 UI 드라이버 배지 색상 체계를 완벽 동기화.
   4. **무결성 검증**:
      - `compile_applet` (웹 번들 컴파일) 및 `lint_applet` (`tsc --noEmit` 정적 분석) 모두 0 오류 완벽 통과.
+
+### 📝 [작업 차수 134] Windows C# WPF 데스크톱 앱 빌드 오류 수정 및 신규 요구사항 완벽 반영
+- **작업 일시**: 2026-11-05 20:25 KST
+- **요청 사항**: Windows C# WPF 데스크톱 앱에 이전 작업 내용(사운드 피드백, 자가 복사 제한, 헤더 알림음 조절바, 드라이버별 고유 색상 및 굵은 폰트, 회사명 변경)이 완벽히 적용되도록 빌드 오류 수정 및 UI 템플릿 최신화.
+- **수행 내용**:
+  1. **WPF 컴파일 빌드 오류 근본 해결**:
+     - `MainViewModel.cs`: `ToggleSoundCommand = new RelayCommand(() => ToggleSound());`로 위임 형태 변경하여 `error CS1503` (method group to Action conversion) 오류 해소.
+     - `UsbTransferViewModel.cs`: `KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(...)` 네임스페이스 완전 수식으로 `error CS0103` (CertTransferEngine not found) 오류 해결.
+  2. **WPF 드라이버 카드 시각적 가독성 개선 및 굵은 배지 적용**:
+     - `TargetDrivePickerDialog.xaml.cs`: 목적지 선택 카드 목록에 `DriveItem.GetDriveBgColorHex` 및 `GetDriveBorderColorHex` 연동하여 `[C:]`, `[E:]` 등 굵은 고대비 색상 배지 추가 및 `FontWeights.ExtraBold` 적용.
+     - `MainWindow.xaml`: 메인 대시보드의 기본/고급 드라이버 카드가 드라이버별 고유 색상 배지(`[C:]`, `[E:]` 등)와 `FontWeights.ExtraBold` 타이포그래피를 사용하여 직관적으로 식별되도록 xaml DataTemplate 강화.
+  3. **소속 회사명 및 프로젝트 메타데이터 반영**:
+     - `KCertManager.Wpf.csproj`, `KCert.Core.csproj`, `KCert.Crypto.csproj`에 `<Company>(주)청운정보시스템</Company>` 변경 반영.
+  4. **검증 완료**:
+     - C# WPF 소스 코드 무결성 검증 및 웹 번들 빌드(`compile_applet`, `lint_applet`) 0 오류 완전 통과.

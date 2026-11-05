@@ -95,7 +95,7 @@ namespace KCertManager.Wpf.ViewModels
             CheckUpdatesCommand = new RelayCommand(async () => await CheckForAppUpdatesAsync());
             ShowStartupWorkflowCommand = new RelayCommand(ShowStartupWorkflowDialog);
             CloseToastCommand = new RelayCommand(() => IsToastVisible = false);
-            ToggleSoundCommand = new RelayCommand(ToggleSound);
+            ToggleSoundCommand = new RelayCommand(() => ToggleSound());
             TestSoundCommand = new RelayCommand(() => PlayTestSound());
 
             StartGuidedWorkflowCommand = new RelayCommand<string>(StartGuidedWorkflow);
