@@ -14,10 +14,13 @@ import {
   Check,
   Zap,
   ChevronRight,
-  Info
+  Info,
+  AlertCircle,
+  AlertTriangle,
+  ShieldAlert
 } from 'lucide-react';
 import { WorkflowType } from './StartupWorkflowModal';
-import { playStartSound, playCompletionSound } from '../utils/audioFeedback';
+import { playStartSound, playCompletionSound, playErrorSound } from '../utils/audioFeedback';
 
 interface GuidedWorkflowOverlayProps {
   workflowType: WorkflowType | null;
@@ -27,6 +30,8 @@ interface GuidedWorkflowOverlayProps {
   onOpenBackupModal: () => void;
   onOpenUsbToPcModal: () => void;
   onSelectAllCerts: () => void;
+  pathErrorNotice?: string | null;
+  duplicateNotice?: string | null;
 }
 
 export const GuidedWorkflowOverlay: React.FC<GuidedWorkflowOverlayProps> = ({
@@ -37,9 +42,18 @@ export const GuidedWorkflowOverlay: React.FC<GuidedWorkflowOverlayProps> = ({
   onOpenBackupModal,
   onOpenUsbToPcModal,
   onSelectAllCerts,
+  pathErrorNotice,
+  duplicateNotice,
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
+
+  // Trigger error sound if path error notice appears
+  useEffect(() => {
+    if (pathErrorNotice) {
+      playErrorSound();
+    }
+  }, [pathErrorNotice]);
 
   // Reset steps when workflow changes
   useEffect(() => {
@@ -196,6 +210,26 @@ export const GuidedWorkflowOverlay: React.FC<GuidedWorkflowOverlayProps> = ({
                     '로컬 PC의 AppData\\LocalLow\\NPKI 보관함으로 안전하게 등록되었습니다.'
                   )}
                 </p>
+
+                {pathErrorNotice && (
+                  <div className="mt-2 p-2 bg-rose-950/90 border border-rose-500/70 rounded-xl text-rose-200 flex items-start gap-2 text-[11px] leading-snug animate-fadeIn">
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-rose-300 block">⚠️ [가이드 알림] 복사 경로 오류</span>
+                      <span>{pathErrorNotice}</span>
+                    </div>
+                  </div>
+                )}
+
+                {duplicateNotice && !pathErrorNotice && (
+                  <div className="mt-2 p-2 bg-amber-950/90 border border-amber-500/70 rounded-xl text-amber-200 flex items-start gap-2 text-[11px] leading-snug animate-fadeIn">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-amber-300 block">🛡️ [가이드 알림] 중복 파일 감지</span>
+                      <span>{duplicateNotice}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

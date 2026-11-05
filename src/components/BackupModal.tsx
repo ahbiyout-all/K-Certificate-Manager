@@ -59,6 +59,7 @@ import { parseUserFriendlyError, formatUserErrorMessage } from '../utils/userFri
 import { playStartSound, playCompletionSound, playErrorSound } from '../utils/audioFeedback';
 import { SuccessCelebration } from './SuccessCelebration';
 import { isSameDriveSelfCopy } from '../utils/driveFilter';
+import { getDriveBadgeStyle } from '../utils/driveBadgeUtils';
 
 interface BackupModalProps {
   isOpen: boolean;
@@ -1296,26 +1297,12 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     const driveCertCount = existingCertificates.filter(
                       c => (c.sourceDrive || '').includes(drive.letter) || (c.sourceLocation || '').startsWith(drive.letter)
                     ).length;
-                    const isEmptyUsb = (drive.type === 'removable' || drive.deviceKind === 'external_ssd' || drive.deviceKind === 'fast_usb') && driveCertCount === 0;
+                    const driveBadge = getDriveBadgeStyle(drive);
 
                     // Calculate duplicates for this drive
                     const driveDups = detectDuplicateCertificates(selectedCerts, existingCertificates, drive);
                     const dupCount = driveDups.conflicts.length;
                     const driveSelfCopyCount = selectedCerts.filter(c => isSameDriveSelfCopy(c, drive)).length;
-
-                    let kindBadge = 'bg-amber-100 text-amber-900 border-amber-300 font-bold';
-                    let kindText = drive.deviceKindLabel || '이동식 USB';
-
-                    if (drive.deviceKind === 'external_ssd' || drive.name.toLowerCase().includes('ssd')) {
-                      kindBadge = 'bg-purple-100 text-purple-900 border-purple-300 font-bold';
-                      kindText = '외장 SSD';
-                    } else if (drive.deviceKind === 'fast_usb' || drive.name.toLowerCase().includes('3.0') || drive.name.toLowerCase().includes('ultra')) {
-                      kindBadge = 'bg-cyan-100 text-cyan-900 border-cyan-300 font-bold';
-                      kindText = '고속 USB 메모리';
-                    } else if (drive.deviceKind === 'internal_fixed' || drive.type === 'fixed') {
-                      kindBadge = 'bg-slate-200 text-slate-800 border-slate-300 font-bold';
-                      kindText = '내장 디스크';
-                    }
 
                     return (
                       <div
@@ -1327,11 +1314,11 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                         className={`p-3.5 rounded-xl border-2 transition-all cursor-pointer relative ${
                           isSelected
                             ? isDriveLocked
-                              ? 'border-rose-500 bg-rose-50/40 shadow-xs ring-2 ring-rose-500/20'
-                              : 'border-blue-600 bg-blue-50/50 shadow-xs ring-2 ring-blue-500/20'
+                              ? 'border-rose-600 bg-rose-50/70 text-rose-950 shadow-xs ring-2 ring-rose-500/30 font-bold'
+                              : driveBadge.cardSelectedClass
                             : isDriveLocked
-                            ? 'border-rose-200 bg-rose-50/20 hover:border-rose-300'
-                            : 'border-slate-200 bg-white hover:border-slate-300'
+                            ? 'border-rose-300 bg-rose-50/30 text-rose-950 hover:border-rose-400'
+                            : driveBadge.cardNormalClass
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -1339,38 +1326,30 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                             <div
                               className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                                 isDriveLocked
-                                  ? 'bg-rose-100 text-rose-700'
-                                  : isEmptyUsb
-                                  ? 'bg-emerald-100 text-emerald-700'
-                                  : drive.deviceKind === 'external_ssd'
-                                  ? 'bg-purple-100 text-purple-700'
-                                  : drive.deviceKind === 'fast_usb'
-                                  ? 'bg-cyan-100 text-cyan-700'
-                                  : drive.type === 'removable'
-                                  ? 'bg-amber-100 text-amber-700'
-                                  : 'bg-slate-100 text-slate-700'
+                                  ? 'bg-rose-600 text-white shadow-2xs'
+                                  : driveBadge.iconBgClass
                               }`}
                             >
                               {isDriveLocked ? (
-                                <Lock className="w-5 h-5 text-rose-600" />
+                                <Lock className="w-5 h-5 text-white" />
                               ) : (
                                 <HardDrive className="w-5 h-5" />
                               )}
                             </div>
                             <div className="min-w-0">
-                              <div className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
-                                <span>{drive.letter}</span>
-                                <span className="font-medium text-slate-700 truncate max-w-[130px]">
+                              <div className="text-xs sm:text-sm font-extrabold flex items-center gap-1.5 flex-wrap">
+                                <span className={driveBadge.letterBadgeClass}>{drive.letter}</span>
+                                <span className="font-extrabold text-slate-950 truncate max-w-[130px]">
                                   {drive.name}
                                 </span>
                               </div>
-                              <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                                <span>여유: <strong className="text-slate-700">{drive.freeSpace}</strong></span>
-                                <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold border ${kindBadge}`}>
-                                  {kindText}
+                              <div className="text-[11px] text-slate-800 font-semibold mt-1 flex items-center gap-1.5 flex-wrap">
+                                <span>여유: <strong className="text-slate-950 font-extrabold">{drive.freeSpace}</strong></span>
+                                <span className={driveBadge.typeBadgeClass}>
+                                  {driveBadge.typeLabel}
                                 </span>
                                 {driveCertCount > 0 && (
-                                  <span className="px-1.5 py-0.2 bg-slate-100 text-slate-700 rounded text-[10px] font-bold">
+                                  <span className="px-1.5 py-0.2 bg-slate-200 text-slate-950 rounded text-[10px] font-extrabold">
                                     보관 {driveCertCount}건
                                   </span>
                                 )}
@@ -1439,7 +1418,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                             className={`h-full ${
                               isDriveLocked
                                 ? 'bg-rose-500'
-                                : isEmptyUsb
+                                : drive.type === 'removable' && driveCertCount === 0
                                 ? 'bg-emerald-500'
                                 : drive.deviceKind === 'external_ssd'
                                 ? 'bg-purple-600'

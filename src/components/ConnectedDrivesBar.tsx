@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { DiskDrive } from '../types';
 import { isExcludedVirtualOrCloudDrive, filterPhysicalDrivesOnly } from '../utils/driveFilter';
+import { getDriveBadgeStyle } from '../utils/driveBadgeUtils';
 
 interface ConnectedDrivesBarProps {
   availableDrives: DiskDrive[];
@@ -131,66 +132,42 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
         {filteredDrives.map(drive => {
           if (!drive) return null;
           const isSelected = selectedDriveId === drive.id;
+          const driveBadge = getDriveBadgeStyle(drive);
           const driveName = drive.name || '';
-          const driveDesc = drive.description || '';
-          const isCdRom = drive.isCdRom || drive.type === 'cdrom' || drive.deviceKind === 'cdrom' || drive.deviceKind === 'virtual_cd' || driveName.toLowerCase().includes('cd-rom') || driveName.toLowerCase().includes('dvd') || drive.fileSystem === 'UDF' || drive.fileSystem === 'CDFS';
-          const isUsb = !isCdRom && (drive.type === 'removable' || drive.busType === 'USB');
-          const isNvme = !isCdRom && (drive.isNvme || drive.busType === 'NVMe' || driveName.toLowerCase().includes('nvme') || drive.pnpDeviceId?.toLowerCase().includes('980_pro'));
-          const isSata = !isCdRom && (drive.isSata || drive.busType === 'SATA' || (!isUsb && !isNvme));
-          const isHdd = !isCdRom && (drive.isHdd || drive.diskMediaType === 'HDD' || driveName.toLowerCase().includes('hdd') || driveDesc.includes('하드디스크'));
-
-          // Determine badge label and colors
-          let hardwareLabel = '[외장 USB 메모리]';
-          let badgeBg = 'bg-emerald-50 text-emerald-800 border-emerald-200';
-
-          if (isCdRom) {
-            hardwareLabel = '[가상/물리 CD-ROM]';
-            badgeBg = 'bg-rose-50 text-rose-800 border-rose-200';
-          } else if (isNvme) {
-            hardwareLabel = '[내장 NVMe M.2 SSD]';
-            badgeBg = 'bg-purple-50 text-purple-800 border-purple-200';
-          } else if (isSata && isHdd) {
-            hardwareLabel = '[내장 SATA 포트 HDD]';
-            badgeBg = 'bg-amber-50 text-amber-800 border-amber-200';
-          } else if (isSata) {
-            hardwareLabel = '[내장 SATA 포트 SSD]';
-            badgeBg = 'bg-sky-50 text-sky-800 border-sky-200';
-          } else if (drive.deviceKind === 'external_ssd') {
-            hardwareLabel = '[외장 USB SSD]';
-            badgeBg = 'bg-teal-50 text-teal-800 border-teal-200';
-          }
+          const isUsb = drive.type === 'removable' || drive.busType === 'USB';
 
           return (
             <div
               key={drive.id}
               onClick={() => onSelectDriveId(drive.id)}
-              className={`p-3.5 rounded-xl border transition-all cursor-pointer relative flex flex-col justify-between ${
+              className={`p-3.5 rounded-xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
                 isSelected
-                  ? 'bg-blue-50/40 border-blue-400 ring-2 ring-blue-200 shadow-xs'
-                  : 'bg-slate-50/60 hover:bg-slate-100/70 border-slate-200'
+                  ? driveBadge.cardSelectedClass
+                  : driveBadge.cardNormalClass
               }`}
             >
               <div>
                 {/* Top Row: Letter, Hardware Tag & Selection indicator */}
-                <div className="flex items-start justify-between gap-1.5 mb-1.5">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-extrabold text-sm text-slate-900 font-mono">
+                <div className="flex items-start justify-between gap-1.5 mb-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Bold, Distinct Drive Letter Badge */}
+                    <span className={driveBadge.letterBadgeClass}>
                       {drive.letter}
                     </span>
-                    <span className={`text-[10px] px-1.5 py-0.2 border rounded font-bold tracking-tight ${badgeBg}`}>
-                      {hardwareLabel}
+                    <span className={driveBadge.typeBadgeClass}>
+                      {driveBadge.typeLabel}
                     </span>
                   </div>
 
                   {isSelected && (
-                    <span className="text-[10px] px-1.5 py-0.2 bg-blue-600 text-white rounded font-bold">
+                    <span className="text-[10px] px-2 py-0.5 bg-blue-600 text-white rounded-md font-extrabold shadow-2xs">
                       대상 선택됨
                     </span>
                   )}
                 </div>
 
-                {/* Drive Name */}
-                <div className="font-bold text-xs text-slate-800 truncate mb-1">
+                {/* Drive Name with High Contrast Text */}
+                <div className="font-extrabold text-xs text-slate-950 truncate mb-1">
                   {drive.name}
                 </div>
 
@@ -226,7 +203,7 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
                   <div className="flex items-center justify-between">
                     <span className="text-slate-600 font-sans font-medium">버스 / 포맷:</span>
                     <span className="font-bold text-slate-900">
-                      {isNvme ? 'NVMe PCIe' : isSata ? 'SATA3' : 'USB 3.0'} · {drive.fileSystem || 'NTFS'}
+                      {drive.busType || (isUsb ? 'USB 3.0' : 'SATA/PCIe')} · {drive.fileSystem || 'NTFS'}
                     </span>
                   </div>
 

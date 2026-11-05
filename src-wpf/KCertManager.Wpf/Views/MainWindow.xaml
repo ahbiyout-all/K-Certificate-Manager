@@ -101,8 +101,8 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Horizontal Sound Volume Slider Bar & Mute Toggle -->
-                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="6,2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0" ToolTip="복사 성공 알림음(SuccessChime) 실시간 볼륨 조절 및 음소거 토글">
+                        <!-- Horizontal Sound Volume Slider Bar & Mute Toggle (Conditional visibility via ShowHeaderSoundBar) -->
+                        <Border Visibility="{Binding ShowHeaderSoundBar, Converter={StaticResource BoolToVis}}" Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="6,2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0" ToolTip="복사 성공 알림음(SuccessChime) 실시간 볼륨 조절 및 음소거 토글">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                 <Button Command="{Binding ToggleSoundCommand}" Style="{StaticResource SecondaryButton}" Padding="4,2" Margin="0,0,4,0" ToolTip="성공 알림음 켜기/끄기 토글">
                                     <TextBlock Text="{Binding SoundIcon}" FontSize="12" VerticalAlignment="Center"/>

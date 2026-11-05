@@ -122,6 +122,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     triggerSaveBadge();
   };
 
+  const handleToggleShowHeaderSoundBar = (checked: boolean) => {
+    const updated = saveSoundSettings({ showHeaderSoundBar: checked });
+    setSoundSettingsState(updated);
+    triggerSaveBadge();
+  };
+
   const [excludeLocalLowGpki, setExcludeLocalLowGpki] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('kcert_exclude_locallow_gpki');
@@ -311,6 +317,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </button>
                     ))}
                   </div>
+                </div>
+
+                {/* Header Sound Volume Slider Bar Visibility Toggle */}
+                <div className="pt-2">
+                  <label className="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors select-none">
+                    <input
+                      type="checkbox"
+                      checked={!!soundSettings.showHeaderSoundBar}
+                      onChange={(e) => handleToggleShowHeaderSoundBar(e.target.checked)}
+                      className="w-4 h-4 mt-0.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                    />
+                    <div>
+                      <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                        <span>헤더 상단 사운드 가로 소리조절바 표시</span>
+                        <span className="px-1.5 py-0.2 bg-slate-100 text-slate-600 text-[10px] font-medium rounded">기본: 비활성</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        상단 헤더 메뉴에 실시간 볼륨 조절 슬라이더 바를 표시합니다. (체크 해제 시 상단 헤더 소리조절바가 숨겨집니다)
+                      </p>
+                    </div>
+                  </label>
                 </div>
               </div>
 

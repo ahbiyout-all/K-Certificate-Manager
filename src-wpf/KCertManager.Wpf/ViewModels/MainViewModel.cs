@@ -69,6 +69,7 @@ namespace KCertManager.Wpf.ViewModels
             _currentTheme = settings.Theme ?? "dark";
             _isSoundEnabled = settings.IsSoundEnabled;
             _soundVolume = settings.SoundVolume;
+            _showHeaderSoundBar = settings.ShowHeaderSoundBar;
             _isSimpleMode = settings.IsSimpleMode;
             _dontShowStartupWorkflowAgain = settings.DontShowStartupWorkflowAgain;
             _excludeLocalLowGpkiScan = settings.ExcludeLocalLowGpkiScan;
@@ -301,6 +302,19 @@ namespace KCertManager.Wpf.ViewModels
                     SettingsService.Instance.IsSoundEnabled = value;
                     OnPropertyChanged(nameof(SoundVolumeText));
                     OnPropertyChanged(nameof(SoundIcon));
+                }
+            }
+        }
+
+        private bool _showHeaderSoundBar = false;
+        public bool ShowHeaderSoundBar
+        {
+            get => _showHeaderSoundBar;
+            set
+            {
+                if (SetProperty(ref _showHeaderSoundBar, value))
+                {
+                    SettingsService.Instance.ShowHeaderSoundBar = value;
                 }
             }
         }
@@ -1633,6 +1647,12 @@ namespace KCertManager.Wpf.ViewModels
                 }
 
                 actualConflictOption = dupDialog.SelectedAction; // "overwrite" | "rename" | "skip"
+
+                if (IsGuidedWorkflowActive)
+                {
+                    GuidedWorkflowStepTitle = $"🛡️ 시작가이드 알림: 중복 파일 감지 ({duplicateConflicts.Count}건)";
+                    GuidedWorkflowStepDescription = $"선택한 인증서 중 {duplicateConflicts.Count}건이 대상 드라이브({targetDriveName})에 이미 존재합니다. 처리 옵션 [{actualConflictOption}] 선택 완료 후 복사를 진행합니다.";
+                }
             }
 
             IsBusy = true;
@@ -1663,6 +1683,12 @@ namespace KCertManager.Wpf.ViewModels
                         string currentSrcDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd('\\');
                         if (string.Equals(currentSrcDir, expectedDstDir, StringComparison.OrdinalIgnoreCase))
                         {
+                            if (IsGuidedWorkflowActive)
+                            {
+                                GuidedWorkflowStepTitle = "⚠️ 시작가이드 알림: 복사 경로 오류 (동일 위치 자가 복사 금지)";
+                                GuidedWorkflowStepDescription = $"선택한 인증서({cert.CommonName})가 이미 대상 드라이브({targetDriveName})의 동일 경로에 위치하여 자가 복사가 자동 제외되었습니다. 다른 목적지 드라이브를 선택하세요.";
+                                PlayErrorSound();
+                            }
                             var sameResult = new BackupHistoryItem
                             {
                                 CertCommonName = cert.CommonName,
@@ -1862,6 +1888,12 @@ namespace KCertManager.Wpf.ViewModels
                 }
                 var failedItems = _backupHistory.Take(selected.Count).Where(h => !h.IsSuccess).ToList();
                 var firstFailMsg = failedItems.FirstOrDefault()?.Message ?? string.Empty;
+
+                if (IsGuidedWorkflowActive)
+                {
+                    GuidedWorkflowStepTitle = "❌ 시작가이드 알림: 복사 경로 오류 발생";
+                    GuidedWorkflowStepDescription = $"인증서 복사 중 경로 오류가 발생했습니다: {(string.IsNullOrEmpty(firstFailMsg) ? "드라이브 I/O 또는 쓰기 권한 오류" : firstFailMsg)}. 매체 쓰기 금지 LOCK 해제 및 저장 공간을 확인하세요.";
+                }
 
                 string errorCategoryTitle = "인증서 복사 오류 안내";
                 string detailedTip = "• 대상 디스크/USB의 남은 용량이 충분한지 확인해 주세요.\n• USB의 경우 '쓰기 금지(Lock)' 스위치가 꺼져 있는지 확인해 주세요.\n• 권한 문제가 지속될 경우 관리자 권한으로 실행해 보세요.";

@@ -77,6 +77,21 @@
                                        Foreground="{DynamicResource AccentTextBrush}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,4,0"/>
                         </Grid>
 
+                        <!-- Header Sound Bar Toggle CheckBox -->
+                        <Grid Margin="0,4,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="헤더 상단 사운드 가로 소리조절바 표시 (기본: 비활성)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="체크 시 상단 헤더 메뉴에 실시간 사운드 조절 슬라이더 바를 표시합니다." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                            <CheckBox x:Name="ChkShowHeaderSoundBar" Grid.Column="1" VerticalAlignment="Center"
+                                      IsChecked="{Binding ShowHeaderSoundBar, Mode=TwoWay}"
+                                      Checked="ChkShowHeaderSoundBar_Changed" Unchecked="ChkShowHeaderSoundBar_Changed"/>
+                        </Grid>
+
                         <!-- Phase Test Buttons -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <TextBlock Text="음향 미리듣기:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>

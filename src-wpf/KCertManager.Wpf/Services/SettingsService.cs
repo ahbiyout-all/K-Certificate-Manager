@@ -9,6 +9,7 @@ namespace KCertManager.Wpf.Services
     {
         public bool IsSoundEnabled { get; set; } = true;
         public int SoundVolume { get; set; } = 40;
+        public bool ShowHeaderSoundBar { get; set; } = false;
         public bool DontShowStartupWorkflowAgain { get; set; } = false;
         public string Theme { get; set; } = "dark";
         public bool IsSimpleMode { get; set; } = true;
@@ -114,6 +115,19 @@ namespace KCertManager.Wpf.Services
                 if (_currentSettings.SoundVolume != value)
                 {
                     _currentSettings.SoundVolume = value;
+                    SaveSettings();
+                }
+            }
+        }
+
+        public bool ShowHeaderSoundBar
+        {
+            get => _currentSettings.ShowHeaderSoundBar;
+            set
+            {
+                if (_currentSettings.ShowHeaderSoundBar != value)
+                {
+                    _currentSettings.ShowHeaderSoundBar = value;
                     SaveSettings();
                 }
             }

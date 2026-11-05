@@ -17,6 +17,44 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 131] 시작 가이드(Guided Workflow) 내 복사 경로 오류 및 중복 파일 실시간 알림 강화
+- **작업 일시**: 2026-11-05 19:40 KST
+- **요청 사항**:
+  - "시작 가이드에서 복사 경로 오류 및 중복 파일일 경우 사용자에게 알림."
+- **구현 내용**:
+  1. **웹 애플리케이션 시작 가이드 컨트롤러 (`src/components/GuidedWorkflowOverlay.tsx`)**:
+     - `pathErrorNotice` 및 `duplicateNotice` 알림 프롭스/상태 추가.
+     - 복사 경로 오류 발생 시 (동일 경로 자가 복사 차단, 쓰기 금지 드라이브, 경로 접근 거부 등):
+       - ⚠️ `[가이드 알림] 복사 경로 오류: 동일 위치 자가 복사 제한 안내 및 타겟 드라이브(C:, D:, 타 USB) 변경 권장 경고 박스` 실시간 노출.
+       - 오류 발생 시 `playErrorSound()` 자동 발음.
+     - 중복 파일 감지 시 (대상 드라이브에 동일 인증서 존재):
+       - 🛡️ `[가이드 알림] 중복 파일 감지 ({count}건): [덮어쓰기], [중복 건너뛰기], [기존 백업 보존] 처리 지침 안내 경고 박스` 실시간 노출.
+  2. **모달 및 메인 애플리케이션 흐름 연동 (`src/App.tsx`, `BackupModal.tsx`, `UsbToPcModal.tsx`)**:
+     - `App.tsx`에서 선택된 인증서와 목적지 드라이브 간의 동일 경로 자가 복사(`isSameDriveSelfCopy`) 및 중복 감지 개수를 실시간 연산하여 `GuidedWorkflowOverlay`에 전달.
+     - `BackupModal.tsx` & `UsbToPcModal.tsx` 모달 내부에 시작 가이드 전용 명확한 경고 카드 강조 표시.
+  3. **C# .NET WPF 데스크톱 앱 연동 (`src-wpf/`)**:
+     - `MainViewModel.cs`:
+       - 자가 복사 시도 시 `GuidedWorkflowStepTitle = "⚠️ 시작가이드 알림: 복사 경로 오류 (동일 위치 자가 복사 금지)"` 및 `PlayErrorSound()` 호출.
+       - 중복 파일 감지 시 `GuidedWorkflowStepTitle = $"🛡️ 시작가이드 알림: 중복 파일 감지 ({duplicateConflicts.Count}건)"` 안내 반영.
+       - I/O 복사 실패 시 `GuidedWorkflowStepTitle = "❌ 시작가이드 알림: 복사 경로 오류 발생"` 안내 반영.
+     - `PcToUsbTransferViewModel.cs` & `UsbTransferViewModel.cs`:
+       - 자가 복사 차단 시 `SystemSounds.Hand.Play()` 음향 재생 및 상세 조치 가이드 팝업 제공.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 0건 오류 통과.
+  - WPF XAML XML 파싱 유효성 100% 정상 통과.
+
+### 📝 [작업 차수 130] Inno Setup 설치 마법사 '바탕화면에 바로가기 만들기' 기본 체크(Checked) 설정
+- **작업 일시**: 2026-11-05 19:35 KST
+- **요청 사항**:
+  - "innosetup 에 바탕화면 바로가기 만들기 , 기본 체크 상태"
+- **조치 내역**:
+  - `installer.iss`:
+    - `[Tasks]` 섹션의 `Name: "desktopicon"` 항목에서 `Flags: unchecked` 플래그 제거.
+    - Inno Setup 기본 사양에 따라 `Flags: unchecked`를 생략함으로써 설치 마법사 실행 시 "바탕화면에 바로가기 만들기(&D)" 옵션이 기본적으로 체크(`Checked`)된 상태로 제공되도록 변경.
+- **검증 결과**:
+  - `installer.iss` 구문 검증 완료.
+  - TypeScript 컴파일 및 린트(`compile_applet` & `lint_applet`) 정상 통과.
+
 ### 📝 [작업 차수 129] C# .NET WPF 릴리스 빌드 오류 (CS1503, CS0103) 긴급 수정
 - **작업 일시**: 2026-11-05 19:15 KST
 - **요청 사항**:
@@ -1872,3 +1910,45 @@
   3. **빌드 검증**:
      - `lint_applet` (TypeScript noEmit) 0 error 통과.
      - `compile_applet` 프로덕션 번들 빌드 성공.
+
+---
+
+### 📝 [작업 차수 132] 헤더 상단 사운드 가로 소리조절바 활성/비활성(표시/숨김) 체크박스 및 영구 저장 구현
+- **작업 일시**: 2026-11-05 20:00 KST
+- **요청 사항**:
+  - "환경 설정에서 사운드 가로 소리조절바를 헤더 상단에 보이거나 안보이게 하는 활성/비활성 체크 박스를 만드세요. 기본은 비활성."
+- **배경 및 원인 분석**:
+  - 사용자의 헤더 영역 가시성 및 개인 취향에 따라 상단 툴바의 실시간 사운드 볼륨 슬라이더 바를 선택적으로 숨기거나 노출할 수 있는 옵션이 요구됨.
+  - 기본값(Default)을 비활성(Unchecked / Hidden, `false`)으로 지정하여 상단 헤더 메뉴를 깔끔하게 유지하고, 사용자가 환경 설정에서 체크 박스를 활성화할 경우 헤더 상단에 가로 소리조절바가 즉시 등장하도록 구현함.
+- **수행 내용**:
+  1. **React Web 환경 설정 및 헤더 제어 (`src/utils/audioFeedback.ts`, `src/components/Header.tsx`, `src/components/SettingsModal.tsx`)**:
+     - `SoundSettings` 인터페이스 및 `DEFAULT_SOUND_SETTINGS`에 `showHeaderSoundBar: boolean` (기본값: `false`) 추가.
+     - `getSoundSettings()` 및 `saveSoundSettings()`에서 `showHeaderSoundBar` 로컬 스토리지 영구 보존 및 `SOUND_SETTINGS_CHANGED_EVENT` 연동.
+     - `Header.tsx`: `{soundSettings.showHeaderSoundBar && ( ... )}` 조건부 렌더링을 적용하여 기본 상태(false)에서는 상단 슬라이더 바가 숨겨지고, 설정 모달에서 체크 시 헤더에 실시간 노출.
+     - `SettingsModal.tsx`: Section 1에 `"헤더 상단 사운드 가로 소리조절바 표시 (기본: 비활성)"` 토글 체크박스 및 설명 추가.
+  2. **Windows C# WPF 데스크톱 앱 제어 (`SettingsService.cs`, `MainViewModel.cs`, `MainWindow.xaml`, `SettingsDialog.xaml`)**:
+     - `AppSettingsData` 및 `SettingsService.cs`에 `ShowHeaderSoundBar` (기본: `false`) 영구 저장 프로퍼티 추가 (`kcert_settings.json`).
+     - `MainViewModel.cs`에 `ShowHeaderSoundBar` 바인딩 프로퍼티 구현 및 초기값 복원.
+     - `MainWindow.xaml`: 상단 헤더의 알림음 볼륨 슬라이더 Border에 `Visibility="{Binding ShowHeaderSoundBar, Converter={StaticResource BoolToVis}}"` 바인딩 적용.
+     - `SettingsDialog.xaml` & `SettingsDialog.xaml.cs`: 사운드 설정 그룹에 `ChkShowHeaderSoundBar` 체크박스 연동 및 기본값 복원 핸들러 구현.
+  3. **검증**:
+     - Python XML 파서로 WPF XAML 구문 유효성 검증 완료.
+     - `compile_applet` 및 `lint_applet` 수행하여 0 에러 / 0 경고 검증 통과.
+
+### 📝 [작업 차수 133] 복사/백업 드라이버 시각적 가독성 강화: 굵은 폰트, 드라이버별 고유 색상 및 고대비 색상 조합 적용
+- **작업 일시**: 2026-11-05 20:10 KST
+- **요청 사항**: 복사/백업 드라이버들 사용자 눈에 잘 들어오도록 굵은 폰트로 하고 드라이버 별로 색상을 넣어서 사용자가 한눈에 알아볼 수 있도록 합니다. 그리고 배경색상과 글자색의 조합으로 사용자가 글자색이 보이지 않는 현상이 없도록 합니다.
+- **수행 내용**:
+  1. **고대비/드라이버별 고유 색상 전용 유틸리티 구축 (`src/utils/driveBadgeUtils.ts`)**:
+     - `getDriveBadgeStyle(drive)` 함수를 신설하여 C: 시스템 디스크(Deep Blue), 이동식 USB 메모리(Emerald Green), 외장 고속 SSD(Vibrant Purple), 고속 USB 3.0/3.1(Sky/Teal), CD-ROM/가상 ISO(Rose), 내장 보조 디스크(Indigo) 등 드라이버 유형별로 선명한 고유 색상 체계 구축.
+     - 폰트 스타일을 `font-extrabold` / `font-bold`로 통합 적용하여 텍스트 시인성 대폭 강화.
+     - 연한 배경색 카드(`bg-blue-50`, `bg-emerald-50` 등) 위에는 반드시 짙은 고대비 텍스트(`text-slate-950`, `text-blue-950`, `text-emerald-950`) 또는 다크 모드 `dark:text-white`를 매칭하여 글자색이 배경에 묻혀 보이지 않는 현상을 100% 방지.
+  2. **모든 드라이버 카드 및 모달 컴포넌트 전면 개선**:
+     - `src/components/ConnectedDrivesBar.tsx`: 연결된 드라이버 대시보드 카드에 드라이버 문자 배지(`[C:]`, `[E:]` 등) 및 유형 태그 적용, 고대비 텍스트 보장.
+     - `src/components/BackupModal.tsx`: 백업 대상 드라이버 선택 카드 및 프로그레스 바에 드라이버별 색상 배지 및 굵은 폰트 반영.
+     - `src/components/UsbToPcModal.tsx`: USB 목록 선택 버튼에 녹색/보라/cyan 배지와 굵은 글씨체 적용.
+     - `src/components/TargetDrivePickerModal.tsx`: 목적지 디스크 지정 카드에 `getDriveBadgeStyle` 연동하여 굵은 배지 및 고대비 텍스트 레이아웃으로 업데이트.
+  3. **WPF 데스크톱 앱 드라이버 고유 색상 및 배지 구조 동기화**:
+     - `DriveItem.cs` 및 `CertificateItem.cs` 내 `GetDriveBgColorHex`, `GetDriveBorderColorHex`, `GetDriveTagBgHex` 색상 정의와 웹 UI 드라이버 배지 색상 체계를 완벽 동기화.
+  4. **무결성 검증**:
+     - `compile_applet` (웹 번들 컴파일) 및 `lint_applet` (`tsc --noEmit` 정적 분석) 모두 0 오류 완벽 통과.

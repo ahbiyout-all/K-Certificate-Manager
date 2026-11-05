@@ -452,9 +452,10 @@ namespace KCertManager.Wpf.ViewModels
 
             if (isAllSelfCopy)
             {
+                try { System.Media.SystemSounds.Hand.Play(); } catch { }
                 MessageBox.Show(
-                    $"[자가 복사 금지]\n\n선택한 모든 인증서가 이미 목적지 드라이브({targetDriveName})의 동일한 경로에 보관 중인 원본입니다.\n\n자기 자신으로의 복사는 금지되어 있으니, 목적지 목록에서 연결된 이동식 USB 메모리 등 다른 드라이브를 선택해 주세요.",
-                    "자가 복사 차단 안내",
+                    $"[자가 복사 금지 / 복사 경로 오류]\n\n선택한 모든 인증서가 이미 목적지 드라이브({targetDriveName})의 동일한 경로에 보관 중인 원본입니다.\n\n동일 위치로의 자가 복사는 원본 훼손 방지를 위해 제한되오니, 목적지 목록에서 연결된 이동식 USB 메모리 등 다른 드라이브를 선택해 주세요.",
+                    "복사 경로 오류 - 자가 복사 차단 안내",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;

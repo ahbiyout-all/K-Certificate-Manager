@@ -85,7 +85,7 @@ english.LaunchWpfApp=Launch C# WPF Desktop App
 english.LaunchWebApp=Launch Web Version
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 ; ==============================================================================
 ; [Files] Section: 슬림화 및 정규 개별 필수 파일 설치 명세 (Unpacked Multi-File)

@@ -21,6 +21,7 @@ namespace KCertManager.Wpf.Views
                 ChkSoundEnabled.IsChecked = _vm.IsSoundEnabled;
                 SliderSoundVolume.Value = _vm.SoundVolume;
                 TxtSoundVolume.Text = $"{_vm.SoundVolume}%";
+                ChkShowHeaderSoundBar.IsChecked = _vm.ShowHeaderSoundBar;
 
                 switch (_vm.CurrentTheme?.ToLowerInvariant())
                 {
@@ -69,6 +70,12 @@ namespace KCertManager.Wpf.Views
                 _vm.SoundVolume = 40;
                 SliderSoundVolume.Value = 40;
             }
+        }
+
+        private void ChkShowHeaderSoundBar_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing || _vm == null) return;
+            _vm.ShowHeaderSoundBar = ChkShowHeaderSoundBar.IsChecked == true;
         }
 
         private void SliderSoundVolume_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -130,6 +137,7 @@ namespace KCertManager.Wpf.Views
             _isInitializing = true;
             _vm.IsSoundEnabled = true;
             _vm.SoundVolume = 40;
+            _vm.ShowHeaderSoundBar = false;
             _vm.CurrentTheme = "dark";
             _vm.IsSimpleMode = true;
             _vm.DontShowStartupWorkflowAgain = false;
@@ -138,6 +146,7 @@ namespace KCertManager.Wpf.Views
             ChkSoundEnabled.IsChecked = true;
             SliderSoundVolume.Value = 40;
             TxtSoundVolume.Text = "40%";
+            ChkShowHeaderSoundBar.IsChecked = false;
             RbThemeDark.IsChecked = true;
             RbModeSimple.IsChecked = true;
             ChkDontShowStartupWorkflowAgain.IsChecked = false;

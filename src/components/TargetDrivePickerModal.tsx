@@ -16,6 +16,7 @@ import {
 import { DiskDrive, CertificateItem } from '../types';
 import { filterPhysicalDrivesOnly, isSameDriveSelfCopy } from '../utils/driveFilter';
 import { getDriveColorInfo } from '../utils/driveColors';
+import { getDriveBadgeStyle } from '../utils/driveBadgeUtils';
 import { detectDuplicateCertificates } from '../utils/backupService';
 import { ShieldAlert } from 'lucide-react';
 
@@ -153,19 +154,8 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
                 ? detectDuplicateCertificates(selectedCerts, existingCertificates, drive)
                 : { hasDuplicates: false, conflicts: [] };
 
-              let badgeColor = 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
-              let badgeLabel = drive.deviceKindLabel || (isRemovable ? '이동식 USB' : '내장 디스크');
-
-              if (drive.deviceKind === 'external_ssd') {
-                badgeColor = 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/80 dark:text-purple-300 dark:border-purple-800';
-                badgeLabel = '외장 SSD';
-              } else if (drive.deviceKind === 'fast_usb') {
-                badgeColor = 'bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-950/80 dark:text-cyan-300 dark:border-cyan-800';
-                badgeLabel = '고속 USB 메모리';
-              } else if (isRemovable) {
-                badgeColor = 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-800';
-                badgeLabel = '이동식 USB';
-              }
+              const style = getDriveBadgeStyle(drive);
+              const badgeLabel = drive.deviceKindLabel || style.typeLabel;
 
               return (
                 <div
@@ -174,53 +164,41 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
                   className={`p-3.5 rounded-xl border-2 transition-all cursor-pointer relative flex items-center justify-between gap-3 active:scale-[0.99] ${
                     isSelected
                       ? isDriveSelfCopy
-                        ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-950/40 ring-2 ring-rose-500/30 shadow-md'
-                        : 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/50 ring-2 ring-blue-500/30 shadow-md'
+                        ? 'border-rose-500 bg-rose-50/70 dark:bg-rose-950/40 ring-2 ring-rose-500/30 shadow-md'
+                        : style.cardSelectedClass
                       : isDriveSelfCopy
                         ? 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 hover:border-rose-300'
-                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/90 hover:border-blue-400 hover:bg-blue-50/30 shadow-2xs'
+                        : `${style.cardNormalClass} shadow-2xs`
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                       isSelected
-                        ? 'bg-blue-600 text-white shadow-xs'
+                        ? style.iconBgClass
                         : isRemovable
-                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'
-                          : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                          ? 'bg-emerald-100 text-emerald-950 dark:bg-emerald-900/50 dark:text-emerald-200'
+                          : 'bg-slate-100 text-slate-900 dark:bg-slate-700 dark:text-slate-200'
                     }`}>
                       {isRemovable ? <Usb className="w-5 h-5" /> : <HardDrive className="w-5 h-5" />}
                     </div>
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {(() => {
-                          const dColor = getDriveColorInfo(drive.letter);
-                          return (
-                            <span
-                              className="text-xs font-mono font-extrabold px-2 py-0.5 rounded border shadow-2xs"
-                              style={{
-                                backgroundColor: dColor.bgHex,
-                                borderColor: dColor.borderHex,
-                                color: '#FFFFFF',
-                              }}
-                            >
-                              {drive.letter}
-                            </span>
-                          );
-                        })()}
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[180px]">
+                        <span className={style.letterBadgeClass}>
+                          {drive.letter}
+                        </span>
+                        <span className="text-xs font-extrabold text-slate-950 dark:text-slate-100 truncate max-w-[180px]">
                           {drive.name}
                         </span>
-                        <span className={`text-[10px] px-1.5 py-0.2 rounded font-extrabold border ${badgeColor}`}>
+                        <span className={style.typeBadgeClass}>
                           {badgeLabel}
                         </span>
                       </div>
 
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
-                        <span>여유 공간: <strong className="text-slate-800 dark:text-slate-200">{drive.freeSpace}</strong></span>
+                      <div className="text-[11px] text-slate-700 dark:text-slate-300 mt-1 flex items-center gap-2 flex-wrap font-medium">
+                        <span>여유 공간: <strong className="text-slate-950 dark:text-slate-100 font-extrabold">{drive.freeSpace}</strong></span>
                         {drive.totalSpace && (
-                          <span className="text-slate-400 font-mono">/ {drive.totalSpace}</span>
+                          <span className="text-slate-600 dark:text-slate-400 font-mono">/ {drive.totalSpace}</span>
                         )}
                       </div>
                     </div>

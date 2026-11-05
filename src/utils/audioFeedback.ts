@@ -15,6 +15,7 @@ export interface SoundSettings {
   playOnStart: boolean;   // 시작음 사용 여부 (기본: true)
   playOnComplete: boolean;// 완료음 사용 여부 (기본: true)
   playOnError: boolean;   // 오류음 사용 여부 (기본: true)
+  showHeaderSoundBar: boolean; // 헤더 상단 사운드 가로 소리조절바 표시 여부 (기본: false)
 }
 
 export interface SoundOptions {
@@ -33,6 +34,7 @@ export const DEFAULT_SOUND_SETTINGS: SoundSettings = {
   playOnStart: true,
   playOnComplete: true,
   playOnError: true,
+  showHeaderSoundBar: false,
 };
 
 let audioCtx: AudioContext | null = null;
@@ -86,6 +88,7 @@ export function getSoundSettings(): SoundSettings {
       playOnStart: typeof parsed.playOnStart === 'boolean' ? parsed.playOnStart : true,
       playOnComplete: typeof parsed.playOnComplete === 'boolean' ? parsed.playOnComplete : true,
       playOnError: typeof parsed.playOnError === 'boolean' ? parsed.playOnError : true,
+      showHeaderSoundBar: typeof parsed.showHeaderSoundBar === 'boolean' ? parsed.showHeaderSoundBar : false,
     };
   } catch {
     return { ...DEFAULT_SOUND_SETTINGS };
@@ -103,6 +106,7 @@ export function saveSoundSettings(partial: Partial<SoundSettings>): SoundSetting
     playOnStart: typeof partial.playOnStart === 'boolean' ? partial.playOnStart : current.playOnStart,
     playOnComplete: typeof partial.playOnComplete === 'boolean' ? partial.playOnComplete : current.playOnComplete,
     playOnError: typeof partial.playOnError === 'boolean' ? partial.playOnError : current.playOnError,
+    showHeaderSoundBar: typeof partial.showHeaderSoundBar === 'boolean' ? partial.showHeaderSoundBar : current.showHeaderSoundBar,
   };
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));

@@ -59,7 +59,7 @@ import {
   simulateUsbUnmount,
   setActiveDrives 
 } from './utils/usbToPcService';
-import { isPcCertificate } from './utils/driveFilter';
+import { isPcCertificate, isSameDriveSelfCopy } from './utils/driveFilter';
 import { isNonStandardCertPath } from './utils/certPathUtils';
 import { isCertificateExpired } from './utils/certParser';
 import { getStoredActivityLogs, logActivity, clearAllActivityLogs, formatCurrentTimestamp } from './utils/activityLogger';
@@ -1858,15 +1858,37 @@ export default function App() {
       />
 
       {/* Guided Step-by-Step Workflow Motion Overlay */}
-      <GuidedWorkflowOverlay
-        workflowType={activeWorkflow}
-        onCloseWorkflow={() => setActiveWorkflow(null)}
-        selectedCertCount={selectedIds.length}
-        availableUsbCount={availableDrives.filter(d => d.type === 'removable' || d.busType === 'USB').length}
-        onOpenBackupModal={() => handleOpenGeneralBackupModal()}
-        onOpenUsbToPcModal={() => setIsUsbToPcModalOpen(true)}
-        onSelectAllCerts={handleSelectAll}
-      />
+      {(() => {
+        const guidedSelectedCerts = certificates.filter(c => selectedIds.includes(c.id));
+        const guidedTargetDrive = availableDrives.find(d => d.type === 'removable' || d.busType === 'USB') || availableDrives[0];
+        const guidedIsSelfCopy = activeWorkflow === 'pc_to_usb' && guidedTargetDrive && guidedSelectedCerts.length > 0 && guidedSelectedCerts.every(c => isSameDriveSelfCopy(c, guidedTargetDrive));
+        
+        const guidedPathErrorNotice = guidedIsSelfCopy
+          ? `선택한 ${guidedSelectedCerts.length}개 인증서가 모두 이미 ${guidedTargetDrive.letter} (${guidedTargetDrive.name}) 드라이브의 동일 위치에 보관 중입니다. 동일 위치 자가 복사는 제한되므로 다른 드라이브(C:, D:, 타 USB)를 선택해 주세요.`
+          : null;
+
+        const guidedDuplicateCount = guidedTargetDrive && guidedSelectedCerts.length > 0
+          ? guidedSelectedCerts.filter(c => !isSameDriveSelfCopy(c, guidedTargetDrive) && certificates.some(other => other.id !== c.id && (other.name === c.name || other.serialNumber === c.serialNumber) && ((other.sourceLocation && other.sourceLocation.includes(guidedTargetDrive.letter)) || (other.sourceDrive && other.sourceDrive.includes(guidedTargetDrive.letter))))).length
+          : 0;
+
+        const guidedDuplicateNotice = guidedDuplicateCount > 0
+          ? `대상 드라이브(${guidedTargetDrive.letter})에 이미 보관 중인 동일 인증서 ${guidedDuplicateCount}건이 감지되었습니다. [덮어쓰기], [건너뛰기], [기존 백업 보존] 중 선택하여 진행하세요.`
+          : null;
+
+        return (
+          <GuidedWorkflowOverlay
+            workflowType={activeWorkflow}
+            onCloseWorkflow={() => setActiveWorkflow(null)}
+            selectedCertCount={selectedIds.length}
+            availableUsbCount={availableDrives.filter(d => d.type === 'removable' || d.busType === 'USB').length}
+            onOpenBackupModal={() => handleOpenGeneralBackupModal()}
+            onOpenUsbToPcModal={() => setIsUsbToPcModalOpen(true)}
+            onSelectAllCerts={handleSelectAll}
+            pathErrorNotice={guidedPathErrorNotice}
+            duplicateNotice={guidedDuplicateNotice}
+          />
+        );
+      })()}
 
       {/* Environment & Sound Settings Modal (SuccessChime ON/OFF & Volume Slider) */}
       <SettingsModal

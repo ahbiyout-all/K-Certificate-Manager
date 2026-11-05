@@ -281,9 +281,10 @@ namespace KCertManager.Wpf.ViewModels
 
             if (isAllSelfCopy)
             {
+                try { System.Media.SystemSounds.Hand.Play(); } catch { }
                 MessageBox.Show(
-                    "[자가 복사 금지]\n\n선택한 모든 인증서가 이미 컴퓨터 로컬 저장소(AppData\\LocalLow 또는 C:\\GPKI)의 동일한 위치에 보관 중인 원본입니다.\n\n동일한 위치로는 복사할 수 없으니, 다른 인증서나 USB 드라이브를 선택해 주세요.",
-                    "자가 복사 차단 안내",
+                    "[자가 복사 금지 / 복사 경로 오류]\n\n선택한 모든 인증서가 이미 컴퓨터 로컬 저장소(AppData\\LocalLow 또는 C:\\GPKI)의 동일한 위치에 보관 중인 원본입니다.\n\n동일한 위치로는 자가 복사를 수행할 수 없으니, 다른 인증서나 목적지 USB 드라이브를 선택해 주세요.",
+                    "복사 경로 오류 - 자가 복사 차단 안내",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;

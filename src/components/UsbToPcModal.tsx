@@ -34,6 +34,7 @@ import {
 import { formatUserErrorMessage, parseUserFriendlyError } from '../utils/userFriendlyError';
 import { playStartSound, playCompletionSound, playErrorSound } from '../utils/audioFeedback';
 import { SuccessCelebration } from './SuccessCelebration';
+import { getDriveBadgeStyle } from '../utils/driveBadgeUtils';
 import { CopyErrorAlertModal, CopyErrorContext } from './CopyErrorAlertModal';
 
 interface UsbToPcModalProps {
@@ -667,69 +668,61 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                           .map(item => {
                             const isSelected = selectedUsbDrive === item.letterClean;
                             const hasCerts = item.certCount > 0;
-                            const kind = item.drive.deviceKindLabel || '이동식 USB';
+                            const driveBadge = getDriveBadgeStyle(item.drive);
 
                             return (
                               <button
                                 key={item.drive.id}
                                 type="button"
                                 onClick={() => handleSelectDrive(item.letterClean)}
-                                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-2 relative overflow-hidden ${
+                                className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex items-center justify-between gap-2 relative overflow-hidden ${
                                   isSelected
-                                    ? hasCerts
-                                      ? 'bg-amber-600 text-white border-amber-700 shadow-md ring-2 ring-amber-400/40'
-                                      : 'bg-blue-600 text-white border-blue-700 shadow-md ring-2 ring-blue-400/30'
+                                    ? driveBadge.cardSelectedClass
                                     : hasCerts
-                                    ? 'bg-amber-50/70 border-amber-300 text-slate-900 hover:bg-amber-100/70 shadow-2xs'
-                                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50/80 shadow-2xs opacity-80'
+                                    ? 'bg-emerald-50/80 border-emerald-400 text-slate-950 hover:bg-emerald-100/90 shadow-2xs font-extrabold'
+                                    : driveBadge.cardNormalClass
                                 }`}
                               >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                                     isSelected
-                                      ? 'bg-white/20 text-white'
+                                      ? driveBadge.iconBgClass
                                       : hasCerts
-                                      ? 'bg-amber-200 text-amber-800'
-                                      : 'bg-slate-100 text-slate-500'
+                                      ? 'bg-emerald-600 text-white font-extrabold shadow-2xs'
+                                      : 'bg-slate-200 text-slate-800'
                                   }`}>
-                                    <HardDrive className="w-4 h-4" />
+                                    <HardDrive className="w-5 h-5" />
                                   </div>
                                   <div className="min-w-0">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="text-xs font-bold truncate">
-                                        {item.drive.letter} {item.drive.name}
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className={driveBadge.letterBadgeClass}>
+                                        {item.drive.letter}
+                                      </span>
+                                      <span className="text-xs font-extrabold text-slate-950 truncate max-w-[130px]">
+                                        {item.drive.name}
                                       </span>
                                       {hasCerts && !isSelected && (
-                                        <span className="text-[9px] px-1.5 py-0.2 bg-amber-500 text-white rounded font-bold">
+                                        <span className="text-[9px] px-1.5 py-0.2 bg-emerald-600 text-white rounded font-extrabold shadow-2xs">
                                           추천
                                         </span>
                                       )}
                                     </div>
-                                    <div className={`text-[10px] truncate ${
-                                      isSelected 
-                                        ? 'text-amber-100' 
-                                        : hasCerts 
-                                        ? 'text-amber-800' 
-                                        : 'text-slate-400'
-                                    }`}>
-                                      [{kind}] 여유: {item.drive.freeSpace}
-                                      {hasCerts && (
-                                        <span className="ml-1 font-medium">
-                                          · {item.hasGov ? '공무원' : ''}{item.hasGov && item.hasBank ? '+' : ''}{item.hasBank ? '은행' : ''}
-                                        </span>
-                                      )}
+                                    <div className="text-[11px] font-semibold text-slate-800 truncate mt-1 flex items-center gap-1 flex-wrap">
+                                      <span>여유: <strong className="text-slate-950 font-extrabold">{item.drive.freeSpace}</strong></span>
+                                      <span>·</span>
+                                      <span className={driveBadge.typeBadgeClass}>
+                                        {driveBadge.typeLabel}
+                                      </span>
                                     </div>
                                   </div>
                                 </div>
 
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${
-                                  isSelected
-                                    ? 'bg-black/20 text-white'
-                                    : hasCerts
-                                    ? 'bg-amber-500 text-white shadow-xs font-extrabold'
-                                    : 'bg-slate-100 text-slate-500'
+                                <span className={`px-2.5 py-1 rounded-md text-[11px] font-extrabold shrink-0 border ${
+                                  hasCerts
+                                    ? 'bg-emerald-700 text-white border-emerald-800 shadow-2xs'
+                                    : 'bg-slate-100 text-slate-800 border-slate-300'
                                 }`}>
-                                  {hasCerts ? `✨ 인증서 ${item.certCount}건` : '인증서 없음'}
+                                  {hasCerts ? `✨ 인증서 ${item.certCount}건` : '0건'}
                                 </span>
                               </button>
                             );

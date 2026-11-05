@@ -253,55 +253,57 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {/* Horizontal Sound Volume Slider Bar & Mute Toggle */}
-        <div 
-          className="flex items-center bg-slate-100/95 hover:bg-slate-100 px-2 py-1 rounded-lg border border-slate-200/90 gap-1.5 shadow-2xs transition-colors"
-          title="복사 성공 알림음(SuccessChime) 실시간 볼륨 조절 및 음소거 토글"
-        >
-          <button
-            type="button"
-            onClick={handleToggleSound}
-            className="text-slate-600 hover:text-blue-600 transition-colors p-0.5 rounded cursor-pointer"
-            title={soundSettings.enabled ? "성공 알림음 음소거 (Mute)" : "성공 알림음 켜기 (Unmute)"}
-            aria-label="성공 알림음 켜기/끄기 토글"
+        {/* Horizontal Sound Volume Slider Bar & Mute Toggle (Shown when showHeaderSoundBar setting is enabled) */}
+        {soundSettings.showHeaderSoundBar && (
+          <div 
+            className="flex items-center bg-slate-100/95 hover:bg-slate-100 px-2 py-1 rounded-lg border border-slate-200/90 gap-1.5 shadow-2xs transition-colors"
+            title="복사 성공 알림음(SuccessChime) 실시간 볼륨 조절 및 음소거 토글"
           >
-            {soundSettings.enabled && soundSettings.volume > 0 ? (
-              soundSettings.volume > 50 ? (
-                <Volume2 className="w-3.5 h-3.5 text-blue-600" />
+            <button
+              type="button"
+              onClick={handleToggleSound}
+              className="text-slate-600 hover:text-blue-600 transition-colors p-0.5 rounded cursor-pointer"
+              title={soundSettings.enabled ? "성공 알림음 음소거 (Mute)" : "성공 알림음 켜기 (Unmute)"}
+              aria-label="성공 알림음 켜기/끄기 토글"
+            >
+              {soundSettings.enabled && soundSettings.volume > 0 ? (
+                soundSettings.volume > 50 ? (
+                  <Volume2 className="w-3.5 h-3.5 text-blue-600" />
+                ) : (
+                  <Volume1 className="w-3.5 h-3.5 text-blue-600" />
+                )
               ) : (
-                <Volume1 className="w-3.5 h-3.5 text-blue-600" />
-              )
-            ) : (
-              <VolumeX className="w-3.5 h-3.5 text-rose-500" />
-            )}
-          </button>
-          <span className="text-[11px] font-bold text-slate-500 hidden md:inline select-none">알림음:</span>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="5"
-            value={soundSettings.enabled ? soundSettings.volume : 0}
-            onChange={handleVolumeChange}
-            onInput={handleVolumeChange}
-            aria-label="성공 알림음 볼륨 가로 슬라이더 바"
-            title={`알림음 볼륨: ${soundSettings.enabled ? `${soundSettings.volume}%` : '음소거'}`}
-            className="w-16 sm:w-20 md:w-24 h-1.5 bg-slate-300 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"
-          />
-          <span className="text-[11px] font-mono font-bold text-slate-700 w-7 sm:w-8 text-right select-none">
-            {soundSettings.enabled && soundSettings.volume > 0 ? `${soundSettings.volume}%` : 'OFF'}
-          </span>
-          <button
-            type="button"
-            onClick={handlePreviewChime}
-            disabled={isPlayingPreview}
-            className="text-slate-400 hover:text-blue-600 p-0.5 rounded transition-colors cursor-pointer disabled:opacity-50"
-            title="사운드 피드백 테스트 재생 (완료음 미리듣기)"
-            aria-label="사운드 피드백 테스트 재생"
-          >
-            <Play className={`w-3 h-3 ${isPlayingPreview ? 'text-blue-600 scale-125' : ''}`} />
-          </button>
-        </div>
+                <VolumeX className="w-3.5 h-3.5 text-rose-500" />
+              )}
+            </button>
+            <span className="text-[11px] font-bold text-slate-500 hidden md:inline select-none">알림음:</span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              value={soundSettings.enabled ? soundSettings.volume : 0}
+              onChange={handleVolumeChange}
+              onInput={handleVolumeChange}
+              aria-label="성공 알림음 볼륨 가로 슬라이더 바"
+              title={`알림음 볼륨: ${soundSettings.enabled ? `${soundSettings.volume}%` : '음소거'}`}
+              className="w-16 sm:w-20 md:w-24 h-1.5 bg-slate-300 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"
+            />
+            <span className="text-[11px] font-mono font-bold text-slate-700 w-7 sm:w-8 text-right select-none">
+              {soundSettings.enabled && soundSettings.volume > 0 ? `${soundSettings.volume}%` : 'OFF'}
+            </span>
+            <button
+              type="button"
+              onClick={handlePreviewChime}
+              disabled={isPlayingPreview}
+              className="text-slate-400 hover:text-blue-600 p-0.5 rounded transition-colors cursor-pointer disabled:opacity-50"
+              title="사운드 피드백 테스트 재생 (완료음 미리듣기)"
+              aria-label="사운드 피드백 테스트 재생"
+            >
+              <Play className={`w-3 h-3 ${isPlayingPreview ? 'text-blue-600 scale-125' : ''}`} />
+            </button>
+          </div>
+        )}
 
         {/* Prominent Settings Modal Button */}
         {onOpenSettings && (
