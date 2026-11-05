@@ -518,9 +518,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-slate-100 hover:text-blue-300 flex items-center gap-0.5 hover:underline font-medium truncate max-w-[130px]"
-                title="CISNet 공식 홈페이지 방문"
+                title="(주)청운정보시스템 공식 홈페이지 방문"
               >
-                <span>CISNet (씨아이에스넷)</span>
+                <span>(주)청운정보시스템</span>
                 <ExternalLink className="w-2.5 h-2.5 shrink-0" />
               </a>
             </div>

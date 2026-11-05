@@ -32,7 +32,7 @@ import {
   simulateUsbMount
 } from '../utils/usbToPcService';
 import { formatUserErrorMessage, parseUserFriendlyError } from '../utils/userFriendlyError';
-import { playSuccessChime } from '../utils/audioFeedback';
+import { playStartSound, playCompletionSound, playErrorSound } from '../utils/audioFeedback';
 import { SuccessCelebration } from './SuccessCelebration';
 import { CopyErrorAlertModal, CopyErrorContext } from './CopyErrorAlertModal';
 
@@ -260,6 +260,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
     setProgress(15);
     setLogs(['[초기화] USB ➔ 컴퓨터(PC) 역방향 인증서 복사 프로세스 준비 중...']);
     setErrorMessage(null);
+    playStartSound();
 
     try {
       await new Promise(r => setTimeout(r, 400));
@@ -295,7 +296,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
         `[자동 새로고침 완료] 내 컴퓨터(PC) 로컬 인증서 보관함 목록이 자동으로 새로고침되었습니다.`
       ]);
       setImportResult(res);
-      playSuccessChime();
+      playCompletionSound();
       setShowCelebration(true);
 
       // Trigger success callback to add to main certificates list
@@ -304,6 +305,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
         `${certsToCopy.length}명의 인증서가 내 컴퓨터(C:\\Users\\${targetUsername}\\AppData\\LocalLow)로 안전하게 복사되었습니다.`
       );
     } catch (err: any) {
+      playErrorSound();
       const errInfo = parseUserFriendlyError(err, '인증서 컴퓨터 복사');
       setErrorMessage(errInfo.fullDisplay);
       setCopyErrorModalInfo({

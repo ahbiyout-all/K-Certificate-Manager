@@ -53,38 +53,52 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="작업 완료 알림음 사용" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                <TextBlock Text="인증서 전송 및 복사 성공 시 경쾌한 알림음을 재생합니다." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Text="단계별 사운드 피드백 (시작음 / 완료음 / 오류음)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="인증서 복사 및 백업 작업 착수(시작음), 성공 완료(완료음), 오류/차단(오류음) 단계별 음향을 지원합니다." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>
                             <CheckBox x:Name="ChkSoundEnabled" Grid.Column="1" VerticalAlignment="Center"
                                       Checked="ChkSoundEnabled_Changed" Unchecked="ChkSoundEnabled_Changed"/>
                         </Grid>
 
                         <!-- Volume Horizontal Slider -->
-                        <Grid Margin="0,0,0,8">
+                        <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="45"/>
-                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBlock Text="알림음 볼륨:" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="마스터 볼륨:" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource TextPrimaryBrush}"/>
 
                             <Slider x:Name="SliderSoundVolume" Grid.Column="1" Minimum="0" Maximum="100" SmallChange="5" LargeChange="10"
                                     VerticalAlignment="Center" ValueChanged="SliderSoundVolume_ValueChanged"/>
 
                             <TextBlock x:Name="TxtSoundVolume" Grid.Column="2" Text="40%" FontSize="12" FontWeight="Bold"
-                                       Foreground="{DynamicResource AccentTextBrush}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0"/>
+                                       Foreground="{DynamicResource AccentTextBrush}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,4,0"/>
+                        </Grid>
 
-                            <Button x:Name="BtnTestSound" Grid.Column="3" Click="BtnTestSound_Click"
-                                    Style="{StaticResource SecondaryButton}" Padding="10,4" ToolTip="알림음 미리듣기">
+                        <!-- Phase Test Buttons -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <TextBlock Text="음향 미리듣기:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Button x:Name="BtnTestStartSound" Click="BtnTestStartSound_Click" Style="{StaticResource SecondaryButton}" Padding="8,3" Margin="0,0,6,0" ToolTip="시작음 테스트 재생 (작업 착수 알림)">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="▶" Margin="0,0,4,0" FontSize="10" VerticalAlignment="Center"/>
-                                    <TextBlock Text="미리듣기" FontSize="11" VerticalAlignment="Center"/>
+                                    <TextBlock Text="🚀" Margin="0,0,4,0" FontSize="10" VerticalAlignment="Center"/>
+                                    <TextBlock Text="시작음" FontSize="11" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
-                        </Grid>
+                            <Button x:Name="BtnTestSound" Click="BtnTestSound_Click" Style="{StaticResource SecondaryButton}" Padding="8,3" Margin="0,0,6,0" ToolTip="완료음 테스트 재생 (성공 완료 알림)">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🎉" Margin="0,0,4,0" FontSize="10" VerticalAlignment="Center"/>
+                                    <TextBlock Text="완료음" FontSize="11" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="BtnTestErrorSound" Click="BtnTestErrorSound_Click" Style="{StaticResource SecondaryButton}" Padding="8,3" ToolTip="오류음 테스트 재생 (실패/차단 알림)">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="⚠️" Margin="0,0,4,0" FontSize="10" VerticalAlignment="Center"/>
+                                    <TextBlock Text="오류음" FontSize="11" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

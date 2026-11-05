@@ -84,9 +84,19 @@ namespace KCertManager.Wpf.Views
             }
         }
 
+        private void BtnTestStartSound_Click(object sender, RoutedEventArgs e)
+        {
+            _vm?.PlayTestSound("start");
+        }
+
         private void BtnTestSound_Click(object sender, RoutedEventArgs e)
         {
-            _vm?.PlayTestSound();
+            _vm?.PlayTestSound("complete");
+        }
+
+        private void BtnTestErrorSound_Click(object sender, RoutedEventArgs e)
+        {
+            _vm?.PlayTestSound("error");
         }
 
         private void RbTheme_Checked(object sender, RoutedEventArgs e)

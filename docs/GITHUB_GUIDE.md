@@ -11,7 +11,7 @@
 - **이슈 트래커 (Issues)**: [https://github.com/AhBiYout-all/K-Certificate-Manager/issues](https://github.com/AhBiYout-all/K-Certificate-Manager/issues)
 - **릴리스 저장소 (Releases)**: [https://github.com/AhBiYout-all/K-Certificate-Manager/releases](https://github.com/AhBiYout-all/K-Certificate-Manager/releases)
 - **소유자/관리자**: AhBiYout (GitHub: [@AhBiYout-all](https://github.com/AhBiYout-all))
-- **소속**: [(주)씨아이에스넷 (CISNet)](https://www.cisnet.co.kr)
+- **소속**: [(주)청운정보시스템 (cisnet.co.kr)](https://www.cisnet.co.kr)
 - **라이선스**: Free Use / MIT License (한국어 `LICENSE_KR.txt` & 영어 `LICENSE_EN.txt` 2종 라이선스 공식 채택)
 
 ---

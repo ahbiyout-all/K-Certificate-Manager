@@ -342,7 +342,7 @@ export const DesktopAppModal: React.FC<DesktopAppModalProps> = ({ isOpen, onClos
               rel="noreferrer" 
               className="text-blue-600 hover:underline flex items-center gap-1"
             >
-              <span>공식 홈페이지 (CISNet)</span>
+              <span>공식 홈페이지 ((주)청운정보시스템)</span>
               <ExternalLink className="w-3 h-3" />
             </a>
           </div>

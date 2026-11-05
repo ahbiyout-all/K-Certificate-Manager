@@ -4,7 +4,7 @@
 ;  * 중복 팩킹(동일 바이너리 중복, 와일드카드 중복, 스크립트 중복) 완전 제거
 ;  * 개발 전용 파일(package.json, 원본 index.html, metadata.json 등) 배포 제외
 ;  Developer: AhBiYout (GitHub: AhBiYout-all)
-;  Company:   CISNet (https://www.cisnet.co.kr)
+;  Company:   (주)청운정보시스템 (https://www.cisnet.co.kr)
 ;  Blog:      https://ahbiyoutvibe.blogspot.com/
 ; ==============================================================================
 
@@ -156,7 +156,7 @@ Name: "{group}\사용자 가이드 (User Guide)"; Filename: "{app}\docs\USER_GUI
 Name: "{group}\버전 릴리스 패치노트 (Patch Notes)"; Filename: "{app}\docs\PATCHNOTES.md"
 Name: "{group}\소프트웨어 라이선스 - 한국어 (License KR)"; Filename: "{app}\LICENSE_KR.txt"
 Name: "{group}\Software License - English (License EN)"; Filename: "{app}\LICENSE_EN.txt"
-Name: "{group}\공식 홈페이지 (CISNet)"; Filename: "{#MyAppURL}"
+Name: "{group}\공식 홈페이지 ((주)청운정보시스템)"; Filename: "{#MyAppURL}"
 Name: "{group}\개발자 기술 블로그 (AhBiYout)"; Filename: "{#MyAppSupportURL}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppNameKR}}"; Filename: "{uninstallexe}"
 

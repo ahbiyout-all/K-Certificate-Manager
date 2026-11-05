@@ -296,8 +296,8 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={handlePreviewChime}
             disabled={isPlayingPreview}
             className="text-slate-400 hover:text-blue-600 p-0.5 rounded transition-colors cursor-pointer disabled:opacity-50"
-            title="성공 알림음 테스트 재생 (미리듣기)"
-            aria-label="알림음 테스트 재생"
+            title="사운드 피드백 테스트 재생 (완료음 미리듣기)"
+            aria-label="사운드 피드백 테스트 재생"
           >
             <Play className={`w-3 h-3 ${isPlayingPreview ? 'text-blue-600 scale-125' : ''}`} />
           </button>

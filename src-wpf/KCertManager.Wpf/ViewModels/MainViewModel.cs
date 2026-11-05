@@ -677,13 +677,43 @@ namespace KCertManager.Wpf.ViewModels
             }
         }
 
-        public void PlayTestSound()
+        public void PlayTestSound(string phase = "complete")
         {
             try
             {
-                System.Media.SystemSounds.Asterisk.Play();
+                switch (phase?.ToLowerInvariant())
+                {
+                    case "start":
+                        System.Media.SystemSounds.Beep.Play();
+                        break;
+                    case "error":
+                        System.Media.SystemSounds.Hand.Play();
+                        break;
+                    case "complete":
+                    default:
+                        System.Media.SystemSounds.Asterisk.Play();
+                        break;
+                }
             }
             catch { }
+        }
+
+        public void PlayStartSound()
+        {
+            if (!IsSoundEnabled || SoundVolume <= 0) return;
+            PlayTestSound("start");
+        }
+
+        public void PlayCompletionSound()
+        {
+            if (!IsSoundEnabled || SoundVolume <= 0) return;
+            PlayTestSound("complete");
+        }
+
+        public void PlayErrorSound()
+        {
+            if (!IsSoundEnabled || SoundVolume <= 0) return;
+            PlayTestSound("error");
         }
 
         public void CopySelectedCertDetails()
@@ -1602,6 +1632,7 @@ namespace KCertManager.Wpf.ViewModels
 
             IsBusy = true;
             StatusMessage = $"선택한 {selected.Count}개 인증서를 {targetDrive.Name}로 복사 중... (처리 방식: {actualConflictOption})";
+            PlayStartSound();
 
             int success = 0;
             int skippedCount = 0;
@@ -1761,14 +1792,7 @@ namespace KCertManager.Wpf.ViewModels
             string targetTypeName = isTargetUsb ? "이동식 USB" : "로컬 디스크";
             if (success > 0)
             {
-                try 
-                { 
-                    if (IsSoundEnabled && SoundVolume > 0)
-                    {
-                        PlayTestSound();
-                    }
-                } 
-                catch { }
+                PlayCompletionSound();
 
                 // 1.8초간 복사된 행에 반짝이는 강조 효과(Highlight Animation) 적용
                 foreach (var cert in selected)
@@ -1827,6 +1851,10 @@ namespace KCertManager.Wpf.ViewModels
             }
             else
             {
+                if (success == 0)
+                {
+                    PlayErrorSound();
+                }
                 var failedItems = _backupHistory.Take(selected.Count).Where(h => !h.IsSuccess).ToList();
                 var firstFailMsg = failedItems.FirstOrDefault()?.Message ?? string.Empty;
 

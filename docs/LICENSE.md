@@ -1,12 +1,12 @@
 # K-인증서 매니저 소프트웨어 라이선스 (Software License & Legal Notice)
 
 **소프트웨어 명칭 (Product Name)**: K-Certificate Manager (K-인증서 매니저)  
-**버전 (Version)**: `v1.6.4`  
+**버전 (Version)**: `v1.8.0`  
 **라이선스 정의 언어 (License Languages)**: 한국어 (Korean) / 영어 (English) 2종 지원  
 **저작권 (Copyright)**: Copyright (c) 2026 AhBiYout. All rights reserved.  
 **개발자 (Developer)**: AhBiYout (GitHub: [https://github.com/AhBiYout-all](https://github.com/AhBiYout-all))  
 **공식 블로그 (Official Blog)**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)  
-**회사 홈페이지 (Company)**: (주)씨아이에스넷 CISNet ([https://www.cisnet.co.kr/](https://www.cisnet.co.kr/))
+**회사 홈페이지 (Company)**: (주)청운정보시스템 ([https://www.cisnet.co.kr/](https://www.cisnet.co.kr/))
 
 > 📄 **라이선스 파일 구성 (2종 언어 정의)**
 > - **한국어 전용 정의**: `LICENSE_KR.txt` (Inno Setup 한국어 설치 마법사 및 한국어 약관)
@@ -104,5 +104,5 @@ This software incorporates the following open source software components and com
 ## 📞 개발자 및 공식 안내 (Contact & Developer Information)
  
 - **개발자 (Developer)**: AhBiYout
-- **회사 홈페이지 (Company Website)**: [http://www.cisnet.co.kr/](http://www.cisnet.co.kr/) (CISNet)
+- **회사 홈페이지 (Company Website)**: [http://www.cisnet.co.kr/](http://www.cisnet.co.kr/) ((주)청운정보시스템)
 - **공식 기술 블로그 (Official Blog)**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)

@@ -56,7 +56,7 @@ import {
   UsbRetryResult
 } from '../utils/usbToPcService';
 import { parseUserFriendlyError, formatUserErrorMessage } from '../utils/userFriendlyError';
-import { playSuccessChime } from '../utils/audioFeedback';
+import { playStartSound, playCompletionSound, playErrorSound } from '../utils/audioFeedback';
 import { SuccessCelebration } from './SuccessCelebration';
 import { isSameDriveSelfCopy } from '../utils/driveFilter';
 
@@ -394,6 +394,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     setRetryDelayMs(0);
     setRetryHistory([]);
     setLogs(['[사전 점검 완료] 대상 드라이브 쓰기 권한 확인 및 자동 복구 엔진(최대 3회) 가동...']);
+    playStartSound();
 
     try {
       const retryResult = await executeUsbOperationWithRetry<BackupResult>(
@@ -512,7 +513,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         ]);
 
         setBackupResult(retryResult.data);
-        playSuccessChime();
+        playCompletionSound();
         setShowCelebration(true);
 
         // Record history
@@ -528,6 +529,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           retryAttemptsUsed: retryResult.attemptsUsed,
         });
       } else {
+        playErrorSound();
         const errorDetail = parseUserFriendlyError(retryResult.error, 'USB 인증서 백업');
         setLogs(prev => [
           ...prev,
@@ -549,6 +551,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         });
       }
     } catch (err: any) {
+      playErrorSound();
       const errorDetail = parseUserFriendlyError(err, 'USB 인증서 백업');
       setLogs(prev => [...prev, `[오류 발생] ${errorDetail.summary}`]);
       setDirectWriteError(errorDetail.fullDisplay);

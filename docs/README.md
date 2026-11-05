@@ -9,7 +9,7 @@
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
 - **현재 버전**: `v1.8.0` (Semantic Versioning: `1.8.0`)
 - **개발자**: AhBiYout
-- **소속**: [http://www.cisnet.co.kr/](http://www.cisnet.co.kr/) (CISNet)
+- **소속**: [(주)청운정보시스템](http://www.cisnet.co.kr/) (cisnet.co.kr)
 - **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **GitHub 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
 - **라이선스**: Free Use / MIT License — **한국어(`LICENSE_KR.txt`) 및 영어(`LICENSE_EN.txt`) 2종 라이선스 정의 사용** (개인·공공기관·기업 무료 이용 허용)

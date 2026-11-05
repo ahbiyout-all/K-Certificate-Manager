@@ -20,7 +20,7 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({ isOpen, onClose }) =
   const licenseSummaryKR = `[한국어 라이선스 정의 - LICENSE_KR.txt]
 K-Certificate Manager (K-인증서 매니저) v${APP_VERSION}
 Copyright (c) 2026 ${DEVELOPER_INFO.author} (${DEVELOPER_INFO.blog}). All rights reserved.
-Company: CISNet (${DEVELOPER_INFO.homepage})
+Company: (주)청운정보시스템 (${DEVELOPER_INFO.homepage})
 
 본 소프트웨어는 대한민국 공무원, 교직원, 금융 및 기업 사용자의 공인/공동인증서(GPKI, EPKI, NPKI) 관리 및 안전한 이동을 위해 무료(Free License)로 배포됩니다.
 1. 제1조(사용 허가): 개인, 공공기관, 교육기관, 기업 등 모든 사용자에게 영구 무료 사용 및 배포가 허가됩니다.
@@ -31,7 +31,7 @@ Company: CISNet (${DEVELOPER_INFO.homepage})
   const licenseSummaryEN = `[English License Definition - LICENSE_EN.txt]
 K-Certificate Manager v${APP_VERSION}
 Copyright (c) 2026 ${DEVELOPER_INFO.author} (${DEVELOPER_INFO.blog}). All rights reserved.
-Company: CISNet (${DEVELOPER_INFO.homepage})
+Company: (주)청운정보시스템 (${DEVELOPER_INFO.homepage})
 
 This software is permanently distributed free of charge (Free License) for civil servants, educators, financial users, and enterprise professionals to safely manage and transfer Accredited/Joint Digital Certificates (GPKI, EPKI, NPKI).
 1. Article 1 (Grant of License): Free perpetual use, copying, and distribution for individuals, public agencies, schools, and enterprises.
@@ -321,7 +321,7 @@ This software is permanently distributed free of charge (Free License) for civil
                   </button>
                 </div>
                 <p className="font-mono text-xs text-slate-600 whitespace-pre-line leading-relaxed bg-white p-3 rounded border border-slate-200">
-                  {`Copyright (c) 2026 ${DEVELOPER_INFO.author} (${DEVELOPER_INFO.blog})\nCompany: CISNet (${DEVELOPER_INFO.homepage})\nAll rights reserved.`}
+                  {`Copyright (c) 2026 ${DEVELOPER_INFO.author} (${DEVELOPER_INFO.blog})\nCompany: (주)청운정보시스템 (${DEVELOPER_INFO.homepage})\nAll rights reserved.`}
                 </p>
               </div>
 
@@ -420,7 +420,7 @@ This software is permanently distributed free of charge (Free License) for civil
                 <div className="flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-blue-400" />
                   <div>
-                    <span className="font-bold text-white block">{DEVELOPER_INFO.author} · CISNet</span>
+                    <span className="font-bold text-white block">{DEVELOPER_INFO.author} · (주)청운정보시스템</span>
                     <span className="text-[11px] text-slate-400">K-Certificate Manager (KR / EN Dual License)</span>
                   </div>
                 </div>

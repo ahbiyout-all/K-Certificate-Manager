@@ -19,8 +19,10 @@ import {
 import {
   getSoundSettings,
   saveSoundSettings,
+  playTestSound,
   playTestChime,
   SoundSettings,
+  SoundPhase,
   DEFAULT_SOUND_SETTINGS,
   SOUND_SETTINGS_CHANGED_EVENT,
 } from '../utils/audioFeedback';
@@ -98,12 +100,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }, 150);
   };
 
+  const [testingPhase, setTestingPhase] = useState<SoundPhase | null>(null);
+
   const handleTestChime = () => {
+    handleTestPhase('complete');
+  };
+
+  const handleTestPhase = (phase: SoundPhase) => {
+    setTestingPhase(phase);
     setIsPlayingTest(true);
-    playTestChime(soundSettings.enabled ? soundSettings.volume : 40);
+    playTestSound(phase, soundSettings.enabled ? soundSettings.volume : 40);
     setTimeout(() => {
+      setTestingPhase(null);
       setIsPlayingTest(false);
     }, 600);
+  };
+
+  const handleTogglePhase = (phase: 'playOnStart' | 'playOnComplete' | 'playOnError', checked: boolean) => {
+    const updated = saveSoundSettings({ [phase]: checked });
+    setSoundSettingsState(updated);
+    triggerSaveBadge();
   };
 
   const [excludeLocalLowGpki, setExcludeLocalLowGpki] = useState<boolean>(() => {
@@ -191,7 +207,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Content Body */}
         <div className="p-6 space-y-6 overflow-y-auto text-xs sm:text-sm text-slate-700 flex-1">
           
-          {/* SECTION 1: 복사 완료 알림음(SuccessChime) 설정 (User Requested Primary Feature) */}
+          {/* SECTION 1: 단계별 사운드 피드백 (시작음 / 완료음 / 오류음) 설정 */}
           <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2.5">
@@ -200,15 +216,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-900 text-sm">
-                    인증서 복사 완료 알림음 (SuccessChime)
+                    인증서 복사 및 USB 백업 사운드 피드백
                   </h4>
                   <p className="text-xs text-slate-500">
-                    PC ➔ USB 또는 USB ➔ PC 복사가 성공했을 때 청명한 하모닉 완료음(Eb5-G5-C6)을 들려줍니다.
+                    작업 단계별(시작음, 완료음, 오류음) 음향 효과로 진행 상황을 명확히 전달합니다.
                   </p>
                 </div>
               </div>
 
-              {/* Toggle Switch */}
+              {/* Master Toggle Switch */}
               <label className="relative inline-flex items-center cursor-pointer select-none shrink-0 ml-3">
                 <input
                   type="checkbox"
@@ -223,28 +239,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </label>
             </div>
 
-            {/* Volume Control Area */}
+            {/* Master Volume Control Area */}
             <div className={`space-y-3 transition-opacity ${soundSettings.enabled ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {getVolumeIcon()}
-                  <span className="font-bold text-slate-800 text-xs sm:text-sm">알림음 볼륨 크기</span>
+                  <span className="font-bold text-slate-800 text-xs sm:text-sm">마스터 볼륨 크기</span>
                   <span className="text-[11px] text-slate-400">
                     ({soundSettings.enabled ? `${soundSettings.volume}%` : '음소거'})
                   </span>
                 </div>
                 
-                {/* Audio Preview / Test Button */}
+                {/* General Preview Button */}
                 <button
                   type="button"
-                  onClick={handleTestChime}
+                  onClick={() => handleTestPhase('complete')}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:border-blue-400 hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95 ${
-                    isPlayingTest ? 'ring-2 ring-blue-500 bg-blue-50 text-blue-700 scale-95' : ''
+                    testingPhase === 'complete' ? 'ring-2 ring-blue-500 bg-blue-50 text-blue-700 scale-95' : ''
                   }`}
-                  title="현재 설정된 볼륨으로 SuccessChime 1회 재생"
+                  title="현재 설정된 볼륨으로 완료음(SuccessChime) 1회 재생"
                 >
-                  <Play className={`w-3.5 h-3.5 ${isPlayingTest ? 'text-blue-600 animate-spin' : 'text-blue-600'}`} />
-                  <span>소리 미리듣기</span>
+                  <Play className={`w-3.5 h-3.5 ${testingPhase === 'complete' ? 'text-blue-600 animate-spin' : 'text-blue-600'}`} />
+                  <span>대표음 미리듣기</span>
                 </button>
               </div>
 
@@ -283,7 +299,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         type="button"
                         onClick={() => {
                           handleVolumeChange(preset.vol);
-                          if (preset.vol > 0) playTestChime(preset.vol);
+                          if (preset.vol > 0) playTestSound('complete', preset.vol);
                         }}
                         className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer border ${
                           soundSettings.volume === preset.vol
@@ -294,6 +310,118 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         {preset.label}
                       </button>
                     ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* 3-Stage Phased Sound Effect Controls */}
+              <div className="pt-3 border-t border-slate-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                    단계별 음향 효과 개별 제어 및 미리듣기
+                  </span>
+                  <span className="text-[11px] text-slate-400">각 단계별 클릭 시 실시간 시연</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {/* Phase 1: Start Sound */}
+                  <div className={`p-3 rounded-xl border transition-all ${
+                    soundSettings.playOnStart ? 'bg-white border-blue-200 shadow-2xs' : 'bg-slate-100/60 border-slate-200 opacity-60'
+                  }`}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-bold text-xs text-blue-900 flex items-center gap-1">
+                        <span>🚀</span> 시작음 (Start)
+                      </span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={soundSettings.playOnStart}
+                          onChange={(e) => handleTogglePhase('playOnStart', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-8 h-4.5 bg-slate-300 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mb-2">
+                      복사·백업 착수 시 경쾌한 2음 상승 톤(C5➔G5)
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleTestPhase('start')}
+                      className={`w-full py-1.5 px-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                        testingPhase === 'start' ? 'ring-2 ring-blue-500 bg-blue-100' : ''
+                      }`}
+                    >
+                      <Play className={`w-3 h-3 ${testingPhase === 'start' ? 'animate-spin' : ''}`} />
+                      <span>시작음 미리듣기</span>
+                    </button>
+                  </div>
+
+                  {/* Phase 2: Completion Sound */}
+                  <div className={`p-3 rounded-xl border transition-all ${
+                    soundSettings.playOnComplete ? 'bg-white border-emerald-200 shadow-2xs' : 'bg-slate-100/60 border-slate-200 opacity-60'
+                  }`}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-bold text-xs text-emerald-900 flex items-center gap-1">
+                        <span>🎉</span> 완료음 (Complete)
+                      </span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={soundSettings.playOnComplete}
+                          onChange={(e) => handleTogglePhase('playOnComplete', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-8 h-4.5 bg-slate-300 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-600"></div>
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mb-2">
+                      정상 완료 시 청명한 3음 하모닉 차임(Eb5➔G5➔C6)
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleTestPhase('complete')}
+                      className={`w-full py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                        testingPhase === 'complete' ? 'ring-2 ring-emerald-500 bg-emerald-100' : ''
+                      }`}
+                    >
+                      <Play className={`w-3 h-3 ${testingPhase === 'complete' ? 'animate-spin' : ''}`} />
+                      <span>완료음 미리듣기</span>
+                    </button>
+                  </div>
+
+                  {/* Phase 3: Error Sound */}
+                  <div className={`p-3 rounded-xl border transition-all ${
+                    soundSettings.playOnError ? 'bg-white border-amber-200 shadow-2xs' : 'bg-slate-100/60 border-slate-200 opacity-60'
+                  }`}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-bold text-xs text-amber-900 flex items-center gap-1">
+                        <span>⚠️</span> 오류음 (Error)
+                      </span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={soundSettings.playOnError}
+                          onChange={(e) => handleTogglePhase('playOnError', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-8 h-4.5 bg-slate-300 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-amber-600"></div>
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mb-2">
+                      쓰기 실패·권한 거부 시 정중한 2음 하강 톤(F4➔Db4)
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleTestPhase('error')}
+                      className={`w-full py-1.5 px-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                        testingPhase === 'error' ? 'ring-2 ring-amber-500 bg-amber-100' : ''
+                      }`}
+                    >
+                      <Play className={`w-3 h-3 ${testingPhase === 'error' ? 'animate-spin' : ''}`} />
+                      <span>오류음 미리듣기</span>
+                    </button>
                   </div>
                 </div>
               </div>

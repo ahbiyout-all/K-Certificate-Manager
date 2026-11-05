@@ -50,7 +50,7 @@
 ### [다운로드 및 배포 정보]
 - 📥 **설치 관리자 다운로드 (GitHub)**: [kcert-manager-v1.8.0-setup.exe 다운로드](https://github.com/AhBiYout-all/K-Certificate-Manager/releases/tag/v1.8.0)
 - 💻 **공식 깃허브 소스코드**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
-- 🌐 **개발사 공식 홈페이지**: [(주)씨아이에스넷 (CISNet)](http://www.cisnet.co.kr/)
+- 🌐 **개발사 공식 홈페이지**: [(주)청운정보시스템 (cisnet.co.kr)](http://www.cisnet.co.kr/)
 - 📝 **공식 블로그**: [AhBiYout Vibe Blog](https://ahbiyoutvibe.blogspot.com/)
 
 ---
@@ -66,7 +66,7 @@
 ---
 
 ### [추천 검색 태그]
-공동인증서, 공인인증서복사, GPKI, EPKI, NPKI, USB인증서복사, 인증서백업, KCertCore, 순수창작DLL, 가로바스크롤, 고대비툴팁, K인증서매니저, 무료인증서관리프로그램, 행정전자서명, 오픈소스보안, 씨아이에스넷
+공동인증서, 공인인증서복사, GPKI, EPKI, NPKI, USB인증서복사, 인증서백업, KCertCore, 순수창작DLL, 가로바스크롤, 고대비툴팁, K인증서매니저, 무료인증서관리프로그램, 행정전자서명, 오픈소스보안, 청운정보시스템
 
 ---
 
@@ -150,7 +150,7 @@
     <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
       <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #64748b; width: 140px;">소프트웨어 버전</td><td style="color: #1e293b; font-weight: bold;">v1.8.0 (Semantic Versioning 2.0.0 MINOR)</td></tr>
       <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #64748b;">배포 라이선스</td><td style="color: #059669; font-weight: bold;">Free Use / MIT License (개인·기업·공공기관 무료)</td></tr>
-      <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #64748b;">개발사 / 소속</td><td><a href="http://www.cisnet.co.kr/" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: 500;">(주)씨아이에스넷 (CISNet)</a> · 개발자: AhBiYout</td></tr>
+      <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #64748b;">개발사 / 소속</td><td><a href="http://www.cisnet.co.kr/" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: 500;">(주)청운정보시스템</a> · 개발자: AhBiYout</td></tr>
       <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #64748b;">소스코드 저장소</td><td><a href="https://github.com/AhBiYout-all/K-Certificate-Manager" target="_blank" style="color: #2563eb; text-decoration: none;">GitHub @AhBiYout-all/K-Certificate-Manager</a></td></tr>
       <tr><td style="padding: 8px 0; font-weight: bold; color: #64748b;">기술 블로그</td><td><a href="https://ahbiyoutvibe.blogspot.com/" target="_blank" style="color: #2563eb; text-decoration: none;">AhBiYout Vibe 공식 블로그</a></td></tr>
     </table>

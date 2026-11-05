@@ -5,7 +5,7 @@
 Version: v1.4.5
 Copyright (c) 2026 AhBiYout (https://ahbiyoutvibe.blogspot.com/)
 Developer: AhBiYout
-Company: CISNet (http://www.cisnet.co.kr/)
+Company: (주)청운정보시스템 (http://www.cisnet.co.kr/)
 All rights reserved.
 
 본 소프트웨어는 대한민국 공무원, 교직원, 금융 이용자 및 기업 사용자의
@@ -56,6 +56,6 @@ All rights reserved.
 ================================================================================
 문의 및 개발자 정보
 - 개발자 (Developer): AhBiYout (GitHub: https://github.com/AhBiYout-all)
-- 회사 홈페이지 (Company): http://www.cisnet.co.kr/ (CISNet)
+- 회사 홈페이지 (Company): http://www.cisnet.co.kr/ ((주)청운정보시스템)
 - 공식 기술 블로그 (Blog): https://ahbiyoutvibe.blogspot.com/
 ================================================================================

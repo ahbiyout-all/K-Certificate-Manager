@@ -10,12 +10,62 @@
 - **현재 버전**: `v1.8.0` (Semantic Versioning 2.0.0 MINOR Release)
 - **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
 - **구글 공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
-- **공식 홈페이지**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr) ((주)씨아이에스넷 CISNet)
+- **공식 홈페이지**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr) ((주)청운정보시스템)
 - **대상 환경**: Windows 10/11, Web Management Console, CRLF 빌드 스크립트
 
 ---
 
 ## 📅 작업 기록 상세 내역
+
+### 📝 [작업 차수 128] 인증서 복사 및 USB 백업 단계별 사운드 피드백 (시작음, 완료음, 오류음) 구현
+- **작업 일시**: 2026-11-05 18:55 KST
+- **요청 사항**:
+  - "인증서 복사 및 USB 백업 완료 시 사용자에게 작업 완료를 명확히 알릴 수 있도록, 사운드 피드백 기능에 단계별 음향 효과(시작음, 완료음, 오류음)를 추가 구현하세요."
+- **구현 내용**:
+  1. **Web Audio 음향 합성 유틸리티 확장 (`src/utils/audioFeedback.ts`)**:
+     - **시작음 (`playStartSound`)**: 작업 착수 시 울리는 경쾌한 2음 상승 아르페지오 (C5: 523.25Hz ➔ G5: 783.99Hz, staccato envelope).
+     - **완료음 (`playCompletionSound` / `playSuccessChime`)**: 복사·백업 성공 완료 시 청명한 3음 하모닉 상승 차임 (Eb5: 622.25Hz ➔ G5: 783.99Hz ➔ C6: 1046.50Hz).
+     - **오류음 (`playErrorSound`)**: 복사 실패, 권한 거부, 쓰기 금지 시 정중하고 명확한 2음 하강 주의 톤 (F4: 349.23Hz ➔ Db4: 277.18Hz).
+     - 단계별 개별 토글(`playOnStart`, `playOnComplete`, `playOnError`) 및 미리듣기 기능(`playTestSound`) 지원.
+  2. **작업 모달 연동**:
+     - `BackupModal.tsx`: PC ➔ USB 백업 시작 시 `playStartSound()`, 성공 완료 시 `playCompletionSound()`, 실패/재시도 초과 시 `playErrorSound()` 재생.
+     - `UsbToPcModal.tsx`: USB ➔ PC 복원 시작 시 `playStartSound()`, 성공 완료 시 `playCompletionSound()`, 예외/오류 시 `playErrorSound()` 재생.
+     - `GuidedWorkflowOverlay.tsx`: 단계 전환 및 착수 시 `playStartSound()`, 최종 완료 시 `playCompletionSound()` 재생.
+  3. **환경설정 UI 고도화 (`SettingsModal.tsx`)**:
+     - '단계별 사운드 피드백 개별 제어 및 미리듣기' 그리드 카드 추가:
+       - 🚀 [시작음 미리듣기] & 개별 스위치
+       - 🎉 [완료음 미리듣기] & 개별 스위치
+       - ⚠️ [오류음 미리듣기] & 개별 스위치
+  4. **C# .NET WPF 데스크톱 앱 연동 (`src-wpf/`)**:
+     - `MainViewModel.cs`: `PlayStartSound()`, `PlayCompletionSound()`, `PlayErrorSound()`, `PlayTestSound(phase)` 구현 및 `CopySelectedCertificatesAsync` 흐름에 결합.
+     - `SettingsDialog.xaml` / `.xaml.cs`: 마스터 볼륨 및 3종 단계별 미리듣기([시작음], [완료음], [오류음]) 버튼 추가.
+- **검증 결과**:
+  - `compile_applet` 및 `lint_applet` 통과 (0 errors).
+  - XAML XML 유효성 파싱 통과.
+
+### 📝 [작업 차수 127] 소속 회사 명칭 변경: (주)청운정보시스템 (cisnet.co.kr)
+- **작업 일시**: 2026-11-05 18:40 KST
+- **요청 사항**:
+  - "소속회사: (주)청운정보시스템 ( cisnet.co.kr ) 변경."
+- **변경 내역**:
+  1. **웹 애플리케이션 (`src/`)**:
+     - `src/version.ts`: `affiliation`을 `'(주)청운정보시스템 (cisnet.co.kr)'`로 갱신.
+     - `src/components/Sidebar.tsx`: 좌측 사이드바 하단 회사 안내 툴팁 및 텍스트를 `(주)청운정보시스템`으로 변경.
+     - `src/components/DesktopAppModal.tsx`: 데스크톱 안내 모달 하단 공식 홈페이지 링크를 `<span>공식 홈페이지 ((주)청운정보시스템)</span>`으로 변경.
+     - `src/components/LicenseModal.tsx`: 라이선스 요약(KR/EN) 및 하단 공식 채널 표기를 `Company: (주)청운정보시스템 (http://www.cisnet.co.kr/)`으로 동기화.
+  2. **C# .NET WPF 데스크톱 앱 (`src-wpf/`)**:
+     - `AboutDialog.xaml`: 라이선스 요약 상단 회사명 및 하단 공식 링크를 `(주)청운정보시스템`으로 변경.
+     - `AboutDialog.xaml.cs`: 클립보드 복사용 라이선스 텍스트(KR/EN) 내 `Company: (주)청운정보시스템` 갱신.
+  3. **Windows 인스톨러 스크립트 (`installer.iss`)**:
+     - 헤더 주석 `Company: (주)청운정보시스템 (https://www.cisnet.co.kr)` 갱신.
+     - 시작 메뉴 프로그램 바로가기 `공식 홈페이지 ((주)청운정보시스템)` 갱신.
+  4. **루트 라이선스 문서 (`LICENSE*`)**:
+     - `LICENSE.txt`, `LICENSE_KR.txt`, `LICENSE_EN.txt` 내 `Company: (주)청운정보시스템 (http://www.cisnet.co.kr/)` 일괄 갱신.
+  5. **공식 기술 문서군 (`docs/`)**:
+     - `docs/README.md`, `docs/LICENSE.md`, `docs/USER_GUIDE.md`, `docs/BUILD_GUIDE.md`, `docs/GITHUB_GUIDE.md`, `docs/VERSIONING_POLICY.md`, `docs/BLOG_v1.8.0.md`, `docs/BLOGGER_POST_COMPOSE_MODE.md`, `docs/BLOGGER_POST_HTML_MODE.html` 내 소속 회사명 동기화.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 빌드 및 린트 정상 통과 (0 errors).
+  - XML/XAML 문법 검증 완료.
 
 ### 📝 [작업 차수 126] 시작 가이드 모션(Guided Workflow) 및 대화상자 내 자가 복제(자가 복사) 원천 차단 강화
 - **작업 일시**: 2026-11-04 19:45 KST

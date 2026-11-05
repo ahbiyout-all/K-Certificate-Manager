@@ -55,7 +55,7 @@
 
 - **공식 설치 프로그램 다운로드 (GitHub)**: [kcert-manager-v1.8.0-setup.exe](https://github.com/AhBiYout-all/K-Certificate-Manager/releases/tag/v1.8.0)
 - **GitHub 오픈소스 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
-- **개발사 공식 웹사이트**: [(주)씨아이에스넷 (CISNet)](http://www.cisnet.co.kr/)
+- **개발사 공식 웹사이트**: [(주)청운정보시스템 (cisnet.co.kr)](http://www.cisnet.co.kr/)
 - **공식 기술 블로그**: [AhBiYout Vibe Blog](https://ahbiyoutvibe.blogspot.com/)
 
 ---
@@ -70,4 +70,4 @@
 ---
 
 ### 🏷️ [추천 검색 태그]
-공동인증서, 공인인증서복사, GPKI, EPKI, NPKI, USB인증서복사, 인증서백업, KCertCore, 순수창작DLL, 가로바스크롤, 고대비툴팁, K인증서매니저, 무료인증서관리프로그램, 행정전자서명, 오픈소스보안, 씨아이에스넷
+공동인증서, 공인인증서복사, GPKI, EPKI, NPKI, USB인증서복사, 인증서백업, KCertCore, 순수창작DLL, 가로바스크롤, 고대비툴팁, K인증서매니저, 무료인증서관리프로그램, 행정전자서명, 오픈소스보안, 청운정보시스템

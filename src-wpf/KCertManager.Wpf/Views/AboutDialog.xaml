@@ -53,7 +53,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="Copyright (c) 2026 AhBiYout (https://ahbiyoutvibe.blogspot.com/). All rights reserved." FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <TextBlock Text="Company: CISNet (http://www.cisnet.co.kr/) | GitHub: https://github.com/ahbiyout-all/K-Certificate-Manager" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                    <TextBlock Text="Company: (주)청운정보시스템 (http://www.cisnet.co.kr/) | GitHub: https://github.com/ahbiyout-all/K-Certificate-Manager" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                 </StackPanel>
                 <Button x:Name="BtnCopyLicense" Grid.Column="1" Click="BtnCopyLicense_Click" Content="📋 라이선스 복사" Padding="10,5" FontSize="11" Background="{DynamicResource BgDarkBrush}" Foreground="#38BDF8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" VerticalAlignment="Center" Cursor="Hand"/>
             </Grid>
@@ -112,7 +112,7 @@
                                 <TextBlock Text="• 소속 회사 (Company): " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                 <TextBlock FontSize="11">
                                     <Hyperlink NavigateUri="http://www.cisnet.co.kr/" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#38BDF8">
-                                        http://www.cisnet.co.kr/ (CISNet)
+                                        http://www.cisnet.co.kr/ ((주)청운정보시스템)
                                     </Hyperlink>
                                 </TextBlock>
                             </StackPanel>
