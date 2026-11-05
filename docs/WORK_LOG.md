@@ -17,6 +17,26 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 129] C# .NET WPF 릴리스 빌드 오류 (CS1503, CS0103) 긴급 수정
+- **작업 일시**: 2026-11-05 19:15 KST
+- **요청 사항**:
+  - `dotnet build src-wpf/KCertManager.Wpf/KCertManager.Wpf.csproj -c Release --no-restore` 빌드 오류 해결:
+    - `MainViewModel.cs(98,49): error CS1503: Argument 1: cannot convert from 'method group' to 'System.Action<object?>'`
+    - `UsbTransferViewModel.cs(274,39): error CS0103: The name 'CertTransferEngine' does not exist in the current context`
+    - `UsbTransferViewModel.cs(305,47): error CS0103: The name 'CertTransferEngine' does not exist in the current context`
+- **원인 분석**:
+  1. `MainViewModel.cs`: `PlayTestSound(string phase = "complete")`에 기본 매개변수가 정의되면서 `RelayCommand(PlayTestSound)` 메서드 그룹 참조 시 매개변수 없는 `Action`과 `Action<object?>` 생성자 간의 형식 불일치 모호성 발생.
+  2. `UsbTransferViewModel.cs`: 자가 복제 방지 검증 로직에서 `CertTransferEngine.ResolveRelativePath`를 호출하였으나 파일 상단에 `using KCert.Core.Vault;` 네임스페이스 선언이 누락됨.
+- **조치 내역**:
+  1. `MainViewModel.cs`:
+     - `TestSoundCommand = new RelayCommand(() => PlayTestSound());` 람다식 명시적 위임으로 변경하여 생성자 모호성 원천 차단.
+     - 매개변수 없는 `PlayTestSound()` 오버로드를 명시적으로 분리 선언하여 `PlayTestSound(string phase)`와 독립적으로 깔끔하게 바인딩되도록 개선.
+  2. `UsbTransferViewModel.cs`:
+     - 파일 상단에 `using KCert.Core.Vault;` 선언 추가하여 `CertTransferEngine` 클래스 심볼 참조 정상화.
+- **검증 결과**:
+  - `src-wpf` 내 모든 XAML 및 C# 심볼 참조 검증 완료.
+  - TypeScript 웹 앱 `compile_applet` & `lint_applet` 통과 (0 errors).
+
 ### 📝 [작업 차수 128] 인증서 복사 및 USB 백업 단계별 사운드 피드백 (시작음, 완료음, 오류음) 구현
 - **작업 일시**: 2026-11-05 18:55 KST
 - **요청 사항**:

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using KCert.Core.Vault;
 using KCertManager.Wpf.Common;
 using KCertManager.Wpf.Models;
 using KCertManager.Wpf.Services;

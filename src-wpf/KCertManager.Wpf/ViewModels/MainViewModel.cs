@@ -95,7 +95,7 @@ namespace KCertManager.Wpf.ViewModels
             ShowStartupWorkflowCommand = new RelayCommand(ShowStartupWorkflowDialog);
             CloseToastCommand = new RelayCommand(() => IsToastVisible = false);
             ToggleSoundCommand = new RelayCommand(ToggleSound);
-            TestSoundCommand = new RelayCommand(PlayTestSound);
+            TestSoundCommand = new RelayCommand(() => PlayTestSound());
 
             StartGuidedWorkflowCommand = new RelayCommand<string>(StartGuidedWorkflow);
             NextGuidedStepCommand = new RelayCommand(NextGuidedStep);
@@ -677,7 +677,12 @@ namespace KCertManager.Wpf.ViewModels
             }
         }
 
-        public void PlayTestSound(string phase = "complete")
+        public void PlayTestSound()
+        {
+            PlayTestSound("complete");
+        }
+
+        public void PlayTestSound(string phase)
         {
             try
             {
