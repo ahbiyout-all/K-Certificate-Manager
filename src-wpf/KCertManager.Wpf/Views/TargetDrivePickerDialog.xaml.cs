@@ -161,8 +161,8 @@ namespace KCertManager.Wpf.Views
                 // Bold Drive Letter Badge
                 try
                 {
-                    string driveBgHex = DriveItem.GetDriveBgColorHex(drive.DriveLetterChar);
-                    string driveBorderHex = DriveItem.GetDriveBorderColorHex(drive.DriveLetterChar);
+                    string driveBgHex = drive.DriveBgColorHex;
+                    string driveBorderHex = drive.DriveBorderColorHex;
                     var letterBadge = new Border
                     {
                         CornerRadius = new CornerRadius(4),
