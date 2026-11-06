@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   X, 
   ArrowRight, 
@@ -12,7 +12,9 @@ import {
   CheckCircle2, 
   RotateCcw,
   Compass,
-  Zap
+  Zap,
+  Info,
+  Laptop
 } from 'lucide-react';
 import { BRANDING_ASSETS } from '../data/brandingAssets';
 import { getInlineDriveBadge } from '../utils/driveBadgeUtils';
@@ -26,6 +28,7 @@ interface StartupWorkflowModalProps {
   dontShowAgain?: boolean;
   onToggleDontShowAgain?: (val: boolean) => void;
   validPcCerts?: any[];
+  recentMode?: WorkflowType | null;
 }
 
 export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
@@ -35,7 +38,34 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
   dontShowAgain = false,
   onToggleDontShowAgain,
   validPcCerts = [],
+  recentMode = null,
 }) => {
+  // Track recently selected or active preview mode (PC-USB vs USB-PC)
+  const [activeTabMode, setActiveTabMode] = useState<WorkflowType>(() => {
+    try {
+      const saved = localStorage.getItem('kcert_recent_workflow_mode');
+      if (saved === 'pc_to_usb' || saved === 'usb_to_pc') return saved as WorkflowType;
+    } catch {}
+    return recentMode === 'usb_to_pc' ? 'usb_to_pc' : 'pc_to_usb';
+  });
+
+  // Synchronize when recentMode prop updates
+  useEffect(() => {
+    if (recentMode === 'pc_to_usb' || recentMode === 'usb_to_pc') {
+      setActiveTabMode(recentMode);
+    }
+  }, [recentMode]);
+
+  const handleSelect = (type: WorkflowType) => {
+    try {
+      if (type === 'pc_to_usb' || type === 'usb_to_pc') {
+        localStorage.setItem('kcert_recent_workflow_mode', type);
+        setActiveTabMode(type);
+      }
+    } catch {}
+    onSelectWorkflow(type);
+  };
+
   // Column resizing state for valid PC certificates preview table
   const DEFAULT_STARTUP_COL_WIDTHS = useMemo(() => ({
     index: 52,
@@ -125,7 +155,7 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
               수행하고자 하는 인증서 작업 모드를 선택하세요.
             </p>
             <p className="text-xs text-slate-500 leading-relaxed">
-              선택하신 작업의 순서에 맞춰 **화면 내 가이드 모션과 포커스링**이 단계별로 자동 안내됩니다.
+              선택하신 작업 모드에 맞춰 **출발지·도착지 표준 경로 검증과 화면 내 가이드 포커스링**이 단계별로 자동 안내됩니다.
             </p>
           </div>
 
@@ -134,14 +164,25 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
             {/* Card 1: PC -> USB */}
             <button
               type="button"
-              onClick={() => onSelectWorkflow('pc_to_usb')}
-              className="group relative p-5 bg-gradient-to-b from-blue-50/50 to-white hover:from-blue-100/60 hover:to-blue-50/40 rounded-2xl border-2 border-blue-200/90 hover:border-blue-500 text-left transition-all duration-200 shadow-2xs hover:shadow-xl cursor-pointer flex flex-col justify-between overflow-hidden"
+              onClick={() => handleSelect('pc_to_usb')}
+              className={`group relative p-5 bg-gradient-to-b ${
+                activeTabMode === 'pc_to_usb'
+                  ? 'from-blue-100/70 via-blue-50/50 to-white ring-2 ring-blue-500 border-blue-500 shadow-md'
+                  : 'from-blue-50/40 to-white hover:from-blue-100/60 hover:to-blue-50/40 border-blue-200/90 hover:border-blue-500'
+              } rounded-2xl border-2 text-left transition-all duration-200 shadow-2xs hover:shadow-xl cursor-pointer flex flex-col justify-between overflow-hidden`}
             >
               <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-bl-full transition-transform group-hover:scale-110 pointer-events-none" />
               
               <div className="space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-                  <Monitor className="w-6 h-6 text-white" />
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                    <Monitor className="w-6 h-6 text-white" />
+                  </div>
+                  {activeTabMode === 'pc_to_usb' && (
+                    <span className="px-2 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-extrabold shadow-2xs animate-pulse">
+                      ★ 최근 선택 모드
+                    </span>
+                  )}
                 </div>
 
                 <div>
@@ -152,8 +193,21 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                     <span>PC ➔ USB 복사하기</span>
                     <ArrowRight className="w-4 h-4 text-blue-600 group-hover:translate-x-1 transition-transform" />
                   </h3>
-                  <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1.5">
-                    컴퓨터(AppData)에 보관된 유효한 공인인증서만 자동으로 필터링하여 USB 메모리로 안전하게 복사/백업합니다.
+
+                  {/* Route Summary Pill */}
+                  <div className="mt-2 p-2 rounded-xl bg-blue-50/90 border border-blue-200 text-[11px] leading-tight space-y-1">
+                    <div className="text-blue-900 font-bold flex items-center gap-1">
+                      <span className="text-blue-600">출발:</span>
+                      <span className="font-mono text-[10.5px]">내 컴퓨터 C: (AppData / C:\GPKI)</span>
+                    </div>
+                    <div className="text-emerald-900 font-bold flex items-center gap-1">
+                      <span className="text-emerald-600">도착:</span>
+                      <span className="font-mono text-[10.5px]">이동식 USB ({'{드라이브}:\\'}NPKI·GPKI)</span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed mt-2">
+                    컴퓨터의 금융(AppData) 및 행정·공무원(정부 표준 C:\GPKI) 보관함에서 유효한 인증서를 자동 감지하여 USB 메모리에 안전하게 복사/백업합니다.
                   </p>
                 </div>
               </div>
@@ -172,14 +226,25 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
             {/* Card 2: USB -> PC */}
             <button
               type="button"
-              onClick={() => onSelectWorkflow('usb_to_pc')}
-              className="group relative p-5 bg-gradient-to-b from-emerald-50/50 to-white hover:from-emerald-100/60 hover:to-emerald-50/40 rounded-2xl border-2 border-emerald-200/90 hover:border-emerald-500 text-left transition-all duration-200 shadow-2xs hover:shadow-xl cursor-pointer flex flex-col justify-between overflow-hidden"
+              onClick={() => handleSelect('usb_to_pc')}
+              className={`group relative p-5 bg-gradient-to-b ${
+                activeTabMode === 'usb_to_pc'
+                  ? 'from-emerald-100/70 via-emerald-50/50 to-white ring-2 ring-emerald-500 border-emerald-500 shadow-md'
+                  : 'from-emerald-50/40 to-white hover:from-emerald-100/60 hover:to-emerald-50/40 border-emerald-200/90 hover:border-emerald-500'
+              } rounded-2xl border-2 text-left transition-all duration-200 shadow-2xs hover:shadow-xl cursor-pointer flex flex-col justify-between overflow-hidden`}
             >
               <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-bl-full transition-transform group-hover:scale-110 pointer-events-none" />
 
               <div className="space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-                  <Usb className="w-6 h-6 text-white" />
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                    <Usb className="w-6 h-6 text-white" />
+                  </div>
+                  {activeTabMode === 'usb_to_pc' && (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-extrabold shadow-2xs animate-pulse">
+                      ★ 최근 선택 모드
+                    </span>
+                  )}
                 </div>
 
                 <div>
@@ -190,8 +255,21 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                     <span>USB ➔ PC 가져오기</span>
                     <ArrowRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-1 transition-transform" />
                   </h3>
-                  <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1.5">
-                    USB 메모리의 인증서를 내 컴퓨터로 안전하게 복사하여 기본 보관함에 등록합니다.
+
+                  {/* Route Summary Pill */}
+                  <div className="mt-2 p-2 rounded-xl bg-emerald-50/90 border border-emerald-200 text-[11px] leading-tight space-y-1">
+                    <div className="text-emerald-900 font-bold flex items-center gap-1">
+                      <span className="text-emerald-600">출발:</span>
+                      <span className="font-mono text-[10.5px]">이동식 USB ({'{드라이브}:\\'}NPKI·GPKI)</span>
+                    </div>
+                    <div className="text-blue-900 font-bold flex items-center gap-1">
+                      <span className="text-blue-600">도착:</span>
+                      <span className="font-mono text-[10.5px]">정부 표준 C:\GPKI 및 금융 AppData</span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed mt-2">
+                    USB 메모리의 인증서를 내 컴퓨터의 올바른 정규 표준 보관함(행정공무원: C:\GPKI, 금융: AppData)으로 안전하게 가져옵니다.
                   </p>
                 </div>
               </div>
@@ -210,7 +288,7 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
             {/* Card 3: Dashboard Direct Entry */}
             <button
               type="button"
-              onClick={() => onSelectWorkflow('dashboard')}
+              onClick={() => handleSelect('dashboard')}
               className="group relative p-5 bg-gradient-to-b from-slate-50 to-white hover:from-slate-100/80 hover:to-slate-50 text-slate-800 rounded-2xl border-2 border-slate-200/90 hover:border-slate-400 text-left transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer flex flex-col justify-between overflow-hidden"
             >
               <div className="space-y-3">
@@ -226,7 +304,12 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                     <span>메인 화면 직접 진입</span>
                     <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
                   </h3>
-                  <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1.5">
+
+                  <div className="mt-2 p-2 rounded-xl bg-slate-100 border border-slate-200 text-[11px] text-slate-600 font-medium leading-tight">
+                    <span>모든 드라이브 인증서 목록, 상세 정보, 만료일 점검 및 안전 격리 휴지통 직접 관리</span>
+                  </div>
+
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed mt-2">
                     가이드 없이 전체 인증서 목록 조회, 정리 및 고급 설정 대시보드로 바로 이동합니다.
                   </p>
                 </div>
@@ -239,6 +322,178 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                 </span>
               </div>
             </button>
+          </div>
+
+          {/* Dedicated Route Flow Guide Inspector based on Recently Selected Mode */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 text-white border border-slate-700/80 shadow-md space-y-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700/60 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-ping" />
+                <h4 className="text-sm font-black text-white flex items-center gap-2">
+                  <span>⚡ 최근 선택 복사 모드 경로 가이드</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                    activeTabMode === 'pc_to_usb'
+                      ? 'bg-blue-500/20 text-blue-300 border border-blue-400/30'
+                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
+                  }`}>
+                    {activeTabMode === 'pc_to_usb' ? 'PC ➔ USB 백업 모드' : 'USB ➔ PC 가져오기 모드'}
+                  </span>
+                </h4>
+              </div>
+
+              {/* Mode switch toggle buttons */}
+              <div className="flex items-center bg-slate-950/80 p-0.5 rounded-xl border border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTabMode('pc_to_usb');
+                    try { localStorage.setItem('kcert_recent_workflow_mode', 'pc_to_usb'); } catch {}
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    activeTabMode === 'pc_to_usb'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  💻 PC ➔ USB 경로
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTabMode('usb_to_pc');
+                    try { localStorage.setItem('kcert_recent_workflow_mode', 'usb_to_pc'); } catch {}
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    activeTabMode === 'usb_to_pc'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  💾 USB ➔ PC 경로
+                </button>
+              </div>
+            </div>
+
+            {/* Route Visual Cards */}
+            {activeTabMode === 'pc_to_usb' ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-11 gap-2.5 items-center text-xs">
+                  {/* Source (5 cols) */}
+                  <div className="md:col-span-5 p-3 rounded-xl bg-slate-800/90 border border-blue-500/40 space-y-1.5">
+                    <div className="flex items-center justify-between text-blue-300 font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <Monitor className="w-3.5 h-3.5 text-blue-400" />
+                        <span>출발지 (Source): 내 컴퓨터 C: 보관함</span>
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 rounded text-blue-200 font-mono">로컬 디스크</span>
+                    </div>
+                    <div className="font-mono text-[11px] text-slate-300 space-y-0.5 pl-1 border-l-2 border-blue-500/50">
+                      <p>• <strong>금융·공동(NPKI)</strong>: C:\Users\{'{사용자}'}\AppData\LocalLow\NPKI</p>
+                      <p>• <strong className="text-blue-300">행정공무원(GPKI)</strong>: C:\GPKI\Certificate\class2 (정부 공식 위치)</p>
+                      <p>• <strong>교육전자서명(EPKI)</strong>: C:\Users\{'{사용자}'}\AppData\LocalLow\EPKI</p>
+                    </div>
+                  </div>
+
+                  {/* Arrow & Engine (1 col) */}
+                  <div className="md:col-span-1 flex flex-col items-center justify-center py-1">
+                    <div className="w-8 h-8 rounded-full bg-blue-600/30 border border-blue-400/50 flex items-center justify-center text-blue-300 font-black text-sm">
+                      ➔
+                    </div>
+                    <span className="text-[9px] text-slate-400 font-mono mt-0.5">SHA-256</span>
+                  </div>
+
+                  {/* Destination (5 cols) */}
+                  <div className="md:col-span-5 p-3 rounded-xl bg-slate-800/90 border border-emerald-500/40 space-y-1.5">
+                    <div className="flex items-center justify-between text-emerald-300 font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <Usb className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>도착지 (Destination): 이동식 USB 메모리</span>
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/20 rounded text-emerald-200 font-mono">이동식 디스크</span>
+                    </div>
+                    <div className="font-mono text-[11px] text-slate-300 space-y-0.5 pl-1 border-l-2 border-emerald-500/50">
+                      <p>• <strong>USB 표준 보관 폴더</strong>: {'{USB드라이브}:\\'}(NPKI | GPKI | EPKI)</p>
+                      <p>• <strong>타 PC 연동</strong>: 타 컴퓨터 연결 시 [이동식 디스크]에서 즉시 자동 인식</p>
+                      <p>• <strong>키 페어 동기화</strong>: signCert.der + signPri.key 무결성 100% 동봉 복사</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tip box */}
+                <div className="p-2.5 rounded-xl bg-blue-950/60 border border-blue-500/30 text-[11px] text-blue-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Info className="w-4 h-4 text-blue-400 shrink-0" />
+                    <span>내 컴퓨터 내 만료되지 않은 유효한 인증서만 선별하여 USB 메모리로 안전하게 백업합니다.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSelect('pc_to_usb')}
+                    className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-lg font-bold text-xs shrink-0 transition-colors cursor-pointer shadow-xs"
+                  >
+                    PC ➔ USB 복사 실행 ➔
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-11 gap-2.5 items-center text-xs">
+                  {/* Source (5 cols) */}
+                  <div className="md:col-span-5 p-3 rounded-xl bg-slate-800/90 border border-emerald-500/40 space-y-1.5">
+                    <div className="flex items-center justify-between text-emerald-300 font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <Usb className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>출발지 (Source): 이동식 USB 메모리</span>
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/20 rounded text-emerald-200 font-mono">이동식 디스크</span>
+                    </div>
+                    <div className="font-mono text-[11px] text-slate-300 space-y-0.5 pl-1 border-l-2 border-emerald-500/50">
+                      <p>• <strong>USB 원본 위치</strong>: {'{USB드라이브}:\\'}(GPKI | NPKI | EPKI) 보관 폴더</p>
+                      <p>• <strong>행정공무원 원본</strong>: {'{USB드라이브}:\\'}GPKI\Certificate\class2</p>
+                      <p>• <strong>금융·은행 원본</strong>: {'{USB드라이브}:\\'}NPKI\yessign (등 공인기관)</p>
+                    </div>
+                  </div>
+
+                  {/* Arrow & Engine (1 col) */}
+                  <div className="md:col-span-1 flex flex-col items-center justify-center py-1">
+                    <div className="w-8 h-8 rounded-full bg-emerald-600/30 border border-emerald-400/50 flex items-center justify-center text-emerald-300 font-black text-sm">
+                      ➔
+                    </div>
+                    <span className="text-[9px] text-slate-400 font-mono mt-0.5">정규 분류</span>
+                  </div>
+
+                  {/* Destination (5 cols) */}
+                  <div className="md:col-span-5 p-3 rounded-xl bg-slate-800/90 border border-blue-500/40 space-y-1.5">
+                    <div className="flex items-center justify-between text-blue-300 font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <Monitor className="w-3.5 h-3.5 text-blue-400" />
+                        <span>도착지 (Destination): 내 컴퓨터 표준 보관함</span>
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 rounded text-blue-200 font-mono">정부/금융 표준</span>
+                    </div>
+                    <div className="font-mono text-[11px] text-slate-300 space-y-0.5 pl-1 border-l-2 border-blue-500/50">
+                      <p>• <strong className="text-emerald-300 font-bold">행정공무원(GPKI)</strong>: C:\GPKI\Certificate\class2 (정부 공식 위치 안착)</p>
+                      <p>• <strong className="text-blue-300">금융·은행용(NPKI)</strong>: C:\Users\{'{사용자}'}\AppData\LocalLow\NPKI</p>
+                      <p>• <strong className="text-purple-300">교육전자서명(EPKI)</strong>: C:\Users\{'{사용자}'}\AppData\LocalLow\EPKI</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tip box */}
+                <div className="p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-[11px] text-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>행정공무원(GPKI)은 정부 공식 폴더(C:\GPKI)로, 금융인증서는 AppData로 정확히 자동 유도되어 NPKI 오배치가 방지됩니다.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSelect('usb_to_pc')}
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-lg font-bold text-xs shrink-0 transition-colors cursor-pointer shadow-xs"
+                  >
+                    USB ➔ PC 가져오기 실행 ➔
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Detected Valid PC Certificates Table with Horizontal & Vertical Grid Lines & Resizable Headers */}

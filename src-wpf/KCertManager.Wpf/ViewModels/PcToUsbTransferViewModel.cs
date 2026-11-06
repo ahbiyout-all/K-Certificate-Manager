@@ -467,6 +467,7 @@ namespace KCertManager.Wpf.ViewModels
             int success = 0;
             int failed = 0;
             var errorList = new List<string>();
+            var successfulDestinations = new List<string>();
 
             await Task.Run(() =>
             {
@@ -507,6 +508,7 @@ namespace KCertManager.Wpf.ViewModels
                         {
                             success++;
                             cert.IsRecentlyCopied = true;
+                            successfulDestinations.Add(fullTargetDir);
                             continue;
                         }
 
@@ -528,6 +530,7 @@ namespace KCertManager.Wpf.ViewModels
                         {
                             success++;
                             cert.IsRecentlyCopied = true;
+                            successfulDestinations.Add(transferResult.DestinationDirectory);
                         }
                         else
                         {
@@ -555,7 +558,14 @@ namespace KCertManager.Wpf.ViewModels
                 }).ToList();
 
                 string sourcePath = selected.FirstOrDefault()?.DirectoryPath ?? "내 컴퓨터 (NPKI/GPKI)";
-                string targetPath = targetDriveName.EndsWith("\\") ? $"{targetDriveName}NPKI" : $"{targetDriveName}\\NPKI";
+                string firstDest = successfulDestinations.FirstOrDefault(d => !string.IsNullOrEmpty(d));
+                string targetPath = !string.IsNullOrEmpty(firstDest)
+                    ? firstDest
+                    : (selected.Any(c => c.Category == CertCategory.GPKI)
+                        ? Path.Combine(targetDriveName, "GPKI", "Certificate", "class2")
+                        : (selected.Any(c => c.Category == CertCategory.EPKI)
+                            ? Path.Combine(targetDriveName, "EPKI")
+                            : (targetDriveName.EndsWith("\\") ? $"{targetDriveName}NPKI" : $"{targetDriveName}\\NPKI")));
 
                 UserFriendlyMessageHelper.ShowOperationComplete(
                     "인증서 USB 복사 / 백업 완료!",

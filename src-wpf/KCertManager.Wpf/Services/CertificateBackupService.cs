@@ -85,7 +85,7 @@ namespace KCertManager.Wpf.Services
             return result;
         }
 
-        public bool CopyCertificateToLocalPc(string sourceDirectory, string targetCategory = "NPKI", string username = "")
+        public CertTransferResult CopyCertificateToLocalPc(string sourceDirectory, string targetCategory = "NPKI", string username = "")
         {
             try
             {
@@ -95,7 +95,15 @@ namespace KCertManager.Wpf.Services
                 string targetRoot;
                 string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\') + "\\";
 
-                if (string.Equals(targetCategory, "GPKI", StringComparison.OrdinalIgnoreCase))
+                bool isGpki = string.Equals(targetCategory, "GPKI", StringComparison.OrdinalIgnoreCase) ||
+                              sourceDirectory.IndexOf(@"\GPKI\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                              sourceDirectory.IndexOf(@"/GPKI/", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                bool isEpki = string.Equals(targetCategory, "EPKI", StringComparison.OrdinalIgnoreCase) ||
+                              sourceDirectory.IndexOf(@"\EPKI\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                              sourceDirectory.IndexOf(@"/EPKI/", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                if (isGpki)
                 {
                     // GPKI 공무원 행정전자서명의 정부 정규 표준 위치는 C:\GPKI\Certificate\class2
                     try
@@ -119,12 +127,17 @@ namespace KCertManager.Wpf.Services
                 string relativePath = CertTransferEngine.ResolveRelativePath(sourceDirectory);
                 var transfer = CertTransferEngine.Transfer(sourceDirectory, targetRoot, relativePath);
 
-                return transfer.IsSuccess;
+                return transfer;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Copy To PC Error] {ex.Message}");
-                return false;
+                return new CertTransferResult
+                {
+                    IsSuccess = false,
+                    SourceDirectory = sourceDirectory,
+                    Message = $"PC 복사 실패: {ex.Message}"
+                };
             }
         }
 

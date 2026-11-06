@@ -184,6 +184,13 @@ export default function App() {
   const handleSelectWorkflow = (type: WorkflowType) => {
     setIsStartupWorkflowOpen(false);
     setActiveWorkflow(type);
+    try {
+      if (type === 'pc_to_usb' || type === 'usb_to_pc') {
+        localStorage.setItem('kcert_recent_workflow_mode', type);
+      }
+    } catch {
+      // ignore
+    }
 
     if (type === 'pc_to_usb') {
       // 시작 가이드 pc-> usb 복사 시작 시 기본 C: 인증서 중 유효한 인증서만 수집 (만료 항목 제외)
@@ -1855,6 +1862,7 @@ export default function App() {
         dontShowAgain={dontShowStartupAgain}
         onToggleDontShowAgain={handleToggleDontShowStartupAgain}
         validPcCerts={certificates.filter(c => isPcCertificate(c) && c.status !== 'expired')}
+        recentMode={activeWorkflow}
       />
 
       {/* Guided Step-by-Step Workflow Motion Overlay */}

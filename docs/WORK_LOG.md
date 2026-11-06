@@ -17,6 +17,55 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 133] 시작 가이드 모달(StartupWorkflowModal) 내 최근 선택 복사 모드 추적 및 복사 경로 안내 고도화
+- **작업 일시**: 2026-11-06 18:40 KST
+- **요청 사항**:
+  - `StartupWorkflowModal.tsx` 파일을 열어, 사용자가 최근 선택한 복사 모드(PC-USB, USB-PC)에 따라 가이드 내 복사 경로 설명 문구를 더 직관적이고 정확하게 업데이트.
+- **구현 내용**:
+  1. **최근 선택 복사 모드(`recentMode`) 추적 및 상태 영속화**:
+     - `StartupWorkflowModal.tsx`에 `recentMode` 프롭 추가 및 `localStorage('kcert_recent_workflow_mode')` 연동.
+     - 사용자가 PC ➔ USB 또는 USB ➔ PC 모드를 선택하거나 상단 탭을 전환할 때 실시간으로 최근 선택 모드가 기억되고 카드가 활성화(`★ 최근 선택 모드` 배지)되도록 구현.
+  2. **복사 모드 카드별 직관적인 경로 칩 및 설명 문구 갱신**:
+     - **PC ➔ USB 복사하기 카드**:
+       - 경로 요약 배지: `출발: 내 컴퓨터 C: (AppData / C:\GPKI) ➔ 도착: 이동식 USB ({드라이브}:\NPKI·GPKI)`
+       - 설명 문구: `컴퓨터의 금융(AppData) 및 행정·공무원(정부 표준 C:\GPKI) 보관함에서 유효한 인증서를 자동 감지하여 USB 메모리에 안전하게 복사/백업합니다.`
+     - **USB ➔ PC 가져오기 카드**:
+       - 경로 요약 배지: `출발: 이동식 USB ({드라이브}:\NPKI·GPKI) ➔ 도착: 정부 표준 C:\GPKI 및 금융 AppData`
+       - 설명 문구: `USB 메모리의 인증서를 내 컴퓨터의 올바른 정규 표준 보관함(행정공무원: C:\GPKI, 금융: AppData)으로 안전하게 가져옵니다.`
+  3. **실시간 모드별 상세 경로 가이드 인스펙터 패널 신설**:
+     - 최근 선택/활성 모드에 따라 출발지 실제 디렉터리, SHA-256 원자적 무결성 전송 검증 엔진, 도착지 표준 위치(특히 GPKI의 `C:\GPKI\Certificate\class2` 안착 및 NPKI의 `AppData\LocalLow\NPKI` 분기)를 시각적 플로우로 실시간 표시.
+     - 각 모드별 바로 시작 실행 버튼 연동.
+  4. **WPF 데스크톱 앱 (`StartupWorkflowDialog.xaml`) 동기화**:
+     - 데스크톱 앱 시작 가이드 대화상자에서도 NPKI 단일 언급을 배제하고 `금융(AppData) 및 행정·공무원(정부 표준 C:\GPKI)` 표준 경로 명칭으로 일괄 동기화.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 0건 에러 정상 통과.
+
+### 📝 [작업 차수 132] GPKI/EPKI 인증서 PC 가져오기 및 백업 시 작업 완료 보고서 도착지 경로 표기 오류 수정
+- **작업 일시**: 2026-11-06 18:30 KST
+- **요청 사항**:
+  - 시작 가이드 작업 완료 보고서에서 GPKI(행정공무원) 인증서를 USB에서 PC로 가져왔으나 도착지가 `C:\Users\user\AppData\LocalLow\NPKI`로 잘못 표기되는 현상 수정.
+- **원인 분석**:
+  1. `UsbTransferViewModel.cs`: `CopyCertificateToLocalPc` 실행 후 작업 완료 대화상자(`ShowOperationComplete`)를 호출할 때 `targetPath` 변수가 `Path.Combine(AppData, "LocalLow", "NPKI")`로 고정 하드코딩되어 있었음.
+  2. 실제 물리적 파일 복사는 `CertTransferEngine`을 통해 GPKI 정부 공식 표준 위치인 `C:\GPKI\Certificate\class2`로 안전하게 전송되었으나, 완료 팝업의 안내 텍스트와 클립보드 복사 보고서의 `도착지:` 및 `대상 경로:` 필드, 그리고 `대상 폴더 열기` 버튼에 하드코딩된 NPKI 경로가 전달됨.
+  3. `CertificateBackupService.cs`: `CopyCertificateToLocalPc` 메서드가 단순 `bool`만 반환하여 실제 전송된 `DestinationDirectory` 경로가 뷰모델로 전달되지 못함.
+  4. `PcToUsbTransferViewModel.cs`: USB로 백업할 때도 `targetPath`가 `${targetDriveName}\\NPKI`로 하드코딩되어 GPKI/EPKI 백업 시 동일한 표기 오류 잠재.
+- **조치 내역**:
+  1. `CertificateBackupService.cs`:
+     - `CopyCertificateToLocalPc`의 반환형을 `CertTransferResult`로 격상하여 실제 복사 완료된 최종 디렉터리 경로(`DestinationDirectory`) 및 무결성 정보를 온전히 전달.
+     - `targetCategory` 및 `sourceDirectory` 내 `\GPKI\`, `\EPKI\` 토큰 검출 로직을 강화하여 시스템 드라이브(`C:\GPKI\Certificate\class2`) 또는 `AppData\LocalLow\EPKI`로의 표준 배치를 철저히 보장.
+  2. `UsbTransferViewModel.cs`:
+     - 인증서 복사 루프에서 `transferResult.DestinationDirectory`를 실시간 수집.
+     - 수집된 실제 목적지 경로와 인증서 카테고리를 분석하여 `targetPath`를 동적으로 결정 (`C:\GPKI\Certificate\class2` 또는 `AppData\LocalLow\EPKI/NPKI`).
+     - 완료 안내 부제목(`subtitle`)과 도움말 팁(`guideTip`)을 GPKI(정부 공식 표준 보관함), EPKI(교육부 표준 보관함), NPKI(금융/공동 표준 보관함)별로 최적화.
+     - 보고서 클립보드 복사 및 '대상 폴더 열기' 클릭 시 실제 저장된 올바른 폴더가 즉시 열리도록 수정.
+  3. `PcToUsbTransferViewModel.cs`:
+     - USB 복사 시에도 `transferResult.DestinationDirectory`를 추적하여 실제 저장 경로를 `targetPath`로 지정(GPKI인 경우 `G:\GPKI\Certificate\class2` 등).
+  4. `MainViewModel.cs`:
+     - 안내 문구의 NPKI 고정 표현을 `NPKI/GPKI 표준 폴더`로 일괄 정비.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 모두 0건 오류 정상 통과.
+  - C# .NET 10 / .NET 8 소스코드 정적 검증 완료.
+
 ### 📝 [작업 차수 131] 시작 가이드(Guided Workflow) 내 복사 경로 오류 및 중복 파일 실시간 알림 강화
 - **작업 일시**: 2026-11-05 19:40 KST
 - **요청 사항**:
