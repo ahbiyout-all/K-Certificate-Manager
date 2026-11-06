@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { playCompletionSound } from '../utils/audioFeedback';
 import {
   X,
   CheckCircle2,
@@ -54,6 +55,12 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
 }) => {
   const [copiedPath, setCopiedPath] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && data) {
+      playCompletionSound();
+    }
+  }, [isOpen, data]);
 
   if (!isOpen || !data) return null;
 
@@ -225,43 +232,54 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
                 <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
                 <span>복사 완료된 인증서 목록 ({data.certNames.length}개)</span>
               </span>
-              <span className="text-[11px] text-slate-500">
-                signCert.der + signPri.key 정상 검증
+              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                signCert.der + signPri.key 무결성 검증 완료
               </span>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 max-h-36 overflow-y-auto space-y-1.5">
+            {/* Scrollable Container with explicit max-height, overflow-y auto, and smooth styling */}
+            <div 
+              className="bg-slate-50/90 border border-slate-200 rounded-xl p-2.5 space-y-1.5 overflow-y-auto max-h-48 sm:max-h-56 shadow-inner"
+              style={{ maxHeight: '210px', overflowY: 'auto' }}
+            >
               {data.certificates && data.certificates.length > 0 ? (
                 data.certificates.map((c, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-slate-200 text-xs shadow-2xs">
-                    <div className="flex items-center gap-2 truncate">
+                  <div key={idx} className="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200 text-xs shadow-2xs hover:border-emerald-300 transition-colors">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0">
                         {idx + 1}
                       </span>
-                      <span className="font-bold text-slate-900 truncate">{c.name}</span>
-                      {c.issuer && (
-                        <span className="text-[11px] text-slate-500 hidden sm:inline">({c.issuer})</span>
-                      )}
+                      <FileCheck2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <span className="font-bold text-slate-900 truncate block">{c.name}</span>
+                        {c.issuer && (
+                          <span className="text-[11px] text-slate-500 truncate block">({c.issuer})</span>
+                        )}
+                      </div>
                     </div>
-                    {c.validTo && (
-                      <span className="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
+                    {c.validTo ? (
+                      <span className="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded shrink-0 border border-slate-200">
                         ~{c.validTo}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold border border-emerald-200 shrink-0">
+                        복사 완료 ✓
                       </span>
                     )}
                   </div>
                 ))
               ) : (
                 data.certNames.map((name, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs shadow-2xs">
-                    <div className="flex items-center gap-2">
+                  <div key={idx} className="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200 text-xs shadow-2xs hover:border-emerald-300 transition-colors">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0">
                         {idx + 1}
                       </span>
-                      <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span className="font-bold text-slate-800">{name}</span>
+                      <FileCheck2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span className="font-bold text-slate-800 truncate">{name}</span>
                     </div>
-                    <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold border border-emerald-200">
-                      복사 완료
+                    <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold border border-emerald-200 shrink-0">
+                      복사 완료 ✓
                     </span>
                   </div>
                 ))

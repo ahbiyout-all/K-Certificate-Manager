@@ -702,15 +702,15 @@ namespace KCertManager.Wpf.ViewModels
             {
                 switch (phase?.ToLowerInvariant())
                 {
-                    case "start":
-                        System.Media.SystemSounds.Beep.Play();
-                        break;
                     case "error":
-                        System.Media.SystemSounds.Hand.Play();
+                        SoundService.PlayErrorSound();
+                        break;
+                    case "start":
+                        // 시작음 영구 제거됨
                         break;
                     case "complete":
                     default:
-                        System.Media.SystemSounds.Asterisk.Play();
+                        SoundService.PlayCompletionSound();
                         break;
                 }
             }
@@ -719,20 +719,17 @@ namespace KCertManager.Wpf.ViewModels
 
         public void PlayStartSound()
         {
-            if (!IsSoundEnabled || SoundVolume <= 0) return;
-            PlayTestSound("start");
+            // 사용자의 요청으로 복사 시작음은 영구 제거되었습니다.
         }
 
         public void PlayCompletionSound()
         {
-            if (!IsSoundEnabled || SoundVolume <= 0) return;
-            PlayTestSound("complete");
+            SoundService.PlayCompletionSound();
         }
 
         public void PlayErrorSound()
         {
-            if (!IsSoundEnabled || SoundVolume <= 0) return;
-            PlayTestSound("error");
+            SoundService.PlayErrorSound();
         }
 
         public void CopySelectedCertDetails()
@@ -1657,7 +1654,7 @@ namespace KCertManager.Wpf.ViewModels
 
             IsBusy = true;
             StatusMessage = $"선택한 {selected.Count}개 인증서를 {targetDrive.Name}로 복사 중... (처리 방식: {actualConflictOption})";
-            PlayStartSound();
+            // 복사 시작음 영구 제거됨 (PlayStartSound 호출 제거)
 
             int success = 0;
             int skippedCount = 0;

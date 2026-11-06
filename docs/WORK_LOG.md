@@ -2043,3 +2043,68 @@
      - 가이드 텍스트 및 레이아웃에서 드라이브 관련 명칭이 더욱 눈에 띄도록 굵은 폰트 스타일 유지.
   3. **검증**:
      - 웹 및 WPF 모든 경로에서 동일한 시각적 언어(색상 배지 + 굵은 폰트)가 적용되었음을 확인하고 무결성 테스트 완료.
+
+### 📝 [작업 차수 137] C# WPF 드라이브 선택 콤보박스 디자인 고도화 및 사운드 시스템(시작음 제거/완료음 보강) 반영
+- **작업 일시**: 2026-11-06 19:15 KST
+- **요청 사항**:
+  1. 사용자 제공 이미지에 표시된 단순 텍스트 기반 드라이브 드롭다운 목록(`[로컬 디스크] C:\ [Windows]...`)을 현대적인 색상 배지 및 구조화된 레이아웃으로 변경.
+  2. Windows WPF 빌드 시 발생했던 CS0117 (`DriveItem.GetDriveBgColorHex`) 오류 원천 차단.
+  3. 인증서 복사 시작음 완전 제거 및 복사 완료 후 완료 소리가 재생되지 않던 문제 해결.
+- **수행 내용**:
+  1. **드라이브 선택 콤보박스(`ComboBox`) UI 디자인 고도화**:
+     - `MainWindow.xaml`, `PcToUsbTransferDialog.xaml`, `UsbTransferDialog.xaml`의 드라이브 선택 목록 `ItemTemplate`을 현대적 카드 레이아웃으로 개편:
+       - **[C:]**, **[G:]** 등 드라이브 문자별 고대비 색상 배지 (`DriveLetterChar`)
+       - **[이동식 USB]**(에메랄드 그린), **[로컬 디스크]**(네이비 블루)의 둥근 매체 구분 태그 배지 (`DeviceTypeBadgeText`)
+       - 볼륨 라벨이 포함된 굵은 드라이브 명칭 (`FormattedTitle`)
+       - 잔여 용량 및 인증서 보관 현황 (`CapacityCertText`)
+  2. **C# WPF 빌드 무결성 보장 (`DriveItem.cs` & `TargetDrivePickerDialog.xaml.cs`)**:
+     - `DriveItem` 클래스에 인스턴스 프로퍼티(`DriveBgColorHex`, `DriveBorderColorHex`)와 함께 정적 메서드(`GetDriveBgColorHex`, `GetDriveBorderColorHex`, `GetDriveTagBgHex`)를 완비하여 컴파일 에러(CS0117)를 근본적으로 차단.
+  3. **사운드 시스템 전면 개선**:
+     - **복사 시작음 제거**: Web(`audioFeedback.ts`) 및 C# WPF(`SoundService.cs`, `MainViewModel.cs`)의 시작음 호출을 영구 제거(No-op)하여 조용하고 쾌적하게 작업 개시.
+     - **복사 완료음 보강**:
+       - C# WPF: Windows 기본 소리 구성표가 꺼져 있어도 안정적으로 발음되는 16-bit 44.1kHz PCM WAV 상승 하모닉 차임(`SoundService.cs`) 내장 탑재. `UserFriendlyMessageHelper.ShowOperationComplete`, `UsbTransferViewModel`, `PcToUsbTransferViewModel`에 연결하여 복사 완료 시 100% 신뢰성 있게 재생.
+       - Web: Web Audio 스케줄링 양수 오프셋 보정 및 HTML5 Audio Blob Fallback 메커니즘을 적용하여 모달 오픈(`OperationCompleteModal.tsx`) 시 즉시 재생.
+  4. **검증**:
+     - `compile_applet` 및 `lint_applet` 통과 (0 오류).
+
+### 📝 [작업 차수 138] 인증서 복사 완료 팝업 내 목록 가림/잘림 현상 수정
+- **작업 일시**: 2026-11-06 19:20 KST
+- **요청 사항**: 인증서 복사 완료 후 팝업 대화상자에서 복사 완료된 인증서 목록이 가려지거나 잘리는 현상 해결 요청.
+- **수행 내용**:
+  1. **Windows WPF 완료 대화상자 (`OperationCompleteDialog.xaml`) 개선**:
+     - 대화상자 창 크기를 `Width="720" Height="660"` (최소 `640x580`)으로 확장하고 `ResizeMode="CanResizeWithGrip"`을 적용하여 사용자가 필요 시 자유롭게 창 크기를 조절할 수 있도록 개선.
+     - 인증서 목록(`ListBox`) 카드의 `MinHeight="160"` (내부 `MinHeight="120"`) 지정 및 `HorizontalContentAlignment="Stretch"`, `ScrollViewer.HorizontalScrollBarVisibility="Disabled"` 설정.
+     - 긴 인증서 명칭(예: `865진정애001...`) 및 발급자 정보 텍스트에 `TextTrimming="CharacterEllipsis"`를 추가하여 오른쪽 `복사 완료 ✓` 배지가 밀려나거나 가려지는 현상 완벽 방지.
+  2. **웹(Web) 완료 모달 (`OperationCompleteModal.tsx`) 개선**:
+     - 인증서 목록 컨테이너의 최대 높이를 `max-h-36`(144px)에서 `min-h-[110px] max-h-56 sm:max-h-64`로 대폭 확장하여 다수의 인증서 복사 시에도 목록이 가려지지 않고 넉넉하게 표시되도록 조치.
+     - 인증서 항목 태그 레이아웃에 `truncate`, `min-w-0 flex-1`, `shrink-0` 배치를 적용하여 텍스트 오버플로우 방지.
+  3. **검증**:
+     - `compile_applet` 및 `lint_applet` co-execution 검증 완료 (0 오류).
+
+### 📝 [작업 차수 139] OperationCompleteModal.tsx 인증서 목록 스크롤 컨테이너 세부 정밀 조정
+- **작업 일시**: 2026-11-06 19:30 KST
+- **요청 사항**: `OperationCompleteModal.tsx` 내에서 인증서 목록이 모달 하단에 가려지지 않도록 컨테이너에 명시적인 `max-height` 및 `overflow-y: auto` 속성을 지정하고 스타일을 개선.
+- **수행 내용**:
+  1. `OperationCompleteModal.tsx`의 복사 완료된 인증서 목록 컨테이너에 명시적 인라인 스타일 `style={{ maxHeight: '210px', overflowY: 'auto' }}` 및 Tailwind 클래스 `max-h-48 sm:max-h-56 overflow-y-auto shadow-inner`를 결합하여 부여.
+  2. 리스트 각 항목 카드에 호버 애니메이션 (`hover:border-emerald-300 transition-colors`), 둥근 테두리 및 그림자 효과를 보강하여 항목 가독성과 상호작용성 증대.
+  3. 헤더 영역에 무결성 검증 완료 신뢰 배지 (`signCert.der + signPri.key 무결성 검증 완료`) 배치.
+- **검증**:
+  - `compile_applet` 및 `lint_applet` co-execution 검증 완료 (0 오류).
+
+### 📝 [작업 차수 140] StartupWorkflowModal.tsx 모드별 가이드 문구 직관화 및 상황 맞춤 친절 표현 개선
+- **작업 일시**: 2026-11-06 19:35 KST
+- **요청 사항**: `StartupWorkflowModal.tsx`에서 사용자가 선택한 'PC ➔ USB' 또는 'USB ➔ PC' 모드에 따른 가이드 메시지를 현재 경로와 상황에 맞춰 보다 직관적이고 친절한 표현으로 개선.
+- **수행 내용**:
+  1. **'PC ➔ USB' 백업 모드 문구 개선**:
+     - 상단 안내 배너: `💻 지금 연결된 USB 메모리로 내 컴퓨터의 유효한 인증서를 안전하게 옮깁니다.`
+     - 버튼 액션명: `지금 연결된 USB로 인증서 옮기기 ➔`
+     - 출발지/도착지 라벨 및 설명 문구를 실제 보관 폴더 및 사용 시나리오에 맞춰 친절하게 직관화.
+  2. **'USB ➔ PC' 가져오기 모드 문구 개선**:
+     - 상단 안내 배너: `💾 USB에 있는 인증서를 내 컴퓨터(PC)의 공식 표준 보관함으로 안전하게 불러옵니다.`
+     - 버튼 액션명: `USB 인증서를 내 컴퓨터로 불러오기 ➔`
+     - 정부 표준 GPKI(C:\GPKI) 및 금융 AppData 자동 분류 및 유도 안내 직관화.
+- **검증**:
+  - `compile_applet` 및 `lint_applet` co-execution 검증 완료 (0 오류).
+
+
+

@@ -80,10 +80,8 @@ export const GuidedWorkflowOverlay: React.FC<GuidedWorkflowOverlayProps> = ({
       setCurrentStep(next);
 
       if (isPcToUsb && next === 2) {
-        playStartSound();
         onOpenBackupModal();
       } else if (!isPcToUsb && next === 2) {
-        playStartSound();
         onOpenUsbToPcModal();
       } else if (next === 3) {
         setIsCompleted(true);

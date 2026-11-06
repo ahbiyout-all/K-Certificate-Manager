@@ -261,7 +261,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
     setProgress(15);
     setLogs(['[초기화] USB ➔ 컴퓨터(PC) 역방향 인증서 복사 프로세스 준비 중...']);
     setErrorMessage(null);
-    playStartSound();
+    // 복사 시작음 제거 요구사항 반영 (playStartSound 제거)
 
     try {
       await new Promise(r => setTimeout(r, 400));

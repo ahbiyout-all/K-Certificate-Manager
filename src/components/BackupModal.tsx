@@ -395,7 +395,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     setRetryDelayMs(0);
     setRetryHistory([]);
     setLogs(['[사전 점검 완료] 대상 드라이브 쓰기 권한 확인 및 자동 복구 엔진(최대 3회) 가동...']);
-    playStartSound();
+    // 복사 시작음 제거 요구사항 반영 (playStartSound 제거)
 
     try {
       const retryResult = await executeUsbOperationWithRetry<BackupResult>(

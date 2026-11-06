@@ -550,6 +550,7 @@ namespace KCertManager.Wpf.ViewModels
 
             if (success > 0)
             {
+                SoundService.PlayCompletionSound();
                 string targetDesc = isTargetUsb ? "USB 메모리" : "로컬 디스크";
                 var completeItems = selected.Select(c => new OperationCompleteItem
                 {

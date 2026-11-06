@@ -339,6 +339,7 @@ namespace KCertManager.Wpf.ViewModels
             StatusMessage = $"PC 가져오기 완료: {selected.Count}개 중 {success}개 성공 (자동 새로고침 반영)";
             if (success > 0)
             {
+                SoundService.PlayCompletionSound();
                 TransferCompleted?.Invoke();
             }
 

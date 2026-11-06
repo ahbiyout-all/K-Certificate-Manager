@@ -74,6 +74,24 @@ namespace KCertManager.Wpf.Models
         public string DriveBorderColorHex => CertificateItem.GetDriveBorderColorHex(DriveLetterChar);
         public string DriveTagBgHex => CertificateItem.GetDriveTagBgHex(DriveLetterChar);
 
+        public static string GetDriveBgColorHex(string letter) => CertificateItem.GetDriveBgColorHex(letter);
+        public static string GetDriveBorderColorHex(string letter) => CertificateItem.GetDriveBorderColorHex(letter);
+        public static string GetDriveTagBgHex(string letter) => CertificateItem.GetDriveTagBgHex(letter);
+
+        public string DeviceTypeBadgeText => IsRemovable ? "이동식 USB" : "로컬 디스크";
+        public string DeviceTypeBgHex => IsRemovable ? "#065F46" : "#1E3A8A";
+        public string DeviceTypeBorderHex => IsRemovable ? "#10B981" : "#3B82F6";
+        public string DeviceTypeFgHex => IsRemovable ? "#A7F3D0" : "#BFDBFE";
+        public string FormattedTitle => string.IsNullOrEmpty(VolumeLabel) ? Name : $"{Name} [{VolumeLabel}]";
+        public string CapacityCertText
+        {
+            get
+            {
+                var certInfo = CertificateCount > 0 ? $" · 인증서 {CertificateCount}개" : " · 빈 저장소";
+                return $"({FormattedShortFreeSpace}{certInfo})";
+            }
+        }
+
         public string StatusBadgeText
         {
             get
@@ -84,6 +102,8 @@ namespace KCertManager.Wpf.Models
                 return $"인증서 {CertificateCount}개 보관 중";
             }
         }
+
+        public override string ToString() => DisplayName;
 
         public string DisplayName
         {

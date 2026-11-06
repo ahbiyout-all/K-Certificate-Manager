@@ -374,23 +374,28 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
               </div>
             </div>
 
-            {/* Route Visual Cards */}
+            {/* Route Visual Cards with Direct & Friendly Situational Messages */}
             {activeTabMode === 'pc_to_usb' ? (
               <div className="space-y-3">
+                <div className="p-2.5 rounded-xl bg-blue-900/40 border border-blue-400/40 text-xs text-blue-100 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-300 shrink-0" />
+                  <span className="font-bold">지금 연결된 USB 메모리로 내 컴퓨터의 유효한 인증서를 안전하게 옮깁니다.</span>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-11 gap-2.5 items-center text-xs">
                   {/* Source (5 cols) */}
                   <div className="md:col-span-5 p-3 rounded-xl bg-slate-800/90 border border-blue-500/40 space-y-1.5">
                     <div className="flex items-center justify-between text-blue-300 font-bold">
                       <span className="flex items-center gap-1.5">
                         <Monitor className="w-3.5 h-3.5 text-blue-400" />
-                        <span>출발지 (Source): 내 컴퓨터 C: 보관함</span>
+                        <span>출발지: 내 컴퓨터 (PC 로컬 보관함)</span>
                       </span>
-                      <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 rounded text-blue-200 font-mono">로컬 디스크</span>
+                      <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 rounded text-blue-200 font-mono">로컬 C:\</span>
                     </div>
                     <div className="font-mono text-[11px] text-slate-300 space-y-0.5 pl-1 border-l-2 border-blue-500/50">
-                      <p>• <strong>금융·공동(NPKI)</strong>: C:\Users\{'{사용자}'}\AppData\LocalLow\NPKI</p>
-                      <p>• <strong className="text-blue-300">행정공무원(GPKI)</strong>: C:\GPKI\Certificate\class2 (정부 공식 위치)</p>
-                      <p>• <strong>교육전자서명(EPKI)</strong>: C:\Users\{'{사용자}'}\AppData\LocalLow\EPKI</p>
+                      <p>• <strong>금융·공동 (NPKI)</strong>: C:\Users\{'{사용자}'}\AppData\LocalLow\NPKI</p>
+                      <p>• <strong className="text-blue-300">행정공무원 (GPKI)</strong>: C:\GPKI\Certificate\class2 (정부 공식 위치)</p>
+                      <p>• <strong>교육전자서명 (EPKI)</strong>: C:\Users\{'{사용자}'}\AppData\LocalLow\EPKI</p>
                     </div>
                   </div>
 
@@ -407,14 +412,14 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                     <div className="flex items-center justify-between text-emerald-300 font-bold">
                       <span className="flex items-center gap-1.5">
                         <Usb className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>도착지 (Destination): 이동식 USB 메모리</span>
+                        <span>도착지: 지금 연결된 이동식 USB 메모리</span>
                       </span>
                       <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/20 rounded text-emerald-200 font-mono">이동식 디스크</span>
                     </div>
                     <div className="font-mono text-[11px] text-slate-300 space-y-0.5 pl-1 border-l-2 border-emerald-500/50">
                       <p>• <strong>USB 표준 보관 폴더</strong>: {'{USB드라이브}:\\'}(NPKI | GPKI | EPKI)</p>
-                      <p>• <strong>타 PC 연동</strong>: 타 컴퓨터 연결 시 [이동식 디스크]에서 즉시 자동 인식</p>
-                      <p>• <strong>키 페어 동기화</strong>: signCert.der + signPri.key 무결성 100% 동봉 복사</p>
+                      <p>• <strong>타 PC 즉시 연동</strong>: 타 컴퓨터 연결 시 [이동식 디스크]에서 바로 인식</p>
+                      <p>• <strong>무결성 키페어</strong>: signCert.der + signPri.key 100% 동봉 복사</p>
                     </div>
                   </div>
                 </div>
@@ -423,26 +428,31 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                 <div className="p-2.5 rounded-xl bg-blue-950/60 border border-blue-500/30 text-[11px] text-blue-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <Info className="w-4 h-4 text-blue-400 shrink-0" />
-                    <span>내 컴퓨터 내 만료되지 않은 유효한 인증서만 선별하여 USB 메모리로 안전하게 백업합니다.</span>
+                    <span>내 컴퓨터 내 만료되지 않은 유효한 인증서만 선별하여, 지금 연결된 USB 메모리로 안전하게 백업합니다.</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleSelect('pc_to_usb')}
                     className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-lg font-bold text-xs shrink-0 transition-colors cursor-pointer shadow-xs"
                   >
-                    PC ➔ USB 복사 실행 ➔
+                    지금 연결된 USB로 인증서 옮기기 ➔
                   </button>
                 </div>
               </div>
             ) : (
               <div className="space-y-3">
+                <div className="p-2.5 rounded-xl bg-emerald-900/40 border border-emerald-400/40 text-xs text-emerald-100 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-300 shrink-0" />
+                  <span className="font-bold">USB에 있는 인증서를 내 컴퓨터(PC)의 공식 표준 보관함으로 안전하게 불러옵니다.</span>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-11 gap-2.5 items-center text-xs">
                   {/* Source (5 cols) */}
                   <div className="md:col-span-5 p-3 rounded-xl bg-slate-800/90 border border-emerald-500/40 space-y-1.5">
                     <div className="flex items-center justify-between text-emerald-300 font-bold">
                       <span className="flex items-center gap-1.5">
                         <Usb className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>출발지 (Source): 이동식 USB 메모리</span>
+                        <span>출발지: 지금 연결된 이동식 USB 메모리</span>
                       </span>
                       <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/20 rounded text-emerald-200 font-mono">이동식 디스크</span>
                     </div>
@@ -466,14 +476,14 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                     <div className="flex items-center justify-between text-blue-300 font-bold">
                       <span className="flex items-center gap-1.5">
                         <Monitor className="w-3.5 h-3.5 text-blue-400" />
-                        <span>도착지 (Destination): 내 컴퓨터 표준 보관함</span>
+                        <span>도착지: 내 컴퓨터 공식 표준 보관함 (PC)</span>
                       </span>
-                      <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 rounded text-blue-200 font-mono">정부/금융 표준</span>
+                      <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 rounded text-blue-200 font-mono">정부/금융 공식</span>
                     </div>
                     <div className="font-mono text-[11px] text-slate-300 space-y-0.5 pl-1 border-l-2 border-blue-500/50">
-                      <p>• <strong className="text-emerald-300 font-bold">행정공무원(GPKI)</strong>: C:\GPKI\Certificate\class2 (정부 공식 위치 안착)</p>
-                      <p>• <strong className="text-blue-300">금융·은행용(NPKI)</strong>: C:\Users\{'{사용자}'}\AppData\LocalLow\NPKI</p>
-                      <p>• <strong className="text-purple-300">교육전자서명(EPKI)</strong>: C:\Users\{'{사용자}'}\AppData\LocalLow\EPKI</p>
+                      <p>• <strong className="text-emerald-300 font-bold">행정공무원 (GPKI)</strong>: C:\GPKI\Certificate\class2 (정부 공식 표준 안착)</p>
+                      <p>• <strong className="text-blue-300">금융·은행용 (NPKI)</strong>: C:\Users\{'{사용자}'}\AppData\LocalLow\NPKI</p>
+                      <p>• <strong className="text-purple-300">교육전자서명 (EPKI)</strong>: C:\Users\{'{사용자}'}\AppData\LocalLow\EPKI</p>
                     </div>
                   </div>
                 </div>
@@ -482,14 +492,14 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                 <div className="p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-[11px] text-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>행정공무원(GPKI)은 정부 공식 폴더(C:\GPKI)로, 금융인증서는 AppData로 정확히 자동 유도되어 NPKI 오배치가 방지됩니다.</span>
+                    <span>행정공무원(GPKI)은 정부 공식 폴더(C:\GPKI)로, 금융인증서는 AppData로 정확히 자동 분류되어 복사 후 바로 사용하실 수 있습니다.</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleSelect('usb_to_pc')}
                     className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-lg font-bold text-xs shrink-0 transition-colors cursor-pointer shadow-xs"
                   >
-                    USB ➔ PC 가져오기 실행 ➔
+                    USB 인증서를 내 컴퓨터로 불러오기 ➔
                   </button>
                 </div>
               </div>

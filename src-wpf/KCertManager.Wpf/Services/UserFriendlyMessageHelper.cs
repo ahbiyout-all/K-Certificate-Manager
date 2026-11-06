@@ -17,6 +17,7 @@ namespace KCertManager.Wpf.Services
         /// </summary>
         public static void ShowError(Exception ex, string actionContext = "", Window? owner = null)
         {
+            SoundService.PlayErrorSound();
             var userError = UserFriendlyError.Explain(ex, actionContext);
             var fullMsg = userError.ToFormattedDialogMessage(actionContext);
 
@@ -118,6 +119,9 @@ namespace KCertManager.Wpf.Services
         {
             try
             {
+                // 복사/백업 완료 알림음 확실하게 재생
+                SoundService.PlayCompletionSound();
+
                 var dialog = new OperationCompleteDialog(title, subtitle, count, sourcePath, targetPath, items, guideTip, owner);
                 return dialog.ShowDialog();
             }

@@ -53,11 +53,18 @@
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal" Margin="0,2">
-                                <!-- Color-Coded Bold Drive Letter Badge -->
-                                <Border Background="{Binding DriveBgColorHex}" BorderBrush="{Binding DriveBorderColorHex}" BorderThickness="1" CornerRadius="4" Padding="5,1" Margin="0,0,8,0">
+                                <!-- Color-Coded Bold Drive Letter Badge [C:] [G:] -->
+                                <Border Background="{Binding DriveBgColorHex}" BorderBrush="{Binding DriveBorderColorHex}" BorderThickness="1" CornerRadius="4" Padding="5,1" Margin="0,0,6,0" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding DriveLetterChar, StringFormat='[{0}:]'}" FontSize="11" FontWeight="ExtraBold" Foreground="#FFFFFF" FontFamily="Consolas, Segoe UI, sans-serif"/>
                                 </Border>
-                                <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <!-- Medium Type Badge [이동식 USB] / [로컬 디스크] -->
+                                <Border Background="{Binding DeviceTypeBgHex}" BorderBrush="{Binding DeviceTypeBorderHex}" BorderThickness="1" CornerRadius="4" Padding="5,1" Margin="0,0,6,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DeviceTypeBadgeText}" FontSize="10" FontWeight="Bold" Foreground="{Binding DeviceTypeFgHex}"/>
+                                </Border>
+                                <!-- Drive Name and Volume Label -->
+                                <TextBlock Text="{Binding FormattedTitle}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <!-- Capacity and Cert Count -->
+                                <TextBlock Text="{Binding CapacityCertText}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
