@@ -93,9 +93,8 @@ namespace KCertManager.Wpf.Models
                 if (IsCdRom) return $"{Name}{labelPart} (가상/물리 CD-ROM 읽기 전용)";
                 if (!IsReady) return $"{Name}{labelPart} ({PhysicalPortDetail} - 준비 안 됨)";
                 
-                var typeTag = IsRemovable ? "[이동식 USB]" : "[로컬 디스크]";
                 var certInfo = CertificateCount > 0 ? $" · 인증서 {CertificateCount}개" : " · 빈 저장소";
-                return $"{typeTag} {Name}{labelPart} ({FormattedShortFreeSpace}{certInfo})";
+                return $"{Name}{labelPart} ({FormattedShortFreeSpace}{certInfo})";
             }
         }
 

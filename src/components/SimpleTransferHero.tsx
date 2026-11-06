@@ -12,6 +12,8 @@ import {
   SlidersHorizontal,
   LayoutGrid
 } from 'lucide-react';
+import { getDriveColorInfo } from '../utils/driveColors';
+import { getInlineDriveBadge } from '../utils/driveBadgeUtils';
 import { DiskDrive, CertificateItem } from '../types';
 
 interface SimpleTransferHeroProps {
@@ -177,10 +179,18 @@ export const SimpleTransferHero: React.FC<SimpleTransferHeroProps> = ({
                 <div className="min-w-0 flex-1">
                   <div className="text-[11px] text-slate-400 font-medium">복사할 목적지</div>
                   <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5 truncate">
-                    <HardDrive className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span className="truncate">
-                      {selectedDrive ? `${selectedDrive.letter} ${selectedDrive.name.split('(')[0]}` : 'USB 없음'}
-                    </span>
+                    {selectedDrive ? (
+                      <>
+                        <span className={getInlineDriveBadge(selectedDrive.letter).fullBadgeClass}>
+                          {selectedDrive.letter}
+                        </span>
+                        <span className="truncate font-extrabold text-slate-950">
+                          {selectedDrive.name.split('(')[0]}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-slate-400 font-medium">USB 없음</span>
+                    )}
                   </div>
                 </div>
                 <button

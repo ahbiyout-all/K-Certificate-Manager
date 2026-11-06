@@ -15,6 +15,7 @@ import {
   Zap
 } from 'lucide-react';
 import { BRANDING_ASSETS } from '../data/brandingAssets';
+import { getInlineDriveBadge } from '../utils/driveBadgeUtils';
 
 export type WorkflowType = 'pc_to_usb' | 'usb_to_pc' | 'dashboard';
 
@@ -246,8 +247,11 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-bold text-slate-800">
-                    💻 내 컴퓨터(C:) 기본 보관함의 유효 인증서 ({validPcCerts.length}개 감지)
+                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Monitor className="w-3.5 h-3.5 text-blue-600" />
+                    <span>내 컴퓨터</span>
+                    <span className={getInlineDriveBadge('C:').fullBadgeClass}>C:</span>
+                    <span>기본 보관함의 유효 인증서 ({validPcCerts.length}개 감지)</span>
                   </span>
                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
                     격자 가로세로 구분줄 · 유효 항목만 표시
