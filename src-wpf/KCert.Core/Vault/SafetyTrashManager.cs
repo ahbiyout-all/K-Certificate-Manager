@@ -475,38 +475,51 @@ namespace KCert.Core.Vault
             }
             catch { }
 
-            // Standard AES-256 fallback
+            // Standard AES-256 fallback with header magic tag [0x41, 0x45, 0x53, 0x01] ("AES\x01")
             using var aes = Aes.Create();
             aes.Key = SHA256.HashData(RestoredVaultEntropy);
             aes.GenerateIV();
             using var encryptor = aes.CreateEncryptor();
             byte[] cipher = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
-            byte[] combined = new byte[aes.IV.Length + cipher.Length];
-            Buffer.BlockCopy(aes.IV, 0, combined, 0, aes.IV.Length);
-            Buffer.BlockCopy(cipher, 0, combined, aes.IV.Length, cipher.Length);
+            byte[] combined = new byte[4 + aes.IV.Length + cipher.Length];
+            combined[0] = 0x41; // 'A'
+            combined[1] = 0x45; // 'E'
+            combined[2] = 0x53; // 'S'
+            combined[3] = 0x01; // Version 1
+            Buffer.BlockCopy(aes.IV, 0, combined, 4, aes.IV.Length);
+            Buffer.BlockCopy(cipher, 0, combined, 4 + aes.IV.Length, cipher.Length);
             return combined;
         }
 
         private static byte[] DecryptVaultBytes(byte[] cipherBytes)
         {
-            try
+            if (cipherBytes == null || cipherBytes.Length == 0)
+                return Array.Empty<byte>();
+
+            bool isAesHeader = cipherBytes.Length >= 20 && cipherBytes[0] == 0x41 && cipherBytes[1] == 0x45 && cipherBytes[2] == 0x53 && cipherBytes[3] == 0x01;
+
+            if (!isAesHeader)
             {
-                if (OperatingSystem.IsWindows())
+                try
                 {
-                    return ProtectedData.Unprotect(
-                        cipherBytes, RestoredVaultEntropy, DataProtectionScope.CurrentUser);
+                    if (OperatingSystem.IsWindows())
+                    {
+                        return ProtectedData.Unprotect(
+                            cipherBytes, RestoredVaultEntropy, DataProtectionScope.CurrentUser);
+                    }
                 }
+                catch { }
             }
-            catch { }
 
             // Standard AES-256 fallback
             using var aes = Aes.Create();
             aes.Key = SHA256.HashData(RestoredVaultEntropy);
+            int offset = isAesHeader ? 4 : 0;
             byte[] iv = new byte[16];
-            Buffer.BlockCopy(cipherBytes, 0, iv, 0, 16);
+            Buffer.BlockCopy(cipherBytes, offset, iv, 0, 16);
             aes.IV = iv;
             using var decryptor = aes.CreateDecryptor();
-            return decryptor.TransformFinalBlock(cipherBytes, 16, cipherBytes.Length - 16);
+            return decryptor.TransformFinalBlock(cipherBytes, offset + 16, cipherBytes.Length - offset - 16);
         }
     }
 }
