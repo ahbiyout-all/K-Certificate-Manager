@@ -511,48 +511,33 @@ export const CertificateList: React.FC<CertificateListProps> = ({
   );
 
   const thPadding = paddingDensity === "compact"
-    ? "px-2 py-2.5 text-xs"
+    ? "px-1.5 py-2 text-[10px]"
     : paddingDensity === "spacious"
-      ? "px-4 py-4 text-xs sm:text-sm"
-      : "px-3 py-3.5 text-xs";
+      ? "px-3 py-3 text-xs sm:text-sm"
+      : "px-2 py-2.5 text-xs";
 
   const getStatusBadge = (cert: CertificateItem) => {
     const isNarrow = (colWidths.status ?? 120) < 70;
     if (isCertificateExpired(cert)) {
       return (
-        <span 
-          className={`bg-rose-100 text-rose-800 rounded-md text-xs font-bold inline-flex items-center gap-1 border border-rose-300 shadow-2xs overflow-hidden max-w-full shrink-0 ${
-            isNarrow ? 'px-1.5 py-1 justify-center' : 'px-2.5 py-1'
-          }`}
-          title="만료됨 (유효기간 경과)"
-        >
-          <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse shrink-0"></span>
-          {!isNarrow && <span className="truncate">만료됨</span>}
+        <span className={`bg-rose-100 text-rose-800 rounded-md text-[10px] font-bold inline-flex items-center gap-1 border border-rose-200 shadow-2xs ${isNarrow ? 'px-1 py-0.5' : 'px-2 py-0.5'}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span>
+          {!isNarrow && <span>만료</span>}
         </span>
       );
     }
     if (cert.status === 'expiring') {
       return (
-        <span 
-          className={`bg-amber-100 text-amber-800 rounded-md text-xs font-bold inline-flex items-center gap-1 border border-amber-300 shadow-2xs overflow-hidden max-w-full shrink-0 ${
-            isNarrow ? 'px-1.5 py-1 justify-center' : 'px-2.5 py-1'
-          }`}
-          title={`만료임박 (D-${cert.daysRemaining})`}
-        >
-          <span className="w-2 h-2 rounded-full bg-amber-600 shrink-0"></span>
-          {!isNarrow && <span className="truncate">만료임박 (D-{cert.daysRemaining})</span>}
+        <span className={`bg-amber-100 text-amber-800 rounded-md text-[10px] font-bold inline-flex items-center gap-1 border border-amber-200 shadow-2xs ${isNarrow ? 'px-1 py-0.5' : 'px-2 py-0.5'}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+          {!isNarrow && <span>D-{cert.daysRemaining}</span>}
         </span>
       );
     }
     return (
-      <span 
-        className={`bg-emerald-100 text-emerald-800 rounded-md text-xs font-bold inline-flex items-center gap-1 border border-emerald-300 shadow-2xs overflow-hidden max-w-full shrink-0 ${
-          isNarrow ? 'px-1.5 py-1 justify-center' : 'px-2.5 py-1'
-        }`}
-        title="유효함 (정상 사용 가능)"
-      >
-        <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0"></span>
-        {!isNarrow && <span className="truncate">유효함</span>}
+      <span className={`bg-emerald-100 text-emerald-800 rounded-md text-[10px] font-bold inline-flex items-center gap-1 border border-emerald-200 shadow-2xs ${isNarrow ? 'px-1 py-0.5' : 'px-2 py-0.5'}`}>
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+        {!isNarrow && <span>유효</span>}
       </span>
     );
   };
@@ -982,183 +967,69 @@ export const CertificateList: React.FC<CertificateListProps> = ({
         </div>
       )}
 
-      {/* Top Filter & Search Card */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4 sm:p-5">
-        <div className="flex flex-col gap-3.5">
-          {/* Row 1: Location & Category Filter Pills */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            {/* Storage Location Pills [전체 | 컴퓨터 | USB] */}
-            <div className="flex items-center bg-slate-100/90 p-1 rounded-xl border border-slate-200/80">
-              <button
-                type="button"
-                onClick={() => setSourceFilter('ALL')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-150 active:scale-95 cursor-pointer ${
-                  sourceFilter === 'ALL'
-                    ? 'bg-white text-slate-900 shadow-sm ring-2 ring-slate-400/30 font-extrabold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                }`}
-              >
-                전체 매체 ({certificates.length})
-              </button>
 
-              <button
-                type="button"
-                onClick={() => setSourceFilter('LOCAL')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center gap-1.5 ${
-                  sourceFilter === 'LOCAL'
-                    ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-400/40 font-extrabold'
-                    : 'text-slate-600 hover:text-blue-700 hover:bg-blue-50/50'
-                }`}
-              >
-                <Laptop className="w-3.5 h-3.5" />
-                <span>컴퓨터 ({localPcCount})</span>
-              </button>
 
-              <button
-                type="button"
-                onClick={() => setSourceFilter('REMOVABLE')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center gap-1.5 ${
-                  sourceFilter === 'REMOVABLE'
-                    ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-400/40 font-extrabold'
-                    : 'text-slate-600 hover:text-emerald-700 hover:bg-emerald-50/50'
-                }`}
-              >
-                <HardDrive className="w-3.5 h-3.5" />
-                <span>USB ({usbCount})</span>
-              </button>
-            </div>
-
-            {/* Search bar */}
-            <div className="relative flex-1 sm:w-72 sm:max-w-xs">
-              <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+      {/* Compact Search and Filter Bar */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden sticky top-0 z-10">
+        <div className="p-2 sm:p-3 space-y-2">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2">
+            {/* Search */}
+            <div className="relative flex-1 max-w-md group">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
               <input
                 type="text"
+                placeholder="인증서 명칭, 발급자, 용도 검색..."
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="이름, 소속, 발급기관, USB/컴퓨터 검색..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white text-slate-800"
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white outline-none transition-all placeholder:text-slate-400"
               />
             </div>
-          </div>
 
-          {/* Row 2: Category Filter Pills */}
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-1 border-t border-slate-100">
-            <span className="text-xs font-bold text-slate-700 mr-1">분류 & 상태:</span>
-            <button
-              type="button"
-              onClick={() => setCategoryFilter('ALL')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-150 active:scale-95 cursor-pointer ${
-                categoryFilter === 'ALL'
-                  ? 'bg-slate-900 text-white shadow-sm ring-2 ring-slate-400/30'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              전체 ({certificates.length})
-            </button>
-
-            {/* Status: Valid (유효함) */}
-            <button
-              type="button"
-              onClick={() => setCategoryFilter('VALID')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center gap-1 border ${
-                categoryFilter === 'VALID'
-                  ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm ring-2 ring-emerald-400/40 font-extrabold'
-                  : 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-              }`}
-              title="정상 사용 가능한 유효한 인증서만 필터링합니다."
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>유효함 ({validCount})</span>
-            </button>
-
-            {/* Status: Expiring Soon (만료 임박) */}
-            {expiringSoonCount > 0 && (
-              <button
-                type="button"
-                onClick={() => setCategoryFilter('EXPIRING')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center gap-1 border ${
-                  categoryFilter === 'EXPIRING'
-                    ? 'bg-amber-600 text-white border-amber-700 shadow-sm ring-2 ring-amber-400/40 font-extrabold'
-                    : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
-                }`}
-                title="30일 이내에 만료 예정인 갱신 대상 인증서입니다."
-              >
-                <Clock className="w-3.5 h-3.5" />
-                <span>만료 임박 ({expiringSoonCount})</span>
-              </button>
-            )}
-
-            {/* Status: Expired (만료됨) */}
-            {expiredCount > 0 && (
-              <button
-                type="button"
-                onClick={() => setCategoryFilter('EXPIRED')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center gap-1 border ${
-                  categoryFilter === 'EXPIRED'
-                    ? 'bg-rose-600 text-white border-rose-700 shadow-sm ring-2 ring-rose-400/40 font-extrabold'
-                    : 'bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100'
-                }`}
-                title="유효기간이 만료되어 정리가 필요한 인증서입니다."
-              >
-                <AlertTriangle className="w-3.5 h-3.5" />
-                <span>만료됨 ({expiredCount})</span>
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setCategoryFilter('GOV')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center gap-1 ${
-                categoryFilter === 'GOV'
-                  ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-400/40 font-extrabold'
-                  : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              공무원 GPKI/EPKI ({govCount})
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCategoryFilter('BANK')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center gap-1 ${
-                categoryFilter === 'BANK'
-                  ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-400/40 font-extrabold'
-                  : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-              }`}
-            >
-              <User className="w-3.5 h-3.5" />
-              은행/개인 NPKI ({bankCount})
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCategoryFilter('CORP')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center gap-1 ${
-                categoryFilter === 'CORP'
-                  ? 'bg-purple-600 text-white shadow-sm ring-2 ring-purple-400/40 font-extrabold'
-                  : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
-              }`}
-            >
-              <Briefcase className="w-3.5 h-3.5" />
-              법인 NPKI ({corpCount})
-            </button>
-
-            {nonStandardCount > 0 && (
-              <button
-                type="button"
-                onClick={() => setCategoryFilter('NON_STANDARD')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center gap-1 ${
-                  categoryFilter === 'NON_STANDARD'
-                    ? 'bg-amber-600 text-white shadow-sm ring-2 ring-amber-400/40 font-extrabold'
-                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300'
-                }`}
-                title="일반 인증서 프로그램(은행/정부 ActiveX)이 인식하지 못하는 비표준 위치에 저장된 인증서입니다."
-              >
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                <span>⚠️ 비표준 위치 ({nonStandardCount})</span>
-              </button>
-            )}
+            {/* Filter Tabs */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <div className="inline-flex p-0.5 bg-slate-100 rounded-lg border border-slate-200/80">
+                {[
+                  { id: 'ALL', label: '전체', count: certificates.length },
+                  { id: 'GOV', label: '공무원', count: govCount },
+                  { id: 'BANK', label: '금융', count: bankCount },
+                  { id: 'NON_STANDARD', label: '비표준', count: nonStandardCount }
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setCategoryFilter(cat.id as any)}
+                    className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                      categoryFilter === cat.id
+                        ? 'bg-white text-blue-700 shadow-2xs'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    <span>{cat.label}</span>
+                    <span className="text-[9px] opacity-60">({cat.count})</span>
+                  </button>
+                ))}
+              </div>
+              <div className="h-4 w-px bg-slate-200 mx-0.5" />
+              <div className="inline-flex p-0.5 bg-slate-100 rounded-lg border border-slate-200/80">
+                <button
+                  onClick={() => setCategoryFilter(categoryFilter === 'VALID' ? 'ALL' : 'VALID')}
+                  className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    categoryFilter === 'VALID' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-slate-500'
+                  }`}
+                >
+                  유효함 ({validCount})
+                </button>
+                {expiringSoonCount > 0 && (
+                  <button
+                    onClick={() => setCategoryFilter(categoryFilter === 'EXPIRING' ? 'ALL' : 'EXPIRING')}
+                    className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                      categoryFilter === 'EXPIRING' ? 'bg-amber-600 text-white shadow-2xs' : 'text-slate-500'
+                    }`}
+                  >
+                    만료임박 ({expiringSoonCount})
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

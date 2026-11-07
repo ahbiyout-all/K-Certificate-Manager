@@ -14,6 +14,29 @@
 
 ---
 
+### 🚀 [v1.9.0] - 2026-11-06
+**변경 구분**: `MINOR` (암호화 보호 보관소(Encrypted Vault) 및 제한된 USB 복구(`💾 USB로 제한 복구`) 신설, Inno Setup 무인 설치 및 방화벽 자동 등록 지원, 빌드 파이프라인 산출물 번호별 폴더 분리)
+#### ✨ 주요 개선 및 신규 기능 (Improvements & Features)
+- **암호화 보호 보관소 (Encrypted Protected Vault) 아키텍처 구축 (Web & WPF)**:
+  - **보안 강화**: 삭제 취소(Undo) 또는 복원된 인증서의 이력 매니페스트(`protected_restored_manifest.dat`)를 Windows DPAPI(CurrentUser 보안 컨텍스트) 및 AES-256 특수 암호화로 격리 저장.
+  - **무단 접근 차단**: 현재 로그인한 OS 사용자 외 타 사용자나 외부 프로세스가 보관소 파일을 탈취하더라도 내용을 읽을 수 없도록 기밀성 확보.
+  - **자동 마이그레이션**: 기존의 평문 JSON 매니페스트를 첫 실행 시 암호화 바이너리 데이터로 안전하게 자동 전환하고 레거시 파일을 파기.
+- **제한된 USB 복구 (`💾 USB로 제한 복구`) 기능 신설**:
+  - **사용자 요청 사항**: "복원된 항목 보관소 내용을 다시 복원이 가능하도록 제한된(usb복구) 복구를 지원합니다."
+  - **기능 구현**: 특수 보관소 내 인증서를 '이동식 USB 메모리'의 표준 규격 경로(`\NPKI`, `\GPKI`, `\EPKI`)로만 다시 복구할 수 있는 전용 핸들러 탑재.
+  - **안전 장치**: 로컬 컴퓨터의 시스템 폴더 오염 및 파일 임의 생성을 방지하기 위해 반드시 USB 매체 연결이 확인된 경우에만 복구를 허용하며, 복구 시 SHA-256 무결성 쌍 검증을 즉시 수행.
+- **Inno Setup 정식 인스톨러 완성 및 배포 환경 최적화**:
+  - **Unpacked Multi-File**: 불필요한 포터블 팩킹 없이 개별 필수 파일 지정 설치로 설치 용량 최적화 및 안정성 확보.
+  - **실행 프로세스 강제 종료**: 설치/제거 전 실행 중인 앱을 감지하여 안전하게 종료 처리(`TerminateAppProcesses`).
+  - **방화벽 조용 사전 등록**: `netsh.exe`를 사용하여 앱의 기본 이름 및 버전 포함 이름을 Windows Defender 방화벽 규칙에 자동으로 조용 등록.
+  - **무인 설치 지원**: `/VERYSILENT /NORESTART` 파라미터를 통한 기업용 무인 배포 옵션 완비.
+- **빌드 파이프라인 정리 및 산출물 구조화**:
+  - `build.bat` 및 `build.ps1`을 수정하여 `release/` 폴더 아래 `01_WebBundle`, `02_WpfDesktop`, `04_CoreDll`, `05_UnpackedApp`, `07_Installer` 등 번호별 독립 폴더로 산출물을 자동 분류 적재.
+- **공공기관 공식 채널 문서화**:
+  - 구글 블로거(Blogger) [작성 모드 / HTML 편집 모드] 원고 및 깃허브 기술 명세(`GITHUB_DOCS.md`) v1.9.0 최신화.
+
+---
+
 ### 🚀 [v1.8.0] - 2026-10-31
 **변경 구분**: `MINOR` (순수 창작 독립 DLL 모듈화 분리(`KCert.Core.dll`, `KCert.Crypto.dll`), 상단 헤더 가로바 스크롤러(Horizontal ScrollBar) 및 마우스 휠 가로 탐색 연동, 4대 테마 전역 고대비 툴팁(ToolTip) 시스템 신설, Semantic Versioning 3단계 분리 원칙 확립)
 #### ✨ 주요 개선 및 신규 기능 (Improvements & Features)

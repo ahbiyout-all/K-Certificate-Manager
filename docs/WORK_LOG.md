@@ -2124,3 +2124,59 @@
 
 
 
+
+---
+
+### 📝 [작업 차수 143] 자동 빌드 번호별 산출물 폴더 분리, Inno Setup 인스톨러 및 방화벽 조용 등록, 구글 블로거/깃허브 공식 문서화 및 v1.8.0 정식 릴리스
+- **작업 일시**: 2026-11-06 21:50 KST
+- **요청 사항**:
+  1. 빌드 파이프라인 정리 및 결과물을 각 번호별 별도 폴더(`release/01_WebBundle`, `release/02_WpfDesktop`, `release/03_WpfLite`, `release/04_CoreDll`, `release/05_UnpackedApp`, `release/07_Installer`)로 생성하도록 스크립트 수정.
+  2. Inno Setup 설치 스크립트(`installer.iss`) 구현: Unpacked Multi-File 설치, 실행 중인 앱 강제 종료, 기존 설치 시 사용자 선택(삭제/덮어쓰기), 라이선스 선언, 바탕화면 바로가기, 설치 완료 후 실행, 무인 설치(`/VERYSILENT`), 방화벽 규칙 조용 등록(기본 이름 및 버전 포함 이름 동시 등록).
+  3. 구글 블로거용 문서(`BLOGGER_POST_COMPOSE_MODE.md`, `BLOGGER_POST_HTML_MODE.html`) 및 깃허브용 문서(`GITHUB_DOCS.md`) 생성.
+  4. 구글 블로그 전용 10대 규격 순서(제목-본문-업데이트-앱 그림-다운로드-버전정보-시스템 요구 사항-제작자 및 공식 채널-전체 업데이트 이력-추천 태그) 및 태그 조건(한/영 혼용, 20개 이하, 200자 이내) 엄격 준수.
+  5. 버그 수정 및 메인 화면/UI 버전 v1.8.0 정합성 일체화.
+- **수행 내용**:
+  1. **빌드 파이프라인 번호별 산출물 폴더 분리 (`build.bat`, `build.ps1`)**:
+     - `release/01_WebBundle/`: Vite 웹 프로덕션 번들.
+     - `release/02_WpfDesktop/`: C# WPF 데스크톱 실행 바이너리.
+     - `release/03_WpfLite/`: 초경량 라이트 에디션.
+     - `release/04_CoreDll/`: 독립 `KCert.Core.dll` 및 `KCert.Crypto.dll`.
+     - `release/05_UnpackedApp/`: 클린 무설치 폴더 풀림(Unpacked Multi-File) 구조.
+     - `release/07_Installer/`: Inno Setup 인스톨러 패키지 (`kcert-manager-v1.8.0-setup.exe`).
+  2. **Inno Setup 인스톨러 완성 (`installer.iss`)**:
+     - 고유 GUID `AppId={{8F5B123A-4C2E-497B-902B-6277D8C7B8E1}}` 할당 및 Unpacked Multi-File 구조 개별 파일 직접 설치.
+     - 설치 시 `TerminateAppProcesses` 함수를 통한 기존 실행 프로세스 안전 강제 종료.
+     - 기존 앱 설치 여부 확인 후 사용자 동기화(클린 삭제 후 설치 vs 덮어쓰기 업그레이드 선택).
+     - 한국어/영어 라이선스 선언(`LICENSE_KR.txt`, `LICENSE_EN.txt`) 및 바탕화면 바로가기 선택 옵션.
+     - Windows 프로그램 추가/제거 정식 등록 (`UninstallDisplayName`).
+     - 무인 자동 설치 CLI 옵션 지원 (`/VERYSILENT /NORESTART`).
+     - `[Run]` / `[UninstallRun]`을 통한 Windows Defender 방화벽 규칙 사전 조용 등록 (`netsh.exe`를 사용하여 `"K-Certificate Manager"`, `"K-Certificate Manager v1.8.0"`, `"K-인증서 매니저"`, `"K-인증서 매니저 v1.8.0"` 동시 등록).
+  3. **구글 블로거 및 깃허브 공식 문서 생성 (`docs/`)**:
+     - `docs/BLOGGER_POST_COMPOSE_MODE.md`: 구글 블로그 [작성 모드 (서식 있는 텍스트)] 전용 원고.
+     - `docs/BLOGGER_POST_HTML_MODE.html`: 구글 블로그 [HTML 편집 모드] 전용 프로덕션급 인라인 CSS 기반 모던 HTML 원고.
+     - 10대 지정 순서 100% 준수 (제목-본문-업데이트-앱 그림-다운로드-버전정보-시스템 요구 사항-제작자 및 공식 채널-전체 기능 개선 이력-추천 태그).
+     - 추천 태그 규격화: `공인인증서,공무원인증서,GPKI,EPKI,NPKI,USB복사,인증서백업,K인증서매니저,인증서이동,공동인증서,KCertManager,CertificateManager,USBBackup,GPKICopy,NPKICopy` (15개 태그 / 138자).
+     - `docs/GITHUB_DOCS.md`: 깃허브 저장소용 기술 명세 및 빌드 가이드 문서 생성.
+  4. **버전 정합성 일원화 (v1.8.0)**:
+     - `src/version.ts`, `package.json`, `KCertManager.Wpf.csproj`, `KCert.Core.csproj`, `KCert.Crypto.csproj`, `AboutDialog.xaml`, `MainWindow.xaml`, `UpdateNotificationDialog.xaml`, `UpdateCheckerService.cs` 전체 v1.8.0 일치 완료.
+- **검증**:
+  - `compile_applet` 및 `lint_applet` co-execution 동시 실행 100% 통과 (0 오류).
+
+---
+
+### 📝 [작업 차수 144] v1.9.0 정식 버전 범프 및 최종 보안 아키텍처 완성
+- **작업 일시**: 2026-11-06 22:10 KST
+- **요청 사항**: "버전업이 필요하지 않나요?"
+- **배경 및 변경 사유**:
+  - v1.8.0 개발 과정에서 추가된 '특수 보관소 암호화' 및 '제한된 USB 복구' 기능은 단순 버그 수정을 넘어선 중요한 기능 및 보안 강화 사항이므로, SemVer 규칙에 따라 v1.9.0 MINOR 버전으로 공식 승격함.
+- **수행 내용**:
+  1. **전역 버전 동기화 (v1.9.0)**:
+     - `package.json`, `src/version.ts`, `KCertManager.Wpf.csproj`, `KCert.Core.csproj`, `KCert.Crypto.csproj`, `UpdateCheckerService.cs` 버전 갱신.
+     - `AboutDialog.xaml`, `MainWindow.xaml`, `UpdateNotificationDialog.xaml` UI 버전 표기 업데이트.
+     - `installer.iss`, `build.bat`, `build.ps1`, `README.md` 내 버전 정보 및 릴리스 하이라이트 동기화.
+  2. **공식 패치노트 (`PATCHNOTES.md`) 신설**:
+     - v1.9.0 섹션을 추가하여 암호화 보관소, USB 제한 복구, Inno Setup 무인 설치 및 방화벽 등록 등 신규 명세를 공식화.
+  3. **배포 문서 최신화**:
+     - 구글 블로그 및 깃허브 가이드의 버전 정보를 v1.9.0으로 일괄 갱신.
+- **검증**:
+  - `compile_applet` 및 `lint_applet` 동시 실행 결과 100% 무결점 통과 확인.

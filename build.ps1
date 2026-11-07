@@ -56,7 +56,7 @@ Write-Host " [OK] Node.js: $nodeVer (Node 22 LTS / 24 권장), NPM: $npmVer" -Fo
 # ------------------------------------------------------------------------------
 Write-Host ""
 Write-Host "[2/7] package.json 버전 정보 확인 중..." -ForegroundColor Cyan
-$appVersion = "1.8.0"
+$appVersion = "1.9.0"
 if (Test-Path "$scriptDir\package.json") {
     try {
         $pkgJson = Get-Content "$scriptDir\package.json" -Raw | ConvertFrom-Json
@@ -93,21 +93,23 @@ if ($LASTEXITCODE -ne 0) {
 $releaseBase = "$scriptDir\release"
 if (-not (Test-Path $releaseBase)) { New-Item -ItemType Directory -Path $releaseBase | Out-Null }
 
-$dir04Web = "$releaseBase\04_WebBundle"
-if (Test-Path $dir04Web) { Remove-Item -Recurse -Force $dir04Web }
-New-Item -ItemType Directory -Path $dir04Web | Out-Null
-Copy-Item -Path "$scriptDir\dist\*" -Destination $dir04Web -Recurse -Force
-Write-Host " [OK] Step 4 웹 번들 생성 완료: $dir04Web\" -ForegroundColor Green
+$dir01Web = "$releaseBase\01_WebBundle"
+if (Test-Path $dir01Web) { Remove-Item -Recurse -Force $dir01Web }
+New-Item -ItemType Directory -Path $dir01Web | Out-Null
+Copy-Item -Path "$scriptDir\dist\*" -Destination $dir01Web -Recurse -Force
+Write-Host " [OK] Step 1 웹 번들 생성 완료: $dir01Web\" -ForegroundColor Green
 
 # ------------------------------------------------------------------------------
-# Step 5: .NET 10 / .NET 8 C# WPF Native Desktop Edition Build
+# Step 2: .NET 10 / .NET 8 C# WPF Native Desktop Edition Build
 # ------------------------------------------------------------------------------
 Write-Host ""
 Write-Host "[5/7] .NET 10 / .NET 8 C# WPF 데스크톱 네이티브 에디션 및 KCert.Core DLL 빌드 (v$appVersion)..." -ForegroundColor Cyan
 $coreProj = "$scriptDir\src-wpf\KCert.Core\KCert.Core.csproj"
 $wpfProj = "$scriptDir\src-wpf\KCertManager.Wpf\KCertManager.Wpf.csproj"
-$dir05Wpf = "$releaseBase\05_WpfDesktop"
-if (-not (Test-Path $dir05Wpf)) { New-Item -ItemType Directory -Path $dir05Wpf | Out-Null }
+$dir02Wpf = "$releaseBase\02_WpfDesktop"
+if (-not (Test-Path $dir02Wpf)) { New-Item -ItemType Directory -Path $dir02Wpf | Out-Null }
+$dir04Core = "$releaseBase\04_CoreDll"
+if (-not (Test-Path $dir04Core)) { New-Item -ItemType Directory -Path $dir04Core | Out-Null }
 
 $dotnetCmd = Get-Command dotnet -ErrorAction SilentlyContinue
 
@@ -130,13 +132,13 @@ if ($dotnetCmd -and (-not $SkipWpf)) {
     # 5-0: KCert.Core.dll
     if (Test-Path $coreProj) {
         Write-Host " [INFO] KCert.Core 독립 DLL 빌드 중 ($resolvedTfm, v$appVersion)..." -ForegroundColor Yellow
-        & dotnet build $coreProj -c Release -p:TargetFramework=$resolvedTfm -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 -o $dir05Wpf
+        & dotnet build $coreProj -c Release -p:TargetFramework=$resolvedTfm -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 -o $dir04Core
         if ($LASTEXITCODE -ne 0) {
-            & dotnet build $coreProj -c Release -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 -o $dir05Wpf
+            & dotnet build $coreProj -c Release -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 -o $dir04Core
         }
-        if (Test-Path "$dir05Wpf\KCert.Core.dll") {
-            Copy-Item -Path "$dir05Wpf\KCert.Core.dll" -Destination "$scriptDir\KCert.Core.dll" -Force
-            Write-Host " [OK] Step 5-0 KCert.Core.dll 생성 완료: $dir05Wpf\KCert.Core.dll" -ForegroundColor Green
+        if (Test-Path "$dir04Core\KCert.Core.dll") {
+            Copy-Item -Path "$dir04Core\KCert.Core.dll" -Destination "$scriptDir\KCert.Core.dll" -Force
+            Write-Host " [OK] Step 4 KCert.Core.dll 생성 완료: $dir04Core\KCert.Core.dll" -ForegroundColor Green
         }
     }
 
@@ -145,88 +147,80 @@ if ($dotnetCmd -and (-not $SkipWpf)) {
         Write-Host " [INFO] win-x64 패키지 복원 중 ($resolvedTfm)..." -ForegroundColor Yellow
         & dotnet restore $wpfProj -r win-x64 -p:TargetFramework=$resolvedTfm 2>$null | Out-Null
 
-        Write-Host " [INFO] Step 5-1 데스크톱 풀버전 KCertManager.exe ($resolvedTfm Self-Contained, v$appVersion) 빌드 중..." -ForegroundColor Yellow
-        & dotnet publish $wpfProj -c Release -r win-x64 -p:TargetFramework=$resolvedTfm -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -p:DebugSymbols=false -o $dir05Wpf
+        Write-Host " [INFO] Step 2 데스크톱 풀버전 KCertManager.exe ($resolvedTfm Self-Contained, v$appVersion) 빌드 중..." -ForegroundColor Yellow
+        & dotnet publish $wpfProj -c Release -r win-x64 -p:TargetFramework=$resolvedTfm -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -p:DebugSymbols=false -o $dir02Wpf
 
         if ($LASTEXITCODE -ne 0) {
             Write-Host " [NOTICE] Self-Contained 실패 시 프레임워크 종속 모드로 대체 빌드 ($resolvedTfm, v$appVersion)..." -ForegroundColor Yellow
-            & dotnet publish $wpfProj -c Release -r win-x64 -p:TargetFramework=$resolvedTfm -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=false -p:DebugType=none -p:DebugSymbols=false -o $dir05Wpf
+            & dotnet publish $wpfProj -c Release -r win-x64 -p:TargetFramework=$resolvedTfm -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=false -p:DebugType=none -p:DebugSymbols=false -o $dir02Wpf
         }
 
-        if (Test-Path "$dir05Wpf\KCertManager.exe") {
-            Copy-Item -Path "$dir05Wpf\KCertManager.exe" -Destination "$scriptDir\KCertManager.exe" -Force
-            $size = (Get-Item "$dir05Wpf\KCertManager.exe").Length
+        if (Test-Path "$dir02Wpf\KCertManager.exe") {
+            Copy-Item -Path "$dir02Wpf\KCertManager.exe" -Destination "$scriptDir\KCertManager.exe" -Force
+            $size = (Get-Item "$dir02Wpf\KCertManager.exe").Length
             $sizeMb = [math]::Round($size / 1MB, 2)
-            Write-Host " [OK] Step 5-1 C# WPF 풀버전 생성 완료: $dir05Wpf\KCertManager.exe ($sizeMb MB)" -ForegroundColor Green
+            Write-Host " [OK] Step 2 C# WPF 풀버전 생성 완료: $dir02Wpf\KCertManager.exe ($sizeMb MB)" -ForegroundColor Green
         }
 
         # 5-2: Lite Edition
-        Write-Host " [INFO] Step 5-2 초경량 라이트 에디션 KCertManager-Lite.exe ($resolvedTfm, v$appVersion) 빌드 중..." -ForegroundColor Yellow
-        $dir05Lite = "$releaseBase\05_WpfLite"
-        if (Test-Path $dir05Lite) { Remove-Item -Recurse -Force $dir05Lite }
-        New-Item -ItemType Directory -Path $dir05Lite | Out-Null
-        & dotnet publish $wpfProj -c Release -r win-x64 -p:TargetFramework=$resolvedTfm -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=false -p:DebugType=none -p:DebugSymbols=false -o $dir05Lite 2>$null | Out-Null
+        Write-Host " [INFO] Step 3 초경량 라이트 에디션 KCertManager-Lite.exe ($resolvedTfm, v$appVersion) 빌드 중..." -ForegroundColor Yellow
+        $dir03Lite = "$releaseBase\03_WpfLite"
+        if (Test-Path $dir03Lite) { Remove-Item -Recurse -Force $dir03Lite }
+        New-Item -ItemType Directory -Path $dir03Lite | Out-Null
+        & dotnet publish $wpfProj -c Release -r win-x64 -p:TargetFramework=$resolvedTfm -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=false -p:DebugType=none -p:DebugSymbols=false -o $dir03Lite 2>$null | Out-Null
 
-        if (Test-Path "$dir05Lite\KCertManager.exe") {
-            Copy-Item -Path "$dir05Lite\KCertManager.exe" -Destination "$dir05Wpf\KCertManager-Lite.exe" -Force
-            Copy-Item -Path "$dir05Lite\KCertManager.exe" -Destination "$scriptDir\KCertManager-Lite.exe" -Force
-            $liteSizeKb = [math]::Round((Get-Item "$dir05Wpf\KCertManager-Lite.exe").Length / 1KB, 1)
-            Write-Host " [OK] Step 5-2 초경량 라이트 에디션 생성 완료: $dir05Wpf\KCertManager-Lite.exe ($liteSizeKb KB)" -ForegroundColor Green
+        if (Test-Path "$dir03Lite\KCertManager.exe") {
+            Copy-Item -Path "$dir03Lite\KCertManager.exe" -Destination "$dir02Wpf\KCertManager-Lite.exe" -Force
+            $liteSizeKb = [math]::Round((Get-Item "$dir02Wpf\KCertManager-Lite.exe").Length / 1KB, 1)
+            Write-Host " [OK] Step 3 초경량 라이트 에디션 생성 완료: $dir03Lite\KCertManager.exe ($liteSizeKb KB)" -ForegroundColor Green
         }
-        if (Test-Path $dir05Lite) { Remove-Item -Recurse -Force $dir05Lite }
     }
 } else {
     Write-Host " [NOTICE] .NET SDK가 없거나 SkipWpf가 지정되어 WPF 빌드를 건너뜁니다." -ForegroundColor Yellow
 }
 
 # ------------------------------------------------------------------------------
-# Step 6: Unpacked Multi-File Assembly (Clean, no dev/debug leftovers)
+# Step 5: Unpacked Multi-File Assembly (Clean, no dev/debug leftovers)
 # ------------------------------------------------------------------------------
 Write-Host ""
 Write-Host "[6/7] 배포용 폴더 풀림 [Unpacked Multi-File] 구조 조립 중..." -ForegroundColor Cyan
 $artifactName = "kcert-manager-v$appVersion"
-$dir06Unpacked = "$releaseBase\06_UnpackedApp"
-if (Test-Path $dir06Unpacked) { Remove-Item -Recurse -Force $dir06Unpacked }
-New-Item -ItemType Directory -Path $dir06Unpacked | Out-Null
+$dir05Unpacked = "$releaseBase\05_UnpackedApp"
+if (Test-Path $dir05Unpacked) { Remove-Item -Recurse -Force $dir05Unpacked }
+New-Item -ItemType Directory -Path $dir05Unpacked | Out-Null
 
 # 1. Essential Launchers & License (Korean & English) only (Exclude dev files and unnecessary scripts)
 foreach ($f in @("run-web.cmd", "LICENSE.txt", "LICENSE_KR.txt", "LICENSE_EN.txt")) {
-    if (Test-Path "$scriptDir\$f") { Copy-Item -Path "$scriptDir\$f" -Destination $dir06Unpacked -Force }
+    if (Test-Path "$scriptDir\$f") { Copy-Item -Path "$scriptDir\$f" -Destination $dir05Unpacked -Force }
 }
 
 # 2. Native Desktop Binaries (Single copy only, no duplicate version tags, no pdb/deps)
-if (Test-Path "$dir05Wpf\KCertManager.exe") {
-    Copy-Item -Path "$dir05Wpf\KCertManager.exe" -Destination $dir06Unpacked -Force
-} elseif (Test-Path "$dir05Wpf\KCertManager_v$appVersion.exe") {
-    Copy-Item -Path "$dir05Wpf\KCertManager_v$appVersion.exe" -Destination "$dir06Unpacked\KCertManager.exe" -Force
+if (Test-Path "$dir02Wpf\KCertManager.exe") {
+    Copy-Item -Path "$dir02Wpf\KCertManager.exe" -Destination $dir05Unpacked -Force
 }
 
-if (Test-Path "$dir05Wpf\KCertManager-Lite.exe") {
-    Copy-Item -Path "$dir05Wpf\KCertManager-Lite.exe" -Destination $dir06Unpacked -Force
-} elseif (Test-Path "$dir05Wpf\KCertManager-Lite_v$appVersion.exe") {
-    Copy-Item -Path "$dir05Wpf\KCertManager-Lite_v$appVersion.exe" -Destination "$dir06Unpacked\KCertManager-Lite.exe" -Force
-}
-
-if (Test-Path "$dir05Wpf\KCert.Core.dll") {
-    Copy-Item -Path "$dir05Wpf\KCert.Core.dll" -Destination $dir06Unpacked -Force
+if (Test-Path "$dir04Core\KCert.Core.dll") {
+    Copy-Item -Path "$dir04Core\KCert.Core.dll" -Destination $dir05Unpacked -Force
 }
 
 # 3. Web Bundle (dist)
-$destDist = "$dir06Unpacked\dist"
+$destDist = "$dir05Unpacked\dist"
 if (Test-Path $destDist) { Remove-Item -Recurse -Force $destDist }
 New-Item -ItemType Directory -Path $destDist | Out-Null
-Copy-Item -Path "$scriptDir\dist\*" -Destination $destDist -Recurse -Force
+if (Test-Path "$scriptDir\dist") {
+    Copy-Item -Path "$scriptDir\dist\*" -Destination $destDist -Recurse -Force
+}
 
 # 4. Docs
 if (Test-Path "$scriptDir\docs") {
-    $destDocs = "$dir06Unpacked\docs"
+    $destDocs = "$dir05Unpacked\docs"
     if (-not (Test-Path $destDocs)) { New-Item -ItemType Directory -Path $destDocs | Out-Null }
     foreach ($d in @("USER_GUIDE.md", "PATCHNOTES.md", "VERSIONING_POLICY.md", "KCERT_CORE_DLL_SPEC.md", "BUILD_GUIDE.md", "LICENSE.md", "README.md")) {
         if (Test-Path "$scriptDir\docs\$d") { Copy-Item -Path "$scriptDir\docs\$d" -Destination $destDocs -Force }
     }
 }
 
-Write-Host " [OK] Step 6 클린 무설치 폴더 조립 완료: $dir06Unpacked\" -ForegroundColor Green
+Write-Host " [OK] Step 5 클린 무설치 폴더 조립 완료: $dir05Unpacked\" -ForegroundColor Green
 
 # ------------------------------------------------------------------------------
 # Step 7: Inno Setup Compiler Packaging
@@ -275,16 +269,19 @@ Write-Host "  * 공식 블로그: https://ahbiyoutvibe.blogspot.com/" -Foregroun
 Write-Host "  * 소속 회사:   https://www.cisnet.co.kr" -ForegroundColor White
 Write-Host "------------------------------------------------------------------------------" -ForegroundColor DarkGray
 Write-Host "  [빌드 산출물 목록: $releaseBase\]" -ForegroundColor Yellow
-Write-Host "   1. [Step 4 웹 번들]        $dir04Web\" -ForegroundColor White
-if (Test-Path "$dir05Wpf\KCertManager.exe") {
-    Write-Host "   2. [Step 5-1 WPF 데스크톱] $dir05Wpf\KCertManager.exe" -ForegroundColor White
+Write-Host "   1. [Step 1 웹 번들]        $dir01Web\" -ForegroundColor White
+if (Test-Path "$dir02Wpf\KCertManager.exe") {
+    Write-Host "   2. [Step 2 WPF 데스크톱]   $dir02Wpf\KCertManager.exe" -ForegroundColor White
 }
-if (Test-Path "$dir05Wpf\KCertManager-Lite.exe") {
-    Write-Host "   2-1.[Step 5-2 라이트 에디션] $dir05Wpf\KCertManager-Lite.exe" -ForegroundColor White
+if (Test-Path "$dir03Lite\KCertManager.exe") {
+    Write-Host "   3. [Step 3 라이트 에디션]  $dir03Lite\KCertManager.exe" -ForegroundColor White
 }
-Write-Host "   3. [Step 6 무설치 패키지]  $dir06Unpacked\" -ForegroundColor White
+if (Test-Path "$dir04Core\KCert.Core.dll") {
+    Write-Host "   4. [Step 4 Core DLL]       $dir04Core\KCert.Core.dll" -ForegroundColor White
+}
+Write-Host "   5. [Step 5 무설치 패키지]  $dir05Unpacked\" -ForegroundColor White
 if (Test-Path "$dir07Installer\$artifactName-setup.exe") {
-    Write-Host "   4. [Step 7 설치 프로그램]  $dir07Installer\$artifactName-setup.exe" -ForegroundColor White
+    Write-Host "   6. [Step 7 설치 프로그램]  $dir07Installer\$artifactName-setup.exe" -ForegroundColor White
 }
 Write-Host "==============================================================================" -ForegroundColor Cyan
 Write-Host ""

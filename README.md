@@ -1,9 +1,9 @@
-# K-Certificate Manager (K-인증서 매니저) v1.8.0
+# K-Certificate Manager (K-인증서 매니저) v1.9.0
 
 <div align="center">
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Version](https://img.shields.io/badge/Version-v1.8.0-green.svg)
+![Version](https://img.shields.io/badge/Version-v1.9.0-green.svg)
 ![React](https://img.shields.io/badge/React-19.0-61dafb.svg)
 ![Vite](https://img.shields.io/badge/Vite-6.2-646cff.svg)
 ![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512bd4.svg)
@@ -17,18 +17,18 @@
 
 ---
 
-## 🚀 최신 릴리스 정보 (Latest Release: v1.8.0)
+## 🚀 최신 릴리스 정보 (Latest Release: v1.9.0)
 
-> **버전**: `v1.8.0` (Semantic Versioning 2.0.0 MINOR Release)  
-> **출시일**: 2026-10-31  
+> **버전**: `v1.9.0` (Semantic Versioning 2.0.0 MINOR Release)  
+> **출시일**: 2026-11-06  
 > **상세 변경 내역**: [docs/PATCHNOTES.md](./docs/PATCHNOTES.md) • [GitHub 배포 가이드](./docs/GITHUB_GUIDE.md) • [버전 관리 정책](./docs/VERSIONING_POLICY.md)
 
-### 🌟 v1.8.0 핵심 업데이트 내용
+### 🌟 v1.9.0 핵심 업데이트 내용
+- **암호화 보호 보관소 및 제한된 USB 복구 (`💾 USB로 제한 복구`) 신설**: 특수 보관소 내 복원된 인증서를 외부 파일 오염 방지 목적으로 이동식 USB 메모리의 표준 규격 경로(`\NPKI`, `\GPKI`, `\EPKI`)로만 안전하게 복구 허용
+- **Windows DPAPI 및 AES-256 특수 암호화 저장소 구축**: 삭제 및 복원 항목 매니페스트(`protected_restored_manifest.dat`)를 CurrentUser 보안 컨텍스트로 암호화하여 제3자의 무단 접근 차단
+- **Inno Setup 정비 및 무인 설치(Silent Install) 지원**: 설치 시 기존 실행 프로세스 안전 종료, Windows 프로그램 추가/제거 정식 등록, 방화벽 규칙 자동 조용 등록 지원
 - **순수 창작 독립 C# 코어 & 암호화 DLL 2종 분리 구축 (`KCert.Core.dll`, `KCert.Crypto.dll`)**: 외부 3rd-party 의존성 0%의 C# 순수 X.509/ASN.1 파서, OID 식별자 분류기, SEED-128 암호화 및 PKCS#8 개인키 복호화 라이브러리 탑재
 - **상단 헤더 가로바 스크롤(Horizontal ScrollBar) 신설 및 마우스 휠 연동 (Web & WPF)**: 메인 상단 헤더 메뉴 높이 최적화(64px) 및 상시 가로 스크롤바 제공, 마우스 휠(`PreviewMouseWheel`) 연동 및 윈도우 드래그 조작과의 간섭 완벽 차단
-- **4대 테마 전역 고대비 툴팁(ToolTip) 시스템 탑재**: 다크 테마에서 흰색 배경에 흰색 글씨가 겹치던 시인성 결함을 완벽 해결하고, WCAG AAA 12:1+ 고대비 다크 플로팅 카드 스타일 전 테마 적용
-- **소프트웨어 버전 관리(Semantic Versioning: MAJOR.MINOR.PATCH) 3단계 분리 정책 확립**: `docs/VERSIONING_POLICY.md` 판정 의사결정 트리 및 8대 체크리스트 명문화
-- **상단 헤더 실시간 볼륨 슬라이더 및 WPF 전용 `SettingsDialog.xaml` 환경설정 대화상자 계승**: 원클릭 음소거, 볼륨 조절 슬라이더, 성공 알림음(SuccessChime) 테스트 및 영구 보존
 
 ---
 
