@@ -184,7 +184,11 @@ namespace KCertManager.Wpf.Views
                     SoundService.PlayCompletionSound();
                     UserFriendlyMessageHelper.ShowOperationComplete(
                         "특수 보관소 ➔ USB 제한 복구 완료!",
-                        $"[인증서 소유자]: {item.CertCommonName}\n[복원 경로]: {destDir}\n\n이동식 USB 매체({usbDrive.Name})로 인증서 제한 복원이 완료되었습니다.",
+                        1,
+                        usbDrive.Name,
+                        destDir,
+                        item.OriginalDirectoryPath,
+                        new[] { item.CertCommonName },
                         this);
 
                     LoadRestoredItems();
