@@ -140,6 +140,66 @@ namespace KCertManager.Wpf.Views
             }
         }
 
+        private void BtnRestoreRestoredToUsb_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is RestoredTrashItem item)
+            {
+                var targetDrives = _backupService.GetAvailableTargetDrives().Where(d => d.IsRemovable || d.BusType.Equals("USB", StringComparison.OrdinalIgnoreCase)).ToList();
+                if (!targetDrives.Any())
+                {
+                    UserFriendlyMessageHelper.ShowErrorText(
+                        "연결된 이동식 USB 메모리를 찾을 수 없습니다.",
+                        "제한된 USB 복구 안내",
+                        "• 특수 보관소의 제한 복구 기능은 파일 오염 및 임의 생성을 방지하기 위해 이동식 USB 매체로만 복원이 허용됩니다.\n• USB 메모리를 컴퓨터에 연결하신 후 다시 시도해 주세요.",
+                        this);
+                    return;
+                }
+
+                var usbDrive = targetDrives.First();
+                string subFolder = item.Category.ToString().StartsWith("GPKI") ? "GPKI" : item.Category.ToString().StartsWith("EPKI") ? "EPKI" : "NPKI";
+                string destDir = System.IO.Path.Combine(usbDrive.DriveLetter, subFolder, item.CertCommonName);
+
+                try
+                {
+                    if (System.IO.Directory.Exists(item.OriginalDirectoryPath))
+                    {
+                        System.IO.Directory.CreateDirectory(destDir);
+                        foreach (var file in System.IO.Directory.GetFiles(item.OriginalDirectoryPath))
+                        {
+                            string fileName = System.IO.Path.GetFileName(file);
+                            System.IO.File.Copy(file, System.IO.Path.Combine(destDir, fileName), true);
+                        }
+                    }
+
+                    AnyItemRestored = true;
+                    ActivityLogService.Instance.Log(
+                        LogCategory.RESTORE,
+                        LogLevel.SUCCESS,
+                        "특수 보관소 ➔ USB 제한 복구 완료",
+                        $"인증서 [{item.CertCommonName}] ➔ USB ({usbDrive.DriveLetter}) {subFolder} 제한 복원 완료",
+                        item.OriginalDirectoryPath,
+                        destDir,
+                        1);
+
+                    SoundService.Instance.PlayCompletionSound();
+                    UserFriendlyMessageHelper.ShowOperationComplete(
+                        "특수 보관소 ➔ USB 제한 복구 완료!",
+                        $"[인증서 소유자]: {item.CertCommonName}\n[복원 경로]: {destDir}\n\n이동식 USB 매체({usbDrive.DriveLetter})로 인증서 제한 복원이 완료되었습니다.",
+                        this);
+
+                    LoadRestoredItems();
+                }
+                catch (Exception ex)
+                {
+                    UserFriendlyMessageHelper.ShowErrorText(
+                        $"USB 제한 복구 실패: {ex.Message}",
+                        "복구 오류",
+                        "• USB 쓰기 금지 해제 여부를 확인해 주세요.\n• 관리자 권한으로 실행해 보세요.",
+                        this);
+                }
+            }
+        }
+
         private void UpdateSelectedState()
         {
             int selectedCount = _items.Count(x => x.IsSelected);

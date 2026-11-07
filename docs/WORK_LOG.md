@@ -2106,5 +2106,21 @@
 - **검증**:
   - `compile_applet` 및 `lint_applet` co-execution 검증 완료 (0 오류).
 
+### 📝 [작업 차수 141] 복원된 항목 보관소 특수 폴더 격리 및 파일 암호화(Windows DPAPI / AES-256) 전면 적용
+- **작업 일시**: 2026-11-06 20:00 KST
+- **요청 사항**: 복원된 항목 보관소 내용을 독립된 특수 폴더에 저장하고 파일 암호화를 적용하여 타인의 무단 접근 및 사용을 완벽 차단.
+- **수행 내용**:
+  1. **C# WPF 백엔드 보안 강화 (`SafetyTrashManager.cs`)**:
+     - 복원된 인증서 이력 데이터를 기존 일반 폴더에서 독립된 **특수 격리 폴더 (`LocalAppData\KCertManager\ProtectedRestoredVault`)**로 분리 저장.
+     - **Windows DPAPI (`ProtectedData.Protect` / `DataProtectionScope.CurrentUser`)** 및 **AES-256 GCM** 보안 암호화를 이중 적용하여 매니페스트 바이너리(`protected_restored_manifest.dat`) 암호화 저장.
+     - 현재 로그인한 OS 사용자 계정 외 타 사용자/외부 프로세스 접근 시 DPAPI 복호화 차단(Access Denied)으로 철저한 기밀성 유지.
+     - 기존 평문 파일(`restored_manifest.json`)을 암호화 데이터로 자동 마이그레이션 및 레거시 파일 안전 소거 처리.
+  2. **웹(Web) 프론트엔드 보안 격리 모듈 구축 (`protectedVaultStorage.ts` & `TrashModal.tsx`)**:
+     - `protectedVaultStorage.ts` 전용 암호화 스토리지 유틸리티를 구축하여 `kcert_protected_restored_vault_v1` 키 기반 암호화 인코딩 저장.
+     - `TrashModal.tsx` 복원 보관소 탭 하단에 `🔐 특수 암호화 보관소 격리 저장` 안내 배너와 보안 태그를 배치하여 사용자가 암호화 적용 상태를 직관적으로 확인 가능하도록 개선.
+- **검증**:
+  - `compile_applet` 및 `lint_applet` co-execution 검증 완료 (0 오류).
+
+
 
 

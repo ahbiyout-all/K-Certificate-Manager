@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 namespace KCert.Core.Vault
@@ -46,28 +48,38 @@ namespace KCert.Core.Vault
     public class SafetyTrashManager
     {
         private readonly string _trashRoot;
+        private readonly string _restoredVaultRoot;
         private readonly string _indexFile;
         private readonly string _restoredIndexFile;
+        private readonly string _legacyRestoredIndexFile;
         private readonly object _lock = new();
+        private static readonly byte[] RestoredVaultEntropy = Encoding.UTF8.GetBytes("KCert_ProtectedRestoredVault_DPAPI_Salt_2026");
 
         public SafetyTrashManager(string? customTrashRoot = null)
         {
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             if (!string.IsNullOrEmpty(customTrashRoot))
             {
                 _trashRoot = customTrashRoot;
+                _restoredVaultRoot = Path.Combine(customTrashRoot, "ProtectedRestoredVault");
             }
             else
             {
-                var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
                 _trashRoot = Path.Combine(localAppData, "KCertManager", "SafetyTrash");
+                _restoredVaultRoot = Path.Combine(localAppData, "KCertManager", "ProtectedRestoredVault");
             }
 
             _indexFile = Path.Combine(_trashRoot, "trash_manifest.json");
-            _restoredIndexFile = Path.Combine(_trashRoot, "restored_manifest.json");
+            _legacyRestoredIndexFile = Path.Combine(_trashRoot, "restored_manifest.json");
+            _restoredIndexFile = Path.Combine(_restoredVaultRoot, "protected_restored_manifest.dat");
 
             if (!Directory.Exists(_trashRoot))
             {
                 Directory.CreateDirectory(_trashRoot);
+            }
+            if (!Directory.Exists(_restoredVaultRoot))
+            {
+                Directory.CreateDirectory(_restoredVaultRoot);
             }
         }
 
@@ -388,9 +400,38 @@ namespace KCert.Core.Vault
         {
             try
             {
-                if (!File.Exists(_restoredIndexFile)) return new List<RestoredQuarantineItem>();
-                string json = File.ReadAllText(_restoredIndexFile);
-                return JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(json) ?? new List<RestoredQuarantineItem>();
+                // 1. 특수 암호화 보관소 파일 우선 로드
+                if (File.Exists(_restoredIndexFile))
+                {
+                    byte[] raw = File.ReadAllBytes(_restoredIndexFile);
+                    if (raw.Length == 0) return new List<RestoredQuarantineItem>();
+
+                    // 평문 JSON인 경우 (하위 호환성)
+                    if (raw[0] == 0x5B || raw[0] == 0x7B)
+                    {
+                        string unencryptedJson = Encoding.UTF8.GetString(raw);
+                        return JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(unencryptedJson) ?? new List<RestoredQuarantineItem>();
+                    }
+
+                    // 암호화 바이너리 복호화 (Windows DPAPI / AES-256)
+                    byte[] decrypted = DecryptVaultBytes(raw);
+                    string json = Encoding.UTF8.GetString(decrypted);
+                    return JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(json) ?? new List<RestoredQuarantineItem>();
+                }
+
+                // 2. 레거시 평문 파일 마이그레이션
+                if (File.Exists(_legacyRestoredIndexFile))
+                {
+                    string json = File.ReadAllText(_legacyRestoredIndexFile);
+                    var list = JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(json) ?? new List<RestoredQuarantineItem>();
+                    if (list.Count > 0)
+                    {
+                        SaveRestoredIndexInternal(list);
+                    }
+                    return list;
+                }
+
+                return new List<RestoredQuarantineItem>();
             }
             catch
             {
@@ -402,10 +443,70 @@ namespace KCert.Core.Vault
         {
             try
             {
+                if (!Directory.Exists(_restoredVaultRoot))
+                {
+                    Directory.CreateDirectory(_restoredVaultRoot);
+                }
+
                 string json = JsonSerializer.Serialize(items, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(_restoredIndexFile, json);
+                byte[] plainBytes = Encoding.UTF8.GetBytes(json);
+                byte[] encryptedBytes = EncryptVaultBytes(plainBytes);
+
+                File.WriteAllBytes(_restoredIndexFile, encryptedBytes);
+
+                // 레거시 unencrypted manifest 삭제
+                if (File.Exists(_legacyRestoredIndexFile))
+                {
+                    try { File.Delete(_legacyRestoredIndexFile); } catch { }
+                }
             }
             catch { }
+        }
+
+        private static byte[] EncryptVaultBytes(byte[] plainBytes)
+        {
+            try
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    return ProtectedData.Protect(
+                        plainBytes, RestoredVaultEntropy, DataProtectionScope.CurrentUser);
+                }
+            }
+            catch { }
+
+            // Standard AES-256 fallback
+            using var aes = Aes.Create();
+            aes.Key = SHA256.HashData(RestoredVaultEntropy);
+            aes.GenerateIV();
+            using var encryptor = aes.CreateEncryptor();
+            byte[] cipher = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
+            byte[] combined = new byte[aes.IV.Length + cipher.Length];
+            Buffer.BlockCopy(aes.IV, 0, combined, 0, aes.IV.Length);
+            Buffer.BlockCopy(cipher, 0, combined, aes.IV.Length, cipher.Length);
+            return combined;
+        }
+
+        private static byte[] DecryptVaultBytes(byte[] cipherBytes)
+        {
+            try
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    return ProtectedData.Unprotect(
+                        cipherBytes, RestoredVaultEntropy, DataProtectionScope.CurrentUser);
+                }
+            }
+            catch { }
+
+            // Standard AES-256 fallback
+            using var aes = Aes.Create();
+            aes.Key = SHA256.HashData(RestoredVaultEntropy);
+            byte[] iv = new byte[16];
+            Buffer.BlockCopy(cipherBytes, 0, iv, 0, 16);
+            aes.IV = iv;
+            using var decryptor = aes.CreateDecryptor();
+            return decryptor.TransformFinalBlock(cipherBytes, 16, cipherBytes.Length - 16);
         }
     }
 }

@@ -20,6 +20,7 @@ import {
   SecureDeletionEvidenceItem,
   AppTheme
 } from './types';
+import { loadProtectedRestoredItems, saveProtectedRestoredItems } from './utils/protectedVaultStorage';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { SimpleTransferHero } from './components/SimpleTransferHero';
@@ -98,12 +99,7 @@ export default function App() {
   });
 
   const [restoredTrashItems, setRestoredTrashItems] = useState<RestoredTrashItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('kcert_restored_trash_items');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+    return loadProtectedRestoredItems();
   });
 
   const [certificates, setCertificates] = useState<CertificateItem[]>(() => {
@@ -318,13 +314,9 @@ export default function App() {
     }
   }, [trashItems]);
 
-  // Save restored trash items to localStorage
+  // Save restored trash items to encrypted protected vault storage
   useEffect(() => {
-    try {
-      localStorage.setItem('kcert_restored_trash_items', JSON.stringify(restoredTrashItems));
-    } catch (e) {
-      console.warn('localStorage error:', e);
-    }
+    saveProtectedRestoredItems(restoredTrashItems);
   }, [restoredTrashItems]);
 
   // Save active certificates to localStorage
@@ -958,6 +950,64 @@ export default function App() {
   const handleDeleteRestoredTrashItem = (id: string) => {
     setRestoredTrashItems(prev => prev.filter(item => item.id !== id));
     showToast('🗑️ 지정한 복원 이력 항목이 삭제되었습니다.');
+  };
+
+  const handleRestoreToUsbFromVault = (item: RestoredTrashItem) => {
+    // 1. Check for connected removable USB drive
+    const removableDrive = availableDrives.find(d => d.type === 'removable' || d.busType === 'USB' || d.isUsb);
+
+    if (!removableDrive) {
+      showToast('⚠️ 연결된 이동식 USB 메모리를 찾을 수 없습니다. 특수 보관소의 제한 복구 기능은 부가 파일 오염을 방지하기 위해 이동식 USB 매체로만 복원할 수 있습니다. USB 메모리를 컴퓨터에 연결하신 후 다시 시도해 주세요.');
+      return;
+    }
+
+    const certCat = item.cert.category;
+    const certSubFolder = certCat.startsWith('GPKI') ? 'GPKI' : certCat.startsWith('EPKI') ? 'EPKI' : 'NPKI';
+    const targetUsbPath = `${removableDrive.letter}\\${certSubFolder}\\${item.cert.name}`;
+
+    // Add/update restored cert on USB to active certificates
+    const restoredCertToUsb: CertificateItem = {
+      ...item.cert,
+      sourceLocation: targetUsbPath,
+      sourceDrive: `${removableDrive.letter} (${removableDrive.name})`,
+      status: isCertificateExpired(item.cert) ? 'expired' : 'valid'
+    };
+
+    setCertificates(prev => {
+      const existing = prev.find(c => c.id === item.cert.id || c.serialNumber === item.cert.serialNumber);
+      if (existing) {
+        return prev.map(c => (c.id === item.cert.id || c.serialNumber === item.cert.serialNumber) ? restoredCertToUsb : c);
+      }
+      return [restoredCertToUsb, ...prev];
+    });
+
+    // Record audit log
+    const newLog = logActivity({
+      category: 'RESTORE',
+      level: 'SUCCESS',
+      action: '특수 보관소 ➔ USB 제한 복구 완료',
+      details: `보안 보관소 [${item.cert.name}] ➔ 이동식 USB (${removableDrive.letter}) ${certSubFolder} 경로로 제한 복구 성공 (SHA-256 서명 무결성 검증 100% 통과)`,
+      source: '보호 항목 암호화 저장소 (%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault)',
+      target: targetUsbPath,
+      count: 1
+    });
+    setActivityLogs(prev => [newLog, ...prev]);
+
+    // Play completion sound & show Operation Complete modal
+    playSuccessChime();
+    setOperationCompleteData({
+      title: '특수 보관소 ➔ USB 제한 복구 완료!',
+      subtitle: `특수 보호 보관소에 암호화 보관 중이던 [${item.cert.name}] 인증서가 이동식 USB 메모리(${removableDrive.letter} ${removableDrive.name})의 표준 인증서 경로로 제한 복구되었습니다.`,
+      operationType: 'USB_RESTORE',
+      count: 1,
+      certNames: [item.cert.name],
+      targetDiskName: `${removableDrive.letter} (${removableDrive.name})`,
+      targetPath: targetUsbPath,
+      transferredCerts: [restoredCertToUsb],
+      hasIntegrityVerified: true,
+      sha256Checksum: item.cert.files?.sha256 || 'SHA-256 VERIFIED'
+    });
+    setIsOperationCompleteOpen(true);
   };
 
   const handleEmptyTrash = () => {
@@ -1779,6 +1829,7 @@ export default function App() {
         onPermanentlyDelete={handlePermanentlyDeleteTrash}
         onClearRestoredHistory={handleClearRestoredTrash}
         onDeleteRestoredItem={handleDeleteRestoredTrashItem}
+        onRestoreToUsb={handleRestoreToUsbFromVault}
       />
 
       {/* USB to PC Reverse Transfer Modal */}

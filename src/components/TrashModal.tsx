@@ -9,7 +9,8 @@ import {
   ShieldCheck,
   Clock,
   Archive,
-  Eraser
+  Eraser,
+  Usb
 } from 'lucide-react';
 import { TrashItem, RestoredTrashItem } from '../types';
 
@@ -24,6 +25,7 @@ interface TrashModalProps {
   onPermanentlyDelete: (ids: string[]) => void;
   onClearRestoredHistory: () => void;
   onDeleteRestoredItem: (id: string) => void;
+  onRestoreToUsb?: (item: RestoredTrashItem) => void;
 }
 
 export const TrashModal: React.FC<TrashModalProps> = ({
@@ -37,6 +39,7 @@ export const TrashModal: React.FC<TrashModalProps> = ({
   onPermanentlyDelete,
   onClearRestoredHistory,
   onDeleteRestoredItem,
+  onRestoreToUsb,
 }) => {
   const [activeTab, setActiveTab] = useState<'deleted' | 'restored'>('deleted');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -482,15 +485,28 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                           </span>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => onDeleteRestoredItem(item.id)}
-                          className="px-2.5 py-1 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1 shrink-0 ml-2"
-                          title="이 복원 이력 기록 삭제"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>이력 삭제</span>
-                        </button>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          {onRestoreToUsb && (
+                            <button
+                              type="button"
+                              onClick={() => onRestoreToUsb(item)}
+                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                              title="이 복원된 인증서를 연결된 이동식 USB 메모리로 제한적 재복구합니다"
+                            >
+                              <Usb className="w-3.5 h-3.5 text-emerald-100" />
+                              <span>💾 USB로 제한 복구</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => onDeleteRestoredItem(item.id)}
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1"
+                            title="이 복원 이력 기록 삭제"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>이력 삭제</span>
+                          </button>
+                        </div>
                       </div>
 
                       {/* Timestamps & Previous Reason Grid */}
@@ -542,12 +558,17 @@ export const TrashModal: React.FC<TrashModalProps> = ({
             )
           )}
 
-          {/* Guide banner */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-600 flex items-start gap-2.5">
-            <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-            <div className="leading-relaxed text-[11px]">
-              <span className="font-bold text-slate-700">자동 동기화 및 안전 관리: </span>
-              휴지통에서 복원 시 즉시 메인 보관함과 연결 드라이브 목록이 자동 새로고침 적용되어 정상 이용 가능하며, '복원된 항목' 보관소에 이력이 안전하게 영구 저장됩니다.
+          {/* Guide banner with Security & Encryption Callout */}
+          <div className="bg-emerald-950/90 border border-emerald-500/40 rounded-xl p-3 text-xs text-emerald-100 flex items-start gap-2.5 shadow-sm">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <div className="leading-relaxed text-[11px] space-y-1">
+              <div>
+                <span className="font-extrabold text-emerald-300">🔐 특수 암호화 보관소 격리 저장: </span>
+                복원된 항목 보관소 내용은 독립된 특수 격리 폴더(<code className="bg-slate-900 px-1 py-0.5 rounded text-emerald-200 font-mono text-[10.5px]">ProtectedRestoredVault</code>)에 안전 저장되며, <strong className="text-emerald-200">파일 암호화(Windows DPAPI / AES-256-GCM)</strong>가 자동 적용되어 다른 사용자의 무단 접근 및 활용이 완벽히 차단됩니다.
+              </div>
+              <div className="text-[10.5px] text-emerald-300/80">
+                • 원래 보관함 복원 완료 후 메인 드라이브 목록이 자동 동기화되며, 이력 관리는 해당 암호화 보관소에서만 접근 가능합니다.
+              </div>
             </div>
           </div>
         </div>

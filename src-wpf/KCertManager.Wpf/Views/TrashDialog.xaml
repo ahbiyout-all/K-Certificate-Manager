@@ -214,11 +214,12 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
-                                    <!-- Row 0: Card Header (Index, CN, Status Badge, Delete Button) -->
+                                    <!-- Row 0: Card Header (Index, CN, Status Badge, Restore to USB, Delete Button) -->
                                     <Grid Grid.Row="0" Margin="0,0,0,8">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
@@ -238,7 +239,9 @@
                                             <TextBlock Text="{Binding StatusBadge}" Foreground="#A7F3D0" FontSize="11" FontWeight="Bold"/>
                                         </Border>
 
-                                        <Button Grid.Column="3" Content="🗑️ 이력 삭제" Style="{StaticResource SecondaryButton}" Padding="8,4" Click="BtnDeleteRestoredItem_Click" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="3" Content="💾 USB로 제한 복구" Style="{StaticResource SuccessButton}" Padding="8,4" Click="BtnRestoreRestoredToUsb_Click" Margin="0,0,8,0" VerticalAlignment="Center"/>
+
+                                        <Button Grid.Column="4" Content="🗑️ 이력 삭제" Style="{StaticResource SecondaryButton}" Padding="8,4" Click="BtnDeleteRestoredItem_Click" VerticalAlignment="Center"/>
                                     </Grid>
 
                                     <!-- Row 1: Restoration Timestamp & Previous Delete Reason -->
