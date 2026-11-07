@@ -11,7 +11,7 @@
 
 **대한민국 공무원 행정전자서명(GPKI/EPKI) 및 금융 공동인증서(NPKI) 자동 탐색·USB 일괄 백업 & PC 역방향 복사 통합 보안 관리 솔루션**
 
-[공식 블로그](https://ahbiyoutvibe.blogspot.com/) • [GitHub 저장소](https://github.com/AhBiYout-all/K-Certificate-Manager) • [회사 홈페이지 (CISNet)](https://www.cisnet.co.kr)
+[공식 블로그](https://ahbiyoutvibe.blogspot.com/) • [GitHub 저장소](https://github.com/AhBiYout-all) • [소속 회사 (청운정보시스템)](https://www.cisnet.co.kr)
 
 </div>
 
@@ -24,11 +24,13 @@
 > **상세 변경 내역**: [docs/PATCHNOTES.md](./docs/PATCHNOTES.md) • [GitHub 배포 가이드](./docs/GITHUB_GUIDE.md) • [버전 관리 정책](./docs/VERSIONING_POLICY.md)
 
 ### 🌟 v1.9.0 핵심 업데이트 내용
-- **암호화 보호 보관소 및 제한된 USB 복구 (`💾 USB로 제한 복구`) 신설**: 특수 보관소 내 복원된 인증서를 외부 파일 오염 방지 목적으로 이동식 USB 메모리의 표준 규격 경로(`\NPKI`, `\GPKI`, `\EPKI`)로만 안전하게 복구 허용
-- **Windows DPAPI 및 AES-256 특수 암호화 저장소 구축**: 삭제 및 복원 항목 매니페스트(`protected_restored_manifest.dat`)를 CurrentUser 보안 컨텍스트로 암호화하여 제3자의 무단 접근 차단
-- **Inno Setup 정비 및 무인 설치(Silent Install) 지원**: 설치 시 기존 실행 프로세스 안전 종료, Windows 프로그램 추가/제거 정식 등록, 방화벽 규칙 자동 조용 등록 지원
+- **암호화 보호 보관소 및 제한된 USB 복구 (`💾 USB로 제한 복구`) 신설 (Web & WPF)**: 특수 보관소 내 복원된 인증서를 외부 파일 오염 방지 목적으로 이동식 USB 메모리의 표준 규격 경로(`\NPKI`, `\GPKI`, `\EPKI`)로만 안전하게 복구 허용
+- **Windows DPAPI 및 AES-256 특수 암호화 저장소 구축**: 삭제 및 복원 항목 매니페스트(`protected_restored_manifest.dat`)를 CurrentUser 보안 컨텍스트로 암호화하여 제3자의 무단 접근 차단 (`System.Security.Cryptography.ProtectedData` 연동)
+- **만료 인증서 정리 대화상자 (ExpiredCleanupDialog) 가로 너비 20% 대폭 확대**: 기존 820px에서 984px로 확장하여 긴 인증서 저장 경로와 만료일자 가독성 극대화
+- **Inno Setup 정식 인스톨러 및 무인 설치(Silent Install) 지원**: Unpacked Multi-File 개별 파일 설치, 기존 실행 프로세스 안전 종료, Windows 프로그램 추가/제거 정식 등록, 방화벽 규칙 자동 조용 등록 및 `/VERYSILENT /NORESTART` 무인 설치 지원
+- **빌드 파이프라인 정리 및 산출물 구조화**: 자동 빌드 결과물을 번호별 독립 폴더(`01_WebBundle`, `02_WpfDesktop`, `04_CoreDll`, `05_UnpackedApp`, `07_Installer`)로 자동 분류
 - **순수 창작 독립 C# 코어 & 암호화 DLL 2종 분리 구축 (`KCert.Core.dll`, `KCert.Crypto.dll`)**: 외부 3rd-party 의존성 0%의 C# 순수 X.509/ASN.1 파서, OID 식별자 분류기, SEED-128 암호화 및 PKCS#8 개인키 복호화 라이브러리 탑재
-- **상단 헤더 가로바 스크롤(Horizontal ScrollBar) 신설 및 마우스 휠 연동 (Web & WPF)**: 메인 상단 헤더 메뉴 높이 최적화(64px) 및 상시 가로 스크롤바 제공, 마우스 휠(`PreviewMouseWheel`) 연동 및 윈도우 드래그 조작과의 간섭 완벽 차단
+- **상단 헤더 가로바 스크롤 및 4대 테마 전역 고대비 툴팁**: 상단 메뉴 마우스 휠(`PreviewMouseWheel`) 연동 및 윈도우 드래그 조작과의 간섭 완벽 차단, 전 테마 고대비 툴팁 보장
 
 ---
 
@@ -133,8 +135,9 @@ build.bat
 ## 📞 문의 및 개발자 정보 (Contact)
 
 - **개발자 (Developer)**: AhBiYout
-- **GitHub 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
+- **GitHub 저장소**: [https://github.com/AhBiYout-all](https://github.com/AhBiYout-all)
 - **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
-- **소속 회사**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr) ((주)씨아이에스넷 CISNet)
+- **소속**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr)
+- **소속 회사**: (주)청운정보시스템 ( cisnet.co.kr )
 
 

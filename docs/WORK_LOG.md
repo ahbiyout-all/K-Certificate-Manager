@@ -2180,3 +2180,34 @@
      - 구글 블로그 및 깃허브 가이드의 버전 정보를 v1.9.0으로 일괄 갱신.
 - **검증**:
   - `compile_applet` 및 `lint_applet` 동시 실행 결과 100% 무결점 통과 확인.
+
+---
+
+### 📝 [작업 차수 145] C# WPF 데스크톱 암호화 보호 보관소 DPAPI 완벽 연동, 만료 정리창 20% 확대(984px) 및 구글 블로거·깃허브 공식 문서 전면 최신화
+- **작업 일시**: 2026-11-07 17:35 KST
+- **요청 사항**:
+  1. "암호화 보호 보관소 (Encrypted Protected Vault) 신설: 복원된 항목의 매니페스트(protected_restored_manifest.dat)를 Windows DPAPI 및 AES-256으로 이중 암호화하여 현재 사용자 외 타인의 무단 접근을 완벽 차단했습니다. -- C# WPF 데스크톱 앱에 적용되지 않음."
+  2. "만료 인증서 정리창의 가로크기를 20% 크게 증가."
+  3. "문서폴더에 구글 블로거용 문서, 깃허브용 문서를 업데이트 하세요."
+  4. "구글블로그에 사용할 내용을 '제목-본문-업데이트-앱 그림-다운로드-버전정보-시스템 요구 사항-제작자 및 공식 채널 안내-전체 업데이트(패치노트 참조해서 이전 기록 모두, 기능 개선에 대한 내용만 기록)-추천 태그' 순서로 생성하고 문서로 관리하세요. 추천 태그에 한글과 영어 넣어주고 20개이하 200글자 이내로 만들어줘."
+  5. "[제작자 및 공식 채널 안내] 개발자: AhBiYout, GitHub 저장소: https://github.com/AhBiYout-all, 공식 구글 블로그: https://ahbiyoutvibe.blogspot.com/, 소속 : https://www.cisnet.co.kr, 소속회사: (주)청운정보시스템 ( cisnet.co.kr )"
+- **수행 내용**:
+  1. **C# WPF 데스크톱 암호화 보호 보관소 DPAPI 연동**:
+     - `src-wpf/KCertManager.Wpf/KCertManager.Wpf.csproj`에 `<PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />` 추가.
+     - `SafetyTrashManager.cs` 내 `RestoredTrashItem` 매니페스트를 Windows DPAPI(CurrentUser) 보안 컨텍스트로 이중 암호화하여 저장 및 안전 마이그레이션 적용.
+     - `TrashDialog.xaml` 상단에 실시간 보안 암호화 보관 상태를 안내하는 전용 보안 배너 구축.
+  2. **만료 인증서 정리창 (ExpiredCleanupDialog) 가로 너비 20% 확대**:
+     - `ExpiredCleanupDialog.xaml`의 창 가로 너비를 `Width="820"`에서 `Width="984"`로 20% 대폭 확장하여, 긴 NPKI/GPKI/EPKI 파일 경로와 만료일자 메타데이터의 시인성을 극대화.
+  3. **구글 블로거(Blogger) 전용 배포 문서 10대 규격 최신화**:
+     - `docs/BLOGGER_POST_COMPOSE_MODE.md` [작성 모드 (서식 있는 텍스트)] 갱신.
+     - `docs/BLOGGER_POST_HTML_MODE.html` [HTML 편집 모드 (인라인 CSS)] 갱신.
+     - `docs/BLOG_v1.9.0.md` 갱신.
+     - 엄격한 10단계 순서(제목-본문-업데이트-앱 그림-다운로드-버전정보-시스템 요구 사항-제작자 및 공식 채널 안내-전체 업데이트-추천 태그) 적용.
+     - 제작자 및 공식 채널: 개발자 `AhBiYout`, 저장소 `https://github.com/AhBiYout-all`, 블로그 `https://ahbiyoutvibe.blogspot.com/`, 소속 `https://www.cisnet.co.kr`, 소속회사 `(주)청운정보시스템 ( cisnet.co.kr )`.
+     - 9번 전체 업데이트 섹션에 v1.5.0부터 v1.9.0까지 이전 모든 버전의 기능 개선 내역만 엄선하여 기록.
+     - 10번 추천 태그: 한글 및 영문 혼용 15개 태그, 138자(20개 이하, 200자 이내 규칙 준수).
+  4. **깃허브 기술 문서 및 프로젝트 README 최신화**:
+     - `docs/GITHUB_DOCS.md`, `README.md`, `docs/PATCHNOTES.md`, `docs/USER_GUIDE.md`에 v1.9.0 신규 명세(WPF DPAPI 암호화 보관소, 984px 광폭 만료 정리창, Inno Setup 무인 설치, 방화벽 자동 등록, 번호별 산출물 폴더 분리) 전면 반영.
+- **검증**:
+  - `compile_applet` 및 `lint_applet` 100% 정상 통과.
+

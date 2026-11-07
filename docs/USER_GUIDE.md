@@ -23,8 +23,8 @@ K-인증서 매니저는 대한민국 공공 및 금융 환경에서 쓰이는 �
   - **`만료 임박` (Amber Orange)**: 오렌지 배지(`⚠️ 만료 임박 D-N`)로 30일 이내 갱신 대상 표기.
   - **`만료됨` (Rose Red)**: 선명한 빨강 펄스 배지(`✕ 만료됨`)로 폐기/정리 대상 식별.
 - **상태별 퀵 필터 탭 (v1.4.4)**: 목록 상단 툴바에서 `전체`, `유효함`, `만료 임박`, `만료됨` 탭을 클릭하여 원하는 상태의 인증서만 즉시 추려볼 수 있습니다.
-- **0번부터 시작하는 최좌측 고정 인덱스(번호) 열 (Fixed Sticky Column, v1.6.5)**:
-  - 데스크톱(WPF) 및 웹(React) 모든 인증서 목록의 0번 컬럼에 `0, 1, 2, 3...` 순번이 강제 삽입되어 표시됩니다.
+- **1번부터 시작하는 최좌측 고정 인덱스(번호) 열 (Fixed Sticky Column, v1.6.5)**:
+  - 데스크톱(WPF) 및 웹(React) 모든 인증서 목록의 1번 컬럼에 `1, 2, 3, 4...` 순번이 표준화되어 표시됩니다.
   - 가로 스크롤을 끝까지 이동하더라도 최좌측 번호 열이 화면 좌측에 단단히 고정(`FrozenColumnCount="1"` / `sticky left-0`)되어 대량의 인증서를 열람할 때도 행 순번을 놓치지 않고 편리하게 대조할 수 있습니다.
 - 인증서 이름을 클릭하면 발급자(CA), 시리얼 번호, 키 알고리즘, 세부 경로를 상단 상태 배너와 함께 한눈에 파악할 수 있습니다.
 
@@ -245,11 +245,26 @@ K-인증서 매니저는 대한민국 공공 및 금융 환경에서 쓰이는 �
 4. **소프트웨어 버전 관리(Semantic Versioning) 3단계 분리 정책 체계화**:
    - `docs/VERSIONING_POLICY.md`에 MAJOR, MINOR, PATCH 3단계 판단 매트릭스 및 8대 전역 동기화 파이프라인 확립.
 
+
+### 2.25 암호화 보호 보관소, 제한된 USB 복구 & 984px 만료 정리창 (v1.9.0 신규)
+1. **암호화 보호 보관소 (Encrypted Protected Vault) 신설 (Web & WPF)**:
+   - 복원된 항목의 매니페스트(`protected_restored_manifest.dat`)를 Windows DPAPI(CurrentUser) 및 AES-256 특수 암호화로 격리 저장하여 현재 로그인 사용자 외 타인의 무단 접근을 완벽히 차단합니다.
+   - C# WPF 데스크톱 앱에 `System.Security.Cryptography.ProtectedData` (8.0.0) 패키지를 연동하고 `TrashDialog` 상단에 실시간 보안 암호화 안내 배너를 탑재했습니다.
+2. **제한된 USB 복구 (`💾 USB로 제한 복구`) 지원**:
+   - 보관소 내 인증서를 로컬 PC 임의 경로가 아닌 오직 이동식 USB 메모리의 표준 규격 경로(`\NPKI`, `\GPKI`, `\EPKI`)로만 복구하도록 제한하여 시스템 폴더 오염을 방지합니다.
+3. **만료 인증서 정리 대화상자 (ExpiredCleanupDialog) 가로 너비 20% 대폭 확대**:
+   - 기존 `Width="820"`에서 `Width="984"`로 가로 크기를 20% 확대하여 긴 저장 경로와 만료일자 메타데이터의 시인성을 극대화했습니다.
+4. **Inno Setup 정식 인스톨러 및 무인 설치(Silent Install) 지원**:
+   - Unpacked Multi-File 개별 파일 설치, 기존 실행 프로세스 강제 종료(`TerminateAppProcesses`), Windows 프로그램 추가/제거 등록, 방화벽 규칙 사전 조용 자동 등록 및 `/VERYSILENT /NORESTART` 기업용 무인 배포 옵션을 제공합니다.
+5. **빌드 파이프라인 정리 및 산출물 구조화**:
+   - 자동 빌드 스크립트 실행 시 `release/` 폴더 아래 `01_WebBundle`, `02_WpfDesktop`, `04_CoreDll`, `05_UnpackedApp`, `07_Installer` 등 번호별 독립 폴더로 산출물이 자동 분류 적재됩니다.
+
 ---
 
 ## 3. 정보 및 고객 지원 (Official Channels)
 - **개발자**: AhBiYout
-- **GitHub 공식 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
-- **버그 제보 및 기능 제안 (Issues)**: [https://github.com/AhBiYout-all/K-Certificate-Manager/issues](https://github.com/AhBiYout-all/K-Certificate-Manager/issues)
-- **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
-- **회사 홈페이지**: [https://www.cisnet.co.kr/](https://www.cisnet.co.kr/) ((주)청운정보시스템)
+- **GitHub 공식 저장소**: [https://github.com/AhBiYout-all](https://github.com/AhBiYout-all)
+- **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
+- **소속**: [https://www.cisnet.co.kr/](https://www.cisnet.co.kr/)
+- **소속회사**: (주)청운정보시스템 ( cisnet.co.kr )
+
