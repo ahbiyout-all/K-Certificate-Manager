@@ -12,7 +12,7 @@
 3. **WPF Native DPAPI Vault Integration**: `System.Security.Cryptography.ProtectedData` (8.0.0) NuGet 패키지 탑재 및 `TrashDialog` 실시간 보안 암호화 상태 안내 배너 연동.
 4. **ExpiredCleanupDialog 20% Width Expansion**: 만료 인증서 정리창 너비를 기존 `820px`에서 `984px`로 20% 확대하여 긴 인증서 저장 경로와 만료일자 가독성 극대화.
 5. **Inno Setup Production Installer (`installer.iss`)**: Unpacked Multi-File 구조 개별 파일 설치, 기존 프로세스 강제 종료(`TerminateAppProcesses`), Windows 프로그램 추가/제거 정식 등록, 방화벽 규칙 사전 조용 등록 및 무인 설치(`/VERYSILENT /NORESTART`) 지원.
-6. **Structured Build Pipeline (`build.ps1` & `build.bat`)**: 빌드 산출물을 번호별 독립 폴더(`01_WebBundle`, `02_WpfDesktop`, `04_CoreDll`, `05_UnpackedApp`, `07_Installer`)로 자동 분류.
+6. **Version-Numbered Subfolders Build Pipeline (`build.ps1`, `build.bat`, `build.cmd`)**: 메인 `/dist` 디렉터리 아래 버전 번호별 하위 폴더(`/dist/v1.9.0/web`, `/win-x64`, `/core-dll`, `/unpacked`, `/installer`)로 모든 산출물을 명확히 분리 생성.
 7. **Header Horizontal Scroll & High Contrast ToolTips**: 상단 메뉴 마우스 휠 가로 탐색 및 4대 테마 전역 고대비 툴팁 적용.
 
 ---
@@ -36,13 +36,12 @@ npm run build
 # 통합 자동 빌드 스크립트 실행
 .\build.ps1
 
-# 빌드 결과물 (release/ 폴더 생성)
-# ├── 01_WebBundle/       (Vite 프로덕션 번들)
-# ├── 02_WpfDesktop/      (C# WPF 데스크톱 실행 바이너리)
-# ├── 03_WpfLite/         (초경량 라이트 에디션)
-# ├── 04_CoreDll/         (KCert.Core.dll / KCert.Crypto.dll)
-# ├── 05_UnpackedApp/     (클린 무설치 폴더 풀림 구조)
-# └── 07_Installer/       (Inno Setup kcert-manager-v1.9.0-setup.exe)
+# 빌드 결과물 (dist/v1.9.0/ 폴더 생성)
+# ├── web/           (Vite 프로덕션 번들)
+# ├── win-x64/       (C# WPF 데스크톱 실행 바이너리 KCertManager.exe & Lite)
+# ├── core-dll/      (순수 독립 C# DLL KCert.Core.dll / KCert.Crypto.dll)
+# ├── unpacked/      (클린 무설치 폴더 풀림 구조)
+# └── installer/     (Inno Setup kcert-manager-v1.9.0-setup.exe)
 ```
 
 ---

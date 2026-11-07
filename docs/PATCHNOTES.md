@@ -15,7 +15,7 @@
 ---
 
 ### 🚀 [v1.9.0] - 2026-11-06
-**변경 구분**: `MINOR` (암호화 보호 보관소(Encrypted Vault) 및 제한된 USB 복구(`💾 USB로 제한 복구`) 신설, 만료 인증서 정리창 가로 너비 20% 확대, Inno Setup 무인 설치 및 방화벽 자동 등록 지원, 빌드 파이프라인 산출물 번호별 폴더 분리)
+**변경 구분**: `MINOR` (암호화 보호 보관소(Encrypted Vault) 및 제한된 USB 복구(`💾 USB로 제한 복구`) 신설, 만료 인증서 정리창 가로 너비 20% 확대, Inno Setup 무인 설치 및 방화벽 자동 등록 지원, 빌드 산출물 메인 /dist 디렉터리 내 버전 번호별 하위 폴더 분리 배포 구조 개편)
 #### ✨ 주요 개선 및 신규 기능 (Improvements & Features)
 - **암호화 보호 보관소 (Encrypted Protected Vault) 아키텍처 구축 (Web & WPF)**:
   - **보안 강화**: 삭제 취소(Undo) 또는 복원된 인증서의 이력 매니페스트(`protected_restored_manifest.dat`)를 Windows DPAPI(CurrentUser 보안 컨텍스트) 및 AES-256 특수 암호화로 격리 저장.
@@ -34,8 +34,15 @@
   - **실행 프로세스 강제 종료**: 설치/제거 전 실행 중인 앱을 감지하여 안전하게 종료 처리(`TerminateAppProcesses`).
   - **방화벽 조용 사전 등록**: `netsh.exe`를 사용하여 앱의 기본 이름 및 버전 포함 이름을 Windows Defender 방화벽 규칙에 자동으로 조용 등록.
   - **무인 설치 지원**: `/VERYSILENT /NORESTART` 파라미터를 통한 기업용 무인 배포 옵션 완비.
-- **빌드 파이프라인 정리 및 산출물 구조화**:
-  - `build.bat` 및 `build.ps1`을 수정하여 `release/` 폴더 아래 `01_WebBundle`, `02_WpfDesktop`, `04_CoreDll`, `05_UnpackedApp`, `07_Installer` 등 번호별 독립 폴더로 산출물을 자동 분류 적재.
+- **빌드 파이프라인 개편: `/dist/v{version}/` 버전 번호별 하위 폴더 분리 배포 구조 적용**:
+  - **사용자 요청 사항**: "Modify the project build scripts to output results into distinct, version-numbered subfolders under a main /dist directory (e.g., /dist/v1.8.0/win-x64, /dist/v1.8.0/installer) instead of a flat structure."
+  - **버전별 하위 디렉터리 체계 구축**: 모든 빌드 스크립트(`build.ps1`, `build.bat`, `build.cmd`, `installer.iss`, `.github/workflows/build.yml`)를 메인 `/dist/v1.9.0/` 디렉터리 아래 개별 모듈별 독립 하위 폴더로 산출물을 생성하도록 전면 개편:
+    - `/dist/v1.9.0/web`: Vite 기반 웹 관리 콘솔 번들 (Single Page Application 정적 산출물)
+    - `/dist/v1.9.0/win-x64`: C# WPF 데스크톱 독립 실행형 단일 바이너리 (`KCertManager.exe`, `KCertManager-Lite.exe`)
+    - `/dist/v1.9.0/core-dll`: 순수 창작 독립 C# DLL 라이브러리 (`KCert.Core.dll`, `KCert.Crypto.dll`)
+    - `/dist/v1.9.0/unpacked`: 설치 마법사 없이 즉시 구동 가능한 정규 멀티 파일 폴더 풀림 포터블 패키지
+    - `/dist/v1.9.0/installer`: Inno Setup 정식 윈도우 인스톨러 설치 실행 파일 (`kcert-manager-v1.9.0-setup.exe`)
+  - **재귀 폴더 복사 방지 필터링**: Vite 웹 빌드 시 `dist/` 내부의 `v*` 하위 폴더가 웹 자산이나 인스톨러에 중복·재귀 포함되지 않도록 `-Exclude "v*"` 및 `Excludes: "v*"` 필터 규칙 적용.
 - **공공기관 공식 채널 문서화**:
   - 구글 블로거(Blogger) [작성 모드 / HTML 편집 모드] 원고 및 깃허브 기술 명세(`GITHUB_DOCS.md`) v1.9.0 최신화.
 

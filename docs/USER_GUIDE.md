@@ -256,8 +256,8 @@ K-인증서 매니저는 대한민국 공공 및 금융 환경에서 쓰이는 �
    - 기존 `Width="820"`에서 `Width="984"`로 가로 크기를 20% 확대하여 긴 저장 경로와 만료일자 메타데이터의 시인성을 극대화했습니다.
 4. **Inno Setup 정식 인스톨러 및 무인 설치(Silent Install) 지원**:
    - Unpacked Multi-File 개별 파일 설치, 기존 실행 프로세스 강제 종료(`TerminateAppProcesses`), Windows 프로그램 추가/제거 등록, 방화벽 규칙 사전 조용 자동 등록 및 `/VERYSILENT /NORESTART` 기업용 무인 배포 옵션을 제공합니다.
-5. **빌드 파이프라인 정리 및 산출물 구조화**:
-   - 자동 빌드 스크립트 실행 시 `release/` 폴더 아래 `01_WebBundle`, `02_WpfDesktop`, `04_CoreDll`, `05_UnpackedApp`, `07_Installer` 등 번호별 독립 폴더로 산출물이 자동 분류 적재됩니다.
+5. **버전 번호별 하위 폴더 분리 빌드 파이프라인 (`dist/v1.9.0/`)**:
+   - 자동 빌드 스크립트 실행 시 메인 `/dist` 폴더 아래 버전별 하위 디렉터리(`/dist/v1.9.0/web`, `/win-x64`, `/core-dll`, `/unpacked`, `/installer`)로 산출물이 체계적으로 분리 생성됩니다.
 
 ---
 

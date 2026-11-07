@@ -72,7 +72,7 @@
      * Windows 방화벽 인바운드 규칙 사전 등록 및 무인 설치 스위치 검증
   6. **GitHub Release 자동 발행 (`softprops/action-gh-release@v2`)**:
      * 태그 기반 Release 생성 및 릴리스 노트 자동 등록
-     * 공식 설치 파일(`release/07_Installer/kcert-manager-v1.8.0-setup.exe`) 단독 첨부 배포
+     * 공식 설치 파일(`dist/v1.9.0/installer/kcert-manager-v1.9.0-setup.exe`) 단독 첨부 배포
 
 ---
 

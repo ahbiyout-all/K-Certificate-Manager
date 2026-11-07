@@ -120,7 +120,7 @@ npm run dev
 build.bat
 ```
 
-빌드가 완료되면 `release/` 폴더에 배포용 포터블 실행 파일 및 Inno Setup 설치 프로그램(`setup.exe`)이 생성됩니다.
+빌드가 완료되면 `dist/v1.9.0/` 폴더에 버전별 하위 디렉터리(`web`, `win-x64`, `core-dll`, `unpacked`, `installer`)로 배포용 포터블 실행 파일 및 Inno Setup 설치 프로그램(`setup.exe`)이 체계적으로 분리 생성됩니다.
 
 ---
 

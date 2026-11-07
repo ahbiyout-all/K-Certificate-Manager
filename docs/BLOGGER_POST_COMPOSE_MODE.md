@@ -20,7 +20,7 @@ ActiveX나 별도 보안 프로그램 설치 없이, 지능형 딥스캔 엔진�
 - 💾 **제한된 USB 복구 (`💾 USB로 제한 복구`) 지원**: 특수 보관소 내 인증서를 로컬 PC 오염 방지를 위해 오직 이동식 USB 메모리의 표준 규격 경로(`\NPKI`, `\GPKI`, `\EPKI`)로만 안전 복구 허용.
 - 📏 **만료 인증서 정리창 (ExpiredCleanupDialog) 가로 너비 20% 대폭 확대**: 기존 `Width="820"`에서 `Width="984"`로 가로 크기를 확대하여 저장 경로 및 만료 상태, 발급기관명의 가독성과 시인성 극대화.
 - ⚙️ **Inno Setup 정식 인스톨러 완성 및 무인 설치 지원**: Unpacked Multi-File 개별 파일 설치, 기존 실행 프로세스 강제 종료(`TerminateAppProcesses`), Windows 프로그램 추가/제거 정식 등록, 방화벽 규칙 사전 조용 자동 등록 및 `/VERYSILENT /NORESTART` 무인 설치 지원.
-- 🚀 **빌드 파이프라인 정리 및 산출물 구조화**: 자동 빌드 결과물을 번호별 독립 폴더(`01_WebBundle`, `02_WpfDesktop`, `04_CoreDll`, `05_UnpackedApp`, `07_Installer`)로 깔끔하게 분리 생성.
+- 🚀 **빌드 파이프라인 개편 및 버전별 하위 폴더 분리**: 자동 빌드 결과물을 메인 `/dist` 폴더 아래 버전별 하위 폴더(`/dist/v1.9.0/web`, `/win-x64`, `/core-dll`, `/unpacked`, `/installer`)로 체계적으로 분리 적재.
 - 🧩 **순수 독립 C# 코어 & 암호화 DLL 탑재**: 3rd-party 의존성 0%의 `KCert.Core.dll` (X.509/ASN.1/OID 파서) 및 `KCert.Crypto.dll` (SEED-128/PKCS#8/RSA-SHA256) 완비.
 - 🎵 **완료 알림음(SuccessChime) 피드백 및 상단 헤더 볼륨 슬라이더**: 복사/백업 완료 알림음 및 0~100% 가로 슬라이더 바, 4대 테마 전역 고대비 툴팁 시스템 연동.
 
@@ -77,7 +77,7 @@ ActiveX나 별도 보안 프로그램 설치 없이, 지능형 딥스캔 엔진�
 - **제한된 USB 복구 (`💾 USB로 제한 복구`) 신설**: 로컬 PC 파일 오염 방지를 위해 외장 USB 메모리(`\NPKI`, `\GPKI`, `\EPKI`)로만 안전 복구 허용.
 - **만료 인증서 정리창 (ExpiredCleanupDialog) 가로 너비 20% 대폭 확대**: 기존 820px에서 984px로 확장하여 긴 인증서 저장 경로 시인성 극대화.
 - **Inno Setup 정식 인스톨러 배포 최적화**: Unpacked Multi-File 개별 파일 설치, 기존 프로세스 강제 종료, 프로그램 추가/제거 등록, 방화벽 조용 자동 등록 및 무인 설치(`/VERYSILENT`) 완비.
-- **빌드 파이프라인 번호별 폴더 분리**: `release/` 하위 `01_WebBundle`, `02_WpfDesktop`, `04_CoreDll`, `05_UnpackedApp`, `07_Installer` 등 체계적 폴더 적재.
+- **빌드 파이프라인 버전별 하위 폴더 분리**: `dist/` 하위 `dist/v1.9.0/web`, `win-x64`, `core-dll`, `unpacked`, `installer` 등 버전별 폴더 체계적 적재.
 
 ### 🚀 [v1.8.0] - 2026-10-31
 - **독립 C# 코어 & 암호화 DLL 2종 분리**: 3rd-party 의존성 0%의 `KCert.Core.dll` 및 `KCert.Crypto.dll` 독립 라이브러리 모듈화.

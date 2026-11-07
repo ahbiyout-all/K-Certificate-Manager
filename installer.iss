@@ -35,7 +35,7 @@ AllowNoIcons=yes
 LicenseFile=LICENSE.txt
 
 ; Output Setup Executable with Version Suffix
-OutputDir=release\07_Installer
+OutputDir=dist\v{#MyAppVersion}\installer
 OutputBaseFilename=kcert-manager-v{#MyAppVersion}-setup
 SetupIconFile=public\assets\app.ico
 Compression=lzma2/ultra64
@@ -94,13 +94,19 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ; ------------------------------------------------------------------------------
 ; 1. Native C# WPF Desktop Executable & Core Library (단일 1벌 팩킹)
 ; ------------------------------------------------------------------------------
-#if FileExists("release\05_WpfDesktop\KCertManager.exe")
+#if FileExists("dist\v" + MyAppVersion + "\win-x64\KCertManager.exe")
+Source: "dist\v{#MyAppVersion}\win-x64\KCertManager.exe"; DestDir: "{app}"; Flags: ignoreversion
+#elif FileExists("release\05_WpfDesktop\KCertManager.exe")
 Source: "release\05_WpfDesktop\KCertManager.exe"; DestDir: "{app}"; Flags: ignoreversion
 #elif FileExists("release\05_WpfDesktop\KCertManager_v" + MyAppVersion + ".exe")
 Source: "release\05_WpfDesktop\KCertManager_v{#MyAppVersion}.exe"; DestDir: "{app}"; DestName: "KCertManager.exe"; Flags: ignoreversion
 #endif
 
-#if FileExists("release\05_WpfDesktop\KCert.Core.dll")
+#if FileExists("dist\v" + MyAppVersion + "\core-dll\KCert.Core.dll")
+Source: "dist\v{#MyAppVersion}\core-dll\KCert.Core.dll"; DestDir: "{app}"; Flags: ignoreversion
+#elif FileExists("dist\v" + MyAppVersion + "\win-x64\KCert.Core.dll")
+Source: "dist\v{#MyAppVersion}\win-x64\KCert.Core.dll"; DestDir: "{app}"; Flags: ignoreversion
+#elif FileExists("release\05_WpfDesktop\KCert.Core.dll")
 Source: "release\05_WpfDesktop\KCert.Core.dll"; DestDir: "{app}"; Flags: ignoreversion
 #endif
 
@@ -118,8 +124,10 @@ Source: "run-web.cmd"; DestDir: "{app}"; Flags: ignoreversion
 ; ------------------------------------------------------------------------------
 ; 3. Production Web Bundle (dist 폴더가 존재할 때만 포함)
 ; ------------------------------------------------------------------------------
-#if DirExists("dist")
-Source: "dist\*"; DestDir: "{app}\dist"; Flags: ignoreversion recursesubdirs createallsubdirs
+#if DirExists("dist\v" + MyAppVersion + "\web")
+Source: "dist\v{#MyAppVersion}\web\*"; DestDir: "{app}\dist"; Flags: ignoreversion recursesubdirs createallsubdirs
+#elif DirExists("dist")
+Source: "dist\*"; DestDir: "{app}\dist"; Excludes: "v*"; Flags: ignoreversion recursesubdirs createallsubdirs
 #endif
 
 ; ------------------------------------------------------------------------------

@@ -24,7 +24,7 @@ jobs:
         id: version_step
         shell: pwsh
         run: |
-          $ver = "1.8.0"
+          $ver = "1.9.0"
           if ("${{ github.ref_name }}".StartsWith("v")) {
             $ver = "${{ github.ref_name }}".Substring(1)
           } elseif (Test-Path "package.json") {
@@ -75,12 +75,13 @@ jobs:
         run: dotnet restore KCertManager.sln
 
       - name: Build KCert.Core DLL
-        run: dotnet build src-wpf/KCert.Core/KCert.Core.csproj -c Release -p:Version=${{ env.APP_VER }} -p:AssemblyVersion=${{ env.APP_VER }}.0 -p:FileVersion=${{ env.APP_VER }}.0 -o release/05_WpfDesktop
+        run: dotnet build src-wpf/KCert.Core/KCert.Core.csproj -c Release -p:Version=${{ env.APP_VER }} -p:AssemblyVersion=${{ env.APP_VER }}.0 -p:FileVersion=${{ env.APP_VER }}.0 -o dist/v${{ env.APP_VER }}/core-dll
 
       - name: Build & Publish WPF Desktop App (x64 Standalone Single-File)
         shell: pwsh
         run: |
           $ver = "${{ env.APP_VER }}"
+          $outDir = "dist/v$ver/win-x64"
           dotnet publish src-wpf/KCertManager.Wpf/KCertManager.Wpf.csproj `
             -c Release `
             -r win-x64 `
@@ -90,11 +91,10 @@ jobs:
             --self-contained true `
             -p:PublishSingleFile=true `
             -p:EnableCompressionInSingleFile=true `
-            -o release/05_WpfDesktop
+            -o $outDir
 
-          $ver = "${{ env.APP_VER }}"
-          if (Test-Path "release/05_WpfDesktop/KCertManager.exe") {
-            Copy-Item "release/05_WpfDesktop/KCertManager.exe" "release/05_WpfDesktop/KCertManager_v$ver.exe" -Force
+          if (Test-Path "$outDir/KCertManager.exe") {
+            Copy-Item "$outDir/KCertManager.exe" "$outDir/KCertManager_v$ver.exe" -Force
           }
 
       # ------------------------------------------------------------------------
@@ -116,18 +116,18 @@ jobs:
             $isccPath = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           }
 
-          New-Item -ItemType Directory -Force -Path release\07_Installer | Out-Null
           $ver = "${{ env.APP_VER }}"
+          New-Item -ItemType Directory -Force -Path "dist\v$ver\installer" | Out-Null
           Write-Host "Compiling Inno Setup installer for version $ver..."
           & $isccPath "/DMyAppVersion=$ver" installer.iss
-          Write-Host "Installer build finished. Listing release/07_Installer:"
-          Get-ChildItem release\07_Installer
+          Write-Host "Installer build finished. Listing dist\v$ver\installer:"
+          Get-ChildItem "dist\v$ver\installer"
 
       - name: Upload Installer Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: KCertManager-v${{ env.APP_VER }}-Installer-Setup
-          path: release/07_Installer/
+          path: dist/v${{ env.APP_VER }}/installer/
           retention-days: 14
 
       # ------------------------------------------------------------------------
@@ -147,7 +147,7 @@ jobs:
             ### 👨‍💻 제작자 및 공식 채널
             - **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
             - **공식 기술 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
-            - **소속 회사**: [(주)씨아이에스넷 (CISNet)](https://www.cisnet.co.kr)
+            - **소속 회사**: [(주)청운정보시스템 ( cisnet.co.kr )](https://www.cisnet.co.kr)
             - **소스코드 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
             
             ### 📦 배포 설치 파일 (Official Installer Asset)
@@ -169,4 +169,4 @@ jobs:
 
             상세 변경 내역은 저장소 내 `docs/PATCHNOTES.md`를 참고해 주시기 바랍니다.
           files: |
-            release/07_Installer/*.exe
+            dist/v${{ env.APP_VER }}/installer/*.exe

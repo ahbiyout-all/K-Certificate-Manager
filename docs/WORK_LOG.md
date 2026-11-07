@@ -7,7 +7,7 @@
 ## 📌 프로젝트 기본 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v1.8.0` (Semantic Versioning 2.0.0 MINOR Release)
+- **현재 버전**: `v1.9.0` (Semantic Versioning 2.0.0 MINOR Release)
 - **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
 - **구글 공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **공식 홈페이지**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr) ((주)청운정보시스템)
@@ -16,6 +16,33 @@
 ---
 
 ## 📅 작업 기록 상세 내역
+
+### 📝 [작업 차수 146] 빌드 파이프라인 산출물 `/dist/v{version}/` 버전 번호별 하위 폴더 분리 배포 구조 개편
+- **작업 일시**: 2026-11-07 12:10 KST
+- **요청 사항**:
+  - "Modify the project build scripts to output results into distinct, version-numbered subfolders under a main /dist directory (e.g., /dist/v1.8.0/win-x64, /dist/v1.8.0/installer) instead of a flat structure."
+- **구현 내용**:
+  1. **빌드 스크립트 출력 경로 전면 개편 (`build.ps1`, `build.bat`, `build.cmd`)**:
+     - 기존 `release/` 플랫/일련번호 구조 대신 메인 `dist/v{version}/` 구조로 일원화:
+       - `/dist/v1.9.0/web`: Vite 기반 웹 관리 콘솔 번들
+       - `/dist/v1.9.0/win-x64`: C# WPF 데스크톱 독립 실행형 단일 바이너리 (`KCertManager.exe`, `KCertManager-Lite.exe`)
+       - `/dist/v1.9.0/core-dll`: 순수 창작 독립 C# DLL 라이브러리 (`KCert.Core.dll`, `KCert.Crypto.dll`)
+       - `/dist/v1.9.0/unpacked`: 슬림 무설치 폴더 풀림(Unpacked Multi-File) 패키지
+       - `/dist/v1.9.0/installer`: Inno Setup 정식 윈도우 인스톨러 (`kcert-manager-v1.9.0-setup.exe`)
+     - `build.ps1`의 대화형 콘솔 메뉴 및 내부 변수 통일 (`$dirWinX64`, `$dirWeb`, `$dirUnpacked`, `$dirInstaller`, `$dirCore`).
+  2. **Inno Setup 스크립트 동기화 (`installer.iss`)**:
+     - `OutputDir=dist\v{#MyAppVersion}\installer`로 변경.
+     - `[Files]` 섹션에서 `dist\v{#MyAppVersion}\win-x64` 및 `dist\v{#MyAppVersion}\core-dll`을 최우선 탐색하도록 수정.
+     - 웹 번들 패키징 시 `Excludes: "v*"` 필터를 적용하여 재귀적 포함 방지.
+  3. **GitHub Actions CI/CD 파이프라인 동기화 (`.github/workflows/build.yml`)**:
+     - C# Core DLL 컴파일 출력을 `dist/v${{ env.APP_VER }}/core-dll`로 설정.
+     - WPF Desktop 컴파일 출력을 `dist/v${{ env.APP_VER }}/win-x64`로 설정.
+     - Inno Setup 인스톨러 출력을 `dist/v${{ env.APP_VER }}/installer`로 설정.
+     - GitHub Actions 업로드 아티팩트 및 Releases 배포 대상을 `dist/v${{ env.APP_VER }}/installer/*.exe`로 갱신.
+  4. **문서 동기화**:
+     - `docs/PATCHNOTES.md`, `docs/BUILD_GUIDE.md`, `docs/GITHUB_DOCS.md`, `docs/USER_GUIDE.md`, `README.md`, `docs/WORK_LOG.md` 전역 반영.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 0건 에러 통과.
 
 ### 📝 [작업 차수 133] 시작 가이드 모달(StartupWorkflowModal) 내 최근 선택 복사 모드 추적 및 복사 경로 안내 고도화
 - **작업 일시**: 2026-11-06 18:40 KST
