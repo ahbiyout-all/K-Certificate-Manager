@@ -157,7 +157,7 @@ namespace KCertManager.Wpf.Views
 
                 var usbDrive = targetDrives.First();
                 string subFolder = item.Category.ToString().StartsWith("GPKI") ? "GPKI" : item.Category.ToString().StartsWith("EPKI") ? "EPKI" : "NPKI";
-                string destDir = System.IO.Path.Combine(usbDrive.DriveLetter, subFolder, item.CertCommonName);
+                string destDir = System.IO.Path.Combine(usbDrive.Name, subFolder, item.CertCommonName);
 
                 try
                 {
@@ -176,7 +176,7 @@ namespace KCertManager.Wpf.Views
                         LogCategory.RESTORE,
                         LogLevel.SUCCESS,
                         "특수 보관소 ➔ USB 제한 복구 완료",
-                        $"인증서 [{item.CertCommonName}] ➔ USB ({usbDrive.DriveLetter}) {subFolder} 제한 복원 완료",
+                        $"인증서 [{item.CertCommonName}] ➔ USB ({usbDrive.Name}) {subFolder} 제한 복원 완료",
                         item.OriginalDirectoryPath,
                         destDir,
                         1);
@@ -184,7 +184,7 @@ namespace KCertManager.Wpf.Views
                     SoundService.PlayCompletionSound();
                     UserFriendlyMessageHelper.ShowOperationComplete(
                         "특수 보관소 ➔ USB 제한 복구 완료!",
-                        $"[인증서 소유자]: {item.CertCommonName}\n[복원 경로]: {destDir}\n\n이동식 USB 매체({usbDrive.DriveLetter})로 인증서 제한 복원이 완료되었습니다.",
+                        $"[인증서 소유자]: {item.CertCommonName}\n[복원 경로]: {destDir}\n\n이동식 USB 매체({usbDrive.Name})로 인증서 제한 복원이 완료되었습니다.",
                         this);
 
                     LoadRestoredItems();
