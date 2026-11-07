@@ -53,7 +53,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="Copyright (c) 2026 AhBiYout (https://ahbiyoutvibe.blogspot.com/). All rights reserved." FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <TextBlock Text="Company: (주)청운정보시스템 (http://www.cisnet.co.kr/) | GitHub: https://github.com/ahbiyout-all/K-Certificate-Manager" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                    <TextBlock Text="Company: (주)청운정보시스템 ( cisnet.co.kr ) | GitHub: https://github.com/AhBiYout-all" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                 </StackPanel>
                 <Button x:Name="BtnCopyLicense" Grid.Column="1" Click="BtnCopyLicense_Click" Content="📋 라이선스 복사" Padding="10,5" FontSize="11" Background="{DynamicResource BgDarkBrush}" Foreground="#38BDF8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" VerticalAlignment="Center" Cursor="Hand"/>
             </Grid>
@@ -107,30 +107,34 @@
                     <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                         <StackPanel>
                             <TextBlock Text="개발자 및 공식 안내 (Developer &amp; Official Links)" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,0,6"/>
-                            <TextBlock Text="• 개발자 (Developer): AhBiYout" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+                            <TextBlock Text="• 개발자: AhBiYout" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3"/>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
-                                <TextBlock Text="• 소속 회사 (Company): " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Text="• GitHub 저장소: " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                 <TextBlock FontSize="11">
-                                    <Hyperlink NavigateUri="http://www.cisnet.co.kr/" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#38BDF8">
-                                        http://www.cisnet.co.kr/ ((주)청운정보시스템)
+                                    <Hyperlink NavigateUri="https://github.com/AhBiYout-all" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#818CF8">
+                                        https://github.com/AhBiYout-all
                                     </Hyperlink>
                                 </TextBlock>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
-                                <TextBlock Text="• 공식 블로그 (Blog): " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Text="• 공식 구글 블로그: " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                 <TextBlock FontSize="11">
                                     <Hyperlink NavigateUri="https://ahbiyoutvibe.blogspot.com/" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#34D399">
                                         https://ahbiyoutvibe.blogspot.com/
                                     </Hyperlink>
                                 </TextBlock>
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="• GitHub 저장소 (Source &amp; Releases): " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                                <TextBlock Text="• 소속: " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                 <TextBlock FontSize="11">
-                                    <Hyperlink NavigateUri="https://github.com/ahbiyout-all/K-Certificate-Manager" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#818CF8">
-                                        https://github.com/ahbiyout-all/K-Certificate-Manager
+                                    <Hyperlink NavigateUri="https://www.cisnet.co.kr" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#38BDF8">
+                                        https://www.cisnet.co.kr
                                     </Hyperlink>
                                 </TextBlock>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="• 소속회사: " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Text="(주)청운정보시스템 ( cisnet.co.kr )" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>

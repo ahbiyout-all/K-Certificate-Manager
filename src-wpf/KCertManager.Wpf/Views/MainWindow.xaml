@@ -1278,22 +1278,22 @@
                     <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Developer: AhBiYout  |  " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <TextBlock Text="개발자: AhBiYout  |  " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
-                        <Hyperlink NavigateUri="http://www.cisnet.co.kr/" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#38BDF8">
-                            홈페이지
+                        <Hyperlink NavigateUri="https://www.cisnet.co.kr" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#38BDF8">
+                            (주)청운정보시스템 ( cisnet.co.kr )
                         </Hyperlink>
                     </TextBlock>
                     <TextBlock Text="  |  " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
                         <Hyperlink NavigateUri="https://ahbiyoutvibe.blogspot.com/" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#34D399">
-                            블로그
+                            공식 구글 블로그
                         </Hyperlink>
                     </TextBlock>
                     <TextBlock Text="  |  " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
-                        <Hyperlink NavigateUri="https://github.com/ahbiyout-all/K-Certificate-Manager" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#818CF8">
-                            GitHub
+                        <Hyperlink NavigateUri="https://github.com/AhBiYout-all" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#818CF8">
+                            GitHub 저장소
                         </Hyperlink>
                     </TextBlock>
                 </StackPanel>

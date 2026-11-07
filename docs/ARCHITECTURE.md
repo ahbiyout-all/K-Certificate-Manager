@@ -160,8 +160,10 @@
 ---
 
 ## 11. 메타데이터 & 개발자
-- **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
-- **공식 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
-- **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
-- **회사 홈페이지**: [https://www.cisnet.co.kr/](https://www.cisnet.co.kr/)
-- **버전**: `v1.6.5` (SemVer 2.0.0)
+- **개발자**: AhBiYout
+- **GitHub 저장소**: [https://github.com/AhBiYout-all](https://github.com/AhBiYout-all)
+- **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
+- **소속**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr)
+- **소속회사**: (주)청운정보시스템 ( cisnet.co.kr )
+- **버전**: `v1.9.0` (SemVer 2.0.0)
+

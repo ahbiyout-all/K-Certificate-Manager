@@ -99,8 +99,10 @@
 ---
 
 ## 👤 5. 공식 메타데이터 및 문의처
-- **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
-- **공식 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
-- **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
-- **회사 홈페이지**: [https://www.cisnet.co.kr/](https://www.cisnet.co.kr/) ((주)청운정보시스템)
+- **개발자**: AhBiYout
+- **GitHub 저장소**: [https://github.com/AhBiYout-all](https://github.com/AhBiYout-all)
+- **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
+- **소속**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr)
+- **소속회사**: (주)청운정보시스템 ( cisnet.co.kr )
+
 

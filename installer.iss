@@ -156,8 +156,9 @@ Name: "{group}\사용자 가이드 (User Guide)"; Filename: "{app}\docs\USER_GUI
 Name: "{group}\버전 릴리스 패치노트 (Patch Notes)"; Filename: "{app}\docs\PATCHNOTES.md"
 Name: "{group}\소프트웨어 라이선스 - 한국어 (License KR)"; Filename: "{app}\LICENSE_KR.txt"
 Name: "{group}\Software License - English (License EN)"; Filename: "{app}\LICENSE_EN.txt"
-Name: "{group}\공식 홈페이지 ((주)청운정보시스템)"; Filename: "{#MyAppURL}"
-Name: "{group}\개발자 기술 블로그 (AhBiYout)"; Filename: "{#MyAppSupportURL}"
+Name: "{group}\소속회사 홈페이지 ((주)청운정보시스템 ( cisnet.co.kr ))"; Filename: "{#MyAppURL}"
+Name: "{group}\공식 구글 블로그 (AhBi Vibe Log)"; Filename: "{#MyAppSupportURL}"
+Name: "{group}\GitHub 공식 저장소 (AhBiYout-all)"; Filename: "https://github.com/AhBiYout-all"
 Name: "{group}\{cm:UninstallProgram,{#MyAppNameKR}}"; Filename: "{uninstallexe}"
 
 ; Desktop Shortcut (Optional Task) - WPF 데스크톱 우선 연결 (없으면 launch-web.vbs 연결)

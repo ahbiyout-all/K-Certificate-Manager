@@ -135,9 +135,9 @@ push_to_github.bat
 
 ## 7. 공식 정보 및 문의 채널
 - **개발자**: AhBiYout
-- **GitHub 공식 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
-- **버그 제보 및 기능 제안 (Issues)**: [https://github.com/AhBiYout-all/K-Certificate-Manager/issues](https://github.com/AhBiYout-all/K-Certificate-Manager/issues)
-- **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
-- **소속 회사**: [https://www.cisnet.co.kr/](https://www.cisnet.co.kr/) ((주)청운정보시스템)
-- **회사 홈페이지**: [http://www.cisnet.co.kr/](http://www.cisnet.co.kr/) ((주)청운정보시스템)
+- **GitHub 저장소**: [https://github.com/AhBiYout-all](https://github.com/AhBiYout-all)
+- **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
+- **소속**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr)
+- **소속회사**: (주)청운정보시스템 ( cisnet.co.kr )
+
 

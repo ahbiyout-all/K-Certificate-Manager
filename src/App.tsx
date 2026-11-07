@@ -1710,40 +1710,55 @@ export default function App() {
               </div>
             </div>
 
-            {/* Bottom row of Footer: Explicit Developer, Company, Blog & Copyright */}
+            {/* Bottom row of Footer: Explicit Developer, Company, Blog, GitHub & Copyright */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1 text-xs">
               {/* Requested Developer Info Badges */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-slate-700 font-medium">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-slate-700 font-medium">
                 {/* Developer */}
                 <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
-                  <span className="text-slate-400 font-normal text-[11px]">Developer:</span>
+                  <span className="text-slate-400 font-normal text-[11px]">개발자:</span>
                   <strong className="text-slate-900 font-bold">{DEVELOPER_INFO.author}</strong>
                 </div>
 
-                {/* Homepage */}
+                {/* Company / Affiliation */}
                 <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
-                  <span className="text-slate-400 font-normal text-[11px]">홈페이지:</span>
+                  <span className="text-slate-400 font-normal text-[11px]">소속회사:</span>
                   <a
                     href={DEVELOPER_INFO.homepage}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline font-bold"
-                    title="공식 홈페이지 열기"
+                    title="소속: https://www.cisnet.co.kr"
                   >
-                    <span>홈페이지</span>
+                    <span>{DEVELOPER_INFO.affiliation}</span>
                     <ExternalLink className="w-3 h-3 text-blue-500" />
                   </a>
                 </div>
 
-                {/* Blog */}
+                {/* GitHub */}
                 <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
-                  <span className="text-slate-400 font-normal text-[11px]">블로그:</span>
+                  <span className="text-slate-400 font-normal text-[11px]">GitHub 저장소:</span>
+                  <a
+                    href={DEVELOPER_INFO.github}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline font-bold"
+                    title="공식 GitHub 저장소 열기"
+                  >
+                    <span>{DEVELOPER_INFO.github}</span>
+                    <ExternalLink className="w-3 h-3 text-indigo-500 shrink-0" />
+                  </a>
+                </div>
+
+                {/* Official Google Blog */}
+                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
+                  <span className="text-slate-400 font-normal text-[11px]">공식 구글 블로그:</span>
                   <a
                     href={DEVELOPER_INFO.blog}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 hover:underline font-bold"
-                    title="AhBi Vibe Log 블로그 열기"
+                    title="공식 구글 블로그 열기"
                   >
                     <span className="truncate max-w-[200px] sm:max-w-none">{DEVELOPER_INFO.blog}</span>
                     <ExternalLink className="w-3 h-3 text-emerald-600 shrink-0" />
@@ -1752,7 +1767,7 @@ export default function App() {
               </div>
 
               {/* Copyright & Security note */}
-              <div className="text-[11px] text-slate-400 sm:text-right">
+              <div className="text-[11px] text-slate-400 sm:text-right shrink-0">
                 <span>© 2026 {DEVELOPER_INFO.author}. All rights reserved.</span>
               </div>
             </div>

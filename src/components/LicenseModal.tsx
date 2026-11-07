@@ -20,7 +20,7 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({ isOpen, onClose }) =
   const licenseSummaryKR = `[한국어 라이선스 정의 - LICENSE_KR.txt]
 K-Certificate Manager (K-인증서 매니저) v${APP_VERSION}
 Copyright (c) 2026 ${DEVELOPER_INFO.author} (${DEVELOPER_INFO.blog}). All rights reserved.
-Company: (주)청운정보시스템 (${DEVELOPER_INFO.homepage})
+Company: (주)청운정보시스템 ( cisnet.co.kr ) (${DEVELOPER_INFO.homepage})
 
 본 소프트웨어는 대한민국 공무원, 교직원, 금융 및 기업 사용자의 공인/공동인증서(GPKI, EPKI, NPKI) 관리 및 안전한 이동을 위해 무료(Free License)로 배포됩니다.
 1. 제1조(사용 허가): 개인, 공공기관, 교육기관, 기업 등 모든 사용자에게 영구 무료 사용 및 배포가 허가됩니다.
@@ -31,7 +31,7 @@ Company: (주)청운정보시스템 (${DEVELOPER_INFO.homepage})
   const licenseSummaryEN = `[English License Definition - LICENSE_EN.txt]
 K-Certificate Manager v${APP_VERSION}
 Copyright (c) 2026 ${DEVELOPER_INFO.author} (${DEVELOPER_INFO.blog}). All rights reserved.
-Company: (주)청운정보시스템 (${DEVELOPER_INFO.homepage})
+Company: (주)청운정보시스템 ( cisnet.co.kr ) (${DEVELOPER_INFO.homepage})
 
 This software is permanently distributed free of charge (Free License) for civil servants, educators, financial users, and enterprise professionals to safely manage and transfer Accredited/Joint Digital Certificates (GPKI, EPKI, NPKI).
 1. Article 1 (Grant of License): Free perpetual use, copying, and distribution for individuals, public agencies, schools, and enterprises.
@@ -321,7 +321,7 @@ This software is permanently distributed free of charge (Free License) for civil
                   </button>
                 </div>
                 <p className="font-mono text-xs text-slate-600 whitespace-pre-line leading-relaxed bg-white p-3 rounded border border-slate-200">
-                  {`Copyright (c) 2026 ${DEVELOPER_INFO.author} (${DEVELOPER_INFO.blog})\nCompany: (주)청운정보시스템 (${DEVELOPER_INFO.homepage})\nAll rights reserved.`}
+                  {`Copyright (c) 2026 ${DEVELOPER_INFO.author} (${DEVELOPER_INFO.blog})\nCompany: ${DEVELOPER_INFO.affiliation} (${DEVELOPER_INFO.homepage})\nAll rights reserved.`}
                 </p>
               </div>
 
@@ -420,7 +420,7 @@ This software is permanently distributed free of charge (Free License) for civil
                 <div className="flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-blue-400" />
                   <div>
-                    <span className="font-bold text-white block">{DEVELOPER_INFO.author} · (주)청운정보시스템</span>
+                    <span className="font-bold text-white block">{DEVELOPER_INFO.author} · {DEVELOPER_INFO.affiliation}</span>
                     <span className="text-[11px] text-slate-400">K-Certificate Manager (KR / EN Dual License)</span>
                   </div>
                 </div>
@@ -431,7 +431,16 @@ This software is permanently distributed free of charge (Free License) for civil
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium transition-colors"
                   >
-                    <span>{lang === 'en' ? 'Company Website' : '공식 홈페이지'}</span>
+                    <span>{lang === 'en' ? 'Company Website' : '소속 회사'}</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                  <a
+                    href={DEVELOPER_INFO.github}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-medium transition-colors"
+                  >
+                    <span>GitHub</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
                   <a
@@ -440,7 +449,7 @@ This software is permanently distributed free of charge (Free License) for civil
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded font-medium transition-colors"
                   >
-                    <span>{lang === 'en' ? 'Tech Blog' : '개발자 블로그'}</span>
+                    <span>{lang === 'en' ? 'Tech Blog' : '공식 블로그'}</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>

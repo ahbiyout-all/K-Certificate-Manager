@@ -66,9 +66,9 @@ namespace KCertManager.Wpf.Views
             {
                 string krText =
                     "[한국어 라이선스 정의 - LICENSE_KR.txt]\r\n" +
-                    "K-Certificate Manager (K-인증서 매니저) v1.8.0\r\n" +
+                    "K-Certificate Manager (K-인증서 매니저) v1.9.0\r\n" +
                     "Copyright (c) 2026 AhBiYout (https://ahbiyoutvibe.blogspot.com/). All rights reserved.\r\n" +
-                    "Company: (주)청운정보시스템 (http://www.cisnet.co.kr/)\r\n" +
+                    "Company: (주)청운정보시스템 ( cisnet.co.kr ) (https://www.cisnet.co.kr)\r\n" +
                     "1. 제1조(사용 허가): 개인, 공공기관, 교육기관, 기업 등 모든 사용자에게 영구 무료 사용 및 배포가 허가됩니다.\r\n" +
                     "2. 제2조(보안 보장): 100% 오프라인 로컬 환경에서 구동되며 인증서 및 개인정보를 외부로 전송하지 않습니다.\r\n" +
                     "3. 제3조(저작권 보존): 저작권 표기(AhBiYout)는 수정하거나 삭제할 수 없습니다.\r\n" +
@@ -76,9 +76,9 @@ namespace KCertManager.Wpf.Views
 
                 string enText =
                     "[English License Definition - LICENSE_EN.txt]\r\n" +
-                    "K-Certificate Manager v1.8.0\r\n" +
+                    "K-Certificate Manager v1.9.0\r\n" +
                     "Copyright (c) 2026 AhBiYout (https://ahbiyoutvibe.blogspot.com/). All rights reserved.\r\n" +
-                    "Company: (주)청운정보시스템 (http://www.cisnet.co.kr/)\r\n" +
+                    "Company: (주)청운정보시스템 ( cisnet.co.kr ) (https://www.cisnet.co.kr)\r\n" +
                     "1. Article 1 (Grant of License): Permanently distributed free of charge for individuals, public agencies, schools, and enterprises.\r\n" +
                     "2. Article 2 (Security Guarantee): Operates 100% offline locally with zero external network transmission or telemetry.\r\n" +
                     "3. Article 3 (Copyright Notice): The copyright notice (AhBiYout) may not be altered or removed.\r\n" +
