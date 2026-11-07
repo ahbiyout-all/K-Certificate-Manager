@@ -4,8 +4,8 @@ cd /d "%~dp0"
 
 REM ==============================================================================
 REM   K-Certificate Manager - Windows Automated Build Tool
-REM   Developer: AhBiYout (GitHub: AhBiYout-all)
-REM   Repository: https://github.com/AhBiYout-all/K-Certificate-Manager
+REM   Developer: AhBiYout (GitHub Profile: AhBiYout-all)
+REM   Repository: https://github.com/AhBiYout-all
 REM ==============================================================================
 
 where powershell >nul 2>&1

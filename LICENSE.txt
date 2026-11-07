@@ -3,10 +3,10 @@ K-Certificate Manager (K-인증서 매니저) 소프트웨어 라이선스 계�
 Software License Agreement (한국어 / English Dual License Definition)
 ================================================================================
 
-Version: v1.4.5
+Version: v1.9.0
 Copyright (c) 2026 AhBiYout (https://ahbiyoutvibe.blogspot.com/)
 Developer: AhBiYout
-Company: (주)청운정보시스템 (http://www.cisnet.co.kr/)
+Company: (주)청운정보시스템 ( cisnet.co.kr ) (https://www.cisnet.co.kr)
 All rights reserved.
 
 본 라이선스 문서는 한국어(Part 1)와 영어(Part 2) 2종류로 정의됩니다.
@@ -121,6 +121,6 @@ before performing any certificate copy, move, or deletion operations.
 ================================================================================
 문의 및 개발자 정보 (Contact & Developer Information)
 - 개발자 (Developer): AhBiYout (GitHub: https://github.com/AhBiYout-all)
-- 회사 홈페이지 (Company): http://www.cisnet.co.kr/ ((주)청운정보시스템)
+- 회사 홈페이지 (Company): https://www.cisnet.co.kr ((주)청운정보시스템 ( cisnet.co.kr ))
 - 공식 기술 블로그 (Blog): https://ahbiyoutvibe.blogspot.com/
 ================================================================================

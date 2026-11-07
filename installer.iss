@@ -4,7 +4,7 @@
 ;  * 중복 팩킹(동일 바이너리 중복, 와일드카드 중복, 스크립트 중복) 완전 제거
 ;  * 개발 전용 파일(package.json, 원본 index.html, metadata.json 등) 배포 제외
 ;  Developer: AhBiYout (GitHub: AhBiYout-all)
-;  Company:   (주)청운정보시스템 (https://www.cisnet.co.kr)
+;  Company:   (주)청운정보시스템 ( cisnet.co.kr )
 ;  Blog:      https://ahbiyoutvibe.blogspot.com/
 ; ==============================================================================
 

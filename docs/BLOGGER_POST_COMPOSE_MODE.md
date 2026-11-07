@@ -60,7 +60,8 @@ ActiveX나 복잡한 보안 프로그램 설치 없이, 지능형 딥스캔 엔�
 
 ## 8. 제작자 및 공식 채널 안내 (Developer & Official Channels)
 - **개발자 (Developer)**: AhBiYout (GitHub: [@AhBiYout-all](https://github.com/AhBiYout-all))
-- **소속 회사**: (주)청운정보시스템 ([https://www.cisnet.co.kr](https://www.cisnet.co.kr))
+- **소속 회사**: (주)청운정보시스템 ( cisnet.co.kr ) ([https://www.cisnet.co.kr](https://www.cisnet.co.kr))
+- **공식 GitHub 저장소**: [https://github.com/AhBiYout-all](https://github.com/AhBiYout-all)
 - **개발자 기술 블로그**: AhBi Vibe Log ([https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/))
 
 ---

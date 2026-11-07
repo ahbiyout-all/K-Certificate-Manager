@@ -13,6 +13,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
@@ -30,7 +31,7 @@
 
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="안전 격리 휴지통 (Safety Quarantine Vault)" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <TextBlock Text="삭제된 인증서는 즉시 지워지지 않고 격리 보관되며 복원된 인증서는 '복원된 항목' 보관소에 안전 기록됩니다." FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                    <TextBlock Text="삭제된 인증서는 격리 보관되며, 복원된 이력은 Windows DPAPI 및 AES-256으로 이중 암호화된 특수 보관소에 안전 기록됩니다." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
 
                 <Button Grid.Column="2" Content="🔥 휴지통 완전히 비우기" Style="{StaticResource SecondaryButton}" Click="BtnEmptyTrash_Click" VerticalAlignment="Center"/>
@@ -307,8 +308,17 @@
             </ScrollViewer>
         </Border>
 
+        <!-- Security Banner -->
+        <Border Grid.Row="4" Background="#064E3B" CornerRadius="6" Padding="12,8" Margin="0,10,0,0">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🛡️" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <TextBlock Text="보관소 이력은 Windows DPAPI 및 AES-256으로 이중 암호화되어 현재 로그인한 사용자 외 타인의 무단 접근을 완벽히 차단합니다." 
+                           Foreground="#A7F3D0" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
         <!-- Footer -->
-        <Border Grid.Row="4" Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="12" Margin="0,12,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+        <Border Grid.Row="5" Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="12" Margin="0,12,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
             <Grid>
                 <TextBlock x:Name="TxtTrashCount" Text="격리 보관된 인증서: 0개 | 복원 보관소: 0개" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                 <Button Content="닫기" Style="{StaticResource PrimaryButton}" Width="80" HorizontalAlignment="Right" Click="BtnClose_Click"/>

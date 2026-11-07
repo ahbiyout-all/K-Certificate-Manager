@@ -2,10 +2,10 @@
 [English] K-Certificate Manager Software License Agreement
 ================================================================================
 
-Version: v1.4.5
+Version: v1.9.0
 Copyright (c) 2026 AhBiYout (https://ahbiyoutvibe.blogspot.com/)
 Developer: AhBiYout
-Company: (주)청운정보시스템 (http://www.cisnet.co.kr/)
+Company: (주)청운정보시스템 ( cisnet.co.kr ) (https://www.cisnet.co.kr)
 All rights reserved.
 
 This software is provided free of charge (Free License) for civil servants, educators,
@@ -62,6 +62,6 @@ before performing any certificate copy, move, or deletion operations.
 ================================================================================
 Contact & Developer Information
 - Developer: AhBiYout (GitHub: https://github.com/AhBiYout-all)
-- Company Website: http://www.cisnet.co.kr/ ((주)청운정보시스템)
+- Company Website: https://www.cisnet.co.kr ((주)청운정보시스템 ( cisnet.co.kr ))
 - Official Tech Blog: https://ahbiyoutvibe.blogspot.com/
 ================================================================================

@@ -60,6 +60,7 @@ npm run build
 ## 📜 Official Channels & Developer Info
 
 - **Developer**: AhBiYout (GitHub: [@AhBiYout-all](https://github.com/AhBiYout-all))
-- **Company**: (주)청운정보시스템 ([https://www.cisnet.co.kr](https://www.cisnet.co.kr))
+- **Company**: (주)청운정보시스템 ( cisnet.co.kr ) ([https://www.cisnet.co.kr](https://www.cisnet.co.kr))
 - **Official Blog**: AhBi Vibe Log ([https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/))
+- **GitHub Profile**: [https://github.com/AhBiYout-all](https://github.com/AhBiYout-all)
 - **License**: MIT License (Korean / English Dual License)
