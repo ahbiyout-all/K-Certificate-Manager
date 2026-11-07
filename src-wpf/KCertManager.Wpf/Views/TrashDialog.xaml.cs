@@ -144,7 +144,7 @@ namespace KCertManager.Wpf.Views
         {
             if (sender is Button btn && btn.DataContext is RestoredTrashItem item)
             {
-                var targetDrives = _backupService.GetAvailableTargetDrives().Where(d => d.IsRemovable || d.BusType.Equals("USB", StringComparison.OrdinalIgnoreCase)).ToList();
+                var targetDrives = UsbDriveWatcher.GetAvailableDrives().Where(d => d.IsRemovable || string.Equals(d.BusType, "USB", StringComparison.OrdinalIgnoreCase)).ToList();
                 if (!targetDrives.Any())
                 {
                     UserFriendlyMessageHelper.ShowErrorText(
@@ -181,7 +181,7 @@ namespace KCertManager.Wpf.Views
                         destDir,
                         1);
 
-                    SoundService.Instance.PlayCompletionSound();
+                    SoundService.PlayCompletionSound();
                     UserFriendlyMessageHelper.ShowOperationComplete(
                         "특수 보관소 ➔ USB 제한 복구 완료!",
                         $"[인증서 소유자]: {item.CertCommonName}\n[복원 경로]: {destDir}\n\n이동식 USB 매체({usbDrive.DriveLetter})로 인증서 제한 복원이 완료되었습니다.",
