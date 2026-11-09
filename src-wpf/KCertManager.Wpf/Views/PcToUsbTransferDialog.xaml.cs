@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
 using KCertManager.Wpf.Models;
+using KCertManager.Wpf.Services;
 using KCertManager.Wpf.ViewModels;
 
 namespace KCertManager.Wpf.Views
@@ -22,7 +24,26 @@ namespace KCertManager.Wpf.Views
                 DialogResult = true;
                 Close();
             };
+            _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+            Loaded += (s, e) => UpdateDriveCardBorder();
             DataContext = _viewModel;
+        }
+
+        private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PcToUsbTransferViewModel.SelectedTargetDrive))
+            {
+                UpdateDriveCardBorder();
+            }
+        }
+
+        private void UpdateDriveCardBorder()
+        {
+            if (DestDriveCardBorder != null && _viewModel != null)
+            {
+                bool isUsb = _viewModel.SelectedTargetDrive?.IsRemovable ?? true;
+                WpfAnimatedBorderHelper.ApplyAnimatedGradientBorder(DestDriveCardBorder, isSelected: true, isRemovableUsb: isUsb);
+            }
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)

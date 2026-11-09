@@ -164,6 +164,26 @@
 - **검증 결과**:
   - `compile_applet` & `lint_applet` 동시 검증 0건 에러 통과. 만료 정리 후 휴지통 대화상자 즉시 정상 오픈 확인.
 
+### 📝 [작업 차수 162] 앱 내 모든 대상 드라이브 카드 동적 무한 유동 애니메이션 브러시(Animated Moving Border Glow) 탑재 (WPF & Web)
+- **작업 일시**: 2026-11-09 18:40 KST
+- **요청 사항**:
+  - "앱 내에 모든 대상 드라이브 카드: (C# WPF 데스크톱 ) 동적 애니메이션 브러시 탑재"
+- **구현 내용**:
+  1. **C# WPF 데스크톱 재사용 가능한 애니메이션 브러시 헬퍼 구축 (`WpfAnimatedBorderHelper.cs`)**:
+     - WPF `LinearGradientBrush`와 `PointAnimation` (StartPoint (0,0)➔(1,1), EndPoint (1,1)➔(0,0), 2.2s/3.5s 무한 루프, `AutoReverse = true`)을 결합한 60fps 무한 유동 그라데이션 테두리 및 `DropShadowEffect` (네온 글로우) 헬퍼 개발.
+     - 선택 카드: 네온 무지개 그라데이션 (`#2563EB` -> `#10B981` -> `#F59E0B` -> `#6366F1`) + 14px DropShadow 네온 글로우.
+     - 미선택 USB 카드: 은은한 에메랄드/청록 그라데이션 (`#059669` -> `#34D399` -> `#0EA5E9`).
+     - 미선택 로컬 디스크 카드: 푸른빛 블루 그라데이션 (`#1E3A8A` -> `#3B82F6` -> `#6366F1`).
+  2. **모든 WPF 드라이브 카드 컨테이너에 동적 애니메이션 탑재**:
+     - `TargetDrivePickerDialog.xaml.cs`: 복사 목적지 선택 팝업 내 모든 물리 드라이브 카드에 선택/미선택 동적 유동 브러시 전면 적용.
+     - `MainWindow.xaml`: 간편 모드 빠른 백업 목적지 드라이브 선택 카드 및 사이드바 드라이브 카드 영역 동적 그라데이션 브러시 탑재.
+     - `PcToUsbTransferDialog.xaml` & `PcToUsbTransferDialog.xaml.cs`: PC ➔ USB 복사 목적지 드라이브 선택 영역에 `WpfAnimatedBorderHelper` 연결 및 선택 드라이브(USB vs 로컬)에 맞춘 실시간 동적 유동 테두리 적용.
+     - `UsbTransferDialog.xaml` & `UsbTransferDialog.xaml.cs`: USB ➔ PC 가져오기 소스 드라이브 선택 영역에 `WpfAnimatedBorderHelper` 연결 및 실시간 동적 유동 테두리 구현.
+  3. **React Web SPA CSS & 컴포넌트 100% 동기화 (`index.css`, `TargetDrivePickerModal.tsx`, `ConnectedDrivesBar.tsx`)**:
+     - `.animated-drive-card` 및 `.animated-drive-card-subtle` 클래스를 2중 레이어 `background-clip: padding-box, border-box` 및 `linear-gradient` (350% 스케일 3s 무한 루프) 및 `neonGlowPulse` 애니메이션으로 구성하여 C# WPF 데스크톱과 visual parity 100% 유지.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 동시 검증 0건 에러 통과.
+
 ### 📝 [작업 차수 153] 만료 인증서 정리 후 휴지통 대화상자 열기 시 메인 뷰모델 수치 게터 널 포인터 결함 정밀 교정
 - **작업 일시**: 2026-11-09 12:10 KST
 - **요청 사항**:

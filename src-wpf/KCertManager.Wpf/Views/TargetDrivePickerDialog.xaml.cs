@@ -130,12 +130,12 @@ namespace KCertManager.Wpf.Views
                     CornerRadius = new CornerRadius(8),
                     Padding = new Thickness(14, 12, 14, 12),
                     Margin = new Thickness(0, 0, 0, 8),
-                    Background = cardBackground,
-                    BorderBrush = cardBorderBrush,
-                    BorderThickness = new Thickness(1.5),
                     Cursor = isSelfCopy ? Cursors.No : Cursors.Hand,
                     Tag = drive
                 };
+
+                // 모든 미선택 드라이브 카드에 은은한 동적 무한 유동 테두리 애니메이션 기본 적용
+                WpfAnimatedBorderHelper.ApplyAnimatedGradientBorder(cardBorder, isSelected: false, isRemovableUsb: drive.IsRemovable);
 
                 var grid = new Grid();
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -360,14 +360,11 @@ namespace KCertManager.Wpf.Views
             var cardBackground = (Brush)Application.Current.FindResource("BgDarkBrush") ?? new SolidColorBrush(Color.FromRgb(15, 23, 42));
             var cardBorderBrush = (Brush)Application.Current.FindResource("BorderBrush") ?? new SolidColorBrush(Color.FromRgb(51, 65, 85));
 
-            // Reset previous selected card
+            // Reset previous selected card to unselected animated gradient state
             if (_selectedCardBorder != null)
             {
-                _selectedCardBorder.BeginAnimation(Border.BorderBrushProperty, null);
-                _selectedCardBorder.BorderBrush = cardBorderBrush;
-                _selectedCardBorder.Background = cardBackground;
-                _selectedCardBorder.BorderThickness = new Thickness(1.5);
-                _selectedCardBorder.Effect = null;
+                bool prevIsUsb = (_selectedCardBorder.Tag is DriveItem prevDrive) && prevDrive.IsRemovable;
+                WpfAnimatedBorderHelper.ApplyAnimatedGradientBorder(_selectedCardBorder, isSelected: false, isRemovableUsb: prevIsUsb);
 
                 if (_selectedCardBorder.Child is Grid oldGrid && oldGrid.Children.Count >= 3 && oldGrid.Children[2] is Border oldIndicator)
                 {
@@ -380,53 +377,8 @@ namespace KCertManager.Wpf.Views
             _selectedCardBorder = cardBorder;
             SelectedDrive = drive;
 
-            // Apply Animated Moving Gradient Border & Neon Glow Shadow to selected card
-            var animBrush = new LinearGradientBrush
-            {
-                StartPoint = new Point(0, 0),
-                EndPoint = new Point(1, 1),
-                GradientStops = new GradientStopCollection
-                {
-                    new GradientStop(Color.FromRgb(37, 99, 235), 0.0),   // Bright Blue
-                    new GradientStop(Color.FromRgb(16, 185, 129), 0.33), // Emerald Green
-                    new GradientStop(Color.FromRgb(245, 158, 11), 0.66), // Warm Amber
-                    new GradientStop(Color.FromRgb(99, 102, 241), 1.0)   // Indigo
-                }
-            };
-
-            var startAnim = new System.Windows.Media.Animation.PointAnimation
-            {
-                From = new Point(0, 0),
-                To = new Point(1, 1),
-                Duration = new Duration(TimeSpan.FromSeconds(2.5)),
-                AutoReverse = true,
-                RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever
-            };
-
-            var endAnim = new System.Windows.Media.Animation.PointAnimation
-            {
-                From = new Point(1, 1),
-                To = new Point(0, 0),
-                Duration = new Duration(TimeSpan.FromSeconds(2.5)),
-                AutoReverse = true,
-                RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever
-            };
-
-            animBrush.BeginAnimation(LinearGradientBrush.StartPointProperty, startAnim);
-            animBrush.BeginAnimation(LinearGradientBrush.EndPointProperty, endAnim);
-
-            cardBorder.BorderBrush = animBrush;
-            cardBorder.BorderThickness = new Thickness(2.5);
-            cardBorder.Background = new SolidColorBrush(Color.FromRgb(20, 35, 65));
-
-            // Add Soft Neon DropShadow Effect
-            cardBorder.Effect = new System.Windows.Media.Effects.DropShadowEffect
-            {
-                Color = Color.FromRgb(37, 99, 235),
-                BlurRadius = 14,
-                ShadowDepth = 0,
-                Opacity = 0.65
-            };
+            // Apply vibrant high-contrast animated moving gradient border & neon glow
+            WpfAnimatedBorderHelper.ApplyAnimatedGradientBorder(cardBorder, isSelected: true, isRemovableUsb: drive.IsRemovable);
 
             if (cardBorder.Child is Grid newGrid && newGrid.Children.Count >= 3 && newGrid.Children[2] is Border newIndicator)
             {
