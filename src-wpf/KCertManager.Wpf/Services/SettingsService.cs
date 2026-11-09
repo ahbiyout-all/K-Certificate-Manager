@@ -14,6 +14,7 @@ namespace KCertManager.Wpf.Services
         public string Theme { get; set; } = "dark";
         public bool IsSimpleMode { get; set; } = true;
         public bool ExcludeLocalLowGpkiScan { get; set; } = true;
+        public bool AutoOpenUsbFolderOnComplete { get; set; } = false;
     }
 
     public class SettingsService
@@ -168,6 +169,19 @@ namespace KCertManager.Wpf.Services
                 {
                     _currentSettings.ExcludeLocalLowGpkiScan = value;
                     CertLocationScanner.ExcludeLocalLowGpkiScan = value;
+                    SaveSettings();
+                }
+            }
+        }
+
+        public bool AutoOpenUsbFolderOnComplete
+        {
+            get => _currentSettings.AutoOpenUsbFolderOnComplete;
+            set
+            {
+                if (_currentSettings.AutoOpenUsbFolderOnComplete != value)
+                {
+                    _currentSettings.AutoOpenUsbFolderOnComplete = value;
                     SaveSettings();
                 }
             }

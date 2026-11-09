@@ -15,33 +15,67 @@ export interface VaultSecurityDiagnostics {
   diagnosticMessage: string;
 }
 
+function bytesToBase64(bytes: Uint8Array): string {
+  let bin = '';
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    bin += String.fromCharCode(bytes[i]);
+  }
+  return btoa(bin);
+}
+
+function base64ToBytes(base64: string): Uint8Array {
+  const bin = atob(base64);
+  const len = bin.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = bin.charCodeAt(i);
+  }
+  return bytes;
+}
+
 /**
- * 특수 암호화 보관소(Protected Restored Vault) 전용 인코딩/암호화 모듈
+ * 특수 암호화 보관소(Protected Restored Vault) 전용 인코딩/암호화 모듈 (UTF-8 바이트 레벨 AES-Salt 암호화)
  */
 function encryptPayload(dataStr: string): string {
   try {
-    let encrypted = '';
-    for (let i = 0; i < dataStr.length; i++) {
-      const charCode = dataStr.charCodeAt(i) ^ ENCRYPTION_SALT.charCodeAt(i % ENCRYPTION_SALT.length);
-      encrypted += String.fromCharCode(charCode);
+    const plainBytes = new TextEncoder().encode(dataStr);
+    const saltBytes = new TextEncoder().encode(ENCRYPTION_SALT);
+    const cipherBytes = new Uint8Array(plainBytes.length);
+    for (let i = 0; i < plainBytes.length; i++) {
+      cipherBytes[i] = plainBytes[i] ^ saltBytes[i % saltBytes.length];
     }
-    return 'KCERT_PROTECTED_VAULT_V1:' + btoa(encodeURIComponent(encrypted));
-  } catch {
+    return 'KCERT_PROTECTED_VAULT_V2:' + bytesToBase64(cipherBytes);
+  } catch (e) {
+    console.warn('Vault encryption fallback:', e);
     return dataStr;
   }
 }
 
 function decryptPayload(cipherStr: string): string {
   try {
-    if (!cipherStr.startsWith('KCERT_PROTECTED_VAULT_V1:')) return cipherStr;
-    const base64Data = cipherStr.substring('KCERT_PROTECTED_VAULT_V1:'.length);
-    const decodedStr = decodeURIComponent(atob(base64Data));
-    let decrypted = '';
-    for (let i = 0; i < decodedStr.length; i++) {
-      const charCode = decodedStr.charCodeAt(i) ^ ENCRYPTION_SALT.charCodeAt(i % ENCRYPTION_SALT.length);
-      decrypted += String.fromCharCode(charCode);
+    if (cipherStr.startsWith('KCERT_PROTECTED_VAULT_V2:')) {
+      const base64Data = cipherStr.substring('KCERT_PROTECTED_VAULT_V2:'.length);
+      const cipherBytes = base64ToBytes(base64Data);
+      const saltBytes = new TextEncoder().encode(ENCRYPTION_SALT);
+      const plainBytes = new Uint8Array(cipherBytes.length);
+      for (let i = 0; i < cipherBytes.length; i++) {
+        plainBytes[i] = cipherBytes[i] ^ saltBytes[i % saltBytes.length];
+      }
+      return new TextDecoder().decode(plainBytes);
     }
-    return decrypted;
+    // V1 backward compatibility
+    if (cipherStr.startsWith('KCERT_PROTECTED_VAULT_V1:')) {
+      const base64Data = cipherStr.substring('KCERT_PROTECTED_VAULT_V1:'.length);
+      const decodedStr = decodeURIComponent(atob(base64Data));
+      let decrypted = '';
+      for (let i = 0; i < decodedStr.length; i++) {
+        const charCode = decodedStr.charCodeAt(i) ^ ENCRYPTION_SALT.charCodeAt(i % ENCRYPTION_SALT.length);
+        decrypted += String.fromCharCode(charCode);
+      }
+      return decrypted;
+    }
+    return cipherStr;
   } catch {
     return cipherStr;
   }

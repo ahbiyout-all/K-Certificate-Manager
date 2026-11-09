@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -165,6 +166,12 @@ namespace KCertManager.Wpf.Views
         {
             try
             {
+                if (_rawRestoredList.Count == 0)
+                {
+                    UserFriendlyMessageHelper.ShowInfo("내보낼 복원 보관소 이력이 없습니다.", "안내", this);
+                    return;
+                }
+
                 var sfd = new Microsoft.Win32.SaveFileDialog
                 {
                     FileName = $"protected_vault_backup_{DateTime.Now:yyyyMMdd_HHmmss}.dat",
@@ -247,7 +254,7 @@ namespace KCertManager.Wpf.Views
 
         private void BtnClearRestored_Click(object sender, RoutedEventArgs e)
         {
-            if (_restoredItems.Count == 0)
+            if (_rawRestoredList.Count == 0)
             {
                 UserFriendlyMessageHelper.ShowInfo("복원 보관소가 이미 비어 있습니다.", "안내", this);
                 return;

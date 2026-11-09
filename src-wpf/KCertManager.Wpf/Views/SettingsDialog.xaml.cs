@@ -50,9 +50,16 @@ namespace KCertManager.Wpf.Views
                 }
 
                 ChkExcludeLocalLowGpkiScan.IsChecked = _vm.ExcludeLocalLowGpkiScan;
+                ChkAutoOpenUsbFolderOnComplete.IsChecked = _vm.AutoOpenUsbFolderOnComplete;
             }
 
             _isInitializing = false;
+        }
+
+        private void ChkAutoOpenUsbFolderOnComplete_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing || _vm == null) return;
+            _vm.AutoOpenUsbFolderOnComplete = ChkAutoOpenUsbFolderOnComplete.IsChecked == true;
         }
 
         private void ChkExcludeLocalLowGpkiScan_Changed(object sender, RoutedEventArgs e)
@@ -142,6 +149,7 @@ namespace KCertManager.Wpf.Views
             _vm.IsSimpleMode = true;
             _vm.DontShowStartupWorkflowAgain = false;
             _vm.ExcludeLocalLowGpkiScan = true;
+            _vm.AutoOpenUsbFolderOnComplete = false;
 
             ChkSoundEnabled.IsChecked = true;
             SliderSoundVolume.Value = 40;
@@ -151,6 +159,7 @@ namespace KCertManager.Wpf.Views
             RbModeSimple.IsChecked = true;
             ChkDontShowStartupWorkflowAgain.IsChecked = false;
             ChkExcludeLocalLowGpkiScan.IsChecked = true;
+            ChkAutoOpenUsbFolderOnComplete.IsChecked = false;
             _isInitializing = false;
 
             _vm.ShowToast("⚙️ 환경 설정이 기본값으로 초기화되었습니다.");

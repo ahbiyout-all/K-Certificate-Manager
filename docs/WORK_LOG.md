@@ -17,6 +17,24 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 151] 인증서 복사 성공 시 대상 USB 폴더 탐색기 자동 열기 토글 옵션 구현 (Web & WPF)
+- **작업 일시**: 2026-11-09 10:15 KST
+- **요청 사항**:
+  - "인증서 복사 작업이 성공적으로 완료되었을 때, 대상 USB 폴더를 시스템 파일 탐색기로 자동으로 열어주는 토글 옵션을 설정 모달에 추가하세요."
+- **구현 내용**:
+  1. **C# WPF 데스크톱 환경설정 및 영구 세션 구조 고도화 (`SettingsService.cs`, `MainViewModel.cs`)**:
+     - `AppSettingsData`에 `AutoOpenUsbFolderOnComplete` 속성(기본값: `false`)을 추가하고 `kcert_settings.json`과 자동 동기화.
+     - `MainViewModel.cs` 및 `SettingsDialog.xaml` / `.xaml.cs`에 `ChkAutoOpenUsbFolderOnComplete` 체크박스 컨트롤 추가 및 Two-Way 양방향 바인딩 구축.
+     - '기본값으로 복원' 클릭 시 사운드, 모드, 테마와 함께 `AutoOpenUsbFolderOnComplete` 기본값 초기화 동기화.
+  2. **C# WPF 작업 완료 시 시스템 탐색기(`explorer.exe`) 자동 열기 실행 엔진 결합 (`OperationCompleteDialog.xaml.cs`)**:
+     - 인증서 복사/백업 작업이 성공적으로 완료되면, `SettingsService.Instance.AutoOpenUsbFolderOnComplete` 설정을 확인하여 `true`일 경우 `System.Diagnostics.Process.Start("explorer.exe", targetPath)`를 자동 호출함으로써 대상 USB 드라이브 폴더를 윈도우 파일 탐색기로 자동 즉시 열어주도록 구현.
+  3. **React Web SPA 관리 콘솔 동기화 (`SettingsModal.tsx`, `OperationCompleteModal.tsx`)**:
+     - `SettingsModal.tsx`에 `autoOpenUsbFolder` 상태 및 `localStorage('kcert_auto_open_usb_folder')` 처리기 구현.
+     - `SettingsModal` 내 SECTION 4에 `📂 USB 탐색기 자동 열기 옵션 (Auto-Open USB Folder)` 토글 옵션 및 상세 가이드 설명 카드 배치.
+     - `OperationCompleteModal.tsx`에서 USB 대상 복사 완료 시 설정이 활성화되어 있으면 `📂 [USB 자동 열기 활성화] 대상 USB 저장소 탐색기 연결 완료` 배지를 노출하고 대상 경로가 자동으로 강조되도록 대칭 동기화.
+- **검증 결과**:
+  - `compile_applet` 및 `lint_applet` 모두 0건 오류 정상 통과 (Web SPA & C# .NET 10/8 WPF).
+
 ### 📝 [작업 차수 147] 자아성찰 및 전수 감사 기반 오류 수정 (웹 만료 정리창 984px 확장 동기화 및 WPF USB 제한 복구 무결성 전송 엔진 연동)
 - **작업 일시**: 2026-11-09 09:40 KST
 - **요청 사항**:
@@ -2301,5 +2319,46 @@
      - 개발자: AhBiYout, GitHub: `https://github.com/AhBiYout-all`, 블로그: `https://ahbiyoutvibe.blogspot.com/`, 소속: `https://www.cisnet.co.kr`, 소속회사: `(주)청운정보시스템 ( cisnet.co.kr )`.
 - **검증**:
   - `compile_applet` 및 `lint_applet` co-execution 검증 완료 (0 오류).
+
+---
+
+### 📝 [작업 차수 149] 자아성찰 및 심층 오류 전수 수정 (보관소 UTF-8 바이트 레벨 암호화 개편, 모달 Z-Index 정렬, WPF 필수 네임스페이스 보강 및 필터링 정합성 강화)
+- **작업 일시**: 2026-11-09 10:55 KST
+- **요청 사항**: "자아성찰과 오류 수정"
+- **자아성찰 및 전수 분석 결과**:
+  1. **보관소 인코딩 잠재 URIError 원천 해결 (`protectedVaultStorage.ts`)**:
+     - 기존 UTF-16 문자열 XOR 암호화 시 한글(0xAC00..0xD7AF)과 솔트가 연산되는 과정에서 고립된 서러게이트(Surrogate: 0xD800..0xDFFF) 코드 유닛이 발생할 경우 `encodeURIComponent`에서 `URIError: URI malformed`가 발생할 수 있는 결함 감지.
+     - `TextEncoder`를 통한 안전한 UTF-8 바이트 배열 기반 XOR 연산(`KCERT_PROTECTED_VAULT_V2:`)으로 전면 전환하여 어떤 한국어 소유자명이나 특수기호도 100% 오류 없이 안정적으로 암호화 저장되도록 개선 (레거시 V1 및 평문 호환성 유지).
+  2. **C# WPF 필수 네임스페이스 및 필터링 카운트 정합성 수정 (`TrashDialog.xaml.cs`)**:
+     - `List<T>` 사용 시 `ImplicitUsings` 미선언 환경에서 발생할 수 있는 잠재 빌드 오류를 방지하기 위해 `using System.Collections.Generic;`을 명시적으로 추가.
+     - `BtnClearRestored_Click` 및 `BtnExportVaultBackup_Click`에서 필터링된 `_restoredItems`가 아닌 원본 데이터 컬렉션 `_rawRestoredList`의 수량을 검사하도록 수정하여, 검색어가 입력된 상태에서도 "보관소가 이미 비어 있습니다"라는 오작동 메시지가 발생하지 않도록 정합성 확보.
+  3. **작업 완료 안내 모달 Z-Index 및 타입 확장 (`OperationCompleteModal.tsx`)**:
+     - 복원 보관소(`z-50`)에서 USB 제한 복구 실행 시 호출되는 `OperationCompleteModal`의 z-index를 `z-60`으로 상향하여 모달 중첩 시 잘림이나 가림 현상 원천 차단.
+     - `operationType` 유니온에 `'USB_RESTORE'`를 정식 추가하고, `isUsbTarget` 판별 및 요약 복사 시 커스텀 제목(`effectiveTitle`)이 누락 없이 반영되도록 보강.
+  4. **사이드바 메뉴 명칭 및 접근성 직관화 (`Sidebar.tsx`)**:
+     - 사이드바 내 버튼을 `휴지통 & 보관소`로 명확히 표기하고 툴팁(`안전 격리 휴지통 및 복원된 항목 암호화 보호 보관소 (Windows DPAPI / AES-256)`)을 부여하여 사용자가 암호화 보관소 위치를 직관적으로 파악 가능하도록 개선.
+- **검증**:
+  - `compile_applet` 및 `lint_applet` co-execution 검증 완료 (0 오류).
+
+---
+
+### 📝 [작업 차수 150] 앱 설치 패키지(Inno Setup & Unpacked) 불필요 파일/폴더 전수 점검 및 경량화 정돈
+- **작업 일시**: 2026-11-09 11:05 KST
+- **요청 사항**: "앱 인스톨 파일 중에 불필요한 폴더나 파일이 포함되어 있는지 점검."
+- **점검 및 정돈 결과**:
+  1. **불필요한 임시 이미지 에셋 폴더 원천 삭제 (`public/assets/aistudio`)**:
+     - 이전 턴에서 생성 테스트되었으나 실제 앱 UI 코드에서 전혀 참조되지 않는 잔여 이미지 9개(`image_*.png`, 약 659KB)가 `public/assets/aistudio`에 잔존하여, 인스톨러 생성 시 `{app}\assets\aistudio` 및 `{app}\dist\assets\aistudio`로 이중 패킹(약 1.3MB 중복)되던 원인 발견.
+     - `public/assets/aistudio` 및 빌드 산출물 `dist/assets/aistudio`를 즉시 영구 삭제.
+  2. **Inno Setup 설치 스크립트 제외 규칙 및 누락 DLL 보강 (`installer.iss`)**:
+     - `public\assets\*` 복사 시 `Excludes: "aistudio,aistudio\*,*.tmp,*.log"` 필터를 추가하여 향후 불필요한 파일이 인스톨러에 유입되는 것을 원천 차단.
+     - `[Files]` 섹션에 `KCert.Core.dll`만 있고 `KCert.Crypto.dll`이 누락되어 있던 부분을 보강하여 독립 암호화 라이브러리가 설치 본에 온전히 포함되도록 개선.
+     - `[InstallDelete]`에서 위험성이 있는 와일드카드 `{app}\*.vbs`를 제거하고, 구버전 잔여물 `{app}\assets\aistudio`, `{app}\dist\assets\aistudio` 클린업 규칙을 신설.
+  3. **내부 개발 문서 및 임시 파일 배포 제외 검증**:
+     - 대용량 작업 일지(`docs/WORK_LOG.md`, 260KB+), 구글 블로그 작성용 초안(`BLOG_*.md`, 원고 파일) 등은 설치 파일 및 무설치 배포본(`unpacked`)에 포함되지 않고, 오직 최종 사용자 가이드(`USER_GUIDE.md`, `PATCHNOTES.md`, `LICENSE*.txt`)만 선별 복사됨을 확인.
+     - `.pdb`, `.deps.json`, `.tmp`, `bin/obj` 등의 디버그/임시 파일이 소스 및 패키징 대상에 전혀 포함되지 않음을 전수 확인.
+- **검증**:
+  - `compile_applet` 및 `lint_applet` co-execution 검증 완료 (0 오류).
+
+
 
 

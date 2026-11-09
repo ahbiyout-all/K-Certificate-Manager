@@ -110,6 +110,14 @@ Source: "dist\v{#MyAppVersion}\win-x64\KCert.Core.dll"; DestDir: "{app}"; Flags:
 Source: "release\05_WpfDesktop\KCert.Core.dll"; DestDir: "{app}"; Flags: ignoreversion
 #endif
 
+#if FileExists("dist\v" + MyAppVersion + "\core-dll\KCert.Crypto.dll")
+Source: "dist\v{#MyAppVersion}\core-dll\KCert.Crypto.dll"; DestDir: "{app}"; Flags: ignoreversion
+#elif FileExists("dist\v" + MyAppVersion + "\win-x64\KCert.Crypto.dll")
+Source: "dist\v{#MyAppVersion}\win-x64\KCert.Crypto.dll"; DestDir: "{app}"; Flags: ignoreversion
+#elif FileExists("release\05_WpfDesktop\KCert.Crypto.dll")
+Source: "release\05_WpfDesktop\KCert.Crypto.dll"; DestDir: "{app}"; Flags: ignoreversion
+#endif
+
 ; ------------------------------------------------------------------------------
 ; 2. Essential Application Launchers
 ; ------------------------------------------------------------------------------
@@ -125,9 +133,9 @@ Source: "run-web.cmd"; DestDir: "{app}"; Flags: ignoreversion
 ; 3. Production Web Bundle (dist 폴더가 존재할 때만 포함)
 ; ------------------------------------------------------------------------------
 #if DirExists("dist\v" + MyAppVersion + "\web")
-Source: "dist\v{#MyAppVersion}\web\*"; DestDir: "{app}\dist"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\v{#MyAppVersion}\web\*"; DestDir: "{app}\dist"; Excludes: "aistudio,aistudio\*,*.map,*.tmp"; Flags: ignoreversion recursesubdirs createallsubdirs
 #elif DirExists("dist")
-Source: "dist\*"; DestDir: "{app}\dist"; Excludes: "v*"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\*"; DestDir: "{app}\dist"; Excludes: "v*,aistudio,aistudio\*,*.map,*.tmp"; Flags: ignoreversion recursesubdirs createallsubdirs
 #endif
 
 ; ------------------------------------------------------------------------------
@@ -146,7 +154,7 @@ Source: "LICENSE_EN.txt"; DestDir: "{app}"; Flags: ignoreversion
 ; ------------------------------------------------------------------------------
 ; 6. Official Branding Assets (Icons, Logos)
 ; ------------------------------------------------------------------------------
-Source: "public\assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "public\assets\*"; DestDir: "{app}\assets"; Excludes: "aistudio,aistudio\*,*.tmp,*.log"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; ==============================================================================
 ; [Icons] Section: Start Menu & Desktop Shortcuts
@@ -183,7 +191,6 @@ Type: files; Name: "{app}\metadata.json"
 Type: files; Name: "{app}\index.html"
 Type: files; Name: "{app}\run-web.ps1"
 Type: files; Name: "{app}\*.ps1"
-Type: files; Name: "{app}\*.vbs"
 Type: files; Name: "{app}\kcert-manager.vbs"
 Type: files; Name: "{app}\create-desktop-shortcut.vbs"
 Type: files; Name: "{app}\kcert-manager.cmd"
@@ -205,6 +212,10 @@ Type: files; Name: "{app}\PenImc_cor3.dll"
 Type: files; Name: "{app}\PresentationNative_cor3.dll"
 Type: files; Name: "{app}\vcruntime140_cor3.dll"
 Type: files; Name: "{app}\wpfgfx_cor3.dll"
+
+; 5. Delete obsolete/temporary asset directories if present from earlier builds
+Type: filesandordirs; Name: "{app}\assets\aistudio"
+Type: filesandordirs; Name: "{app}\dist\assets\aistudio"
 
 ; ==============================================================================
 ; [Run] Section: Post-Installation Launch & Silent Firewall Rules Registration

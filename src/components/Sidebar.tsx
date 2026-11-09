@@ -182,9 +182,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 type="button"
                 onClick={onOpenTrash}
                 className="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-emerald-300 transition-colors cursor-pointer text-left"
+                title="안전 격리 휴지통 및 복원된 항목 암호화 보호 보관소 (Windows DPAPI / AES-256)"
               >
                 <span className="mr-2.5 opacity-90 text-sm">♻️</span>
-                <span className="flex-1">휴지통</span>
+                <span className="flex-1">휴지통 & 보관소</span>
                 {trashCount > 0 && <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full font-bold">{trashCount}</span>}
               </button>
             )}

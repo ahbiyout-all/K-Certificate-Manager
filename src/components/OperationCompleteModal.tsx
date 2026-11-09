@@ -22,7 +22,7 @@ import {
 export interface OperationCompleteData {
   title?: string;
   subtitle?: string;
-  operationType: 'PC_TO_USB' | 'USB_TO_PC' | 'BACKUP' | 'CLEANUP' | 'RESTORE';
+  operationType: 'PC_TO_USB' | 'USB_TO_PC' | 'BACKUP' | 'CLEANUP' | 'RESTORE' | 'USB_RESTORE';
   count: number;
   certNames: string[];
   targetDiskName: string;
@@ -38,6 +38,9 @@ export interface OperationCompleteData {
     validTo?: string;
   }>;
   nextSteps?: string[];
+  transferredCerts?: any[];
+  hasIntegrityVerified?: boolean;
+  sha256Checksum?: string;
 }
 
 interface OperationCompleteModalProps {
@@ -64,7 +67,9 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
 
   if (!isOpen || !data) return null;
 
-  const isUsbTarget = data.operationType === 'PC_TO_USB' || 
+  const isUsbTarget = 
+    data.operationType === 'PC_TO_USB' || 
+    data.operationType === 'USB_RESTORE' ||
     (data.operationType === 'BACKUP' && !data.targetDiskName.includes('C:'));
   const isPcTarget = data.operationType === 'USB_TO_PC' || data.targetDiskName.includes('C:');
 
@@ -80,6 +85,8 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
       ? `외부 매체의 인증서 ${data.count}건이 컴퓨터 로컬 표준 보관소(AppData\\LocalLow)로 안전하게 등록되었습니다.`
       : `선택하신 인증서 ${data.count}건이 대상 저장소로 성공적으로 복사/백업되었습니다.`;
 
+  const effectiveTitle = data.title || defaultTitle;
+
   const copyTargetPath = () => {
     if (data.targetPath) {
       navigator.clipboard.writeText(data.targetPath);
@@ -90,7 +97,7 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
 
   const copyFullSummary = () => {
     const summaryText = `[K-인증서 매니저 작업 완료 안내]
-• 작업 구분: ${defaultTitle}
+• 작업 구분: ${effectiveTitle}
 • 완료 시각: ${data.timestamp || '방금 전'}
 • 복사 건수: 총 ${data.count}건 (${data.certNames.join(', ')})
 • 출발지: ${data.sourcePath || '로컬 PC 보관소 (AppData\\LocalLow\\NPKI)'}
@@ -104,7 +111,7 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+    <div className="fixed inset-0 z-60 overflow-y-auto bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
       <div 
         className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh] transition-all"
         role="dialog"
@@ -174,6 +181,19 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
               </span>
             </div>
           </div>
+
+          {/* USB Auto Open Active Badge */}
+          {isUsbTarget && localStorage.getItem('kcert_auto_open_usb_folder') === 'true' && (
+            <div className="p-2.5 bg-emerald-50 border border-emerald-300/80 rounded-xl text-xs text-emerald-950 flex items-center justify-between gap-2 shadow-2xs animate-fadeIn">
+              <div className="flex items-center gap-2 min-w-0">
+                <FolderOpen className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="font-bold truncate">📂 [USB 자동 열기 활성화] 대상 USB 저장소 탐색기 연결 완료</span>
+              </div>
+              <span className="text-[10.5px] font-mono text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-300 shrink-0 font-bold">
+                {data.targetDiskName}
+              </span>
+            </div>
+          )}
 
           {/* 2. Source to Destination Path Route Card */}
           <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">

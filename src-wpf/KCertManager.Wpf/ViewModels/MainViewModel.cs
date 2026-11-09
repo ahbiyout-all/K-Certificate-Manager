@@ -73,6 +73,7 @@ namespace KCertManager.Wpf.ViewModels
             _isSimpleMode = settings.IsSimpleMode;
             _dontShowStartupWorkflowAgain = settings.DontShowStartupWorkflowAgain;
             _excludeLocalLowGpkiScan = settings.ExcludeLocalLowGpkiScan;
+            _autoOpenUsbFolderOnComplete = settings.AutoOpenUsbFolderOnComplete;
 
             // 앱 시작 시 초기 테마 리소스 완전 강제 적용 (시작 시 브러시 누락 방지)
             ApplyTheme(_currentTheme);
@@ -343,6 +344,19 @@ namespace KCertManager.Wpf.ViewModels
                     SettingsService.Instance.ExcludeLocalLowGpkiScan = value;
                     KCert.Core.Discovery.CertLocationScanner.ExcludeLocalLowGpkiScan = value;
                     _ = RefreshCertificatesAsync();
+                }
+            }
+        }
+
+        private bool _autoOpenUsbFolderOnComplete = false;
+        public bool AutoOpenUsbFolderOnComplete
+        {
+            get => _autoOpenUsbFolderOnComplete;
+            set
+            {
+                if (SetProperty(ref _autoOpenUsbFolderOnComplete, value))
+                {
+                    SettingsService.Instance.AutoOpenUsbFolderOnComplete = value;
                 }
             }
         }

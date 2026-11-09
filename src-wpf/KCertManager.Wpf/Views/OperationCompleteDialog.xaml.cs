@@ -71,6 +71,31 @@ namespace KCertManager.Wpf.Views
             {
                 TxtGuideTip.Text = guideTip;
             }
+
+            // 설정 모달에서 '대상 USB 폴더 탐색기 자동 열기' 옵션이 활성화된 경우 자동으로 탐색기 실행
+            if (SettingsService.Instance.AutoOpenUsbFolderOnComplete)
+            {
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(_targetPath))
+                    {
+                        string folderToOpen = Directory.Exists(_targetPath) ? _targetPath : (Path.GetDirectoryName(_targetPath) ?? _targetPath);
+                        if (Directory.Exists(folderToOpen))
+                        {
+                            Process.Start(new ProcessStartInfo
+                            {
+                                FileName = "explorer.exe",
+                                Arguments = $"\"{folderToOpen}\"",
+                                UseShellExecute = true
+                            });
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[AutoOpenUsbFolder error] {ex.Message}");
+                }
+            }
         }
 
         private void BtnClose_Click(object sender, RoutedEventArgs e)

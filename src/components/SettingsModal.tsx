@@ -14,7 +14,8 @@ import {
   Bell,
   Check,
   HardDrive,
-  FolderSearch
+  FolderSearch,
+  FolderOpen
 } from 'lucide-react';
 import {
   getSoundSettings,
@@ -145,12 +146,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     triggerSaveBadge();
   };
 
+  const [autoOpenUsbFolder, setAutoOpenUsbFolder] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('kcert_auto_open_usb_folder');
+      return saved === null ? false : saved === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleAutoOpenUsbFolder = (checked: boolean) => {
+    setAutoOpenUsbFolder(checked);
+    try {
+      localStorage.setItem('kcert_auto_open_usb_folder', String(checked));
+    } catch {}
+    triggerSaveBadge();
+  };
+
   const handleResetToDefaults = () => {
     const reset = saveSoundSettings(DEFAULT_SOUND_SETTINGS);
     setSoundSettingsState(reset);
     setExcludeLocalLowGpki(true);
+    setAutoOpenUsbFolder(false);
     try {
       localStorage.setItem('kcert_exclude_locallow_gpki', 'true');
+      localStorage.setItem('kcert_auto_open_usb_folder', 'false');
     } catch {}
     if (onToggleDontShowStartupAgain) {
       onToggleDontShowStartupAgain(false);
@@ -490,7 +510,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </label>
           </div>
 
-          {/* SECTION 4: 테마 및 화면 표시 모드 */}
+          {/* SECTION 4: USB 탐색기 자동 열기 옵션 */}
+          <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-3">
+            <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+              <FolderOpen className="w-4 h-4 text-emerald-600" />
+              USB 탐색기 자동 열기 옵션 (Auto-Open USB Folder)
+            </h4>
+
+            <label className="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors">
+              <input
+                type="checkbox"
+                checked={autoOpenUsbFolder}
+                onChange={(e) => handleToggleAutoOpenUsbFolder(e.target.checked)}
+                className="w-4 h-4 mt-0.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+              />
+              <div>
+                <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                  <span>인증서 복사 성공 시 대상 USB 폴더를 탐색기로 자동 열기</span>
+                  <span className="px-1.5 py-0.2 bg-blue-100 text-blue-800 text-[10px] font-bold rounded">편의 옵션</span>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                  인증서 복사 또는 USB 백업 작업이 성공적으로 완료되면, 대상 USB 드라이브 폴더를 윈도우 시스템 파일 탐색기(explorer.exe)로 자동으로 열어줍니다.
+                </p>
+              </div>
+            </label>
+          </div>
+
+          {/* SECTION 5: 디스플레이 및 테마 */}
           <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-4">
             <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
               <Palette className="w-4 h-4 text-purple-600" />
