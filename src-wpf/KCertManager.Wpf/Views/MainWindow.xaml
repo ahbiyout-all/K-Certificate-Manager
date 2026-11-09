@@ -430,7 +430,21 @@
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="⚡ 간편 백업" FontSize="13" FontWeight="Bold" Foreground="#38BDF8" Margin="0,0,10,0" VerticalAlignment="Center"/>
                             <TextBlock Text="복사 대상: " FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                            <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="8,3" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0">
+                            <!-- Target USB/Drive Card with Visual Glow & Dynamic Border Highlight -->
+                            <Border CornerRadius="6" Padding="8,3" Margin="0,0,8,0">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
+                                        <Setter Property="BorderBrush" Value="#3B82F6"/>
+                                        <Setter Property="BorderThickness" Value="1.5"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedTargetDrive}" Value="{x:Null}">
+                                                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="💾 " FontSize="11" VerticalAlignment="Center"/>
                                     <!-- Color-Coded Bold Drive Letter Badge -->

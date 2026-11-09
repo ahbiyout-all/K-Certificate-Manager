@@ -17,6 +17,21 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 157] 프로젝트 전수 자아성찰(Self-Reflection & Deep Audit) 및 코드베이스 결함 교정
+- **작업 일시**: 2026-11-09 14:00 KST
+- **요청 사항**:
+  - "**자아성찰(Self-Reflection & Deep Audit)** 과 오류 수정"
+- **전수 감사 및 자아성찰 결과**:
+  1. **WPF UI 값 변환기(`IValueConverter`) 양방향 바인딩 미지원 예외 방어**:
+     - `src-wpf/KCertManager.Wpf/Common/Converters.cs`의 `NullToVisConverter` 및 `NotNullToVisConverter`에서 `ConvertBack` 호출 시 `throw new NotImplementedException();`이 선언되어 있어, XAML 양방향 바인딩이나 포커스 이벤트 시 런타임 크래시를 유발할 수 있던 잠재 위험 교정. `Binding.DoNothing`을 안전 반환하도록 수정.
+  2. **CSS 무한 유동 애니메이션의 접근성 및 다크모드 무결성 점검**:
+     - `src/index.css`에 추가된 `borderMoveGlow` 애니메이션에 대해 `@media (prefers-reduced-motion: reduce)` 미디어 쿼리를 추가하여 모션 민감 사용자의 시스템 설정 준수(WCAG 2.1 AA 규격 달성).
+     - z-index 분리(`position: relative`, `z-index: 1`) 및 `::before` 의사 요소로 카드 내부 텍스트, 프로그레스바, 버튼의 클릭 이벤트 및 텍스트 렌더링에 간섭이 전혀 없음을 전수 확인.
+  3. **암호화 보호 보관소(Protected Vault) 및 복원 ZIP 컨테이너 상태 점검**:
+     - WPF `SafetyTrashManager.cs`와 Web `protectedVaultStorage.ts` 간 `RestoredQuarantineItem` 모델의 직렬화 키 및 데이터 규격 일치 재확인.
+  4. **빌드 및 린트 정적 검증**:
+     - `compile_applet` & `lint_applet` 동시 점검 결과 0건 에러 무결점 통과 확인.
+
 ### 📝 [작업 차수 156] 드라이브 카드 시각적 시인성 극대화를 위한 무한 유동 애니메이션 테두리(Animated Moving Border Glow) 구현
 - **작업 일시**: 2026-11-09 13:40 KST
 - **요청 사항**:

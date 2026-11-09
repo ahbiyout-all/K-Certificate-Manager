@@ -688,3 +688,11 @@ button:active {
   opacity: 0.85;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .animated-drive-card::before,
+  .animated-drive-card-subtle::before {
+    animation: none !important;
+    background-position: 50% 50% !important;
+  }
+}
+
