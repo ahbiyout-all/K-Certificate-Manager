@@ -284,6 +284,17 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
+          {onOpenTrash && (
+            <button
+              onClick={onOpenTrash}
+              className="px-2.5 py-1 bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-200/90 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer shadow-2xs transition-colors"
+              title="안전 격리 휴지통 및 복원된 항목 암호화 보호 보관소(DPAPI / AES-256)"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+              <span>휴지통{trashCount > 0 ? ` (${trashCount})` : ''}</span>
+            </button>
+          )}
+
           <button
             onClick={onRefresh}
             disabled={isScanning}

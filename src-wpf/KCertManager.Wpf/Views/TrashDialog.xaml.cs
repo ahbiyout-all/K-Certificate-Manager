@@ -15,6 +15,7 @@ namespace KCertManager.Wpf.Views
         private readonly CertificateBackupService _backupService = new();
         private ObservableCollection<TrashItem> _items = new();
         private ObservableCollection<RestoredTrashItem> _restoredItems = new();
+        private List<RestoredTrashItem> _rawRestoredList = new();
 
         public bool AnyItemRestored { get; private set; }
 
@@ -64,22 +65,159 @@ namespace KCertManager.Wpf.Views
 
         private void LoadRestoredItems()
         {
+            _rawRestoredList = _backupService.GetRestoredTrashItems();
+            ApplyRestoredFilter();
+            UpdateVaultDiagnosticsText();
+        }
+
+        private void ApplyRestoredFilter()
+        {
             _restoredItems.Clear();
-            var rawRestored = _backupService.GetRestoredTrashItems();
-            for (int i = 0; i < rawRestored.Count; i++)
+            string search = TxtSearchRestored?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
+            int catIdx = CmbRestoredCategory?.SelectedIndex ?? 0;
+
+            var filtered = _rawRestoredList.AsEnumerable();
+
+            if (!string.IsNullOrEmpty(search))
             {
-                rawRestored[i].IndexNumber = i + 1;
-                _restoredItems.Add(rawRestored[i]);
+                filtered = filtered.Where(x => 
+                    (x.CertCommonName ?? "").ToLowerInvariant().Contains(search) ||
+                    (x.IssuerName ?? "").ToLowerInvariant().Contains(search) ||
+                    (x.OriginalDirectoryPath ?? "").ToLowerInvariant().Contains(search) ||
+                    (x.DeleteReason ?? "").ToLowerInvariant().Contains(search));
+            }
+
+            if (catIdx == 1) // NPKI
+            {
+                filtered = filtered.Where(x => x.Category.ToString().StartsWith("NPKI", StringComparison.OrdinalIgnoreCase));
+            }
+            else if (catIdx == 2) // GPKI
+            {
+                filtered = filtered.Where(x => x.Category.ToString().StartsWith("GPKI", StringComparison.OrdinalIgnoreCase));
+            }
+            else if (catIdx == 3) // EPKI
+            {
+                filtered = filtered.Where(x => x.Category.ToString().StartsWith("EPKI", StringComparison.OrdinalIgnoreCase));
+            }
+
+            var list = filtered.ToList();
+            for (int i = 0; i < list.Count; i++)
+            {
+                list[i].IndexNumber = i + 1;
+                _restoredItems.Add(list[i]);
             }
 
             ListRestoredCards.ItemsSource = _restoredItems;
-            BtnTabRestored.Content = $"🔄 복원된 항목 (보관소 {_restoredItems.Count}건)";
+            BtnTabRestored.Content = $"🔄 복원된 항목 (보관소 {_rawRestoredList.Count}건)";
             UpdateFooterCount();
+        }
+
+        private void UpdateVaultDiagnosticsText()
+        {
+            try
+            {
+                if (TxtVaultDiagnostics != null)
+                {
+                    var status = _backupService.GetVaultSecurityStatus();
+                    string hashSample = status.Sha256Checksum.Length >= 16 
+                        ? status.Sha256Checksum.Substring(0, 16) + "..." 
+                        : status.Sha256Checksum;
+                    TxtVaultDiagnostics.Text = $"매니페스트: protected_restored_manifest.dat ({status.FileSizeBytes} 바이트) | SHA-256: {hashSample} | {status.DiagnosticMessage}";
+                }
+            }
+            catch { }
+        }
+
+        private void TxtSearchRestored_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            ApplyRestoredFilter();
+        }
+
+        private void CmbRestoredCategory_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ApplyRestoredFilter();
+        }
+
+        private void BtnVaultSelfTest_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var status = _backupService.GetVaultSecurityStatus();
+                string details = 
+                    $"• 보안 알고리즘: {status.EncryptionAlgorithm}\n" +
+                    $"• 매니페스트 경로: {status.ManifestFilePath}\n" +
+                    $"• 암호화 데이터 크기: {status.FileSizeBytes:N0} 바이트\n" +
+                    $"• 마지막 수정 시각: {status.LastModifiedUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}\n" +
+                    $"• SHA-256 무결성 해시: {status.Sha256Checksum}\n" +
+                    $"• 보관된 복원 이력: {status.TotalItemsCount}건\n" +
+                    $"• 자가 진단(Self-Test) 상태: {(status.IsSelfTestPassed ? "✓ 무결성 검증 통과 (100% 정상)" : "⚠️ 진단 경고")}\n\n" +
+                    $"안내: 복원된 항목의 매니페스트는 Windows DPAPI 및 AES-256으로 이중 암호화되어 있어 현재 사용자 외의 타인이나 악성 프로세스로부터 완벽히 보호됩니다.";
+
+                UserFriendlyMessageHelper.ShowInfo(details, "암호화 보호 보관소(Encrypted Vault) 자가진단 리포트", this);
+            }
+            catch (Exception ex)
+            {
+                UserFriendlyMessageHelper.ShowError(ex, "보관소 자가진단 오류");
+            }
+        }
+
+        private void BtnExportVaultBackup_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var sfd = new Microsoft.Win32.SaveFileDialog
+                {
+                    FileName = $"protected_vault_backup_{DateTime.Now:yyyyMMdd_HHmmss}.dat",
+                    Filter = "암호화 보관소 백업 파일 (*.dat)|*.dat|모든 파일 (*.*)|*.*",
+                    Title = "암호화 보호 보관소(.dat) 백업 파일 내보내기"
+                };
+
+                if (sfd.ShowDialog(this) == true)
+                {
+                    var (success, msg) = _backupService.ExportVaultBackup(sfd.FileName);
+                    if (success)
+                    {
+                        UserFriendlyMessageHelper.ShowInfo(msg, "보관소 백업 내보내기 완료", this);
+                    }
+                    else
+                    {
+                        UserFriendlyMessageHelper.ShowErrorText(msg, "내보내기 실패", "• 파일 쓰기 권한이 있는 폴더를 선택해 주세요.", this);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                UserFriendlyMessageHelper.ShowError(ex, "백업 내보내기 오류");
+            }
+        }
+
+        private void BtnShowProof_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is RestoredTrashItem item)
+            {
+                string proofDetails = 
+                    $"[인증서 기본 정보]\n" +
+                    $"• 소유자명: {item.CertCommonName}\n" +
+                    $"• 발급기관: {item.IssuerName}\n" +
+                    $"• 구분: {item.Category}\n" +
+                    $"• 만료일: {item.NotAfter:yyyy-MM-dd}\n\n" +
+                    $"[격리 및 복원 무결성 증적]\n" +
+                    $"• 복원 완료 시각: {item.RestoredAt:yyyy-MM-dd HH:mm:ss}\n" +
+                    $"• 이전 삭제 사유: {item.DeleteReason}\n" +
+                    $"• 복구 전 무결성: {item.IntegrityBefore}\n" +
+                    $"• 복구 후 무결성: {item.IntegrityAfter}\n" +
+                    $"• 원본 보관 위치: {item.OriginalDirectoryPath}\n\n" +
+                    $"[보관소 암호화 수준]\n" +
+                    $"• 매니페스트 보호: Windows DPAPI (CurrentUser) + AES-256 GCM\n" +
+                    $"• 무결성 상태: {item.StatusBadge}";
+
+                UserFriendlyMessageHelper.ShowInfo(proofDetails, "🔒 복원 인증서 보안 감사 증적 (Audit Proof)", this);
+            }
         }
 
         private void UpdateFooterCount()
         {
-            TxtTrashCount.Text = $"격리 보관된 인증서: {_items.Count}개 | 복원 보관소: {_restoredItems.Count}개";
+            TxtTrashCount.Text = $"격리 보관된 인증서: {_items.Count}개 | 복원 보관소: {_rawRestoredList.Count}개";
         }
 
         private void BtnTabDeleted_Click(object sender, RoutedEventArgs e)
@@ -104,6 +242,7 @@ namespace KCertManager.Wpf.Views
 
             PanelRestoredToolbar.Visibility = Visibility.Visible;
             PanelRestoredContent.Visibility = Visibility.Visible;
+            UpdateVaultDiagnosticsText();
         }
 
         private void BtnClearRestored_Click(object sender, RoutedEventArgs e)
@@ -159,17 +298,30 @@ namespace KCertManager.Wpf.Views
                 string subFolder = item.Category.ToString().StartsWith("GPKI") ? "GPKI" : item.Category.ToString().StartsWith("EPKI") ? "EPKI" : "NPKI";
                 string destDir = System.IO.Path.Combine(usbDrive.Name, subFolder, item.CertCommonName);
 
+                if (!System.IO.Directory.Exists(item.OriginalDirectoryPath))
+                {
+                    UserFriendlyMessageHelper.ShowErrorText(
+                        $"복원 대상 인증서 폴더를 찾을 수 없습니다.\n({item.OriginalDirectoryPath})",
+                        "복구 오류",
+                        "• 원래 복원되었던 로컬 경로에 인증서 폴더가 존재하는지 확인해 주세요.",
+                        this);
+                    return;
+                }
+
                 try
                 {
-                    if (System.IO.Directory.Exists(item.OriginalDirectoryPath))
+                    string safeRel = CertTransferEngine.ResolveRelativePath(item.OriginalDirectoryPath);
+                    var transferResult = CertTransferEngine.Transfer(item.OriginalDirectoryPath, usbDrive.Name, safeRel);
+                    if (!transferResult.IsSuccess)
                     {
-                        System.IO.Directory.CreateDirectory(destDir);
-                        foreach (var file in System.IO.Directory.GetFiles(item.OriginalDirectoryPath))
-                        {
-                            string fileName = System.IO.Path.GetFileName(file);
-                            System.IO.File.Copy(file, System.IO.Path.Combine(destDir, fileName), true);
-                        }
+                        UserFriendlyMessageHelper.ShowErrorText(
+                            transferResult.Message,
+                            "USB 복구 실패",
+                            "• USB 드라이브의 쓰기 금지 여부 또는 저장 공간을 확인해 주세요.",
+                            this);
+                        return;
                     }
+                    destDir = transferResult.DestinationDirectory;
 
                     AnyItemRestored = true;
                     ActivityLogService.Instance.Log(

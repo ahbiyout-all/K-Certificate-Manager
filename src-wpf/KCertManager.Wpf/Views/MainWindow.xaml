@@ -140,7 +140,8 @@
                             </StackPanel>
                         </Button>
 
-                        <Button Click="OpenTrash_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
+                        <Button Click="OpenTrash_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"
+                                ToolTip="안전 격리 휴지통 및 복원된 항목 암호화 보호 보관소 (Windows DPAPI / AES-256)">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="🗑️" Margin="0,0,4,0"/>
                                 <TextBlock Text="{Binding TrashCount, StringFormat='{}휴지통 ({0})'}" Foreground="#FDA4AF"/>

@@ -16,7 +16,11 @@ ActiveX나 별도 보안 프로그램 설치 없이, 지능형 딥스캔 엔진�
 ---
 
 ## 3. 업데이트 (Recent Updates)
-- 🔒 **암호화 보호 보관소 (Encrypted Protected Vault) 신설 (Web & WPF)**: 복원된 항목의 매니페스트(`protected_restored_manifest.dat`)를 Windows DPAPI(CurrentUser) 및 AES-256으로 이중 암호화하여 현재 사용자 외 타인의 무단 접근 완벽 차단.
+- 🔒 **암호화 보호 보관소 (Encrypted Vault) 고도화 (Web & WPF)**: 복원된 항목의 매니페스트(`protected_restored_manifest.dat`)를 Windows DPAPI(CurrentUser) 및 AES-256으로 이중 암호화하여 타인의 무단 접근 완벽 차단.
+- 🛡️ **실시간 보안 인스펙터 & 자가진단 엔진**: SHA-256 체크섬, 파일 크기, 암호화 알고리즘 상태 실시간 표출 및 매니페스트 복호화 무결성 원클릭 자가진단 지원.
+- 📦 **암호화 백업 내보내기 (`.dat`)**: 원본 개인키 노출 없는 암호화 바이너리 매니페스트 안전 백업 파일 내보내기 기능 완비.
+- 🔍 **포렌식 보안 감사 증적 (`[🔍 보안 증적]`)**: 인증서별 소유자/발급자 DN, 유효기간, 복구 전·후 SHA-256 무결성 검증, DPAPI/AES-256 보호 등급 감사 증적표 모달 제공.
+- 🔎 **다차원 실시간 검색 및 카테고리 필터링**: 보관소 내 인증서명/발급기관/일련번호 실시간 검색창 및 `전체`, `NPKI`, `GPKI`, `EPKI` 분류 지원.
 - 💾 **제한된 USB 복구 (`💾 USB로 제한 복구`) 지원**: 특수 보관소 내 인증서를 로컬 PC 오염 방지를 위해 오직 이동식 USB 메모리의 표준 규격 경로(`\NPKI`, `\GPKI`, `\EPKI`)로만 안전 복구 허용.
 - 📏 **만료 인증서 정리창 (ExpiredCleanupDialog) 가로 너비 20% 대폭 확대**: 기존 `Width="820"`에서 `Width="984"`로 가로 크기를 확대하여 저장 경로 및 만료 상태, 발급기관명의 가독성과 시인성 극대화.
 - ⚙️ **Inno Setup 정식 인스톨러 완성 및 무인 설치 지원**: Unpacked Multi-File 개별 파일 설치, 기존 실행 프로세스 강제 종료(`TerminateAppProcesses`), Windows 프로그램 추가/제거 정식 등록, 방화벽 규칙 사전 조용 자동 등록 및 `/VERYSILENT /NORESTART` 무인 설치 지원.

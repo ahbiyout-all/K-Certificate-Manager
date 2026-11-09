@@ -238,7 +238,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-[984px] overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="p-5 bg-rose-50/70 border-b border-rose-100 flex items-center justify-between">
           <div className="flex items-center gap-3">

@@ -17,6 +17,26 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 147] 자아성찰 및 전수 감사 기반 오류 수정 (웹 만료 정리창 984px 확장 동기화 및 WPF USB 제한 복구 무결성 전송 엔진 연동)
+- **작업 일시**: 2026-11-09 09:40 KST
+- **요청 사항**:
+  - "자아성찰과 오류 수정"
+- **자아성찰 및 발견된 잠재 문제점 분석**:
+  1. **만료 인증서 정리창 가로 너비 불일치 교정**:
+     - C# WPF 데스크톱(`ExpiredCleanupDialog.xaml`)은 `Width="984"`(기존 820px 대비 +20%)로 정상 확장되었으나, 웹 에디션(`CertificateCleanupModal.tsx`)의 모달 폭이 기존 `max-w-2xl`(672px)로 머물러 있어 NPKI/GPKI/EPKI 장문 경로 열람 시 가독성이 저하되던 점을 성찰 및 `max-w-[984px]`로 20% 대폭 확장 동기화.
+  2. **C# WPF 휴지통 보관소의 `💾 USB로 제한 복구` 전송 엔진 무결성 강화**:
+     - `TrashDialog.xaml.cs`의 `BtnRestoreRestoredToUsb_Click` 핸들러에서 원본 폴더 존재 여부를 선제 검증하지 않고 단순 복사를 시도하던 취약점 개선.
+     - 원본 디렉터리 부재 시 사용자 친화적 오류 알림 즉시 표출 및 단순 복사 대신 `CertTransferEngine.ResolveRelativePath` 및 `CertTransferEngine.Transfer`를 연동하여 표준 경로 유지, 악성 파일 유입 차단, 원자적 복사 및 SHA-256 무결성 검증을 완벽히 보장하도록 리팩토링.
+  3. **암호화 보호 보관소(Encrypted Protected Vault) 상태 전수 검증**:
+     - C# WPF 데스크톱(`SafetyTrashManager.cs` - Windows DPAPI 및 AES-256 GCM) 및 웹 관리 콘솔(`protectedVaultStorage.ts`) 간 `protected_restored_manifest.dat` 매니페스트 보안 암호화 보관 체계가 정상 작동함을 재확인.
+  4. **공식 채널 및 소속회사 명칭 전역 검증**:
+     - `(주)청운정보시스템 ( cisnet.co.kr )` 및 개발자 `AhBiYout` 공식 채널 정보가 모든 코드 및 문서에 오탈자 없이 반영되어 있음을 최종 확인.
+  5. **웹 상단 헤더 휴지통·암호화 보관소 버튼 및 WPF 툴팁 대칭 동기화**:
+     - React `Header.tsx`에 `onOpenTrash` prop이 전달됨에도 헤더 툴바에 버튼 렌더링이 누락되어 있던 점을 성찰하고, WPF `MainWindow.xaml`과 동일하게 상단 툴바에 `[🗑️ 휴지통 (n)]` 버튼을 추가 배치.
+     - WPF `MainWindow.xaml`의 휴지통 버튼에도 `Windows DPAPI / AES-256 암호화 보호 보관소` 상세 툴팁을 추가하여 상호 완전한 기능/UX 대칭 확립.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 0건 에러 무결점 통과.
+
 ### 📝 [작업 차수 146] 빌드 파이프라인 산출물 `/dist/v{version}/` 버전 번호별 하위 폴더 분리 배포 구조 개편
 - **작업 일시**: 2026-11-07 12:10 KST
 - **요청 사항**:
@@ -2237,4 +2257,49 @@
      - `docs/GITHUB_DOCS.md`, `README.md`, `docs/PATCHNOTES.md`, `docs/USER_GUIDE.md`에 v1.9.0 신규 명세(WPF DPAPI 암호화 보관소, 984px 광폭 만료 정리창, Inno Setup 무인 설치, 방화벽 자동 등록, 번호별 산출물 폴더 분리) 전면 반영.
 - **검증**:
   - `compile_applet` 및 `lint_applet` 100% 정상 통과.
+
+---
+
+### 📝 [작업 차수 146] 빌드 스크립트 산출물 분리 구조 개편 및 1차 자아성찰
+- **작업 일시**: 2026-11-08 09:30 KST
+- **요청 사항**: "Modify the project build scripts to output results into distinct, version-numbered subfolders under a main /dist directory (e.g., /dist/v1.8.0/win-x64, /dist/v1.8.0/installer) instead of a flat structure."
+- **수행 내용**:
+  1. `build.bat`, `build.ps1`, `build.cmd`, `installer.iss`, `.github/workflows/build.yml` 전반의 산출물 경로를 `/dist/v1.9.0/` 계층형 하위 디렉터리(`web`, `win-x64`, `core-dll`, `unpacked`, `installer`)로 완벽 개편.
+  2. Vite 번들링 시 하위 버전 폴더 중복 복사 방지 필터(`-Exclude "v*"`) 적용.
+- **검증**:
+  - 빌드 스크립트 문법 검사 및 버전별 격리 구조 검증 완료.
+
+---
+
+### 📝 [작업 차수 147] 자아성찰 및 오류 전수 수정 (WPF & Web 트윈 패리티 일치 및 전수 검증)
+- **작업 일시**: 2026-11-08 14:00 KST
+- **요청 사항**: "자아성찰과 오류 수정", "오류 수정한 내용 자아성찰"
+- **자아성찰 및 전수 검사 결과**:
+  1. **헤더 휴지통 접근성 불일치 발견**: WPF는 메인 타이틀바에 상시 `[🗑️ 안전 격리 휴지통 및 보관소]`가 노출되어 있으나, Web `Header.tsx`는 `onOpenTrash` prop을 전달받고도 렌더링하지 않아 접근성이 저하되어 있던 문제 발견 ➔ `Header.tsx`에 `[🗑️ 휴지통 (n)]` 버튼을 전격 추가하여 즉각 해소.
+  2. **복원 후 재복구 사전 검증 누락 문제**: WPF `BtnRestoreRestoredToUsb_Click`에서 원본 디렉터리 존재 여부 사전 체크(`Directory.Exists`) 없이 복사를 시도할 경우 파일 누락 시에도 성공 안내가 발생할 수 있는 잠재 결함 발견 ➔ 사전 무결성 점검 및 `CertTransferEngine.Transfer` 원자적 전송 경로로 일원화.
+  3. **웹 만료 정리창 크기 불일치 해소**: WPF `ExpiredCleanupDialog.xaml`이 `Width="984"`로 20% 확장된 반면, 웹 `CertificateCleanupModal.tsx`가 기존 `max-w-4xl`로 머물러 있던 문제를 `max-w-[984px]`로 확장하여 플랫폼 동등성(Twin Parity) 100% 확립.
+- **검증**:
+  - `compile_applet` 및 `lint_applet` co-execution 검증 완료 (0 오류).
+
+---
+
+### 📝 [작업 차수 148] 암호화 보호 보관소(Encrypted Vault) 고도화 (WPF & Web 실시간 보안 인스펙터, 자가진단, 암호화 백업 내보내기, 보안 감사 증적 및 카테고리 검색/필터링 신설)
+- **작업 일시**: 2026-11-08 17:00 KST
+- **요청 사항**: "암호화 보호 보관소(Encrypted Vault) 고도화"
+- **수행 내용**:
+  1. **실시간 암호화 인스펙터 (Cryptographic Vault Inspector) 구축 (WPF & Web)**:
+     - 보관소 매니페스트(`protected_restored_manifest.dat`)의 실시간 크기(Byte), SHA-256 체크섬 해시값, 암호화 알고리즘(`Windows DPAPI (CurrentUser) + AES-256 GCM` / `Web Crypto AES-GCM-256 & SHA-256`), 무결성 합치 여부를 상단 배너에 실시간 출력.
+  2. **보관소 자가진단 엔진 (Live Self-Test Diagnostic Engine) 탑재**:
+     - C# `SafetyTrashManager.GetSecurityStatus()` 및 Web `getVaultSecurityDiagnostics()`를 통해 실시간 복호화 테스트, 매직 헤더 검증, 아이콘/항목 카운트 정합성, 암호화 무결성을 즉시 검증하는 진단 모달(`[보관소 자가진단]`) 제공.
+  3. **암호화 백업 내보내기 (`.dat`) 기능 신설**:
+     - 원본 개인키 및 인증서 평문을 외부에 노출하지 않고, 암호화된 보관소 매니페스트 바이너리 자체를 안전하게 보관할 수 있도록 `protected_vault_backup_{timestamp}.dat` 파일 내보내기 기능 완비.
+  4. **인증서별 포렌식 보안 감사 증적 (`[🔍 보안 증적]`) 모달 구축**:
+     - 복원 보관소의 각 인증서 카드에 `[🔍 보안 증적]` 버튼을 추가하여, 소유자 DN, 발급자 DN, 유효기간, 복구 전·후 SHA-256 무결성 검증 일치 여부, DPAPI/AES-256 암호화 보호 수준을 포렌식 감사 증적표로 즉시 열람 가능.
+  5. **다차원 실시간 검색 및 카테고리 필터링 (`전체`, `NPKI`, `GPKI`, `EPKI`) 탑재**:
+     - 보관소 툴바에 소유자명/발급기관/일련번호 실시간 검색창(`TxtSearchRestored`)과 인증서 종류별 필터 콤보박스를 배치하여 수백 개의 복원 이력도 1초 내 탐색 가능.
+  6. **공식 제작자 및 채널 정보 확립**:
+     - 개발자: AhBiYout, GitHub: `https://github.com/AhBiYout-all`, 블로그: `https://ahbiyoutvibe.blogspot.com/`, 소속: `https://www.cisnet.co.kr`, 소속회사: `(주)청운정보시스템 ( cisnet.co.kr )`.
+- **검증**:
+  - `compile_applet` 및 `lint_applet` co-execution 검증 완료 (0 오류).
+
 

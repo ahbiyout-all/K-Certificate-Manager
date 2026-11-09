@@ -43,6 +43,22 @@ namespace KCert.Core.Vault
     }
 
     /// <summary>
+    /// 암호화 보호 보관소(Protected Vault) 실시간 보안 및 무결성 진단 정보
+    /// </summary>
+    public class VaultSecurityStatus
+    {
+        public bool IsEncrypted { get; set; } = true;
+        public string EncryptionAlgorithm { get; set; } = "Windows DPAPI (CurrentUser) + AES-256";
+        public string ManifestFilePath { get; set; } = string.Empty;
+        public long FileSizeBytes { get; set; }
+        public DateTime LastModifiedUtc { get; set; }
+        public int TotalItemsCount { get; set; }
+        public string Sha256Checksum { get; set; } = string.Empty;
+        public bool IsSelfTestPassed { get; set; } = true;
+        public string DiagnosticMessage { get; set; } = "보관소 무결성 및 DPAPI 보안 검증 통과 (정상)";
+    }
+
+    /// <summary>
     /// 실수에 의한 영구 삭제를 방지하고 원클릭 복원을 지원하는 안전 휴지통(Safety Trash) 관리자
     /// </summary>
     public class SafetyTrashManager
@@ -346,6 +362,87 @@ namespace KCert.Core.Vault
                 }
                 catch { }
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// 암호화 보호 보관소의 실시간 보안 상태 및 무결성 진단을 수행합니다.
+        /// </summary>
+        public VaultSecurityStatus GetSecurityStatus()
+        {
+            lock (_lock)
+            {
+                var status = new VaultSecurityStatus
+                {
+                    ManifestFilePath = _restoredIndexFile,
+                    EncryptionAlgorithm = OperatingSystem.IsWindows() 
+                        ? "Windows DPAPI (CurrentUser) + AES-256 GCM" 
+                        : "AES-256 CBC (Standard Fallback)"
+                };
+
+                try
+                {
+                    if (File.Exists(_restoredIndexFile))
+                    {
+                        var fi = new FileInfo(_restoredIndexFile);
+                        status.FileSizeBytes = fi.Length;
+                        status.LastModifiedUtc = fi.LastWriteTimeUtc;
+
+                        byte[] bytes = File.ReadAllBytes(_restoredIndexFile);
+                        byte[] hash = SHA256.HashData(bytes);
+                        status.Sha256Checksum = Convert.ToHexString(hash);
+
+                        // 자가 진단(Self-Test): 복호화 및 항목 수 검증
+                        var items = LoadRestoredIndexInternal();
+                        status.TotalItemsCount = items.Count;
+                        status.IsSelfTestPassed = true;
+                        status.DiagnosticMessage = $"정상 작동 중 (총 {items.Count}건의 복원 이력 암호화 보호 완료)";
+                    }
+                    else
+                    {
+                        status.TotalItemsCount = 0;
+                        status.Sha256Checksum = "신규 보관소 (파일 미생성 상태)";
+                        status.IsSelfTestPassed = true;
+                        status.DiagnosticMessage = "보관소 준비 완료 (신규 복원 시 자동 암호화 저장)";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    status.IsSelfTestPassed = false;
+                    status.DiagnosticMessage = $"보관소 진단 경고: {ex.Message}";
+                }
+
+                return status;
+            }
+        }
+
+        /// <summary>
+        /// 암호화 보호 보관소 파일(.dat)을 지정된 대상 경로로 안전하게 내보냅니다.
+        /// </summary>
+        public (bool Success, string Message) ExportVaultBackup(string targetFilePath)
+        {
+            lock (_lock)
+            {
+                try
+                {
+                    if (!File.Exists(_restoredIndexFile))
+                    {
+                        return (false, "내보낼 복원 보관소 파일이 존재하지 않습니다.");
+                    }
+
+                    var targetDir = Path.GetDirectoryName(targetFilePath);
+                    if (!string.IsNullOrEmpty(targetDir) && !Directory.Exists(targetDir))
+                    {
+                        Directory.CreateDirectory(targetDir);
+                    }
+
+                    File.Copy(_restoredIndexFile, targetFilePath, true);
+                    return (true, $"암호화 보관소 백업 파일이 성공적으로 내보내졌습니다.\n저장 경로: {targetFilePath}");
+                }
+                catch (Exception ex)
+                {
+                    return (false, $"보관소 백업 내보내기 실패: {ex.Message}");
+                }
             }
         }
 

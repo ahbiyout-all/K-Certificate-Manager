@@ -241,5 +241,15 @@ namespace KCertManager.Wpf.Services
         {
             return _trashManager.DeleteRestoredItem(id);
         }
+
+        public VaultSecurityStatus GetVaultSecurityStatus()
+        {
+            return _trashManager.GetSecurityStatus();
+        }
+
+        public (bool Success, string Message) ExportVaultBackup(string targetFilePath)
+        {
+            return _trashManager.ExportVaultBackup(targetFilePath);
+        }
     }
 }
