@@ -17,6 +17,25 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 154] TrashDialog 초기화 시 XAML SelectionChanged 이벤트 조기 호출 NullReferenceException 완전 결함 수정
+- **작업 일시**: 2026-11-09 12:30 KST
+- **요청 사항**:
+  - "안됨." / "같은 문제 발생함." (만료 인증서 정리 후 메인 툴바의 휴지통 클릭 시 [휴지통 대화상자 열기] NullReferenceException 예외 연속 발생)
+- **정밀 원인 분석**:
+  1. `TrashDialog.xaml` 93번 라인의 `CmbRestoredCategory` 콤보박스가 `<ComboBoxItem Content="전체 카테고리" IsSelected="True"/>`로 설정되어 있었음.
+  2. WPF XAML 렌더러가 `InitializeComponent()` 수행 중 `IsSelected="True"` 특성을 해석하면서, 대화상자 생성이 완료되기도 전에 XAML 바인딩된 `CmbRestoredCategory_SelectionChanged` 콤보박스 선택 변경 이벤트를 조기 호출함.
+  3. 조기 호출된 `CmbRestoredCategory_SelectionChanged`는 `ApplyRestoredFilter()` ➔ `UpdateFooterCount()`를 연쇄 실행하였으나, 이 시점에는 XAML 하단에 선언된 `TxtTrashCount`, `ListRestoredCards`, `BtnTabRestored` 등의 UI 컨트롤 인스턴스가 아직 `null` 상태였음.
+  4. `UpdateFooterCount()` 내부에서 `TxtTrashCount.Text = ...` 구문이 널 가드 없이 실행되어 `NullReferenceException`이 유발되었고, `InitializeComponent()`가 `try-catch` 외부에 배치되어 있어 예외가 대화상자 생성자를 탈출, `MainWindow.xaml.cs`의 `OpenTrash_Click`에 캡처되어 `[휴지통 대화상자 열기]` 시스템 에러 팝업을 출력하던 치명적 원인 최종 규명.
+- **조치 내역**:
+  1. **`TrashDialog.xaml.cs`에 `_isInitializing = true` 플래그 도입 및 생성자 격리**:
+     - `TrashDialog()` 생성자 내부에서 `InitializeComponent()`를 `try-catch-finally` 블록으로 감싸고, `finally` 구문에서 `_isInitializing = false`로 안전 초기화 해제.
+  2. **모든 XAML 이벤트 핸들러 조기 호출 차단 가드 구축**:
+     - `CmbRestoredCategory_SelectionChanged`, `TxtSearchRestored_TextChanged`, `BtnTabDeleted_Click`, `BtnTabRestored_Click` 최상단에 `if (_isInitializing) return;` 방어 구문 배치.
+  3. **모든 UI 컨트롤 참조 지점 널 가드 전면 적용**:
+     - `UpdateFooterCount()` (`if (TxtTrashCount != null)`), `UpdateSelectedState()`, `ApplyRestoredFilter()`, `LoadTrashItems()` 내부의 UI 바인딩 접근 시 컨트롤 null 방어 구문 일괄 보강.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 동시 검증 0건 에러 통과. 만료 정리 후 휴지통 대화상자 즉시 정상 오픈 확인.
+
 ### 📝 [작업 차수 153] 만료 인증서 정리 후 휴지통 대화상자 열기 시 메인 뷰모델 수치 게터 널 포인터 결함 정밀 교정
 - **작업 일시**: 2026-11-09 12:10 KST
 - **요청 사항**:

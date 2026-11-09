@@ -12,6 +12,7 @@ namespace KCertManager.Wpf.Views
 {
     public partial class TrashDialog : Window
     {
+        private bool _isInitializing = true;
         private readonly SafetyTrashManager _trashManager = new();
         private readonly CertificateBackupService _backupService = new();
         private ObservableCollection<TrashItem> _items = new();
@@ -22,15 +23,19 @@ namespace KCertManager.Wpf.Views
 
         public TrashDialog()
         {
-            InitializeComponent();
             try
             {
+                InitializeComponent();
                 LoadTrashItems();
                 LoadRestoredItems();
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[TrashDialog Init Error] {ex.Message}");
+            }
+            finally
+            {
+                _isInitializing = false;
             }
         }
 
@@ -154,11 +159,13 @@ namespace KCertManager.Wpf.Views
 
         private void TxtSearchRestored_TextChanged(object sender, TextChangedEventArgs e)
         {
+            if (_isInitializing) return;
             ApplyRestoredFilter();
         }
 
         private void CmbRestoredCategory_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (_isInitializing) return;
             ApplyRestoredFilter();
         }
 
@@ -247,31 +254,36 @@ namespace KCertManager.Wpf.Views
 
         private void UpdateFooterCount()
         {
-            TxtTrashCount.Text = $"격리 보관된 인증서: {_items.Count}개 | 복원 보관소: {_rawRestoredList.Count}개";
+            if (TxtTrashCount != null)
+            {
+                TxtTrashCount.Text = $"격리 보관된 인증서: {_items.Count}개 | 복원 보관소: {_rawRestoredList.Count}개";
+            }
         }
 
         private void BtnTabDeleted_Click(object sender, RoutedEventArgs e)
         {
-            BtnTabDeleted.Style = (Style)FindResource("PrimaryButton");
-            BtnTabRestored.Style = (Style)FindResource("SecondaryButton");
+            if (_isInitializing) return;
+            if (BtnTabDeleted != null) BtnTabDeleted.Style = (Style)FindResource("PrimaryButton");
+            if (BtnTabRestored != null) BtnTabRestored.Style = (Style)FindResource("SecondaryButton");
 
-            PanelDeletedToolbar.Visibility = Visibility.Visible;
-            PanelDeletedContent.Visibility = Visibility.Visible;
+            if (PanelDeletedToolbar != null) PanelDeletedToolbar.Visibility = Visibility.Visible;
+            if (PanelDeletedContent != null) PanelDeletedContent.Visibility = Visibility.Visible;
 
-            PanelRestoredToolbar.Visibility = Visibility.Collapsed;
-            PanelRestoredContent.Visibility = Visibility.Collapsed;
+            if (PanelRestoredToolbar != null) PanelRestoredToolbar.Visibility = Visibility.Collapsed;
+            if (PanelRestoredContent != null) PanelRestoredContent.Visibility = Visibility.Collapsed;
         }
 
         private void BtnTabRestored_Click(object sender, RoutedEventArgs e)
         {
-            BtnTabDeleted.Style = (Style)FindResource("SecondaryButton");
-            BtnTabRestored.Style = (Style)FindResource("PrimaryButton");
+            if (_isInitializing) return;
+            if (BtnTabDeleted != null) BtnTabDeleted.Style = (Style)FindResource("SecondaryButton");
+            if (BtnTabRestored != null) BtnTabRestored.Style = (Style)FindResource("PrimaryButton");
 
-            PanelDeletedToolbar.Visibility = Visibility.Collapsed;
-            PanelDeletedContent.Visibility = Visibility.Collapsed;
+            if (PanelDeletedToolbar != null) PanelDeletedToolbar.Visibility = Visibility.Collapsed;
+            if (PanelDeletedContent != null) PanelDeletedContent.Visibility = Visibility.Collapsed;
 
-            PanelRestoredToolbar.Visibility = Visibility.Visible;
-            PanelRestoredContent.Visibility = Visibility.Visible;
+            if (PanelRestoredToolbar != null) PanelRestoredToolbar.Visibility = Visibility.Visible;
+            if (PanelRestoredContent != null) PanelRestoredContent.Visibility = Visibility.Visible;
             UpdateVaultDiagnosticsText();
         }
 
@@ -388,7 +400,7 @@ namespace KCertManager.Wpf.Views
 
         private void UpdateSelectedState()
         {
-            int selectedCount = _items.Count(x => x.IsSelected);
+            int selectedCount = _items?.Count(x => x != null && x.IsSelected) ?? 0;
             if (TxtSelectedCount != null)
             {
                 TxtSelectedCount.Text = $"{selectedCount}개 선택됨";
@@ -406,7 +418,7 @@ namespace KCertManager.Wpf.Views
         {
             foreach (var item in _items)
             {
-                item.IsSelected = true;
+                if (item != null) item.IsSelected = true;
             }
             UpdateSelectedState();
         }
@@ -415,7 +427,7 @@ namespace KCertManager.Wpf.Views
         {
             foreach (var item in _items)
             {
-                item.IsSelected = false;
+                if (item != null) item.IsSelected = false;
             }
             UpdateSelectedState();
         }
@@ -427,7 +439,7 @@ namespace KCertManager.Wpf.Views
 
         private void BtnRestoreSelected_Click(object sender, RoutedEventArgs e)
         {
-            var selected = _items.Where(x => x.IsSelected).ToList();
+            var selected = _items.Where(x => x != null && x.IsSelected).ToList();
             if (!selected.Any()) return;
 
             int restoredCount = 0;
@@ -494,6 +506,7 @@ namespace KCertManager.Wpf.Views
             int restoredCount = 0;
             foreach (var item in _items.ToList())
             {
+                if (item == null) continue;
                 var (success, msg) = _trashManager.Restore(item.Id);
                 if (success)
                 {
@@ -574,7 +587,7 @@ namespace KCertManager.Wpf.Views
             if (confirm == MessageBoxResult.Yes)
             {
                 int count = _items.Count;
-                var evidenceSummary = string.Join("; ", _items.Select(x => $"인증서: {x.CertCommonName}, 원본경로: {x.OriginalDirectoryPath}"));
+                var evidenceSummary = string.Join("; ", _items.Where(x => x != null).Select(x => $"인증서: {x.CertCommonName}, 원본경로: {x.OriginalDirectoryPath}"));
                 _trashManager.EmptyTrash();
                 ActivityLogService.Instance.Log(
                     LogCategory.DELETE,
