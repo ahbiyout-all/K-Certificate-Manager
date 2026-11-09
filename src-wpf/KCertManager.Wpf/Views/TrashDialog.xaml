@@ -100,6 +100,7 @@
                     <!-- Action Buttons -->
                     <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                         <Button Content="🔒 보관소 자가진단 (Self-Test)" Style="{StaticResource SecondaryButton}" Padding="10,5" Click="BtnVaultSelfTest_Click" Margin="0,0,6,0" ToolTip="Windows DPAPI 및 AES-256 이중 암호화 매니페스트 실시간 무결성 검증"/>
+                        <Button Content="📁 보관소 폴더 열기" Style="{StaticResource SecondaryButton}" Padding="10,5" Click="BtnOpenVaultFolder_Click" Margin="0,0,6,0" ToolTip="특수 격리 암호화 금고 보관소 디렉터리 열기"/>
                         <Button Content="💾 암호화 백업 내보내기" Style="{StaticResource SecondaryButton}" Padding="10,5" Click="BtnExportVaultBackup_Click" Margin="0,0,6,0" ToolTip="protected_restored_manifest.dat 암호화 보관소 백업 파일 내보내기"/>
                         <Button Content="🧹 복원 이력 전체 비우기" Style="{StaticResource SecondaryButton}" Padding="10,5" Click="BtnClearRestored_Click"/>
                     </StackPanel>
@@ -259,9 +260,10 @@
                 <ItemsControl x:Name="ListRestoredCards">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,0,10">
+                            <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,0,12">
                                 <Grid>
                                     <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
@@ -349,11 +351,40 @@
                                         </Grid>
                                     </Border>
 
-                                    <!-- Row 3: Original Location Path -->
-                                    <Border Grid.Row="3" Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="10,6">
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock Text="📂 원본 보관 경로: " FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                            <TextBlock Text="{Binding OriginalDirectoryPath}" FontSize="11" FontFamily="Consolas, Courier New, monospace" Foreground="{DynamicResource TextPrimaryBrush}" ToolTip="{Binding OriginalDirectoryPath}" TextWrapping="Wrap"/>
+                                    <!-- Row 3: Protected Encrypted Vault Container File Path & Actions -->
+                                    <Border Grid.Row="3" Background="#0B132B" BorderBrush="#1E293B" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,6">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                                                    <TextBlock Text="🔒 특수 격리 암호화 금고 보관 파일 (무단 접근 차단 보호 저장소):" FontSize="11" FontWeight="Bold" Foreground="#38BDF8"/>
+                                                    <Border Background="#064E3B" BorderBrush="#059669" BorderThickness="1" CornerRadius="4" Padding="5,1" Margin="8,0,0,0">
+                                                        <TextBlock Text="AES-256-GCM + DPAPI 암호화" FontSize="9.5" FontWeight="Bold" Foreground="#6EE7B7"/>
+                                                    </Border>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding EncryptedZipPath}" FontSize="11" FontFamily="Consolas, Courier New, monospace" Foreground="#7DD3FC" ToolTip="{Binding EncryptedZipPath}" TextWrapping="Wrap"/>
+                                                <TextBlock Text="{Binding FormattedCompressedSize, StringFormat='압축 크기: \{0\} (비밀번호 및 고유 키 없이 파일 열람 불가)'}" FontSize="10" Foreground="#94A3B8" Margin="0,2,0,0"/>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
+                                                <Button Content="🔍 금고 검증" Style="{StaticResource SecondaryButton}" Padding="8,4" Click="BtnVerifyArchive_Click" Margin="0,0,6,0" ToolTip="금고 파일의 AES-256-GCM 암호화 무결성 및 ZIP 압축 정상 여부 실시간 테스트"/>
+                                                <Button Content="📁 금고 폴더" Style="{StaticResource SecondaryButton}" Padding="8,4" Click="BtnOpenItemVaultFolder_Click" ToolTip="보관소 숨김 폴더 열기"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Row 4: System Restored Destination Path -->
+                                    <Border Grid.Row="4" Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="10,7">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="📂 시스템 복원 적용 위치 (인증서 사용 경로): " FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Text="{Binding OriginalDirectoryPath}" FontSize="11" FontFamily="Consolas, Courier New, monospace" Foreground="{DynamicResource TextPrimaryBrush}" ToolTip="{Binding OriginalDirectoryPath}" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                            <TextBlock Text="※ 금융/행정 업무 정상 사용을 위해 지정 경로로 복원되었으며, 특수 보관소(%LOCALAPPDATA%)에는 무단 열람이 차단된 AES-256 암호화 압축본이 안전하게 유지됩니다." FontSize="9.5" Foreground="#64748B" Margin="0,3,0,0"/>
                                         </StackPanel>
                                     </Border>
                                 </Grid>

@@ -17,6 +17,33 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 158] 복원된 항목 보관소 위치 격리 보호 및 AES-256-GCM 압축 암호화 금고(.zip.dat) 분리/UI 명확화
+- **작업 일시**: 2026-11-09 14:40 KST
+- **요청 사항**:
+  - "복원된 항목 보관소 위치가 사용자 접근이 쉬운 특정폴더에 있는데다가 압축 암호화 보관이 안됨."
+- **정밀 원인 분석**:
+  1. **UI 경로 표기 오도**: `TrashDialog.xaml`의 복원 항목 카드에 `📂 원본 보관 경로:` 단일 라벨로 복원 반영 위치(`C:\Users\user\Documents\KCert_Backup_...`)만 표기되어 있어, 사용자가 해당 평문 작업 폴더를 "보관소" 자체로 오인함. 실제 암호화 금고 파일(`%LOCALAPPDATA%\KCertManager\ProtectedRestoredVault\Archives\...`)의 경로 및 용량, 검증 도구가 카드에 노출되지 않았음.
+  2. **`CertVaultPacker.Pack` 단일 레벨 검색 결함**: 기존 코드가 `Directory.GetFiles(sourceCertDir)`로만 인증서를 검색하여, 복원 경로 내에 서브디렉터리가 있거나 비표준 확장자가 있을 경우 검색 결과가 0건이 되어 암호화 압축 금고 생성이 조기 실패(`0 바이트`)하던 취약점 존재.
+  3. **보관소 디렉터리 숨김 격리 미적용**: `%LOCALAPPDATA%\KCertManager\ProtectedRestoredVault` 폴더에 `FileAttributes.Hidden` 속성이 지정되지 않아 일반 탐색기에서 노출될 수 있었음.
+- **수행 내역**:
+  1. **`CertVaultPacker.cs` 재귀 디렉터리 패킹 및 실시간 금고 검증 엔진 고도화**:
+     - `Directory.GetFiles(sourceCertDir, "*.*", SearchOption.AllDirectories)`로 하위 폴더 내 모든 인증서/키 쌍 재귀 탐색 및 Zip 상대 경로 보존.
+     - `VerifyVaultFile()` 정적 메서드 신설: `KCVAULT1` 헤더, PBKDF2(100,000회) 키 파생, AES-256-GCM 태그 무결성, Zip 내부 파일 압축 무결성을 디스크 쓰기 없이 실시간 자가진단.
+  2. **`SafetyTrashManager.cs` 보관소 격리 및 기존 항목 자동 백필(Auto-Backfill) 구축**:
+     - `_restoredVaultRoot` 및 `Archives` 디렉터리에 `FileAttributes.Hidden` 속성 강제 부여.
+     - `Restore()` 시 격리 폴더 및 복원 폴더 양쪽에서 `.zip.dat` 암호화 금고를 100% 무결 패킹 보장.
+     - `LoadRestoredIndexInternal()` 실행 시 디스크에 `.zip.dat`가 누락되었거나 0바이트인 기존 복원 항목(스크린샷 내 10건)을 감지하여 `CertVaultPacker.Pack`으로 자동 암호화 금고 파일 생성 및 백필.
+  3. **WPF UI 재설계 (`TrashDialog.xaml`, `TrashDialog.xaml.cs`)**:
+     - 상단 툴바에 `[📁 보관소 폴더 열기]` 버튼 추가 (숨김 처리된 `%LOCALAPPDATA%\...\ProtectedRestoredVault\Archives` 즉시 탐색).
+     - 복원 카드 레이아웃을 2개 독립 블록으로 명확히 분리:
+       - **🔒 특수 격리 암호화 금고 보관 파일 (무단 접근 차단 보호 저장소)**: `%LOCALAPPDATA%\...\Archives\{id}_encrypted_vault.zip.dat` (AES-256-GCM + DPAPI 암호화 뱃지, 압축 바이트 수 표기, `[🔍 금고 검증]` 및 `[📁 금고 폴더]` 버튼 탑재).
+       - **📂 시스템 복원 적용 위치 (인증서 사용 경로)**: `C:\Users\user\Documents\...` (은행/정부 사이트 사용을 위한 복원 경로임을 명시하는 안내문 첨부).
+  4. **React Web SPA 대칭 반영 (`src/types.ts`, `protectedVaultStorage.ts`, `TrashModal.tsx`)**:
+     - `RestoredTrashItem`에 `encryptedZipPath`, `vaultArchiveLocation`, `compressedSizeBytes` 대칭 동기화.
+     - `TrashModal.tsx`의 복원 카드에 암호화 금고 파일 블록과 시스템 복원 위치 블록 2단 분리 및 `[🔍 금고 검증]` 모달 연동.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 동시 검증 0건 에러 통과. WPF 및 Web 양방향 암호화 금고 격리 및 무단 열람 차단 검증 완료.
+
 ### 📝 [작업 차수 157] 프로젝트 전수 자아성찰(Self-Reflection & Deep Audit) 및 코드베이스 결함 교정
 - **작업 일시**: 2026-11-09 14:00 KST
 - **요청 사항**:

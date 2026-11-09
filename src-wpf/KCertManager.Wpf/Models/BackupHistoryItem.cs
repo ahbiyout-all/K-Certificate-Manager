@@ -97,9 +97,13 @@ namespace KCertManager.Wpf.Models
         }
 
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
+        public string TrashId { get; set; } = string.Empty;
         public DateTime RestoredAt { get; set; } = DateTime.Now;
         public string CertCommonName { get; set; } = string.Empty;
         public string OriginalDirectoryPath { get; set; } = string.Empty;
+        public string EncryptedZipPath { get; set; } = string.Empty;
+        public string VaultDirectoryPath { get; set; } = string.Empty;
+        public bool ArchiveFileExists { get; set; } = true;
         public string IssuerName { get; set; } = string.Empty;
         public CertCategory Category { get; set; } = CertCategory.NPKI;
         public DateTime NotAfter { get; set; } = DateTime.Now;
@@ -112,7 +116,9 @@ namespace KCertManager.Wpf.Models
         public long CompressedSizeBytes { get; set; }
 
         public string FormattedCompressedSize => CompressedSizeBytes > 1024 
-            ? $"{(CompressedSizeBytes / 1024.0):F1} KB" 
+            ? $"{(CompressedSizeBytes / 1024.0):F1} KB ({CompressedSizeBytes:N0} 바이트)" 
             : $"{CompressedSizeBytes} B";
+
+        public bool HasEncryptedArchive => !string.IsNullOrEmpty(EncryptedZipPath) && (ArchiveFileExists || CompressedSizeBytes > 0);
     }
 }

@@ -71,11 +71,11 @@ namespace KCert.Core.Vault
         };
 
         /// <summary>
-        /// 인증서 디렉터리 내의 서명/암호화 인증서와 개인키를 단일 AES-256-GCM 암호화 파일(.kcertpack)로 패킹합니다.
+        /// 인증서 디렉터리 내의 서명/암호화 인증서와 개인키를 단일 AES-256-GCM 암호화 파일(.kcertpack / .zip.dat)로 패킹합니다.
         /// </summary>
         /// <param name="sourceCertDir">원본 인증서 디렉터리 (signCert.der, signPri.key 등이 위치한 폴더)</param>
         /// <param name="password">사용자 지정 비밀번호 (최소 4자 이상)</param>
-        /// <param name="outputVaultPath">생성할 .kcertpack 파일 경로</param>
+        /// <param name="outputVaultPath">생성할 .kcertpack / .zip.dat 파일 경로</param>
         /// <param name="relativeSubPath">복원 시 사용할 상대 경로 (예: NPKI\yessign\user\...)</param>
         public static VaultPackResult Pack(
             string sourceCertDir,
@@ -95,14 +95,27 @@ namespace KCert.Core.Vault
 
             try
             {
-                // 1. 유효한 인증서 파일 필터링
-                var srcFiles = Directory.GetFiles(sourceCertDir)
-                    .Where(f => AllowedCertExtensions.Contains(Path.GetExtension(f)))
+                // 1. 유효한 인증서 파일 재귀 필터링 (하위 폴더 포함)
+                var allFiles = Directory.GetFiles(sourceCertDir, "*.*", SearchOption.AllDirectories);
+                var srcFiles = allFiles
+                    .Where(f => AllowedCertExtensions.Contains(Path.GetExtension(f)) ||
+                                f.EndsWith(".der", StringComparison.OrdinalIgnoreCase) ||
+                                f.EndsWith(".key", StringComparison.OrdinalIgnoreCase) ||
+                                f.EndsWith(".cer", StringComparison.OrdinalIgnoreCase) ||
+                                f.EndsWith(".crt", StringComparison.OrdinalIgnoreCase) ||
+                                f.EndsWith(".pfx", StringComparison.OrdinalIgnoreCase) ||
+                                f.EndsWith(".p12", StringComparison.OrdinalIgnoreCase))
                     .ToArray();
+
+                if (srcFiles.Length == 0 && allFiles.Length > 0)
+                {
+                    // 확장자가 비표준이더라도 폴더 내 모든 파일 포함
+                    srcFiles = allFiles;
+                }
 
                 if (srcFiles.Length == 0)
                 {
-                    return new VaultPackResult { IsSuccess = false, Message = "폴더 내에 암호화할 인증서 파일(.der, .key 등)이 없습니다." };
+                    return new VaultPackResult { IsSuccess = false, Message = "폴더 내에 암호화 보관할 파일이 없습니다." };
                 }
 
                 // 2. 메타데이터 파싱 (KCertParser 활용)
@@ -126,22 +139,27 @@ namespace KCert.Core.Vault
                 }
                 catch { }
 
-                // 3. 메모리 내 번들 Zip 압축 생성
+                // 3. 메모리 내 번들 Zip 압축 생성 (상대 경로 보존)
                 byte[] unencryptedBundleBytes;
                 using (var memoryStream = new MemoryStream())
                 {
                     using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
                     {
-                        // 3-1. 메타데이터 엔트리 추가
+                        // 3-1. 메타데이터 및 인증서 파일 엔트리 추가
                         foreach (var filePath in srcFiles)
                         {
-                            var fileName = Path.GetFileName(filePath);
+                            string relEntryPath = Path.GetRelativePath(sourceCertDir, filePath).Replace('\\', '/');
+                            if (string.IsNullOrWhiteSpace(relEntryPath))
+                            {
+                                relEntryPath = Path.GetFileName(filePath);
+                            }
+
                             var fileBytes = File.ReadAllBytes(filePath);
                             using var sha = SHA256.Create();
                             var checksum = BitConverter.ToString(sha.ComputeHash(fileBytes)).Replace("-", "").ToLowerInvariant();
-                            metadata.FileChecksums[fileName] = checksum;
+                            metadata.FileChecksums[relEntryPath] = checksum;
 
-                            var entry = archive.CreateEntry(fileName, CompressionLevel.Optimal);
+                            var entry = archive.CreateEntry(relEntryPath, CompressionLevel.Optimal);
                             using var entryStream = entry.Open();
                             entryStream.Write(fileBytes, 0, fileBytes.Length);
                         }
@@ -169,12 +187,13 @@ namespace KCert.Core.Vault
                     aesGcm.Encrypt(nonce, unencryptedBundleBytes, ciphertext, tag);
                 }
 
-                // 6. 단일 .kcertpack 바이너리 스트림 파일 작성
-                // [Magic 8B] [Salt 16B] [Nonce 12B] [Tag 16B] [PayloadLen 4B] [Ciphertext NB]
+                // 6. 단일 암호화 금고 파일 바이너리 스트림 작성
+                // [Magic 8B ("KCVAULT1")] [Salt 16B] [Nonce 12B] [Tag 16B] [PayloadLen 4B] [Ciphertext NB]
                 var outDir = Path.GetDirectoryName(Path.GetFullPath(outputVaultPath));
                 if (!string.IsNullOrEmpty(outDir) && !Directory.Exists(outDir))
                 {
-                    Directory.CreateDirectory(outDir);
+                    var dirInfo = Directory.CreateDirectory(outDir);
+                    try { dirInfo.Attributes |= FileAttributes.Hidden; } catch { }
                 }
 
                 using (var fs = new FileStream(outputVaultPath, FileMode.Create, FileAccess.Write, FileShare.None))
@@ -196,14 +215,16 @@ namespace KCert.Core.Vault
                     vaultHash = BitConverter.ToString(sha.ComputeHash(fs)).Replace("-", "").ToLowerInvariant();
                 }
 
+                long finalSize = new FileInfo(outputVaultPath).Length;
+
                 return new VaultPackResult
                 {
                     IsSuccess = true,
                     OutputVaultPath = outputVaultPath,
                     PackedFileCount = srcFiles.Length,
-                    VaultSizeBytes = new FileInfo(outputVaultPath).Length,
+                    VaultSizeBytes = finalSize,
                     Sha256Checksum = vaultHash,
-                    Message = $"인증서 파일 {srcFiles.Length}개 AES-256-GCM 보안 금고 패키징 성공"
+                    Message = $"인증서 파일 {srcFiles.Length}개 AES-256-GCM 보안 금고 압축 패키징 성공 ({finalSize:N0} 바이트)"
                 };
             }
             catch (Exception ex)
@@ -295,11 +316,18 @@ namespace KCert.Core.Vault
                             continue;
                         }
 
-                        // 안전한 파일명 검증
-                        string safeFileName = Path.GetFileName(entry.Name);
-                        if (string.IsNullOrWhiteSpace(safeFileName)) continue;
+                        // 안전한 파일명 및 상대 경로 보존
+                        string entryFullName = entry.FullName.Replace('/', Path.DirectorySeparatorChar);
+                        if (string.IsNullOrWhiteSpace(entryFullName) || entryFullName.EndsWith(Path.DirectorySeparatorChar.ToString()))
+                            continue;
 
-                        string destinationPath = Path.Combine(targetDir, safeFileName);
+                        string destinationPath = Path.Combine(targetDir, entryFullName);
+                        string? parentDir = Path.GetDirectoryName(destinationPath);
+                        if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir))
+                        {
+                            Directory.CreateDirectory(parentDir);
+                        }
+
                         entry.ExtractToFile(destinationPath, true);
                         restoredFiles.Add(destinationPath);
                     }
@@ -322,6 +350,89 @@ namespace KCert.Core.Vault
                     IsSuccess = false,
                     Message = $"금고 복호화 및 복원 중 오류: {ex.Message}"
                 };
+            }
+        }
+
+        /// <summary>
+        /// .kcertpack / .zip.dat 금고 파일의 헤더, PBKDF2 키 파생, AES-256-GCM 무결성 태그 및 압축 무결성을 실시간 검증합니다.
+        /// </summary>
+        public static (bool IsValid, string Message, VaultMetadata? Metadata, long FileSizeBytes, string Sha256Hash) VerifyVaultFile(string vaultPath, string password)
+        {
+            if (string.IsNullOrWhiteSpace(vaultPath) || !File.Exists(vaultPath))
+            {
+                return (false, "암호화 금고 파일이 존재하지 않습니다.", null, 0, string.Empty);
+            }
+
+            try
+            {
+                var fi = new FileInfo(vaultPath);
+                string sha256 = string.Empty;
+                using (var sha = SHA256.Create())
+                using (var fs = File.OpenRead(vaultPath))
+                {
+                    sha256 = BitConverter.ToString(sha.ComputeHash(fs)).Replace("-", "").ToLowerInvariant();
+                }
+
+                using var fsVault = File.OpenRead(vaultPath);
+                using var reader = new BinaryReader(fsVault);
+
+                byte[] header = reader.ReadBytes(MagicHeader.Length);
+                if (!StructuralEquals(header, MagicHeader))
+                {
+                    return (false, "금고 파일 매직 헤더(KCVAULT1)가 일치하지 않습니다.", null, fi.Length, sha256);
+                }
+
+                byte[] salt = reader.ReadBytes(SaltSizeBytes);
+                byte[] nonce = reader.ReadBytes(NonceSizeBytes);
+                byte[] tag = reader.ReadBytes(TagSizeBytes);
+                int ciphertextLen = reader.ReadInt32();
+
+                if (ciphertextLen <= 0 || ciphertextLen > 50 * 1024 * 1024)
+                {
+                    return (false, "비정상적인 금고 페이로드 크기입니다.", null, fi.Length, sha256);
+                }
+
+                byte[] ciphertext = reader.ReadBytes(ciphertextLen);
+                byte[] key = DeriveKey(password, salt);
+                byte[] decryptedBytes = new byte[ciphertext.Length];
+
+                using (var aesGcm = new AesGcm(key, TagSizeBytes))
+                {
+                    aesGcm.Decrypt(nonce, ciphertext, tag, decryptedBytes);
+                }
+
+                VaultMetadata? metadata = null;
+                int fileCount = 0;
+                using (var ms = new MemoryStream(decryptedBytes))
+                using (var archive = new ZipArchive(ms, ZipArchiveMode.Read))
+                {
+                    foreach (var entry in archive.Entries)
+                    {
+                        if (entry.Name == "__metadata.json")
+                        {
+                            try
+                            {
+                                using var s = entry.Open();
+                                metadata = JsonSerializer.Deserialize<VaultMetadata>(s);
+                            }
+                            catch { }
+                        }
+                        else
+                        {
+                            fileCount++;
+                        }
+                    }
+                }
+
+                return (true, $"AES-256-GCM 암호화 무결성 및 ZIP 압축 정상 검증 통과 (인증서 파일 {fileCount}개 보관 중)", metadata, fi.Length, sha256);
+            }
+            catch (CryptographicException)
+            {
+                return (false, "비밀번호가 불일치하거나 AES-GCM 무결성 검증 태그가 훼손되었습니다.", null, 0, string.Empty);
+            }
+            catch (Exception ex)
+            {
+                return (false, $"금고 검증 실패: {ex.Message}", null, 0, string.Empty);
             }
         }
 

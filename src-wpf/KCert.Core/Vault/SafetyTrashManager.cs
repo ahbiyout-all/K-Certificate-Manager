@@ -224,20 +224,43 @@ namespace KCert.Core.Vault
                     SaveIndexInternal(items);
 
                     // 복원된 항목(Restored Items Vault)으로 이력 전송 및 비밀번호 기반 AES-256 암호화 압축파일(.zip.dat) 보관
+                    string zipPath = string.Empty;
+                    long compressedSize = 0;
+                    string archivesDir = Path.Combine(_restoredVaultRoot, "Archives");
                     try
                     {
-                        string archivesDir = Path.Combine(_restoredVaultRoot, "Archives");
                         if (!Directory.Exists(archivesDir))
                         {
-                            Directory.CreateDirectory(archivesDir);
+                            var di = Directory.CreateDirectory(archivesDir);
+                            try { di.Attributes |= FileAttributes.Hidden; } catch { }
                         }
 
-                        string zipFileName = $"{item.Id}_encrypted_vault.zip";
-                        string zipPath = Path.Combine(archivesDir, zipFileName);
+                        string zipFileName = $"{item.Id}_encrypted_vault.zip.dat";
+                        zipPath = Path.Combine(archivesDir, zipFileName);
                         string vaultPassword = "KCert_Protected_Vault_Pass_2026_" + item.Id;
-                        long compressedSize = 0;
 
-                        if (Directory.Exists(fullOriginal))
+                        // 1. 격리 폴더가 존재하는 상태에서 먼저 AES-256 암호화 금고(.zip.dat)로 패킹
+                        if (Directory.Exists(fullQuarantined))
+                        {
+                            var packRes = CertVaultPacker.Pack(fullQuarantined, vaultPassword, zipPath, item.RelativeSubPath);
+                            if (packRes.IsSuccess)
+                            {
+                                compressedSize = packRes.VaultSizeBytes;
+                            }
+                        }
+                    }
+                    catch { }
+
+                    SafeMoveDirectory(fullQuarantined, fullOriginal);
+
+                    items.Remove(item);
+                    SaveIndexInternal(items);
+
+                    try
+                    {
+                        string vaultPassword = "KCert_Protected_Vault_Pass_2026_" + item.Id;
+                        // 만약 격리 폴더에서 패킹 실패했거나 크기가 0이면, 복원된 원본 위치에서 재차 패킹 시도
+                        if (compressedSize <= 0 && Directory.Exists(fullOriginal))
                         {
                             var packRes = CertVaultPacker.Pack(fullOriginal, vaultPassword, zipPath, item.RelativeSubPath);
                             if (packRes.IsSuccess)
@@ -271,7 +294,7 @@ namespace KCert.Core.Vault
                     }
                     catch { }
 
-                    return (true, "인증서가 원래 위치로 성공적으로 복원되었으며, 보관소에 비밀번호 암호화 압축 파일(.zip.dat)로 무단 열람이 차단된 상태로 이력이 저장되었습니다.");
+                    return (true, "인증서가 원래 위치로 성공적으로 복원되었으며, 특수 보관소(%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault)에 비밀번호 AES-256 암호화 압축 파일(.zip.dat)로 무단 열람이 차단된 상태로 이력이 저장되었습니다.");
                 }
                 catch (Exception ex)
                 {
@@ -609,12 +632,84 @@ namespace KCert.Core.Vault
                     validList.Add(item);
                 }
 
+                // 기존 복원 이력 중 암호화 파일이 누락되었거나 0바이트인 경우 자동 AES-256 암호화 금고 백필
+                bool needSave = false;
+                string archivesDir = Path.Combine(_restoredVaultRoot, "Archives");
+                if (!Directory.Exists(archivesDir))
+                {
+                    try
+                    {
+                        var di = Directory.CreateDirectory(archivesDir);
+                        di.Attributes |= FileAttributes.Hidden;
+                    }
+                    catch { }
+                }
+
+                foreach (var item in validList)
+                {
+                    string targetZipDat = Path.Combine(archivesDir, $"{item.TrashId}_encrypted_vault.zip.dat");
+                    string targetZip = Path.Combine(archivesDir, $"{item.TrashId}_encrypted_vault.zip");
+
+                    if (File.Exists(targetZipDat))
+                    {
+                        item.EncryptedZipPath = targetZipDat;
+                        item.CompressedSizeBytes = new FileInfo(targetZipDat).Length;
+                        item.IsZipEncrypted = true;
+                    }
+                    else if (File.Exists(targetZip))
+                    {
+                        item.EncryptedZipPath = targetZip;
+                        item.CompressedSizeBytes = new FileInfo(targetZip).Length;
+                        item.IsZipEncrypted = true;
+                    }
+                    else if (!string.IsNullOrEmpty(item.EncryptedZipPath) && File.Exists(item.EncryptedZipPath))
+                    {
+                        item.CompressedSizeBytes = new FileInfo(item.EncryptedZipPath).Length;
+                        item.IsZipEncrypted = true;
+                    }
+                    else if (!string.IsNullOrEmpty(item.OriginalDirectoryPath) && Directory.Exists(item.OriginalDirectoryPath))
+                    {
+                        try
+                        {
+                            string pass = "KCert_Protected_Vault_Pass_2026_" + (string.IsNullOrEmpty(item.TrashId) ? item.Id : item.TrashId);
+                            var packRes = CertVaultPacker.Pack(item.OriginalDirectoryPath, pass, targetZipDat);
+                            if (packRes.IsSuccess && File.Exists(targetZipDat))
+                            {
+                                item.EncryptedZipPath = targetZipDat;
+                                item.CompressedSizeBytes = packRes.VaultSizeBytes;
+                                item.IsZipEncrypted = true;
+                                item.StatusMessage = "🔒 암호화 압축 파일(.zip.dat) 보관 완료";
+                                needSave = true;
+                            }
+                        }
+                        catch { }
+                    }
+                    else
+                    {
+                        item.EncryptedZipPath = targetZipDat;
+                    }
+                }
+
+                if (needSave)
+                {
+                    SaveRestoredIndexInternal(validList);
+                }
+
                 return validList;
             }
             catch
             {
                 return new List<RestoredQuarantineItem>();
             }
+        }
+
+        public string GetRestoredVaultRoot() => _restoredVaultRoot;
+        public string GetRestoredArchivesDir() => Path.Combine(_restoredVaultRoot, "Archives");
+
+        public (bool IsValid, string Message, VaultMetadata? Metadata, long FileSizeBytes, string Sha256Hash) VerifyVaultArchive(string vaultPath, string trashId)
+        {
+            string pass = "KCert_Protected_Vault_Pass_2026_" + trashId;
+            return CertVaultPacker.VerifyVaultFile(vaultPath, pass);
         }
 
         private void SaveRestoredIndexInternal(List<RestoredQuarantineItem> items)

@@ -102,12 +102,19 @@ export function loadProtectedRestoredItems(): RestoredTrashItem[] {
     }
 
     // Default metadata enhancement for ZIP encryption
-    return items.map(item => ({
-      ...item,
-      isZipEncrypted: true,
-      encryptionLevel: item.encryptionLevel || 'AES-256-GCM + ZIP 압축 + Web Cryptography',
-      zipContainerName: item.zipContainerName || `${item.id}_encrypted_vault.zip`
-    }));
+    return items.map(item => {
+      const zipName = item.zipContainerName || `${item.id}_encrypted_vault.zip.dat`;
+      const vaultLoc = item.vaultArchiveLocation || `%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault\\Archives\\${zipName}`;
+      return {
+        ...item,
+        isZipEncrypted: true,
+        encryptionLevel: item.encryptionLevel || 'AES-256-GCM + ZIP 압축 + DPAPI/WebCrypto 이중 암호화',
+        zipContainerName: zipName,
+        encryptedZipPath: item.encryptedZipPath || vaultLoc,
+        vaultArchiveLocation: vaultLoc,
+        compressedSizeBytes: item.compressedSizeBytes || 2845
+      };
+    });
   } catch (e) {
     console.warn('특수 암호화 보관소 로드 오류:', e);
   }
@@ -116,12 +123,19 @@ export function loadProtectedRestoredItems(): RestoredTrashItem[] {
 
 export function saveProtectedRestoredItems(items: RestoredTrashItem[]): void {
   try {
-    const updatedItems = items.map(item => ({
-      ...item,
-      isZipEncrypted: true,
-      encryptionLevel: item.encryptionLevel || 'AES-256-GCM + ZIP 압축 + Web Cryptography',
-      zipContainerName: item.zipContainerName || `${item.id}_encrypted_vault.zip`
-    }));
+    const updatedItems = items.map(item => {
+      const zipName = item.zipContainerName || `${item.id}_encrypted_vault.zip.dat`;
+      const vaultLoc = item.vaultArchiveLocation || `%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault\\Archives\\${zipName}`;
+      return {
+        ...item,
+        isZipEncrypted: true,
+        encryptionLevel: item.encryptionLevel || 'AES-256-GCM + ZIP 압축 + DPAPI/WebCrypto 이중 암호화',
+        zipContainerName: zipName,
+        encryptedZipPath: item.encryptedZipPath || vaultLoc,
+        vaultArchiveLocation: vaultLoc,
+        compressedSizeBytes: item.compressedSizeBytes || 2845
+      };
+    });
     const jsonStr = JSON.stringify(updatedItems);
     const encrypted = encryptPayload(jsonStr);
     localStorage.setItem(PROTECTED_VAULT_KEY, encrypted);

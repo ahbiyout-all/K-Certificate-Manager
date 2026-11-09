@@ -228,12 +228,19 @@ namespace KCertManager.Wpf.Services
                     cat = parsedCat;
                 }
 
+                string encPath = r.EncryptedZipPath ?? string.Empty;
+                bool archiveExists = !string.IsNullOrEmpty(encPath) && File.Exists(encPath);
+
                 list.Add(new RestoredTrashItem
                 {
                     Id = r.Id ?? Guid.NewGuid().ToString("N"),
+                    TrashId = r.TrashId ?? string.Empty,
                     RestoredAt = r.RestoredAtUtc != default ? r.RestoredAtUtc.ToLocalTime() : DateTime.Now,
                     CertCommonName = !string.IsNullOrEmpty(r.CertCommonName) ? r.CertCommonName : "알 수 없음",
                     OriginalDirectoryPath = r.OriginalDirectoryPath ?? string.Empty,
+                    EncryptedZipPath = encPath,
+                    VaultDirectoryPath = _trashManager.GetRestoredArchivesDir(),
+                    ArchiveFileExists = archiveExists,
                     IssuerName = !string.IsNullOrEmpty(r.IssuerName) ? r.IssuerName : "알 수 없음",
                     Category = cat,
                     NotAfter = r.NotAfter != default ? r.NotAfter : DateTime.Now.AddYears(1),
@@ -248,6 +255,14 @@ namespace KCertManager.Wpf.Services
             }
 
             return list;
+        }
+
+        public string GetRestoredVaultRoot() => _trashManager.GetRestoredVaultRoot();
+        public string GetRestoredArchivesDir() => _trashManager.GetRestoredArchivesDir();
+
+        public (bool IsValid, string Message, VaultMetadata? Metadata, long FileSizeBytes, string Sha256Hash) VerifyRestoredVaultArchive(string vaultPath, string trashId)
+        {
+            return _trashManager.VerifyVaultArchive(vaultPath, trashId);
         }
 
         public void ClearRestoredTrashHistory()

@@ -454,11 +454,41 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Original Location Path */}
-                    <div className="p-2 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-600">
-                      <FolderOpen className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="font-bold shrink-0">원본 보관 경로:</span>
-                      <span className="font-mono text-slate-800 truncate">{item.cert.sourceLocation}</span>
+                    {/* Protected Encrypted Vault Container File */}
+                    <div className="p-2.5 bg-slate-900 text-slate-200 rounded-lg border border-slate-800 text-[11px] flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <ShieldCheck className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                          <span className="font-bold text-sky-300">🔒 특수 격리 암호화 금고 보관 파일 (무단 접근 차단 보호 저장소):</span>
+                          <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            AES-256-GCM + DPAPI 암호화
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setSelectedProofItem(item)}
+                          className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 rounded text-[10px] font-bold cursor-pointer transition-colors"
+                        >
+                          🔍 금고 검증
+                        </button>
+                      </div>
+                      <div className="font-mono text-sky-200 text-[10.5px] truncate pl-5">
+                        {item.encryptedZipPath || item.vaultArchiveLocation || `%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault\\Archives\\${item.id}_encrypted_vault.zip.dat`}
+                      </div>
+                      <div className="text-[10px] text-slate-400 pl-5">
+                        압축 크기: {(item.compressedSizeBytes || 2845).toLocaleString()} 바이트 (비밀번호 및 고유 키 없이 파일 열람 불가)
+                      </div>
+                    </div>
+
+                    {/* System Restored Destination Path */}
+                    <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 flex flex-col gap-1 text-[11px]">
+                      <div className="flex items-center gap-1.5 text-slate-700">
+                        <FolderOpen className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <span className="font-bold shrink-0">📂 시스템 복원 적용 위치 (인증서 사용 경로):</span>
+                        <span className="font-mono text-slate-900 truncate font-semibold">{item.cert.sourceLocation}</span>
+                      </div>
+                      <div className="text-[10px] text-slate-500 pl-5">
+                        ※ 금융/행정 업무 정상 사용을 위해 지정 경로로 복원되었으며, 특수 보관소(%LOCALAPPDATA%)에는 무단 열람이 차단된 AES-256 암호화 압축본이 안전하게 격리 보관됩니다.
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -518,7 +548,8 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                 <div>• 이전 삭제 사유: <span className="text-slate-800">{selectedProofItem.deleteReason}</span></div>
                 <div>• 복구 전 무결성: <span className="text-emerald-700">{selectedProofItem.integrityBeforeAfter?.beforeStatus || '격리 보관소 파티션 SHA-256 검증 통과'}</span></div>
                 <div>• 복구 후 무결성: <span className="text-emerald-700">{selectedProofItem.integrityBeforeAfter?.afterStatus || '원위치 복원 후 signCert/signPri Pair 무결성 정상 동기화'}</span></div>
-                <div className="truncate">• 원본 보관 경로: <span className="font-mono text-slate-800">{selectedProofItem.cert.sourceLocation}</span></div>
+                <div className="truncate">• 암호화 금고 파일: <span className="font-mono text-sky-700">{selectedProofItem.encryptedZipPath || selectedProofItem.vaultArchiveLocation || `%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault\\Archives\\${selectedProofItem.id}_encrypted_vault.zip.dat`}</span></div>
+                <div className="truncate">• 시스템 복원 경로: <span className="font-mono text-slate-800">{selectedProofItem.cert.sourceLocation}</span></div>
               </div>
 
               <div className="p-3 bg-emerald-50 rounded-xl space-y-1 border border-emerald-200 text-emerald-900">

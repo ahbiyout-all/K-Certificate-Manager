@@ -228,6 +228,122 @@ namespace KCertManager.Wpf.Views
             }
         }
 
+        private void BtnOpenVaultFolder_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string archivesDir = _backupService.GetRestoredArchivesDir();
+                if (!System.IO.Directory.Exists(archivesDir))
+                {
+                    var di = System.IO.Directory.CreateDirectory(archivesDir);
+                    try { di.Attributes |= System.IO.FileAttributes.Hidden; } catch { }
+                }
+
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"\"{archivesDir}\"",
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                UserFriendlyMessageHelper.ShowErrorText($"보관소 폴더를 여는 중 오류가 발생했습니다: {ex.Message}", "폴더 열기 실패", "• 파일 탐색기 권한을 확인해 주세요.", this);
+            }
+        }
+
+        private void BtnOpenItemVaultFolder_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is RestoredTrashItem item)
+            {
+                try
+                {
+                    string targetPath = item.EncryptedZipPath;
+                    if (System.IO.File.Exists(targetPath))
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = "explorer.exe",
+                            Arguments = $"/select,\"{targetPath}\"",
+                            UseShellExecute = true
+                        });
+                    }
+                    else
+                    {
+                        string archivesDir = _backupService.GetRestoredArchivesDir();
+                        if (System.IO.Directory.Exists(archivesDir))
+                        {
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = "explorer.exe",
+                                Arguments = $"\"{archivesDir}\"",
+                                UseShellExecute = true
+                            });
+                        }
+                        else
+                        {
+                            UserFriendlyMessageHelper.ShowInfo("보관소 금고 파일이 아직 디스크에 생성되지 않았습니다.", "안내", this);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    UserFriendlyMessageHelper.ShowErrorText($"금고 폴더를 여는 중 오류가 발생했습니다: {ex.Message}", "폴더 열기 실패", "• 파일 탐색기 권한을 확인해 주세요.", this);
+                }
+            }
+        }
+
+        private void BtnVerifyArchive_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is RestoredTrashItem item)
+            {
+                try
+                {
+                    string zipPath = item.EncryptedZipPath;
+                    string trashId = !string.IsNullOrEmpty(item.TrashId) ? item.TrashId : item.Id;
+
+                    if (string.IsNullOrEmpty(zipPath) || !System.IO.File.Exists(zipPath))
+                    {
+                        UserFriendlyMessageHelper.ShowErrorText(
+                            $"암호화 금고 파일이 디스크에 존재하지 않습니다.\n({zipPath})",
+                            "금고 파일 미발견",
+                            "• '보관소 자가진단'을 실행하여 금고 파일을 자동 동기화해 주세요.",
+                            this);
+                        return;
+                    }
+
+                    var (isValid, message, metadata, fileSize, sha256) = _backupService.VerifyRestoredVaultArchive(zipPath, trashId);
+                    if (isValid)
+                    {
+                        string details = 
+                            $"[🔒 AES-256-GCM 암호화 금고 검증 통과]\n" +
+                            $"• 인증서 소유자명: {item.CertCommonName}\n" +
+                            $"• 암호화 금고 파일: {System.IO.Path.GetFileName(zipPath)}\n" +
+                            $"• 저장 디렉터리: {System.IO.Path.GetDirectoryName(zipPath)}\n" +
+                            $"• 금고 데이터 크기: {fileSize:N0} 바이트 ({item.FormattedCompressedSize})\n" +
+                            $"• SHA-256 무결성 해시: {sha256}\n" +
+                            $"• 보안 알고리즘: AES-256-GCM + PBKDF2 (100,000회 스트레칭)\n" +
+                            $"• 검증 결과: {message}\n\n" +
+                            $"안내: 이 금고 파일은 일반 사용자가 임의로 개봉할 수 없도록 이중 암호화되어 안전하게 보관됩니다.";
+
+                        UserFriendlyMessageHelper.ShowInfo(details, "✓ 특수 암호화 금고 무결성 검증 완료", this);
+                    }
+                    else
+                    {
+                        UserFriendlyMessageHelper.ShowErrorText(
+                            $"금고 검증 경고: {message}",
+                            "금고 검증 실패",
+                            "• 금고 파일이 변조되었거나 패스워드 파생 키가 일치하지 않습니다.",
+                            this);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    UserFriendlyMessageHelper.ShowError(ex, "금고 검증 중 오류");
+                }
+            }
+        }
+
         private void BtnShowProof_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.DataContext is RestoredTrashItem item)
@@ -242,9 +358,11 @@ namespace KCertManager.Wpf.Views
                     $"• 복원 완료 시각: {item.RestoredAt:yyyy-MM-dd HH:mm:ss}\n" +
                     $"• 이전 삭제 사유: {item.DeleteReason}\n" +
                     $"• 복구 전 무결성: {item.IntegrityBefore}\n" +
-                    $"• 복구 후 무결성: {item.IntegrityAfter}\n" +
-                    $"• 원본 보관 위치: {item.OriginalDirectoryPath}\n\n" +
-                    $"[보관소 암호화 수준]\n" +
+                    $"• 복구 후 무결성: {item.IntegrityAfter}\n\n" +
+                    $"[보관소 암호화 수준 및 파일 경로]\n" +
+                    $"• 암호화 금고 파일: {item.EncryptedZipPath}\n" +
+                    $"• 압축 데이터 크기: {item.FormattedCompressedSize}\n" +
+                    $"• 시스템 복원 반영 위치: {item.OriginalDirectoryPath}\n" +
                     $"• 매니페스트 보호: Windows DPAPI (CurrentUser) + AES-256 GCM\n" +
                     $"• 무결성 상태: {item.StatusBadge}";
 
