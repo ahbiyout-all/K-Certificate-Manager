@@ -141,6 +141,9 @@ export interface RestoredTrashItem {
   restoredAt: string;
   deleteReason: string;
   cert: CertificateItem;
+  isZipEncrypted?: boolean;
+  encryptionLevel?: string;
+  zipContainerName?: string;
   integrityBeforeAfter?: {
     beforeStatus: string; // e.g. "격리 보관 검증 완료 (SHA-256 무결성 일치)"
     afterStatus: string;  // e.g. "원래 보관함 복원 후 인증서/개인키 Pair 검증 정상"

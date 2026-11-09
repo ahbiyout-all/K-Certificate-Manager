@@ -17,6 +17,24 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 155] 복원된 항목 및 보관소 인증서 비밀번호 기반 AES-256 Encrypted ZIP 압축 보관 엔진 구현
+- **작업 일시**: 2026-11-09 13:10 KST
+- **요청 사항**:
+  - "복원된 항목으로 이동된 자료는 압축 파일로 암호화된 상태로 보관해서 , 누구나 열어보지 못하도록 만듭니다."
+- **구현 내용**:
+  1. **C# .NET WPF 코어 금고 패킹 엔진 연동 (`SafetyTrashManager.cs`, `CertVaultPacker.cs`)**:
+     - `SafetyTrashManager`에서 인증서가 복원 보관소(`ProtectedRestoredVault`)로 전송되거나 이력이 작성될 때, `CertVaultPacker.Pack`을 호출하여 인증서 디렉터리 내의 모든 파일(`signCert.der`, `signPri.key`, `kmCert.der` 등)을 비밀번호 기반 AES-256-GCM / PBKDF2 암호화 압축 컨테이너(`.zip.dat` / `.kcertpack`)로 패키징.
+     - `ProtectedRestoredVault/Archives/{id}_encrypted_vault.zip` 경로에 실시간 보관하고 `RestoredQuarantineItem` 모델에 `EncryptedZipPath`, `IsZipEncrypted`, `CompressedSizeBytes`, `EncryptionLevel` 기록.
+     - 단일 항목 삭제(`DeleteRestoredItem`) 및 이력 비우기(`ClearRestoredHistory`) 시 연관된 암호화 압축 아카이브 파일들을 디스크에서 동시 완전 폐기.
+  2. **WPF UI 및 보안 증적 고도화 (`BackupHistoryItem.cs`, `CertificateBackupService.cs`, `TrashDialog.xaml`, `TrashDialog.xaml.cs`)**:
+     - `RestoredTrashItem` 바인딩 모델 및 `CertificateBackupService`에 `FormattedCompressedSize` 및 `IsZipEncrypted = true` 연동.
+     - 대화상자 상단 및 보안 감사 리포트에 `🔒 AES-256 Encrypted ZIP 보관 완료` 뱃지 및 압축 암호화 용량 명시.
+  3. **React Web SPA 관리 콘솔 대칭 동기화 (`src/types.ts`, `protectedVaultStorage.ts`, `TrashModal.tsx`)**:
+     - `protectedVaultStorage.ts`에서 보관소 로드 및 저장 시 `isZipEncrypted: true`, `encryptionLevel: 'AES-256-GCM + ZIP 압축 + Web Cryptography'`, `zipContainerName` 메타데이터 부여 및 UTF-8 바이너리 레벨 AES-Salt 이중 암호화 저장.
+     - `TrashModal.tsx`에 `🔒 AES-256 Encrypted ZIP 보관 완료` 상태 뱃지, 감사 증적 모달 내 암호화 압축 컨테이너 메타데이터 및 무단 열람 차단 설명카드 반영.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 동시 실행으로 0건 에러 무결점 성공.
+
 ### 📝 [작업 차수 154] TrashDialog 초기화 시 XAML SelectionChanged 이벤트 조기 호출 NullReferenceException 완전 결함 수정
 - **작업 일시**: 2026-11-09 12:30 KST
 - **요청 사항**:

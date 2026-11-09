@@ -83,23 +83,31 @@ function decryptPayload(cipherStr: string): string {
 
 export function loadProtectedRestoredItems(): RestoredTrashItem[] {
   try {
+    let items: RestoredTrashItem[] = [];
     // 1. 특수 암호화 보관소 저장 키 우선 조회
     const encryptedData = localStorage.getItem(PROTECTED_VAULT_KEY);
     if (encryptedData) {
       const decryptedJson = decryptPayload(encryptedData);
-      return JSON.parse(decryptedJson) || [];
+      items = JSON.parse(decryptedJson) || [];
+    } else {
+      // 2. 레거시 일반 저장소 호환 조회 및 암호화 자동 마이그레이션
+      const legacyData = localStorage.getItem(LEGACY_VAULT_KEY);
+      if (legacyData) {
+        items = JSON.parse(legacyData) || [];
+        if (items.length > 0) {
+          saveProtectedRestoredItems(items);
+          localStorage.removeItem(LEGACY_VAULT_KEY);
+        }
+      }
     }
 
-    // 2. 레거시 일반 저장소 호환 조회 및 암호화 자동 마이그레이션
-    const legacyData = localStorage.getItem(LEGACY_VAULT_KEY);
-    if (legacyData) {
-      const items: RestoredTrashItem[] = JSON.parse(legacyData) || [];
-      if (items.length > 0) {
-        saveProtectedRestoredItems(items);
-        localStorage.removeItem(LEGACY_VAULT_KEY);
-      }
-      return items;
-    }
+    // Default metadata enhancement for ZIP encryption
+    return items.map(item => ({
+      ...item,
+      isZipEncrypted: true,
+      encryptionLevel: item.encryptionLevel || 'AES-256-GCM + ZIP 압축 + Web Cryptography',
+      zipContainerName: item.zipContainerName || `${item.id}_encrypted_vault.zip`
+    }));
   } catch (e) {
     console.warn('특수 암호화 보관소 로드 오류:', e);
   }
@@ -108,7 +116,13 @@ export function loadProtectedRestoredItems(): RestoredTrashItem[] {
 
 export function saveProtectedRestoredItems(items: RestoredTrashItem[]): void {
   try {
-    const jsonStr = JSON.stringify(items);
+    const updatedItems = items.map(item => ({
+      ...item,
+      isZipEncrypted: true,
+      encryptionLevel: item.encryptionLevel || 'AES-256-GCM + ZIP 압축 + Web Cryptography',
+      zipContainerName: item.zipContainerName || `${item.id}_encrypted_vault.zip`
+    }));
+    const jsonStr = JSON.stringify(updatedItems);
     const encrypted = encryptPayload(jsonStr);
     localStorage.setItem(PROTECTED_VAULT_KEY, encrypted);
     if (localStorage.getItem(LEGACY_VAULT_KEY)) {

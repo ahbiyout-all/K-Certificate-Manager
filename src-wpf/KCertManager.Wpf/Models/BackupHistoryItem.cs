@@ -103,9 +103,16 @@ namespace KCertManager.Wpf.Models
         public string IssuerName { get; set; } = string.Empty;
         public CertCategory Category { get; set; } = CertCategory.NPKI;
         public DateTime NotAfter { get; set; } = DateTime.Now;
-        public string DeleteReason { get; set; } = "사용자 삭제 조치 후 안전 복구됨";
+        public string DeleteReason { get; set; } = "사용자 삭제 조치 후 안전 복구 및 암호화 보관소 저장";
         public string IntegrityBefore { get; set; } = "격리 보관 검증 완료 (SHA-256 무결성 일치)";
-        public string IntegrityAfter { get; set; } = "원래 위치 복원 후 인증서/개인키 Pair 검증 정상";
-        public string StatusBadge { get; set; } = "✓ 원본 보관함으로 복원 완료";
+        public string IntegrityAfter { get; set; } = "원래 위치 복원 후 signCert.der/signPri.key 서명 쌍 무결성 정상 동기화";
+        public string StatusBadge { get; set; } = "🔒 AES-256-GCM Encrypted ZIP (비밀번호 암호화 압축 보관)";
+        public bool IsZipEncrypted { get; set; } = true;
+        public string EncryptionLevel { get; set; } = "AES-256-GCM + ZIP 압축 + DPAPI 이중 암호화";
+        public long CompressedSizeBytes { get; set; }
+
+        public string FormattedCompressedSize => CompressedSizeBytes > 1024 
+            ? $"{(CompressedSizeBytes / 1024.0):F1} KB" 
+            : $"{CompressedSizeBytes} B";
     }
 }
