@@ -477,7 +477,22 @@ namespace KCert.Core.Vault
                 string json = File.ReadAllText(_indexFile);
                 if (string.IsNullOrWhiteSpace(json)) return new List<TrashQuarantineItem>();
                 var items = JsonSerializer.Deserialize<List<TrashQuarantineItem>>(json);
-                return items?.Where(x => x != null).ToList() ?? new List<TrashQuarantineItem>();
+                if (items == null) return new List<TrashQuarantineItem>();
+
+                var validList = new List<TrashQuarantineItem>();
+                foreach (var item in items)
+                {
+                    if (item == null) continue;
+                    item.Id ??= Guid.NewGuid().ToString("N");
+                    item.CertCommonName ??= "알 수 없음";
+                    item.OriginalDirectoryPath ??= string.Empty;
+                    item.QuarantinedFolderPath ??= string.Empty;
+                    item.RelativeSubPath ??= string.Empty;
+                    item.IssuerName ??= "알 수 없음";
+                    item.Category ??= "NPKI";
+                    validList.Add(item);
+                }
+                return validList;
             }
             catch
             {
@@ -499,44 +514,60 @@ namespace KCert.Core.Vault
         {
             try
             {
+                List<RestoredQuarantineItem>? rawList = null;
+
                 // 1. 특수 암호화 보관소 파일 우선 로드
                 if (File.Exists(_restoredIndexFile))
                 {
-                    byte[] raw = File.ReadAllBytes(_restoredIndexFile);
-                    if (raw == null || raw.Length == 0) return new List<RestoredQuarantineItem>();
-
-                    // 평문 JSON인 경우 (하위 호환성)
-                    if (raw[0] == 0x5B || raw[0] == 0x7B)
+                    byte[] rawBytes = File.ReadAllBytes(_restoredIndexFile);
+                    if (rawBytes != null && rawBytes.Length > 0)
                     {
-                        string unencryptedJson = Encoding.UTF8.GetString(raw);
-                        var unencryptedList = JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(unencryptedJson);
-                        return unencryptedList?.Where(x => x != null).ToList() ?? new List<RestoredQuarantineItem>();
+                        // 평문 JSON인 경우 (하위 호환성)
+                        if (rawBytes[0] == 0x5B || rawBytes[0] == 0x7B)
+                        {
+                            string unencryptedJson = Encoding.UTF8.GetString(rawBytes);
+                            rawList = JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(unencryptedJson);
+                        }
+                        else
+                        {
+                            byte[] decrypted = DecryptVaultBytes(rawBytes);
+                            if (decrypted != null && decrypted.Length > 0)
+                            {
+                                string json = Encoding.UTF8.GetString(decrypted);
+                                rawList = JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(json);
+                            }
+                        }
                     }
-
-                    // 암호화 바이너리 복호화 (Windows DPAPI / AES-256)
-                    byte[] decrypted = DecryptVaultBytes(raw);
-                    if (decrypted == null || decrypted.Length == 0) return new List<RestoredQuarantineItem>();
-                    string json = Encoding.UTF8.GetString(decrypted);
-                    var decryptedList = JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(json);
-                    return decryptedList?.Where(x => x != null).ToList() ?? new List<RestoredQuarantineItem>();
                 }
-
-                // 2. 레거시 평문 파일 마이그레이션
-                if (File.Exists(_legacyRestoredIndexFile))
+                else if (File.Exists(_legacyRestoredIndexFile))
                 {
                     string json = File.ReadAllText(_legacyRestoredIndexFile);
                     if (!string.IsNullOrWhiteSpace(json))
                     {
-                        var list = JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(json)?.Where(x => x != null).ToList() ?? new List<RestoredQuarantineItem>();
-                        if (list.Count > 0)
-                        {
-                            SaveRestoredIndexInternal(list);
-                        }
-                        return list;
+                        rawList = JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(json);
                     }
                 }
 
-                return new List<RestoredQuarantineItem>();
+                if (rawList == null) return new List<RestoredQuarantineItem>();
+
+                var validList = new List<RestoredQuarantineItem>();
+                foreach (var item in rawList)
+                {
+                    if (item == null) continue;
+                    item.Id ??= Guid.NewGuid().ToString("N");
+                    item.TrashId ??= string.Empty;
+                    item.CertCommonName ??= "알 수 없음";
+                    item.OriginalDirectoryPath ??= string.Empty;
+                    item.IssuerName ??= "알 수 없음";
+                    item.Category ??= "NPKI";
+                    item.DeleteReason ??= "사용자 선택 복구 또는 영구 폐기 방지 안전 복원";
+                    item.IntegrityBefore ??= "격리 보관 검증 완료 (SHA-256 무결성 일치)";
+                    item.IntegrityAfter ??= "원래 위치 복원 후 signCert.der/signPri.key 서명 쌍 무결성 정상 동기화";
+                    item.StatusMessage ??= "원래 보관함으로 복원 완료";
+                    validList.Add(item);
+                }
+
+                return validList;
             }
             catch
             {

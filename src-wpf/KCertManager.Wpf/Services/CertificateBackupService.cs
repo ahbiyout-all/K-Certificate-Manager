@@ -143,25 +143,36 @@ namespace KCertManager.Wpf.Services
 
         public TrashItem MoveToTrash(CertificateItem cert)
         {
-            string relPath = CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
+            if (cert == null)
+            {
+                return new TrashItem { CertCommonName = "알 수 없음" };
+            }
+
+            string certDir = cert.DirectoryPath ?? string.Empty;
+            string relPath = CertTransferEngine.ResolveRelativePath(certDir);
+            string commonName = !string.IsNullOrEmpty(cert.CommonName) ? cert.CommonName : "알 수 없음";
+            string issuerName = !string.IsNullOrEmpty(cert.IssuerName) ? cert.IssuerName : "알 수 없음";
+            string categoryStr = cert.Category.ToString();
+            DateTime notAfter = cert.NotAfter != default ? cert.NotAfter : DateTime.Now.AddYears(1);
+
             var (success, msg, item) = _trashManager.MoveToTrash(
-                cert.DirectoryPath, 
-                cert.CommonName, 
+                certDir, 
+                commonName, 
                 relPath, 
-                cert.IssuerName, 
-                cert.Category.ToString(), 
-                cert.NotAfter);
+                issuerName, 
+                categoryStr, 
+                notAfter);
 
             return new TrashItem
             {
                 Id = item?.Id ?? Guid.NewGuid().ToString("N"),
                 DeletedAt = item?.DeletedAtUtc.ToLocalTime() ?? DateTime.Now,
-                CertCommonName = cert.CommonName,
-                OriginalDirectoryPath = cert.DirectoryPath,
+                CertCommonName = commonName,
+                OriginalDirectoryPath = certDir,
                 TrashDirectoryPath = item?.QuarantinedFolderPath ?? string.Empty,
-                IssuerName = cert.IssuerName,
+                IssuerName = issuerName,
                 Category = cert.Category,
-                NotAfter = cert.NotAfter
+                NotAfter = notAfter
             };
         }
 

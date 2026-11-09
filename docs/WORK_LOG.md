@@ -17,6 +17,24 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 153] 만료 인증서 정리 후 휴지통 대화상자 열기 시 메인 뷰모델 수치 게터 널 포인터 결함 정밀 교정
+- **작업 일시**: 2026-11-09 12:10 KST
+- **요청 사항**:
+  - "같은 문제 발생함. (휴지통 대화상자 열기 중 NullReferenceException 예외 발생)"
+- **정밀 원인 분석**:
+  1. 만료 인증서 정리 후 메인 화면 상단 `🗑️ 휴지통 (2)` 버튼을 클릭할 때 `OpenTrash_Click`에서 `TrashDialog.ShowDialog()`가 실행되면서 메인 UI 바인딩(`TrashCount`, `TotalCount`, `ConnectedUsbCount`, `ExpiredCount` 등)이 동시 재평가됨.
+  2. `MainViewModel.cs`의 13개 연산 프로퍼티(`TrashCount => _trashItems.Count`, `ConnectedUsbCount => _removableDrives.Count`, `TotalCount => _allCertificates.Count` 등)에 `?.` 널 세이프 연산자 및 `?.Count ?? 0` 방어가 누락되어 있어, 백그라운드 컬렉션 재구성 시점에 WPF 렌더링 스레드가 접근할 경우 `NullReferenceException`이 유발되던 치명적 지점 발견.
+  3. `CertificateBackupService.cs`의 `MoveToTrash(CertificateItem cert)`에서 입력 `cert` 또는 `DirectoryPath`, `CommonName`, `IssuerName` 등의 프로퍼티가 미지정/널일 경우 가드 조치가 없어 매니페스트 저장 단계에 영향을 주던 점.
+- **수행 내역**:
+  1. **`MainViewModel.cs` 전 요약 계산 프로퍼티 널 안전 보장**:
+     - `TrashCount` (`_trashItems?.Count ?? 0`), `ConnectedUsbCount` (`_removableDrives?.Count ?? 0`), `TotalCount` (`_allCertificates?.Count ?? 0`), `GpkiCount`, `EpkiCount`, `NpkiCount`, `ExpiredCount`, `ComputerCount`, `UsbCount`, `CustomPathCount`, `SelectedCertificatesCount`, `LogCount` 전 항목에 `?.` 및 `x != null` 가드 연산자 전면 적용.
+  2. **`SafetyTrashManager.cs` 매니페스트 필드 인라인 Sanitization 탑재**:
+     - JSON 파일 로드 후 객체 생성을 거치는 `LoadIndexInternal` 및 `LoadRestoredIndexInternal`의 모든 문자열 프로퍼티(`CertCommonName`, `OriginalDirectoryPath`, `QuarantinedFolderPath`, `IssuerName`, `Category` 등)에 `??=` 널 방어 초기화 구문 강제.
+  3. **`CertificateBackupService.cs` `MoveToTrash` 입력 검증 강화**:
+     - `cert` 객체 널 체킹 및 각 속성 인스턴스 널 가드 후 `SafetyTrashManager` 전송.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 0건 에러 무결점 정상 통과.
+
 ### 📝 [작업 차수 152] 만료 인증서 정리 삭제 후 휴지통 열기 시 NullReferenceException 예외 전면 차단 및 방어 코드 구축
 - **작업 일시**: 2026-11-09 11:55 KST
 - **요청 사항**:

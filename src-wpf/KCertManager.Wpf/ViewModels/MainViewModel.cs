@@ -1141,19 +1141,19 @@ namespace KCertManager.Wpf.ViewModels
             }
         }
 
-        public bool HasUsbDrives => _removableDrives.Count > 0;
-        public int ConnectedUsbCount => _removableDrives.Count;
-        public int TotalCount => _allCertificates.Count;
-        public int GpkiCount => _allCertificates.Count(x => x.Category == CertCategory.GPKI);
-        public int EpkiCount => _allCertificates.Count(x => x.Category == CertCategory.EPKI);
-        public int NpkiCount => _allCertificates.Count(x => x.Category == CertCategory.NPKI);
-        public int ExpiredCount => _allCertificates.Count(x => x.Status == ExpiryStatus.Expired);
-        public int ComputerCount => _allCertificates.Count(x => !x.IsRemovableMedia);
-        public int UsbCount => _allCertificates.Count(x => x.IsRemovableMedia);
-        public int CustomPathCount => _allCertificates.Count(x => x.IsCustomPath);
-        public int SelectedCertificatesCount => _allCertificates.Count(x => x.IsSelected);
-        public int TrashCount => _trashItems.Count;
-        public int LogCount => ActivityLogService.Instance.Logs.Count;
+        public bool HasUsbDrives => _removableDrives?.Count > 0;
+        public int ConnectedUsbCount => _removableDrives?.Count ?? 0;
+        public int TotalCount => _allCertificates?.Count ?? 0;
+        public int GpkiCount => _allCertificates?.Count(x => x != null && x.Category == CertCategory.GPKI) ?? 0;
+        public int EpkiCount => _allCertificates?.Count(x => x != null && x.Category == CertCategory.EPKI) ?? 0;
+        public int NpkiCount => _allCertificates?.Count(x => x != null && x.Category == CertCategory.NPKI) ?? 0;
+        public int ExpiredCount => _allCertificates?.Count(x => x != null && x.Status == ExpiryStatus.Expired) ?? 0;
+        public int ComputerCount => _allCertificates?.Count(x => x != null && !x.IsRemovableMedia) ?? 0;
+        public int UsbCount => _allCertificates?.Count(x => x != null && x.IsRemovableMedia) ?? 0;
+        public int CustomPathCount => _allCertificates?.Count(x => x != null && x.IsCustomPath) ?? 0;
+        public int SelectedCertificatesCount => _allCertificates?.Count(x => x != null && x.IsSelected) ?? 0;
+        public int TrashCount => _trashItems?.Count ?? 0;
+        public int LogCount => ActivityLogService.Instance?.Logs?.Count ?? 0;
 
         #endregion
 
