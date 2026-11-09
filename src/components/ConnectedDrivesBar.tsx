@@ -93,7 +93,7 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
               key={drive.id}
               onClick={() => onSelectDriveId(drive.id)}
               className={`p-2.5 rounded-lg border-2 transition-all cursor-pointer relative flex flex-col gap-1.5 ${
-                isSelected ? driveBadge.cardSelectedClass : driveBadge.cardNormalClass
+                isSelected ? `${driveBadge.cardSelectedClass} animated-drive-card-subtle` : driveBadge.cardNormalClass
               }`}
             >
               <div className="flex items-center justify-between gap-1">

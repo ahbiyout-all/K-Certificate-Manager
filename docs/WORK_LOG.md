@@ -17,6 +17,22 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 156] 드라이브 카드 시각적 시인성 극대화를 위한 무한 유동 애니메이션 테두리(Animated Moving Border Glow) 구현
+- **작업 일시**: 2026-11-09 13:40 KST
+- **요청 사항**:
+  - "드라이버를 표시하는 카드 주위에 사용자 인식율을 높이기 위해서 테두리에 움직이는 에니메이션을 추가 하는것이 어떤가요"
+- **구현 내용**:
+  1. **하드웨어 가속 기반 CSS 무한 이동 그라데이션 키프레임 애니메이션 설계 (`src/index.css`)**:
+     - `@keyframes borderMoveGlow`: 0% ➔ 50% ➔ 100% 무한 순환 그라데이션 트랜지션 CSS 애니메이션 개발.
+     - `.animated-drive-card` & `.animated-drive-card-subtle`: `::before` 의사 요소를 활용한 `linear-gradient` (300% 300% 스케일) 부드러운 하드웨어 가속 글로우 링 스타일 클래스 구축.
+  2. **드라이브 카드 컴포넌트별 적용 (`ConnectedDrivesBar.tsx`, `TargetDrivePickerModal.tsx`, `QuickTransferConfigCard.tsx`, `UsbDetectedBanner.tsx`)**:
+     - **물리 드라이브 바 (`ConnectedDrivesBar.tsx`)**: 선택/활성화된 카드 주변에 `animated-drive-card-subtle` 테두리 애니메이션을 부여하여 현재 작업 디스크 직관 파악 가능.
+     - **목적지 디스크 선택창 (`TargetDrivePickerModal.tsx`)**: 선택한 목적지 USB/PC 드라이브 카드에 `animated-drive-card` 움직이는 무지개 테두리 글로우를 적용하여 자가 복사/타 드라이브 구분을 한눈에 인지하도록 강화.
+     - **퀵 작업 설정 카드 (`QuickTransferConfigCard.tsx`)**: 선택된 USB 카드에 동적 무한 그라데이션 테두리 링 부여.
+     - **USB 자동 감지 배너 (`UsbDetectedBanner.tsx`)**: 새로 꽂힌 USB 감지 팝업 전체에 `animated-drive-card` 글로우를 부여하여 시선 집중 유도.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 통과 (0 errors). GPU 60fps 무부하 렌더링 확인.
+
 ### 📝 [작업 차수 155] 복원된 항목 및 보관소 인증서 비밀번호 기반 AES-256 Encrypted ZIP 압축 보관 엔진 구현
 - **작업 일시**: 2026-11-09 13:10 KST
 - **요청 사항**:

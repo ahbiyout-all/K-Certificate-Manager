@@ -21,7 +21,7 @@ export const UsbDetectedBanner: React.FC<UsbDetectedBannerProps> = ({
   const usbLetters = Array.from(new Set(detectedCerts.map(c => c.usbDriveLetter))).join(', ');
 
   return (
-    <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white p-3.5 sm:p-4 rounded-2xl shadow-md border border-emerald-500/40 relative overflow-hidden animate-fadeIn">
+    <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white p-3.5 sm:p-4 rounded-2xl shadow-md border border-emerald-500/40 relative overflow-hidden animate-fadeIn animated-drive-card">
       {/* Background soft glow */}
       <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
 

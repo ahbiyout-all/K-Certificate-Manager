@@ -636,3 +636,55 @@ button:active {
 [data-tooltip]:hover::after {
   opacity: 1;
 }
+
+/* ==========================================================================
+   ANIMATED MOVING GRADIENT BORDER FOR DRIVE CARDS & TARGET SELECTION
+   Boosts visual affordance & immediate drive recognition rate
+   ========================================================================== */
+@keyframes borderMoveGlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animated-drive-card {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.animated-drive-card::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #3b82f6, #10b981, #6366f1, #06b6d4, #f59e0b, #3b82f6);
+  background-size: 300% 300%;
+  animation: borderMoveGlow 3.5s linear infinite;
+  z-index: -1;
+  opacity: 0.95;
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.4);
+}
+
+.animated-drive-card-subtle {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.animated-drive-card-subtle::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #2563eb, #059669, #4f46e5, #0891b2, #2563eb);
+  background-size: 300% 300%;
+  animation: borderMoveGlow 4s ease infinite;
+  z-index: -1;
+  opacity: 0.85;
+}
+

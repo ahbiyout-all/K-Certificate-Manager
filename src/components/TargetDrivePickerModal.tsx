@@ -165,7 +165,7 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
                     isSelected
                       ? isDriveSelfCopy
                         ? 'border-rose-500 bg-rose-50/70 dark:bg-rose-950/40 ring-2 ring-rose-500/30 shadow-md'
-                        : style.cardSelectedClass
+                        : `${style.cardSelectedClass} animated-drive-card`
                       : isDriveSelfCopy
                         ? 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 hover:border-rose-300'
                         : `${style.cardNormalClass} shadow-2xs`
