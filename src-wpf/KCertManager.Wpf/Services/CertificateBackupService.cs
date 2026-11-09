@@ -175,9 +175,11 @@ namespace KCertManager.Wpf.Services
         {
             var rawItems = _trashManager.GetItems();
             var list = new List<TrashItem>();
+            if (rawItems == null) return list;
 
             foreach (var r in rawItems)
             {
+                if (r == null) continue;
                 CertCategory cat = CertCategory.NPKI;
                 if (!string.IsNullOrEmpty(r.Category) && Enum.TryParse<CertCategory>(r.Category, out var parsedCat))
                 {
@@ -186,11 +188,11 @@ namespace KCertManager.Wpf.Services
 
                 list.Add(new TrashItem
                 {
-                    Id = r.Id,
-                    DeletedAt = r.DeletedAtUtc.ToLocalTime(),
-                    CertCommonName = r.CertCommonName,
-                    OriginalDirectoryPath = r.OriginalDirectoryPath,
-                    TrashDirectoryPath = r.QuarantinedFolderPath,
+                    Id = r.Id ?? Guid.NewGuid().ToString("N"),
+                    DeletedAt = r.DeletedAtUtc != default ? r.DeletedAtUtc.ToLocalTime() : DateTime.Now,
+                    CertCommonName = !string.IsNullOrEmpty(r.CertCommonName) ? r.CertCommonName : "알 수 없음",
+                    OriginalDirectoryPath = r.OriginalDirectoryPath ?? string.Empty,
+                    TrashDirectoryPath = r.QuarantinedFolderPath ?? string.Empty,
                     IssuerName = !string.IsNullOrEmpty(r.IssuerName) ? r.IssuerName : "알 수 없음",
                     Category = cat,
                     NotAfter = r.NotAfter != default ? r.NotAfter : DateTime.Now.AddYears(1)
@@ -204,9 +206,11 @@ namespace KCertManager.Wpf.Services
         {
             var rawItems = _trashManager.GetRestoredItems();
             var list = new List<RestoredTrashItem>();
+            if (rawItems == null) return list;
 
             foreach (var r in rawItems)
             {
+                if (r == null) continue;
                 CertCategory cat = CertCategory.NPKI;
                 if (!string.IsNullOrEmpty(r.Category) && Enum.TryParse<CertCategory>(r.Category, out var parsedCat))
                 {
@@ -215,10 +219,10 @@ namespace KCertManager.Wpf.Services
 
                 list.Add(new RestoredTrashItem
                 {
-                    Id = r.Id,
-                    RestoredAt = r.RestoredAtUtc.ToLocalTime(),
-                    CertCommonName = r.CertCommonName,
-                    OriginalDirectoryPath = r.OriginalDirectoryPath,
+                    Id = r.Id ?? Guid.NewGuid().ToString("N"),
+                    RestoredAt = r.RestoredAtUtc != default ? r.RestoredAtUtc.ToLocalTime() : DateTime.Now,
+                    CertCommonName = !string.IsNullOrEmpty(r.CertCommonName) ? r.CertCommonName : "알 수 없음",
+                    OriginalDirectoryPath = r.OriginalDirectoryPath ?? string.Empty,
                     IssuerName = !string.IsNullOrEmpty(r.IssuerName) ? r.IssuerName : "알 수 없음",
                     Category = cat,
                     NotAfter = r.NotAfter != default ? r.NotAfter : DateTime.Now.AddYears(1),

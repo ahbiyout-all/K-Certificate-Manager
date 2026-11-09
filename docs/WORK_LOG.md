@@ -17,6 +17,27 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 152] 만료 인증서 정리 삭제 후 휴지통 열기 시 NullReferenceException 예외 전면 차단 및 방어 코드 구축
+- **작업 일시**: 2026-11-09 11:55 KST
+- **요청 사항**:
+  - "만료 인증서 정리로 삭제 후 휴지통 클릭시 발생 (NullReferenceException: Object reference not set to an instance of an object)"
+- **원인 분석**:
+  1. 만료 인증서 정리(`ExpiredCleanupDialog`)로 인증서를 휴지통으로 이동시킨 직후, 휴지통 팝업(`TrashDialog`)을 열 때 `LoadTrashItems()`, `LoadRestoredItems()`, `ApplyRestoredFilter()` 과정에서 격리/복원 항목 매니페스트(`trash_manifest.json`, `protected_restored_manifest.dat`) 내 미지정 널 필드(`CertCommonName`, `OriginalDirectoryPath`, `QuarantinedFolderPath` 등) 또는 널 원소 참조 시 `NullReferenceException`이 발생하던 결함.
+  2. `SafetyTrashManager.cs`의 `LoadIndexInternal`, `LoadRestoredIndexInternal`, `DecryptVaultBytes`에서 JSON 데시리얼라이즈 결과 및 바이너리 복호화 예외 발생 시 `null`을 반환하거나 체크 없이 반복문이 실행되던 취약점.
+- **조치 내역**:
+  1. **`SafetyTrashManager.cs` 널 방어 강화**:
+     - `LoadIndexInternal` 및 `LoadRestoredIndexInternal`에서 데시리얼라이즈 결과를 `.Where(x => x != null)`로 필터링하여 널 원소 제거.
+     - `DecryptVaultBytes` 바이너리 복호화 시 예외 발생 시 `Array.Empty<byte>()`를 안전 반환하도록 예외 처리.
+  2. **`CertificateBackupService.cs` 널 결합 병합**:
+     - `GetTrashItems()` 및 `GetRestoredTrashItems()` 내에서 `rawItems` 널 체크 및 `r == null` 가드 조건문 추가.
+     - `CertCommonName`, `OriginalDirectoryPath`, `TrashDirectoryPath`, `IssuerName` 속성에 `?? "알 수 없음"` / `?? string.Empty` 널 병합 가드 적용.
+  3. **`TrashDialog.xaml.cs` 및 `MainViewModel.cs` UI 바인딩 가드 연동**:
+     - `TrashDialog()` 생성자 내부 매니페스트 로딩 전체를 `try-catch`로 격리.
+     - `LoadTrashItems()`, `ApplyRestoredFilter()`, `UpdateVaultDiagnosticsText()`, `UpdateFooterCount()`, `UpdateSelectedState()` 내 원소 및 UI 컨트롤 널 포인터 가드 적용.
+     - `MainWindow.xaml.cs`의 `OpenTrash_Click` 호출부 및 `MainViewModel.cs`의 `RefreshTrash()` 메서드 널 방어 강화.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 0건 에러 무결점 성공.
+
 ### 📝 [작업 차수 151] 인증서 복사 성공 시 대상 USB 폴더 탐색기 자동 열기 토글 옵션 구현 (Web & WPF)
 - **작업 일시**: 2026-11-09 10:15 KST
 - **요청 사항**:

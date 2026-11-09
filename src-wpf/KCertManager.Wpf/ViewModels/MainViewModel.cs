@@ -1425,11 +1425,21 @@ namespace KCertManager.Wpf.ViewModels
         public void RefreshTrash()
         {
             var raw = _backupService.GetTrashItems();
-            for (int i = 0; i < raw.Count; i++)
+            if (raw != null)
             {
-                raw[i].IndexNumber = i + 1;
+                for (int i = 0; i < raw.Count; i++)
+                {
+                    if (raw[i] != null)
+                    {
+                        raw[i].IndexNumber = i + 1;
+                    }
+                }
+                TrashItems = new ObservableCollection<TrashItem>(raw.Where(x => x != null));
             }
-            TrashItems = new ObservableCollection<TrashItem>(raw);
+            else
+            {
+                TrashItems = new ObservableCollection<TrashItem>();
+            }
             OnPropertyChanged(nameof(TrashCount));
         }
 

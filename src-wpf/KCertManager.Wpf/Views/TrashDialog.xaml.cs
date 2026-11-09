@@ -23,50 +23,64 @@ namespace KCertManager.Wpf.Views
         public TrashDialog()
         {
             InitializeComponent();
-            LoadTrashItems();
-            LoadRestoredItems();
+            try
+            {
+                LoadTrashItems();
+                LoadRestoredItems();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TrashDialog Init Error] {ex.Message}");
+            }
         }
 
         private void LoadTrashItems()
         {
             _items.Clear();
             var raw = _trashManager.GetItems();
-            foreach (var r in raw)
+            if (raw != null)
             {
-                CertCategory cat = CertCategory.NPKI;
-                if (!string.IsNullOrEmpty(r.Category) && Enum.TryParse<CertCategory>(r.Category, out var parsedCat))
+                foreach (var r in raw)
                 {
-                    cat = parsedCat;
-                }
+                    if (r == null) continue;
+                    CertCategory cat = CertCategory.NPKI;
+                    if (!string.IsNullOrEmpty(r.Category) && Enum.TryParse<CertCategory>(r.Category, out var parsedCat))
+                    {
+                        cat = parsedCat;
+                    }
 
-                _items.Add(new TrashItem
-                {
-                    Id = r.Id,
-                    DeletedAt = r.DeletedAtUtc.ToLocalTime(),
-                    CertCommonName = r.CertCommonName,
-                    OriginalDirectoryPath = r.OriginalDirectoryPath,
-                    TrashDirectoryPath = r.QuarantinedFolderPath,
-                    IssuerName = !string.IsNullOrEmpty(r.IssuerName) ? r.IssuerName : "알 수 없음",
-                    Category = cat,
-                    NotAfter = r.NotAfter != default ? r.NotAfter : DateTime.Now.AddYears(1),
-                    IsSelected = false
-                });
+                    _items.Add(new TrashItem
+                    {
+                        Id = r.Id ?? Guid.NewGuid().ToString("N"),
+                        DeletedAt = r.DeletedAtUtc != default ? r.DeletedAtUtc.ToLocalTime() : DateTime.Now,
+                        CertCommonName = !string.IsNullOrEmpty(r.CertCommonName) ? r.CertCommonName : "알 수 없음",
+                        OriginalDirectoryPath = r.OriginalDirectoryPath ?? string.Empty,
+                        TrashDirectoryPath = r.QuarantinedFolderPath ?? string.Empty,
+                        IssuerName = !string.IsNullOrEmpty(r.IssuerName) ? r.IssuerName : "알 수 없음",
+                        Category = cat,
+                        NotAfter = r.NotAfter != default ? r.NotAfter : DateTime.Now.AddYears(1),
+                        IsSelected = false
+                    });
+                }
             }
 
             for (int i = 0; i < _items.Count; i++)
             {
-                _items[i].IndexNumber = i + 1;
+                if (_items[i] != null)
+                {
+                    _items[i].IndexNumber = i + 1;
+                }
             }
 
-            GridTrash.ItemsSource = _items;
-            BtnTabDeleted.Content = $"🗑️ 삭제된 항목 (격리 보관 중 {_items.Count}건)";
+            if (GridTrash != null) GridTrash.ItemsSource = _items;
+            if (BtnTabDeleted != null) BtnTabDeleted.Content = $"🗑️ 삭제된 항목 (격리 보관 중 {_items.Count}건)";
             UpdateFooterCount();
             UpdateSelectedState();
         }
 
         private void LoadRestoredItems()
         {
-            _rawRestoredList = _backupService.GetRestoredTrashItems();
+            _rawRestoredList = _backupService.GetRestoredTrashItems() ?? new List<RestoredTrashItem>();
             ApplyRestoredFilter();
             UpdateVaultDiagnosticsText();
         }
@@ -74,10 +88,12 @@ namespace KCertManager.Wpf.Views
         private void ApplyRestoredFilter()
         {
             _restoredItems.Clear();
+            if (_rawRestoredList == null) _rawRestoredList = new List<RestoredTrashItem>();
+
             string search = TxtSearchRestored?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
             int catIdx = CmbRestoredCategory?.SelectedIndex ?? 0;
 
-            var filtered = _rawRestoredList.AsEnumerable();
+            var filtered = _rawRestoredList.Where(x => x != null).AsEnumerable();
 
             if (!string.IsNullOrEmpty(search))
             {
@@ -104,12 +120,15 @@ namespace KCertManager.Wpf.Views
             var list = filtered.ToList();
             for (int i = 0; i < list.Count; i++)
             {
-                list[i].IndexNumber = i + 1;
-                _restoredItems.Add(list[i]);
+                if (list[i] != null)
+                {
+                    list[i].IndexNumber = i + 1;
+                    _restoredItems.Add(list[i]);
+                }
             }
 
-            ListRestoredCards.ItemsSource = _restoredItems;
-            BtnTabRestored.Content = $"🔄 복원된 항목 (보관소 {_rawRestoredList.Count}건)";
+            if (ListRestoredCards != null) ListRestoredCards.ItemsSource = _restoredItems;
+            if (BtnTabRestored != null) BtnTabRestored.Content = $"🔄 복원된 항목 (보관소 {_rawRestoredList.Count}건)";
             UpdateFooterCount();
         }
 
@@ -120,10 +139,14 @@ namespace KCertManager.Wpf.Views
                 if (TxtVaultDiagnostics != null)
                 {
                     var status = _backupService.GetVaultSecurityStatus();
-                    string hashSample = status.Sha256Checksum.Length >= 16 
-                        ? status.Sha256Checksum.Substring(0, 16) + "..." 
-                        : status.Sha256Checksum;
-                    TxtVaultDiagnostics.Text = $"매니페스트: protected_restored_manifest.dat ({status.FileSizeBytes} 바이트) | SHA-256: {hashSample} | {status.DiagnosticMessage}";
+                    if (status != null)
+                    {
+                        string checksum = status.Sha256Checksum ?? string.Empty;
+                        string hashSample = checksum.Length >= 16 
+                            ? checksum.Substring(0, 16) + "..." 
+                            : checksum;
+                        TxtVaultDiagnostics.Text = $"매니페스트: protected_restored_manifest.dat ({status.FileSizeBytes} 바이트) | SHA-256: {hashSample} | {status.DiagnosticMessage}";
+                    }
                 }
             }
             catch { }

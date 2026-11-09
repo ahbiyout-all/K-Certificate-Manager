@@ -490,14 +490,21 @@ namespace KCertManager.Wpf.Views
 
         private void OpenTrash_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new TrashDialog
+            try
             {
-                Owner = this
-            };
-            if (dialog.ShowDialog() == true)
+                var dialog = new TrashDialog
+                {
+                    Owner = this
+                };
+                if (dialog.ShowDialog() == true)
+                {
+                    _ = ViewModel?.RefreshCertificatesAsync();
+                    ViewModel?.RefreshTrash();
+                }
+            }
+            catch (Exception ex)
             {
-                _ = ViewModel?.RefreshCertificatesAsync();
-                ViewModel?.RefreshTrash();
+                UserFriendlyMessageHelper.ShowError(ex, "휴지통 대화상자 열기");
             }
         }
 

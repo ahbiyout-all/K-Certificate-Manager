@@ -475,7 +475,9 @@ namespace KCert.Core.Vault
             {
                 if (!File.Exists(_indexFile)) return new List<TrashQuarantineItem>();
                 string json = File.ReadAllText(_indexFile);
-                return JsonSerializer.Deserialize<List<TrashQuarantineItem>>(json) ?? new List<TrashQuarantineItem>();
+                if (string.IsNullOrWhiteSpace(json)) return new List<TrashQuarantineItem>();
+                var items = JsonSerializer.Deserialize<List<TrashQuarantineItem>>(json);
+                return items?.Where(x => x != null).ToList() ?? new List<TrashQuarantineItem>();
             }
             catch
             {
@@ -487,7 +489,7 @@ namespace KCert.Core.Vault
         {
             try
             {
-                string json = JsonSerializer.Serialize(items, new JsonSerializerOptions { WriteIndented = true });
+                string json = JsonSerializer.Serialize(items ?? new List<TrashQuarantineItem>(), new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(_indexFile, json);
             }
             catch { }
@@ -501,31 +503,37 @@ namespace KCert.Core.Vault
                 if (File.Exists(_restoredIndexFile))
                 {
                     byte[] raw = File.ReadAllBytes(_restoredIndexFile);
-                    if (raw.Length == 0) return new List<RestoredQuarantineItem>();
+                    if (raw == null || raw.Length == 0) return new List<RestoredQuarantineItem>();
 
                     // 평문 JSON인 경우 (하위 호환성)
                     if (raw[0] == 0x5B || raw[0] == 0x7B)
                     {
                         string unencryptedJson = Encoding.UTF8.GetString(raw);
-                        return JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(unencryptedJson) ?? new List<RestoredQuarantineItem>();
+                        var unencryptedList = JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(unencryptedJson);
+                        return unencryptedList?.Where(x => x != null).ToList() ?? new List<RestoredQuarantineItem>();
                     }
 
                     // 암호화 바이너리 복호화 (Windows DPAPI / AES-256)
                     byte[] decrypted = DecryptVaultBytes(raw);
+                    if (decrypted == null || decrypted.Length == 0) return new List<RestoredQuarantineItem>();
                     string json = Encoding.UTF8.GetString(decrypted);
-                    return JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(json) ?? new List<RestoredQuarantineItem>();
+                    var decryptedList = JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(json);
+                    return decryptedList?.Where(x => x != null).ToList() ?? new List<RestoredQuarantineItem>();
                 }
 
                 // 2. 레거시 평문 파일 마이그레이션
                 if (File.Exists(_legacyRestoredIndexFile))
                 {
                     string json = File.ReadAllText(_legacyRestoredIndexFile);
-                    var list = JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(json) ?? new List<RestoredQuarantineItem>();
-                    if (list.Count > 0)
+                    if (!string.IsNullOrWhiteSpace(json))
                     {
-                        SaveRestoredIndexInternal(list);
+                        var list = JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(json)?.Where(x => x != null).ToList() ?? new List<RestoredQuarantineItem>();
+                        if (list.Count > 0)
+                        {
+                            SaveRestoredIndexInternal(list);
+                        }
+                        return list;
                     }
-                    return list;
                 }
 
                 return new List<RestoredQuarantineItem>();
@@ -545,7 +553,7 @@ namespace KCert.Core.Vault
                     Directory.CreateDirectory(_restoredVaultRoot);
                 }
 
-                string json = JsonSerializer.Serialize(items, new JsonSerializerOptions { WriteIndented = true });
+                string json = JsonSerializer.Serialize(items ?? new List<RestoredQuarantineItem>(), new JsonSerializerOptions { WriteIndented = true });
                 byte[] plainBytes = Encoding.UTF8.GetBytes(json);
                 byte[] encryptedBytes = EncryptVaultBytes(plainBytes);
 
@@ -564,6 +572,8 @@ namespace KCert.Core.Vault
         {
             try
             {
+                if (plainBytes == null || plainBytes.Length == 0) return Array.Empty<byte>();
+
                 if (OperatingSystem.IsWindows())
                 {
                     return ProtectedData.Protect(
@@ -572,20 +582,27 @@ namespace KCert.Core.Vault
             }
             catch { }
 
-            // Standard AES-256 fallback with header magic tag [0x41, 0x45, 0x53, 0x01] ("AES\x01")
-            using var aes = Aes.Create();
-            aes.Key = SHA256.HashData(RestoredVaultEntropy);
-            aes.GenerateIV();
-            using var encryptor = aes.CreateEncryptor();
-            byte[] cipher = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
-            byte[] combined = new byte[4 + aes.IV.Length + cipher.Length];
-            combined[0] = 0x41; // 'A'
-            combined[1] = 0x45; // 'E'
-            combined[2] = 0x53; // 'S'
-            combined[3] = 0x01; // Version 1
-            Buffer.BlockCopy(aes.IV, 0, combined, 4, aes.IV.Length);
-            Buffer.BlockCopy(cipher, 0, combined, 4 + aes.IV.Length, cipher.Length);
-            return combined;
+            try
+            {
+                // Standard AES-256 fallback with header magic tag [0x41, 0x45, 0x53, 0x01] ("AES\x01")
+                using var aes = Aes.Create();
+                aes.Key = SHA256.HashData(RestoredVaultEntropy);
+                aes.GenerateIV();
+                using var encryptor = aes.CreateEncryptor();
+                byte[] cipher = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
+                byte[] combined = new byte[4 + aes.IV.Length + cipher.Length];
+                combined[0] = 0x41; // 'A'
+                combined[1] = 0x45; // 'E'
+                combined[2] = 0x53; // 'S'
+                combined[3] = 0x01; // Version 1
+                Buffer.BlockCopy(aes.IV, 0, combined, 4, aes.IV.Length);
+                Buffer.BlockCopy(cipher, 0, combined, 4 + aes.IV.Length, cipher.Length);
+                return combined;
+            }
+            catch
+            {
+                return Array.Empty<byte>();
+            }
         }
 
         private static byte[] DecryptVaultBytes(byte[] cipherBytes)
@@ -608,15 +625,23 @@ namespace KCert.Core.Vault
                 catch { }
             }
 
-            // Standard AES-256 fallback
-            using var aes = Aes.Create();
-            aes.Key = SHA256.HashData(RestoredVaultEntropy);
-            int offset = isAesHeader ? 4 : 0;
-            byte[] iv = new byte[16];
-            Buffer.BlockCopy(cipherBytes, offset, iv, 0, 16);
-            aes.IV = iv;
-            using var decryptor = aes.CreateDecryptor();
-            return decryptor.TransformFinalBlock(cipherBytes, offset + 16, cipherBytes.Length - offset - 16);
+            try
+            {
+                // Standard AES-256 fallback
+                using var aes = Aes.Create();
+                aes.Key = SHA256.HashData(RestoredVaultEntropy);
+                int offset = isAesHeader ? 4 : 0;
+                if (cipherBytes.Length < offset + 16) return Array.Empty<byte>();
+                byte[] iv = new byte[16];
+                Buffer.BlockCopy(cipherBytes, offset, iv, 0, 16);
+                aes.IV = iv;
+                using var decryptor = aes.CreateDecryptor();
+                return decryptor.TransformFinalBlock(cipherBytes, offset + 16, cipherBytes.Length - offset - 16);
+            }
+            catch
+            {
+                return Array.Empty<byte>();
+            }
         }
     }
 }
