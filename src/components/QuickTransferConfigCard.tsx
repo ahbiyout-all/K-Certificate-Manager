@@ -111,7 +111,7 @@ export const QuickTransferConfigCard: React.FC<QuickTransferConfigCardProps> = (
             </div>
             <div className="space-y-1.5 max-h-40 overflow-y-auto scrollbar-thin">
               {removableDrivesWithStats.filter(d => !onlyWithCertsFilter || d.certCount > 0).map(item => (
-                <div key={item.drive.id} onClick={() => setSelectedUsbLetter(item.letterClean)} className={`p-2 rounded-lg border cursor-pointer flex items-center justify-between transition-all ${activeUsbDriveInfo?.letterClean === item.letterClean ? 'bg-amber-50 border-amber-500 animated-drive-card-subtle' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
+                <div key={item.drive.id} onClick={() => setSelectedUsbLetter(item.letterClean)} className={`p-2 rounded-lg cursor-pointer flex items-center justify-between transition-all ${activeUsbDriveInfo?.letterClean === item.letterClean ? 'animated-drive-card-subtle shadow-xs' : 'bg-white border border-slate-200 hover:bg-slate-50'}`}>
                   <div className="flex items-center gap-2 min-w-0">
                     <span className={`text-[10px] font-mono font-bold px-1 rounded border ${item.certCount > 0 ? 'bg-amber-100 border-amber-200 text-amber-900' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>{item.drive.letter}</span>
                     <span className="text-[11px] font-bold text-slate-800 truncate">{item.drive.name.split('(')[0]}</span>

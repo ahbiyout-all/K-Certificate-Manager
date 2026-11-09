@@ -458,12 +458,33 @@ namespace KCertManager.Wpf.Views
                 string subFolder = item.Category.ToString().StartsWith("GPKI") ? "GPKI" : item.Category.ToString().StartsWith("EPKI") ? "EPKI" : "NPKI";
                 string destDir = System.IO.Path.Combine(usbDrive.Name, subFolder, item.CertCommonName);
 
-                if (!System.IO.Directory.Exists(item.OriginalDirectoryPath))
+                string sourceToCopy = item.OriginalDirectoryPath;
+                string? tempDirToDelete = null;
+
+                if (!System.IO.Directory.Exists(sourceToCopy))
+                {
+                    // 원본 폴더가 미존재하더라도 보관소의 AES-256 암호화 금고 파일(.zip.dat)로부터 즉각 복원 시도
+                    string zipPath = item.EncryptedZipPath;
+                    if (System.IO.File.Exists(zipPath))
+                    {
+                        string trashId = !string.IsNullOrEmpty(item.TrashId) ? item.TrashId : item.Id;
+                        string pass = "KCert_Protected_Vault_Pass_2026_" + trashId;
+                        string tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "KCert_UsbRecover_" + Guid.NewGuid().ToString("N"));
+                        var unpack = CertVaultPacker.Unpack(zipPath, pass, tempDir);
+                        if (unpack.IsSuccess && System.IO.Directory.Exists(tempDir))
+                        {
+                            sourceToCopy = tempDir;
+                            tempDirToDelete = tempDir;
+                        }
+                    }
+                }
+
+                if (!System.IO.Directory.Exists(sourceToCopy))
                 {
                     UserFriendlyMessageHelper.ShowErrorText(
-                        $"복원 대상 인증서 폴더를 찾을 수 없습니다.\n({item.OriginalDirectoryPath})",
+                        $"복원 대상 인증서 폴더 또는 금고 파일을 찾을 수 없습니다.\n({item.OriginalDirectoryPath})",
                         "복구 오류",
-                        "• 원래 복원되었던 로컬 경로에 인증서 폴더가 존재하는지 확인해 주세요.",
+                        "• 원래 복원 경로에 인증서가 존재하거나 특수 암호화 금고(.zip.dat)가 유지되어 있어야 복구할 수 있습니다.",
                         this);
                     return;
                 }
@@ -471,7 +492,12 @@ namespace KCertManager.Wpf.Views
                 try
                 {
                     string safeRel = CertTransferEngine.ResolveRelativePath(item.OriginalDirectoryPath);
-                    var transferResult = CertTransferEngine.Transfer(item.OriginalDirectoryPath, usbDrive.Name, safeRel);
+                    if (string.IsNullOrWhiteSpace(safeRel) || string.Equals(safeRel, "NPKI", StringComparison.OrdinalIgnoreCase))
+                    {
+                        safeRel = System.IO.Path.Combine(subFolder, item.CertCommonName);
+                    }
+
+                    var transferResult = CertTransferEngine.Transfer(sourceToCopy, usbDrive.Name, safeRel);
                     if (!transferResult.IsSuccess)
                     {
                         UserFriendlyMessageHelper.ShowErrorText(
@@ -512,6 +538,13 @@ namespace KCertManager.Wpf.Views
                         "복구 오류",
                         "• USB 쓰기 금지 해제 여부를 확인해 주세요.\n• 관리자 권한으로 실행해 보세요.",
                         this);
+                }
+                finally
+                {
+                    if (!string.IsNullOrEmpty(tempDirToDelete) && System.IO.Directory.Exists(tempDirToDelete))
+                    {
+                        try { System.IO.Directory.Delete(tempDirToDelete, true); } catch { }
+                    }
                 }
             }
         }

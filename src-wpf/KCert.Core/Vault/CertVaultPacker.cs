@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -316,12 +317,19 @@ namespace KCert.Core.Vault
                             continue;
                         }
 
-                        // 안전한 파일명 및 상대 경로 보존
+                        // 안전한 파일명 및 상대 경로 보존 (Zip Slip 디렉터리 순회 공격 방어)
                         string entryFullName = entry.FullName.Replace('/', Path.DirectorySeparatorChar);
                         if (string.IsNullOrWhiteSpace(entryFullName) || entryFullName.EndsWith(Path.DirectorySeparatorChar.ToString()))
                             continue;
 
-                        string destinationPath = Path.Combine(targetDir, entryFullName);
+                        string destinationPath = Path.GetFullPath(Path.Combine(targetDir, entryFullName));
+                        string fullTargetDir = Path.GetFullPath(targetDir).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                        if (!destinationPath.StartsWith(fullTargetDir, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // 경로 조작(Zip Slip) 위험 엔트리 건너뜀
+                            continue;
+                        }
+
                         string? parentDir = Path.GetDirectoryName(destinationPath);
                         if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir))
                         {

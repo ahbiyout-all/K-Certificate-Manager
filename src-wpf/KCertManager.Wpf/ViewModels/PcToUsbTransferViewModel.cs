@@ -559,7 +559,7 @@ namespace KCertManager.Wpf.ViewModels
                 }).ToList();
 
                 string sourcePath = selected.FirstOrDefault()?.DirectoryPath ?? "내 컴퓨터 (NPKI/GPKI)";
-                string? firstDest = successfulDestinations.FirstOrDefault(d => !string.IsNullOrEmpty(d));
+                string firstDest = successfulDestinations.FirstOrDefault(d => !string.IsNullOrEmpty(d)) ?? string.Empty;
                 string targetPath = !string.IsNullOrEmpty(firstDest)
                     ? firstDest
                     : (selected.Any(c => c.Category == CertCategory.GPKI)

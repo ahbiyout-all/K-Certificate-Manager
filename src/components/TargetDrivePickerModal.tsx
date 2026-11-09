@@ -161,14 +161,14 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
                 <div
                   key={drive.id}
                   onClick={() => handleSelectDriveCard(drive)}
-                  className={`p-3.5 rounded-xl border-2 transition-all cursor-pointer relative flex items-center justify-between gap-3 active:scale-[0.99] ${
+                  className={`p-3.5 rounded-xl transition-all cursor-pointer relative flex items-center justify-between gap-3 active:scale-[0.99] ${
                     isSelected
                       ? isDriveSelfCopy
-                        ? 'border-rose-500 bg-rose-50/70 dark:bg-rose-950/40 ring-2 ring-rose-500/30 shadow-md'
-                        : `${style.cardSelectedClass} animated-drive-card`
+                        ? 'border-2 border-rose-500 bg-rose-50/70 dark:bg-rose-950/40 ring-2 ring-rose-500/30 shadow-md'
+                        : 'animated-drive-card shadow-lg'
                       : isDriveSelfCopy
-                        ? 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 hover:border-rose-300'
-                        : `${style.cardNormalClass} shadow-2xs`
+                        ? 'border-2 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 hover:border-rose-300'
+                        : `border-2 ${style.cardNormalClass} shadow-2xs`
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">

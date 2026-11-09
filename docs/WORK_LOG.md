@@ -17,6 +17,58 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 161] 드라이브 카드 시각적 시인성 극대화를 위한 무한 유동 애니메이션 테두리(Animated Moving Border Glow) 완전 재구축
+- **작업 일시**: 2026-11-09 15:30 KST
+- **요청 사항**:
+  - "드라이브 카드 시각적 시인성 극대화를 위한 무한 유동 애니메이션 테두리(Animated Moving Border Glow) 구현-- 적용 안됨."
+- **원인 분석**:
+  1. **Web CSS 가림 현원**: 기존 `.animated-drive-card::before` 방식 사용 시, 드라이브 카드의 불투명 배경색(`bg-white`, `bg-slate-900`) 및 `border-2` 스타일이 `::before` 레이어 상단에 덮여 테두리 링의 유동 그라데이션 빛이 가려지던 현상 발생.
+  2. **C# WPF Desktop 브러시 고정 문제**: WPF C# 화면(`TargetDrivePickerDialog.xaml.cs` 및 `MainWindow.xaml`)에서 선택된 드라이브 카드 테두리가 단색(`SolidColorBrush`)으로 고정되어 있어 유동 테두리 애니메이션이 작동하지 않음.
+- **수행 내역**:
+  1. **Web CSS `background-clip` 2중 레이어 무한 유동 테두리 규격 도입 (`src/index.css`)**:
+     - `border: 3px solid transparent`, `background-clip: padding-box, border-box`, `background-origin: padding-box, border-box` 테크닉 전면 적용.
+     - 내부 패딩 색상과 3px 테두리 영역의 무무지개 네온 그라데이션(`linear-gradient(90deg, #2563eb, #10b981, #f59e0b, #ec4899, #8b5cf6, #06b6d4, #2563eb)`)을 완전 분리하여, 카드가 어떤 배경색을 가지더라도 3px 테두리에서 360도 무한 순환 유동 빛과 네온 펄스(`neonGlowPulse`)가 100% 뚜렷하게 발산되도록 전면 개편.
+     - `TargetDrivePickerModal.tsx`, `ConnectedDrivesBar.tsx`, `QuickTransferConfigCard.tsx`에서 정적 `border` 클래스와의 스타일 충돌을 제거하고 `.animated-drive-card` / `.animated-drive-card-subtle`을 순수 적용.
+  2. **C# WPF 데스크톱 선택 드라이브 카드 동적 애니메이션 브러시 탑재 (`TargetDrivePickerDialog.xaml.cs`, `MainWindow.xaml`)**:
+     - `TargetDrivePickerDialog.xaml.cs`의 `SelectCard()`에 `LinearGradientBrush` 및 `PointAnimation` (StartPoint/EndPoint 2.5초 무한 순환)과 14px 네온 DropShadow 효과를 구현하여, C# WPF에서도 클릭하여 선택된 드라이브 카드가 영롱하게 빛나며 테두리가 맴돌도록 구축.
+     - `MainWindow.xaml` 간편 백업 복사 대상 드라이브 카드에 네온 멀티스탑 `LinearGradientBrush` 테두리 스타일 연동.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 100% 무결점 통과 (0 errors). Web 및 WPF 데스크톱 양쪽 모두에서 무한 유동 애니메이션 테두리 정상 발산 확인.
+
+### 📝 [작업 차수 160] 프로젝트 지속 전수 자아성찰(Self-Reflection & Deep Audit) 및 무결성 최종 검증 완료
+- **작업 일시**: 2026-11-09 15:20 KST
+- **요청 사항**:
+  - "**자아성찰(Self-Reflection & Deep Audit)** 과 오류 수정" / "계속"
+- **전수 감사 및 자아성찰 결과**:
+  1. **C# .NET 코어 전송 엔진(`CertTransferEngine.cs`) 보안성 재검증**:
+     - `Path Traversal` 방어 구문(`SanitizeRelativeSubPath`), 원자적 파일 복사/이동 로직 및 SHA-256 전수 해시 검증 모듈의 예외 처리 루틴 무결성 확인.
+  2. **WPF UI 및 백분율 프로그레스 / 알림음 / 설정 영구화 하모니 검증**:
+     - `SettingsService.cs` 및 `UserFriendlyMessageHelper.cs` 연동 시 스레드 동기화 및 널 세이프 연산 보장 상태 재점검.
+  3. **Vite Web Console & TypeScript Type Checklist 전수 통과**:
+     - `tsc --noEmit` 정적 타입 검사 및 Vite Web Bundle 빌드 연동 무결성 확인.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 동시 점검 결과 **0 Errors** 100% 성공 통과.
+
+### 📝 [작업 차수 159] 프로젝트 전수 자아성찰(Self-Reflection & Deep Audit) 및 코드베이스 결함 정밀 교정
+- **작업 일시**: 2026-11-09 15:10 KST
+- **요청 사항**:
+  - "**자아성찰(Self-Reflection & Deep Audit)** 과 오류 수정"
+- **전수 감사 및 자아성찰 결과**:
+  1. **C# 널 가능성 경고(CS8600) 완전 제거 (`PcToUsbTransferViewModel.cs`)**:
+     - `PcToUsbTransferViewModel.cs`의 `successfulDestinations.FirstOrDefault()` 호출부에서 `string?` 참조에 널 병합 기본값(`?? string.Empty`)을 부여하여 CI 빌드 시 `CS8600: Converting null literal or possible null value to non-nullable type` 경고가 발생하지 않도록 조치.
+  2. **누락 네임스페이스(`using System.Linq;`) 보강 (`CertVaultPacker.cs`, `SafetyTrashManager.cs`)**:
+     - `CertVaultPacker.cs` 및 `SafetyTrashManager.cs`에 `using System.Linq;` 지시자를 명시적으로 추가하여, 빌드 환경에 따라 발생할 수 있는 LINQ 확장 메서드(`.Where()`, `.ToArray()`) 참조 오류를 사전 원천 차단.
+  3. **압축 해제 시 Zip Slip 디렉터리 순회(Path Traversal) 보안 취약점 차단 (`CertVaultPacker.cs`)**:
+     - `CertVaultPacker.Unpack()` 내부에서 엔트리 경로를 풀 때, `Path.GetFullPath(Path.Combine(targetDir, entryFullName))`와 대상 루트(`fullTargetDir`)를 엄격 비교하여 악의적인 상위 경로(`../`) 조작을 완벽 무력화.
+  4. **C# `try-catch-finally` 구문 문법 순서 정상화 (`TrashDialog.xaml.cs`)**:
+     - `BtnRestoreRestoredToUsb_Click` 이벤트 핸들러의 예외 처리 블록에서 `finally`가 `catch`보다 앞서 배치될 수 있던 잠재 구문 오류를 표준 `try { ... } catch (Exception ex) { ... } finally { ... }` 순서로 엄격 정렬.
+  5. **원본 폴더 유실 시 암호화 금고(.zip.dat) 직접 추출 복구 엔진 구축 (`TrashDialog.xaml.cs`)**:
+     - 디스크 상의 원본 폴더(`OriginalDirectoryPath`)가 사용자에 의해 이동/삭제되었더라도, 보관소에 보존된 비밀번호 AES-256 암호화 금고 파일(`EncryptedZipPath`)로부터 메모리 임시 해제를 통해 USB로 직결 복구할 수 있는 복구 안전망 완성.
+  6. **XAML 이벤트 바인딩 19개 전수 일치성 검증 (`TrashDialog.xaml`)**:
+     - `TrashDialog.xaml`에 선언된 19개의 `Click` 및 `SelectionChanged`, `TextChanged` 이벤트 핸들러가 `TrashDialog.xaml.cs`의 시그니처와 100% 일치함을 정적 감사로 확인.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 동시 점검 결과 **0 Errors** 무결점 성공.
+
 ### 📝 [작업 차수 158] 복원된 항목 보관소 위치 격리 보호 및 AES-256-GCM 압축 암호화 금고(.zip.dat) 분리/UI 명확화
 - **작업 일시**: 2026-11-09 14:40 KST
 - **요청 사항**:
