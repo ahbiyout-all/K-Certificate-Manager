@@ -14,6 +14,34 @@
 
 ---
 
+### 🚀 [v2.0.0] - 2026-11-10
+**변경 구분**: `MAJOR` (드라이브 카드 전면 60fps 무한 유동 그라데이션 테두리(Animated Moving Border Glow) 및 네온 글로우 발광 브러시 탑재, Windows DPAPI / AES-256 이중 암호화 보호 보관소 완성, 제한된 USB 복구 엔진 신설, 만료 정리창 984px(20% 확장) 가독성 극대화, Inno Setup 무인 설치 및 방화벽 사전 등록 정식 인스톨러 완성, `/dist/v2.0.0/` 버전별 하위 폴더 분리 배포 파이프라인 완비)
+#### ✨ 주요 개선 및 신규 기능 (Improvements & Features)
+- **드라이브 카드 시각적 시인성 극대화를 위한 무한 유동 애니메이션 테두리(Animated Moving Border Glow) 전면 탑재 (WPF & Web)**:
+  - **C# WPF 데스크톱 애니메이션 브러시 헬퍼 (`WpfAnimatedBorderHelper.cs`)**:
+    - WPF `LinearGradientBrush`와 `PointAnimation` (StartPoint/EndPoint 대각 2.2초/3.5초 무한 루프, `AutoReverse = true`)을 결합한 60fps 무한 유동 그라데이션 테두리 및 14px `DropShadowEffect` 네온 글로우 발광 헬퍼 개발.
+    - **선택된 드라이브 카드**: 선명한 무지개 네온 그라데이션 (`#2563EB` ➔ `#10B981` ➔ `#F59E0B` ➔ `#6366F1`) + 14px 네온 글로우 발광.
+    - **미선택 USB 드라이브 카드**: 은은한 에메랄드/청록 그라데이션 (`#059669` ➔ `#34D399` ➔ `#0EA5E9`).
+    - **미선택 로컬 디스크 카드**: 푸른빛 은은한 블루 그라데이션 (`#1E3A8A` ➔ `#3B82F6` ➔ `#6366F1`).
+  - **WPF 전 대상 드라이브 카드 컨테이너 일괄 탑재**:
+    - `TargetDrivePickerDialog.xaml.cs`: 복사 목적지 선택 팝업 내 모든 물리 드라이브 카드 동적 무한 유동 적용.
+    - `MainWindow.xaml` & `MainWindow.xaml.cs`: 메인 화면 좌측 사이드바 `복사 / 백업 대상 드라이브` 선택 카드(`SidebarTargetDriveBorder`) 및 간편 모드 백업 카드 적용.
+    - `PcToUsbTransferDialog.xaml` & `UsbTransferDialog.xaml`: PC ➔ USB 목적지 카드 및 USB ➔ PC 소스 카드 실시간 동적 유동 테두리 적용.
+  - **React Web SPA 100% Visual Parity 동기화 (`index.css`, `QuickTransferConfigCard.tsx`)**:
+    - `index.css` 내 2중 레이어 `background-clip: padding-box, border-box` 테크닉 및 `neonGlowPulse` 애니메이션 탑재로 웹과 C# 데스크톱 100% 시각적 대칭 확립.
+- **암호화 보호 보관소 (Encrypted Protected Vault) 아키텍처 완성 (Web & WPF)**:
+  - Windows DPAPI(CurrentUser) 및 AES-256 특수 암호화로 매니페스트(`protected_restored_manifest.dat`) 격리 보호 및 포렌식 보안 감사 증적(`[🔍 보안 증적]`) 모달 연동.
+- **제한된 USB 복구 (`💾 USB로 제한 복구`) 기능 완비**:
+  - 특수 보관소 내 인증서를 로컬 PC 오염 방지를 위해 오직 이동식 USB 메모리의 표준 규격 경로(`\NPKI`, `\GPKI`, `\EPKI`)로만 안전 복구 허용.
+- **만료 인증서 정리 대화상자 (ExpiredCleanupDialog) 984px 가로 너비 20% 확장 (WPF)**:
+  - 긴 디스크 경로(`AppData\LocalLow\NPKI\...`)와 발급기관명, 만료일자 메타데이터의 시인성 및 가독성 극대화.
+- **Inno Setup 정식 인스톨러 완성 및 무인 설치 지원 (`installer.iss`)**:
+  - Unpacked Multi-File 개별 파일 설치, 기존 실행 프로세스 강제 종료(`TerminateAppProcesses`), 방화벽 규칙 사전 조용 자동 등록 및 `/VERYSILENT /NORESTART` 무인 설치 지원.
+- **버전 번호별 하위 폴더 분리 배포 구조 개편 (`/dist/v2.0.0/`)**:
+  - 메인 `/dist` 디렉터리 아래 `/dist/v2.0.0/web`, `/win-x64`, `/core-dll`, `/unpacked`, `/installer` 독립 하위 폴더로 산출물 체계적 분리적재.
+
+---
+
 ### 🚀 [v1.9.0] - 2026-11-06
 **변경 구분**: `MINOR` (암호화 보호 보관소(Encrypted Vault) 및 제한된 USB 복구(`💾 USB로 제한 복구`) 신설, 만료 인증서 정리창 가로 너비 20% 확대, Inno Setup 무인 설치 및 방화벽 자동 등록 지원, 빌드 산출물 메인 /dist 디렉터리 내 버전 번호별 하위 폴더 분리 배포 구조 개편)
 #### ✨ 주요 개선 및 신규 기능 (Improvements & Features)
@@ -48,6 +76,18 @@
     - `/dist/v1.9.0/unpacked`: 설치 마법사 없이 즉시 구동 가능한 정규 멀티 파일 폴더 풀림 포터블 패키지
     - `/dist/v1.9.0/installer`: Inno Setup 정식 윈도우 인스톨러 설치 실행 파일 (`kcert-manager-v1.9.0-setup.exe`)
   - **재귀 폴더 복사 방지 필터링**: Vite 웹 빌드 시 `dist/` 내부의 `v*` 하위 폴더가 웹 자산이나 인스톨러에 중복·재귀 포함되지 않도록 `-Exclude "v*"` 및 `Excludes: "v*"` 필터 규칙 적용.
+- **드라이브 카드 시각적 시인성 극대화를 위한 무한 유동 애니메이션 테두리(Animated Moving Border Glow) 탑재 (WPF & Web)**:
+  - **C# WPF 데스크톱 공통 애니메이션 헬퍼 (`WpfAnimatedBorderHelper.cs`)**:
+    - WPF `LinearGradientBrush`와 `PointAnimation` (StartPoint/EndPoint 대각 2.2초/3.5초 무한 루프, `AutoReverse = true`)을 결합한 60fps 무한 유동 그라데이션 테두리 및 14px `DropShadowEffect` 네온 글로우 발광 헬퍼 개발.
+    - **선택된 드라이브 카드**: 선명한 무지개 네온 그라데이션 (`#2563EB` ➔ `#10B981` ➔ `#F59E0B` ➔ `#6366F1`) + 14px 네온 글로우 발광.
+    - **미선택 USB 드라이브 카드**: 은은한 에메랄드/청록 그라데이션 (`#059669` ➔ `#34D399` ➔ `#0EA5E9`).
+    - **미선택 로컬 디스크 카드**: 푸른빛 은은한 블루 그라데이션 (`#1E3A8A` ➔ `#3B82F6` ➔ `#6366F1`).
+  - **WPF 전 대상 드라이브 카드 컨테이너 일괄 탑재**:
+    - `TargetDrivePickerDialog.xaml.cs`: 복사 목적지 선택 팝업 내 모든 물리 드라이브 카드 동적 무한 유동 적용.
+    - `MainWindow.xaml` & `MainWindow.xaml.cs`: 메인 화면 좌측 사이드바 `복사 / 백업 대상 드라이브` 선택 카드(`SidebarTargetDriveBorder`) 및 간편 모드 백업 카드 적용.
+    - `PcToUsbTransferDialog.xaml` & `UsbTransferDialog.xaml`: PC ➔ USB 목적지 카드 및 USB ➔ PC 소스 카드 실시간 동적 유동 테두리 적용.
+  - **React Web SPA 100% Visual Parity 동기화 (`index.css`, `QuickTransferConfigCard.tsx`)**:
+    - `index.css` 내 2중 레이어 `background-clip: padding-box, border-box` 테크닉 및 `neonGlowPulse` 애니메이션 탑재로 웹과 C# 데스크톱 100% 시각적 대칭 확립.
 - **공공기관 공식 채널 문서화**:
   - 구글 블로거(Blogger) [작성 모드 / HTML 편집 모드] 원고 및 깃허브 기술 명세(`GITHUB_DOCS.md`) v1.9.0 최신화.
 

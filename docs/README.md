@@ -7,7 +7,7 @@
 ## 📌 프로젝트 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v1.9.0` (Semantic Versioning: `1.9.0`)
+- **현재 버전**: `v2.0.0` (Semantic Versioning: `2.0.0`)
 - **개발자**: AhBiYout
 - **GitHub 저장소**: [https://github.com/AhBiYout-all](https://github.com/AhBiYout-all)
 - **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)

@@ -159,7 +159,19 @@
 
 ---
 
-## 11. 메타데이터 & 개발자
+## 11. 60fps 무한 유동 애니메이션 테두리(Animated Moving Border Glow) 아키텍처
+
+1. **WPF 데스크톱 애니메이션 브러시 엔진 (`WpfAnimatedBorderHelper.cs`)**:
+   - `LinearGradientBrush`의 `StartPointProperty` (0,0 ➔ 1,1) 및 `EndPointProperty` (1,1 ➔ 0,0)에 `PointAnimation` (2.2초/3.5초, `AutoReverse = true`, `RepeatBehavior.Forever`)을 바인딩하여 60fps 대각 무한 유동 애니메이션 구현.
+   - 드라이브 카드 선택 상태(`isSelected`) 및 매체 종류(`isRemovableUsb`)에 따라 무지개 네온(`Blue`➔`Emerald`➔`Amber`➔`Indigo`) 및 에메랄드/청록 그라데이션 및 14px `DropShadowEffect` 글로우 발광을 동적으로 적용.
+   - `TargetDrivePickerDialog`, `MainWindow` (사이드바 `SidebarTargetDriveBorder` 및 간편 백업 카드), `PcToUsbTransferDialog`, `UsbTransferDialog` 전 영역 탑재.
+2. **React Web SPA 2중 레이어 무한 유동 테두리 규격 (`src/index.css`)**:
+   - `border: 3px solid transparent`, `background-clip: padding-box, border-box`, `background-origin: padding-box, border-box` CSS 구조와 350% 크기의 `linear-gradient` (3초 loop) 및 `neonGlowPulse` 애니메이션을 결합.
+   - WPF C# 데스크톱과 Visual Parity 100% 대칭 확립.
+
+---
+
+## 12. 메타데이터 & 개발자
 - **개발자**: AhBiYout
 - **GitHub 저장소**: [https://github.com/AhBiYout-all](https://github.com/AhBiYout-all)
 - **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)

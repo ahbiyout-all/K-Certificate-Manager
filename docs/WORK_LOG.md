@@ -7,7 +7,7 @@
 ## 📌 프로젝트 기본 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v1.9.0` (Semantic Versioning 2.0.0 MINOR Release)
+- **현재 버전**: `v2.0.0` (Semantic Versioning 2.0.0 MAJOR Release)
 - **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
 - **구글 공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **공식 홈페이지**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr) ((주)청운정보시스템)
@@ -16,6 +16,20 @@
 ---
 
 ## 📅 작업 기록 상세 내역
+
+### 📝 [작업 차수 164] K-인증서 매니저 v2.0.0 MAJOR 정식 릴리스 버전 승격 및 전역 코드베이스/문서 일괄 동기화
+- **작업 일시**: 2026-11-10 13:10 KST
+- **요청 사항**:
+  - "릴리즈 버전업 해야 되지 않나요?"
+- **판정 및 승격 근거 (SemVer 2.0.0)**:
+  - 60fps 무한 유동 애니메이션 브러시 엔진(`WpfAnimatedBorderHelper.cs` & `index.css`), Windows DPAPI / AES-256 이중 암호화 보호 보관소 아키텍처 완성, 제한된 USB 복구 엔진(`💾 USB로 제한 복구`), 984px 광폭 정리창 및 Inno Setup 정식 무인 인스톨러 시스템 구축 완료에 따라, 메이저 마일스톤인 **`v2.0.0` (MAJOR Release)**으로 최종 승격 확정.
+- **전역 코드베이스 및 문서 동기화 내역**:
+  1. `src/version.ts`: `APP_VERSION = '2.0.0'`, `APP_RELEASE_DATE = '2026-11-10'` 갱신.
+  2. `package.json`: `"version": "2.0.0"` 갱신.
+  3. `docs/PATCHNOTES.md`: `### 🚀 [v2.0.0] - 2026-11-10` MAJOR 릴리스 항목 작성 및 변경 이력 최상단 탑재.
+  4. `docs/README.md`, `docs/ARCHITECTURE.md`, `docs/GITHUB_DOCS.md`, `docs/GITHUB_GUIDE.md`, `docs/BUILD_GUIDE.md`: 버전 표기를 `v2.0.0`으로 전면 동기화.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 동시 검증 0건 에러 통과. v2.0.0 정식 승격 완료.
 
 ### 📝 [작업 차수 161] 드라이브 카드 시각적 시인성 극대화를 위한 무한 유동 애니메이션 테두리(Animated Moving Border Glow) 완전 재구축
 - **작업 일시**: 2026-11-09 15:30 KST
