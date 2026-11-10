@@ -24,12 +24,12 @@
 * **`feature/*` / `bugfix/*`**: 신규 기능 구현 및 결함 수정을 위한 작업 브랜치.
 
 ### 2) 시맨틱 버저닝 (SemVer 2.0.0) 태깅
-* 태그 형식: `v{MAJOR}.{MINOR}.{PATCH}` (예: `v1.9.0`)
+* 태그 형식: `v{MAJOR}.{MINOR}.{PATCH}` (예: `v2.0.0`)
 * 태그 생성 시 GitHub Actions가 버전 문자열을 추출하여 Inno Setup 인스톨러 컴파일 및 GitHub Release 본문을 자동 생성합니다.
 * 동적 버전 판별 3단계 파이프라인:
-  1. **1차 기준**: Git Tag 문자열 (예: `v1.9.0` ➔ `1.9.0`)
+  1. **1차 기준**: Git Tag 문자열 (예: `v2.0.0` ➔ `2.0.0`)
   2. **2차 기준**: `package.json`의 `"version"` 필드
-  3. **3차 기준**: `docs/PATCHNOTES.md` 상단 최신 릴리스 헤더 (`### 🚀 [v1.9.0]`)
+  3. **3차 기준**: `docs/PATCHNOTES.md` 상단 최신 릴리스 헤더 (`### 🚀 [v2.0.0]`)
 
 ---
 
@@ -59,16 +59,16 @@
 * **트리거**: `v*` 태그 푸시, `main` 브랜치 푸시 또는 수동 실행(`workflow_dispatch`)
 * **러너 환경**: `windows-latest`
 * **주요 단계**:
-  1. **버전 자동 감지**: `package.json` 및 Git 참조에서 릴리스 버전(`1.9.0`) 추출
+  1. **버전 자동 감지**: `package.json` 및 Git 참조에서 릴리스 버전(`2.0.0`) 추출
   2. **런타임 환경 구성**: Node.js 24 런타임 및 .NET 10.0 / 8.0 SDK 설치
   3. **Web 콘솔 빌드**: `npm run build`를 통해 `dist/` 정적 번들 생성
   4. **C# WPF 데스크톱 컴파일**:
      * 순수 코어 라이브러리 `KCert.Core.dll` 및 암호화 라이브러리 `KCert.Crypto.dll` 빌드
-     * 정식 독립 실행형 데스크톱 앱 `KCertManager_v1.9.0.exe` (Self-Contained) 빌드
-     * 초경량 에디션 `KCertManager-Lite_v1.9.0.exe` (Framework-Dependent) 빌드
+     * 정식 독립 실행형 데스크톱 앱 `KCertManager_v2.0.0.exe` (Self-Contained) 빌드
+     * 초경량 에디션 `KCertManager-Lite_v2.0.0.exe` (Framework-Dependent) 빌드
   5. **Inno Setup 인스톨러 패키징**:
      * Inno Setup 6 자동 다운로드 및 ISCC 컴파일
-     * 폴더 풀림(Unpacked Multi-File) 레이아웃 설치 프로그램 `kcert-manager-v1.9.0-setup.exe` 생성
+     * 폴더 풀림(Unpacked Multi-File) 레이아웃 설치 프로그램 `kcert-manager-v2.0.0-setup.exe` 생성
      * Windows 방화벽 인바운드 규칙 사전 등록 및 무인 설치 스위치 검증
   6. **GitHub Release 자동 발행 (`softprops/action-gh-release@v2`)**:
      * 태그 기반 Release 생성 및 릴리스 노트 자동 등록
