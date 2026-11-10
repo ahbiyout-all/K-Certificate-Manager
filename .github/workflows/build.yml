@@ -130,7 +130,7 @@ jobs:
           }
 
           $ver = "${{ env.APP_VER }}"
-          $installerDir = "dist\v$ver\installer"
+          $installerDir = "dist/v$ver/installer"
           New-Item -ItemType Directory -Force -Path $installerDir | Out-Null
           Write-Host "Compiling Inno Setup installer for version $ver via $isccPath..."
           & $isccPath "/DMyAppVersion=$ver" installer.iss
@@ -139,17 +139,17 @@ jobs:
           }
 
           # Check and verify installer binary
-          $installerFiles = Get-ChildItem "$installerDir\*.exe" -ErrorAction SilentlyContinue
+          $installerFiles = Get-ChildItem "$installerDir/*.exe" -ErrorAction SilentlyContinue
           if (-not $installerFiles -or $installerFiles.Count -eq 0) {
-            $fallback = Get-ChildItem -Path "Output\*.exe", "dist\installer\*.exe" -ErrorAction SilentlyContinue
+            $fallback = Get-ChildItem -Path "Output/*.exe", "dist/installer/*.exe" -ErrorAction SilentlyContinue
             if ($fallback) {
-              Write-Host "Relocating installer from $($fallback[0].FullName) to $installerDir\"
-              Move-Item $fallback[0].FullName "$installerDir\" -Force
+              Write-Host "Relocating installer from $($fallback[0].FullName) to $installerDir"
+              Move-Item $fallback[0].FullName "$installerDir" -Force
             } else {
               throw "Error: No installer executable was found in $installerDir or fallback folders!"
             }
           }
-          Write-Host "Installer build verified successfully. Contents of $installerDir:"
+          Write-Host "Installer build verified successfully. Contents of installer directory:"
           Get-ChildItem $installerDir
 
       - name: Upload Installer Artifacts
