@@ -163,10 +163,15 @@ namespace KCertManager.Wpf.Views
                         {
                             Dispatcher.Invoke(() => UpdateDetailSidebarColumn(ViewModel.IsCertificateDetailSidebarVisible));
                         }
+                        else if (args.PropertyName == nameof(MainViewModel.SelectedTargetDrive))
+                        {
+                            Dispatcher.Invoke(() => UpdateSidebarTargetDriveBorder());
+                        }
                     };
 
                     // Initial state sync
                     UpdateDetailSidebarColumn(ViewModel.IsCertificateDetailSidebarVisible);
+                    UpdateSidebarTargetDriveBorder();
 
                     ViewModel.RequestOpenTargetDrivePicker += (targets) =>
                     {
@@ -177,6 +182,15 @@ namespace KCertManager.Wpf.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[HwndSource Hook Error] {ex.Message}");
+            }
+        }
+
+        private void UpdateSidebarTargetDriveBorder()
+        {
+            if (SidebarTargetDriveBorder != null && ViewModel != null)
+            {
+                bool isUsb = ViewModel.SelectedTargetDrive?.IsRemovable ?? true;
+                WpfAnimatedBorderHelper.ApplyAnimatedGradientBorder(SidebarTargetDriveBorder, isSelected: true, isRemovableUsb: isUsb);
             }
         }
 

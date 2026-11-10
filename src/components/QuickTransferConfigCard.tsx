@@ -150,7 +150,7 @@ export const QuickTransferConfigCard: React.FC<QuickTransferConfigCardProps> = (
               <button onClick={onOpenCustomDirectory} className="text-blue-600 font-medium">+ 폴더 선택</button>
             </div>
           </div>
-          <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+          <div className="bg-white p-3 rounded-xl animated-drive-card-subtle shadow-xs">
             <label className="text-[10px] font-bold text-slate-500 uppercase block mb-2">2. 대상 USB 드라이브</label>
             <div className="flex gap-2 mb-2">
               <select value={selectedDriveId} onChange={e => onSelectDriveId(e.target.value)} className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-medium cursor-pointer">

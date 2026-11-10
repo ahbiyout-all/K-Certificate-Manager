@@ -4,6 +4,7 @@
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:vm="clr-namespace:KCertManager.Wpf.ViewModels"
         xmlns:models="clr-namespace:KCertManager.Wpf.Models"
+        xmlns:services="clr-namespace:KCertManager.Wpf.Services"
         Title="K-인증서 매니저 (K-Certificate Manager)"
         Height="840" Width="1380"
         MinHeight="650" MinWidth="1100"
@@ -229,7 +230,7 @@
                     <!-- Bottom Info & Target Drive -->
                     <StackPanel DockPanel.Dock="Bottom" VerticalAlignment="Bottom" Margin="0,16,0,0">
                         <!-- Target USB / Disk Drive Selector -->
-                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,0,12">
+                        <Border x:Name="SidebarTargetDriveBorder" services:WpfAnimatedBorderHelper.IsAnimatedDriveCard="True" Background="{DynamicResource BgDarkBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,12">
                             <StackPanel>
                                 <TextBlock Text="복사 / 백업 대상 드라이브" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,0,6"/>
                                 <ComboBox ItemsSource="{Binding AvailableTargetDrives}" SelectedItem="{Binding SelectedTargetDrive}"

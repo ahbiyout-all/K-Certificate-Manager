@@ -164,6 +164,19 @@
 - **검증 결과**:
   - `compile_applet` & `lint_applet` 동시 검증 0건 에러 통과. 만료 정리 후 휴지통 대화상자 즉시 정상 오픈 확인.
 
+### 📝 [작업 차수 163] 메인 화면 사이드바 복사/백업 대상 드라이브 카드 동적 유동 애니메이션 테두리(Animated Moving Border Glow) 정밀 적용
+- **작업 일시**: 2026-11-09 19:00 KST
+- **요청 사항**:
+  - "애니메이션 테두리 생성 해주세요" (첨부 캡처 이미지: 메인 화면 왼쪽 사이드바 '복사 / 백업 대상 드라이브' 드롭다운 카드 지정)
+- **구현 내용**:
+  1. **C# WPF 데스크톱 메인 화면 사이드바 카드에 `WpfAnimatedBorderHelper` 탑재 (`MainWindow.xaml` & `MainWindow.xaml.cs`)**:
+     - `MainWindow.xaml` 232번 라인의 '복사 / 백업 대상 드라이브' 카드의 정적 `Border`를 `SidebarTargetDriveBorder` 및 `services:WpfAnimatedBorderHelper.IsAnimatedDriveCard="True"`로 전면 전환.
+     - `MainWindow.xaml.cs` 내 `MainViewModel.SelectedTargetDrive` 속성 변경 이벤트 구독 및 `UpdateSidebarTargetDriveBorder()` 연동. 선택된 대상 드라이브(USB vs 로컬 디스크)의 미선택/선택 유무에 따라 실시간 60fps 무한 유동 2.8px 네온 그라데이션 및 14px 글로우 발광 애니메이션 적용.
+  2. **React Web SPA `QuickTransferConfigCard.tsx` 100% Visual Parity 동기화**:
+     - `QuickTransferConfigCard.tsx` 내 '2. 대상 USB 드라이브' 카드 컨테이너에 `.animated-drive-card-subtle` 유동 그라데이션 및 네온 글로우 스타일 클래스 결합.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 동시 검증 0건 에러 무결점 통과.
+
 ### 📝 [작업 차수 162] 앱 내 모든 대상 드라이브 카드 동적 무한 유동 애니메이션 브러시(Animated Moving Border Glow) 탑재 (WPF & Web)
 - **작업 일시**: 2026-11-09 18:40 KST
 - **요청 사항**:
