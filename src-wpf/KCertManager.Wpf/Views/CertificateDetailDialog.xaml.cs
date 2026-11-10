@@ -115,22 +115,84 @@ namespace KCertManager.Wpf.Views
         {
             try
             {
-                if (Directory.Exists(_cert.DirectoryPath))
+                if (_cert == null) return;
+
+                // 1. 다중 단계로 실제 존재하는 대상 인증서 디렉터리 경로 정밀 판별
+                string targetFolder = string.Empty;
+
+                if (!string.IsNullOrWhiteSpace(_cert.DirectoryPath))
                 {
-                    string safeFullPath = Path.GetFullPath(_cert.DirectoryPath);
-                    var psi = new ProcessStartInfo
+                    string cleaned = _cert.DirectoryPath.Trim().TrimEnd('\\', '/');
+                    if (Directory.Exists(cleaned))
                     {
-                        FileName = "explorer.exe",
-                        UseShellExecute = false
-                    };
-                    psi.ArgumentList.Add(safeFullPath);
-                    Process.Start(psi);
-                    ActivityLogService.Instance.Log(LogCategory.SECURITY, LogLevel.INFO, "파일 탐색기 실행", $"경로: {safeFullPath}", safeFullPath);
+                        targetFolder = Path.GetFullPath(cleaned);
+                    }
+                }
+
+                if (string.IsNullOrEmpty(targetFolder) && !string.IsNullOrWhiteSpace(_cert.DerFilePath))
+                {
+                    string cleanedDer = _cert.DerFilePath.Trim();
+                    if (File.Exists(cleanedDer))
+                    {
+                        targetFolder = Path.GetDirectoryName(Path.GetFullPath(cleanedDer)) ?? string.Empty;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(targetFolder) && !string.IsNullOrWhiteSpace(_cert.KeyFilePath))
+                {
+                    string cleanedKey = _cert.KeyFilePath.Trim();
+                    if (File.Exists(cleanedKey))
+                    {
+                        targetFolder = Path.GetDirectoryName(Path.GetFullPath(cleanedKey)) ?? string.Empty;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(targetFolder) && Directory.Exists(targetFolder))
+                {
+                    // 2. 공개키 인증서 파일(signCert.der)이 존재할 경우 파일 포커스(/select) 우선 실행
+                    string derFile = !string.IsNullOrWhiteSpace(_cert.DerFilePath) && File.Exists(_cert.DerFilePath)
+                        ? Path.GetFullPath(_cert.DerFilePath)
+                        : Path.Combine(targetFolder, "signCert.der");
+
+                    try
+                    {
+                        if (File.Exists(derFile))
+                        {
+                            // Windows ShellExecuteEx를 통해 탐색기에서 해당 인증서 파일을 직접 하이라이트/포커스
+                            Process.Start(new ProcessStartInfo
+                            {
+                                FileName = "explorer.exe",
+                                Arguments = $"/select,\"{derFile}\"",
+                                UseShellExecute = true
+                            });
+                        }
+                        else
+                        {
+                            // 폴더를 ShellExecuteEx로 직접 열어 특수문자(=, 공백, 한글) 및 따옴표 이스케이프 문제 완벽 해결
+                            Process.Start(new ProcessStartInfo
+                            {
+                                FileName = targetFolder,
+                                UseShellExecute = true
+                            });
+                        }
+                    }
+                    catch
+                    {
+                        // 1차 실행 예외 시 폴더 직접 열기 폴백
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = targetFolder,
+                            UseShellExecute = true
+                        });
+                    }
+
+                    ActivityLogService.Instance.Log(LogCategory.SECURITY, LogLevel.INFO, "파일 탐색기 실행", $"경로: {targetFolder}", targetFolder);
                 }
                 else
                 {
+                    string displayPath = !string.IsNullOrWhiteSpace(_cert.DirectoryPath) ? _cert.DirectoryPath : _cert.DerFilePath;
                     UserFriendlyMessageHelper.ShowWarning(
-                        "해당 인증서 폴더가 디스크에 존재하지 않습니다.\n\nUSB가 분리되었거나 다른 경로로 이동되었을 수 있습니다.",
+                        $"해당 인증서 폴더가 디스크에 존재하지 않거나 현재 연결 해제된 드라이브입니다.\n\n경로: {displayPath}",
                         "폴더 미발견 안내",
                         "• USB 메모리가 올바르게 연결되어 있는지 확인해 주세요.\n• 메인 창에서 '새로고침'을 눌러 목록을 갱신해 주세요.",
                         this);
@@ -146,7 +208,10 @@ namespace KCertManager.Wpf.Views
         {
             try
             {
-                Clipboard.SetText(_cert.DirectoryPath);
+                string pathToCopy = !string.IsNullOrWhiteSpace(_cert.DirectoryPath) 
+                    ? _cert.DirectoryPath 
+                    : (!string.IsNullOrWhiteSpace(_cert.DerFilePath) ? (Path.GetDirectoryName(_cert.DerFilePath) ?? string.Empty) : string.Empty);
+                Clipboard.SetText(pathToCopy);
                 UserFriendlyMessageHelper.ShowInfo("인증서 폴더 경로가 클립보드에 복사되었습니다.", "복사 완료", this);
             }
             catch (Exception ex)

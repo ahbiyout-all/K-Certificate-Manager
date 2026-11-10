@@ -789,23 +789,82 @@ namespace KCertManager.Wpf.ViewModels
         public void OpenSelectedCertDirectory()
         {
             var cert = SelectedCertificate;
-            if (cert == null || string.IsNullOrWhiteSpace(cert.DirectoryPath)) return;
+            if (cert == null) return;
 
             try
             {
-                if (Directory.Exists(cert.DirectoryPath))
+                // 다중 단계로 실제 존재하는 대상 인증서 디렉터리 경로 정밀 판별
+                string targetFolder = string.Empty;
+
+                if (!string.IsNullOrWhiteSpace(cert.DirectoryPath))
                 {
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    string cleaned = cert.DirectoryPath.Trim().TrimEnd('\\', '/');
+                    if (Directory.Exists(cleaned))
                     {
-                        FileName = "explorer.exe",
-                        Arguments = $"\"{cert.DirectoryPath}\"",
-                        UseShellExecute = true
-                    });
+                        targetFolder = Path.GetFullPath(cleaned);
+                    }
+                }
+
+                if (string.IsNullOrEmpty(targetFolder) && !string.IsNullOrWhiteSpace(cert.DerFilePath))
+                {
+                    string cleanedDer = cert.DerFilePath.Trim();
+                    if (File.Exists(cleanedDer))
+                    {
+                        targetFolder = Path.GetDirectoryName(Path.GetFullPath(cleanedDer)) ?? string.Empty;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(targetFolder) && !string.IsNullOrWhiteSpace(cert.KeyFilePath))
+                {
+                    string cleanedKey = cert.KeyFilePath.Trim();
+                    if (File.Exists(cleanedKey))
+                    {
+                        targetFolder = Path.GetDirectoryName(Path.GetFullPath(cleanedKey)) ?? string.Empty;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(targetFolder) && Directory.Exists(targetFolder))
+                {
+                    string derFile = !string.IsNullOrWhiteSpace(cert.DerFilePath) && File.Exists(cert.DerFilePath)
+                        ? Path.GetFullPath(cert.DerFilePath)
+                        : Path.Combine(targetFolder, "signCert.der");
+
+                    try
+                    {
+                        if (File.Exists(derFile))
+                        {
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = "explorer.exe",
+                                Arguments = $"/select,\"{derFile}\"",
+                                UseShellExecute = true
+                            });
+                        }
+                        else
+                        {
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = targetFolder,
+                                UseShellExecute = true
+                            });
+                        }
+                    }
+                    catch
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = targetFolder,
+                            UseShellExecute = true
+                        });
+                    }
+
+                    ActivityLogService.Instance.Log(LogCategory.SECURITY, LogLevel.INFO, "파일 탐색기 실행", $"경로: {targetFolder}", targetFolder);
                 }
                 else
                 {
+                    string displayPath = !string.IsNullOrWhiteSpace(cert.DirectoryPath) ? cert.DirectoryPath : cert.DerFilePath;
                     UserFriendlyMessageHelper.ShowWarning(
-                        $"인증서 폴더가 존재하지 않거나 현재 연결 해제된 드라이브입니다:\n\n{cert.DirectoryPath}",
+                        $"인증서 폴더가 존재하지 않거나 현재 연결 해제된 드라이브입니다:\n\n{displayPath}",
                         "폴더 열기 불가");
                 }
             }

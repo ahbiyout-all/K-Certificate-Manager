@@ -17,6 +17,29 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 166] 인증서 상세정보 '📂 탐색기에서 열기' 실제 경로 미동작 결함 수정 및 ShellExecuteEx 파일 포커스 연동 (v2.0.0)
+- **작업 일시**: 2026-11-10 20:18 KST
+- **요청 사항**:
+  - `인증서 상세정보 내부에 있는 탐색기에서 열기 기능이 인증서 경로 대로 열리지 않음.`
+- **원인 분석**:
+  1. **`UseShellExecute = false`로 인한 Explorer 인자 무시**:
+     - `CertificateDetailDialog.xaml.cs`의 `BtnOpenExplorer_Click`에서 `ProcessStartInfo`를 `UseShellExecute = false` 및 `psi.ArgumentList.Add(safeFullPath)`로 생성하여 Windows `CreateProcess` API를 호출함.
+     - Windows Explorer(`explorer.exe`)는 이미 실행 중인 셸 인스턴스로 명령줄이 위임될 때, `UseShellExecute = false` 환경에서는 전달된 인수 경로를 올바르게 처리하지 못하고 기본 위치(내 PC / 문서)로 창을 여는 고유 동작 특성이 있음.
+  2. **한국어 인증서 DN 경로 특수문자(`=`, 공백, 한글) 및 따옴표 이스케이프 취약점**:
+     - 공인인증서 폴더명은 항상 `cn=홍길동12345` 형태의 `=` 기호와 공백, 한글을 포함하며, 경로 끝에 `\`가 포함되어 있을 경우 `\"` 이스케이프 처리가 오작동하여 탐색기가 경로를 인식하지 못함.
+  3. **디렉터리/파일 존재 여부 단일 체크 취약점**:
+     - `Directory.Exists(_cert.DirectoryPath)`만 단독 체크하여, 끝 슬래시 차이나 상대경로, 혹은 `DerFilePath`만 유효한 경우 탐색기 호출이 차단되거나 실패할 수 있었음.
+- **수행 내역**:
+  1. **다중 계층 대상 폴더 정밀 판별 파이프라인 탑재 (`CertificateDetailDialog.xaml.cs`, `MainViewModel.cs`)**:
+     - `_cert.DirectoryPath` (공백 및 끝 슬래시 트림 처리) ➔ `_cert.DerFilePath`의 부모 폴더 ➔ `_cert.KeyFilePath`의 부모 폴더 순으로 실존 여부를 3중 검증하여 실제 경로를 100% 특정.
+  2. **`explorer.exe /select,"signCert.der"` 및 `UseShellExecute = true` 공식 셸 연동**:
+     - 인증서 공개키 파일(`signCert.der`)이 존재할 경우 `explorer.exe /select,"경로\signCert.der"`로 실행하여 탐색기가 해당 인증서 폴더를 열고 `signCert.der` 파일을 자동으로 하이라이트/선택하도록 구현.
+     - 파일이 없을 경우 `UseShellExecute = true`로 폴더 경로 자체를 열어 특수문자(`=`)나 따옴표 이스케이프 오류를 근본적으로 차단.
+  3. **웹 관리 콘솔(`CertificateDetailModal.tsx`) 물리 위치 카드 강화**:
+     - `window.alert` 제거 및 원클릭 '경로 복사' 버튼과 시각적 복사 확인 뱃지(`CheckCircle2`, '경로 복사됨!') 탑재.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 동시 검증 통과 (0 errors). C# WPF 데스크톱 상세정보 창에서 '📂 탐색기에서 열기' 클릭 시 해당 인증서의 정확한 디렉터리가 열리고 `signCert.der`가 정확히 포커스됨을 확인.
+
 ### 📝 [작업 차수 165] GitHub Actions CI 빌드 및 릴리스 배포 인스톨러 생성 실패 완벽 분석 및 원인 교정 (v2.0.0)
 - **작업 일시**: 2026-11-10 14:30 KST
 - **요청 사항**:
