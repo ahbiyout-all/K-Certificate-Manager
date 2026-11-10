@@ -45,8 +45,7 @@
      - `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` 환경 변수 탑재로 러너 경고 해소.
      - Vite 웹 번들을 `dist/v$ver/web`에 자동 스테이징하여 인스톨러 패킹 경로 보장.
      - ISCC 컴파일 종료 코드 검증(`if ($LASTEXITCODE -ne 0) { throw ... }`) 및 산출물 존재 자동 검증/이동 폴백 로직 추가.
-     - GitHub Actions Artifact로 인스톨러(`KCertManager-v2.0.0-Installer-Setup`)뿐 아니라 단일 포터블 실행 파일(`KCertManager-v2.0.0-Standalone-x64`)을 동시 업로드.
-     - GitHub Release 첨부 자산에 `kcert-manager-v2.0.0-setup.exe` 및 단일 실행 파일 `KCertManager_v2.0.0.exe`, `KCertManager.exe`를 다중 등록하여 사용자 선택 다운로드 완벽 지원.
+     - GitHub Actions Artifact 및 GitHub Release 첨부 자산을 `kcert-manager-v2.0.0-setup.exe` 윈도우 정식 단일 설치형 패키지 1개로 단일화하여 사용자 다운로드 혼선을 원천 차단하고 단독 배포 체계 확립.
   4. **전역 버전 일괄 동기화 (v2.0.0)**:
      - `build.bat`, `build.cmd`, `build.ps1`, `KCertManager.Wpf.csproj`, `KCert.Core.csproj`, `KCert.Crypto.csproj`, `UpdateCheckerService.cs`, `AboutDialog.xaml/.cs`, `UpdateNotificationDialog.xaml`, `MainWindow.xaml`, `TrashModal.tsx`, `LICENSE.txt`, `LICENSE_KR.txt`, `LICENSE_EN.txt` v2.0.0 전면 일치화.
 - **검증 결과**:
