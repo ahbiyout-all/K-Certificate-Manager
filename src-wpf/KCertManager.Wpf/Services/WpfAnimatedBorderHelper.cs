@@ -121,7 +121,7 @@ namespace KCertManager.Wpf.Services
             }
             else
             {
-                var bgDark = (Brush)Application.Current?.FindResource("BgDarkBrush") ?? new SolidColorBrush(Color.FromRgb(15, 23, 42));
+                var bgDark = (Application.Current?.FindResource("BgDarkBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(15, 23, 42));
                 border.Background = bgDark;
                 border.Effect = null;
             }

@@ -10,7 +10,9 @@
 
 #define MyAppName "K-Certificate Manager"
 #define MyAppNameKR "K-인증서 매니저"
-#define MyAppVersion "1.9.0"
+#ifndef MyAppVersion
+  #define MyAppVersion "2.0.0"
+#endif
 #define MyAppPublisher "AhBiYout"
 #define MyAppURL "https://www.cisnet.co.kr"
 #define MyAppSupportURL "https://ahbiyoutvibe.blogspot.com/"
@@ -96,6 +98,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ; ------------------------------------------------------------------------------
 #if FileExists("dist\v" + MyAppVersion + "\win-x64\KCertManager.exe")
 Source: "dist\v{#MyAppVersion}\win-x64\KCertManager.exe"; DestDir: "{app}"; Flags: ignoreversion
+#elif FileExists("dist\win-x64\KCertManager.exe")
+Source: "dist\win-x64\KCertManager.exe"; DestDir: "{app}"; Flags: ignoreversion
 #elif FileExists("release\05_WpfDesktop\KCertManager.exe")
 Source: "release\05_WpfDesktop\KCertManager.exe"; DestDir: "{app}"; Flags: ignoreversion
 #elif FileExists("release\05_WpfDesktop\KCertManager_v" + MyAppVersion + ".exe")
@@ -106,6 +110,8 @@ Source: "release\05_WpfDesktop\KCertManager_v{#MyAppVersion}.exe"; DestDir: "{ap
 Source: "dist\v{#MyAppVersion}\core-dll\KCert.Core.dll"; DestDir: "{app}"; Flags: ignoreversion
 #elif FileExists("dist\v" + MyAppVersion + "\win-x64\KCert.Core.dll")
 Source: "dist\v{#MyAppVersion}\win-x64\KCert.Core.dll"; DestDir: "{app}"; Flags: ignoreversion
+#elif FileExists("dist\core-dll\KCert.Core.dll")
+Source: "dist\core-dll\KCert.Core.dll"; DestDir: "{app}"; Flags: ignoreversion
 #elif FileExists("release\05_WpfDesktop\KCert.Core.dll")
 Source: "release\05_WpfDesktop\KCert.Core.dll"; DestDir: "{app}"; Flags: ignoreversion
 #endif
@@ -114,6 +120,8 @@ Source: "release\05_WpfDesktop\KCert.Core.dll"; DestDir: "{app}"; Flags: ignorev
 Source: "dist\v{#MyAppVersion}\core-dll\KCert.Crypto.dll"; DestDir: "{app}"; Flags: ignoreversion
 #elif FileExists("dist\v" + MyAppVersion + "\win-x64\KCert.Crypto.dll")
 Source: "dist\v{#MyAppVersion}\win-x64\KCert.Crypto.dll"; DestDir: "{app}"; Flags: ignoreversion
+#elif FileExists("dist\core-dll\KCert.Crypto.dll")
+Source: "dist\core-dll\KCert.Crypto.dll"; DestDir: "{app}"; Flags: ignoreversion
 #elif FileExists("release\05_WpfDesktop\KCert.Crypto.dll")
 Source: "release\05_WpfDesktop\KCert.Crypto.dll"; DestDir: "{app}"; Flags: ignoreversion
 #endif

@@ -56,7 +56,7 @@ Write-Host " [OK] Node.js: $nodeVer (Node 22 LTS / 24 권장), NPM: $npmVer" -Fo
 # ------------------------------------------------------------------------------
 Write-Host ""
 Write-Host "[2/7] package.json 버전 정보 확인 중..." -ForegroundColor Cyan
-$appVersion = "1.9.0"
+$appVersion = "2.0.0"
 if (Test-Path "$scriptDir\package.json") {
     try {
         $pkgJson = Get-Content "$scriptDir\package.json" -Raw | ConvertFrom-Json

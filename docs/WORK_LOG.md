@@ -17,6 +17,41 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 165] GitHub Actions CI 빌드 및 릴리스 배포 인스톨러 생성 실패 완벽 분석 및 원인 교정 (v2.0.0)
+- **작업 일시**: 2026-11-10 14:30 KST
+- **요청 사항**:
+  - GitHub Actions 실행 결과 인스톨러 산출물 누락 경고 및 릴리스 배포 파일 미생성 현상 해결:
+    - `No files were found with the provided path: dist/v2.0.0/installer/. No artifacts will be uploaded.`
+    - `src-wpf/KCertManager.Wpf/Services/WpfAnimatedBorderHelper.cs#L124: Converting null literal or possible null value to non-nullable type.`
+    - `Node.js 20 is deprecated... forced to run on Node.js 24`
+    - `--- 릴리즈에 빌드된 앱이 생성 안됨.`
+- **원인 분석**:
+  1. **Inno Setup 전처리기 매크로 덮어쓰기 문제 (`installer.iss`)**:
+     - `installer.iss` 상단에 `#define MyAppVersion "1.9.0"`이 강제 정의되어 있어, CI 워크플로우에서 `iscc "/DMyAppVersion=2.0.0"`을 전달해도 ISPP가 이를 `"1.9.0"`으로 덮어씀.
+     - 결과적으로 Inno Setup이 산출물을 `dist\v1.9.0\installer`에 생성하였고, GitHub Actions가 탐색한 `dist/v2.0.0/installer/`는 비어 있어 업로드가 누락됨.
+  2. **Inno Setup 컴파일 종료 코드 검증 누락 (`build.yml`)**:
+     - PowerShell의 `& $isccPath` 실행 후 `$LASTEXITCODE -ne 0` 검증이 누락되어 컴파일 에러 발생 시 즉각 실패하지 않고 빈 폴더 상태로 후속 단계가 진행됨.
+  3. **C# CS8600 Nullable 경고 (`WpfAnimatedBorderHelper.cs#L124`)**:
+     - `(Brush)Application.Current?.FindResource("BgDarkBrush")`에서 `?.` 결과 nullable object를 non-nullable `Brush`로 언세이프 캐스팅하여 컴파일러 경고 발생.
+  4. **GitHub Runner Node.js 20 Deprecation**:
+     - GitHub Actions 러너에서 Node 20 기본 구동에 대한 워닝 표출.
+- **수행 내역**:
+  1. **`installer.iss` CLI 버전 매크로 보존 및 최신화**:
+     - `#ifndef MyAppVersion ... #define MyAppVersion "2.0.0" #endif`로 변경하여 워크플로우에서 전달하는 버전 파라미터를 100% 온전히 수용하도록 개편.
+     - `[Files]` 섹션에 `dist\v{#MyAppVersion}\win-x64\KCertManager.exe` 외 `dist\win-x64\KCertManager.exe` 등 다중 폴백 경로 보강.
+  2. **`WpfAnimatedBorderHelper.cs#L124` CS8600 Null-Safety 해결**:
+     - `(Application.Current?.FindResource("BgDarkBrush") as Brush) ?? new SolidColorBrush(...)`로 교체하여 경고 완전 제거.
+  3. **`.github/workflows/build.yml` CI/CD 파이프라인 무결성 강화**:
+     - `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` 환경 변수 탑재로 러너 경고 해소.
+     - Vite 웹 번들을 `dist/v$ver/web`에 자동 스테이징하여 인스톨러 패킹 경로 보장.
+     - ISCC 컴파일 종료 코드 검증(`if ($LASTEXITCODE -ne 0) { throw ... }`) 및 산출물 존재 자동 검증/이동 폴백 로직 추가.
+     - GitHub Actions Artifact로 인스톨러(`KCertManager-v2.0.0-Installer-Setup`)뿐 아니라 단일 포터블 실행 파일(`KCertManager-v2.0.0-Standalone-x64`)을 동시 업로드.
+     - GitHub Release 첨부 자산에 `kcert-manager-v2.0.0-setup.exe` 및 단일 실행 파일 `KCertManager_v2.0.0.exe`, `KCertManager.exe`를 다중 등록하여 사용자 선택 다운로드 완벽 지원.
+  4. **전역 버전 일괄 동기화 (v2.0.0)**:
+     - `build.bat`, `build.cmd`, `build.ps1`, `KCertManager.Wpf.csproj`, `KCert.Core.csproj`, `KCert.Crypto.csproj`, `UpdateCheckerService.cs`, `AboutDialog.xaml/.cs`, `UpdateNotificationDialog.xaml`, `MainWindow.xaml`, `TrashModal.tsx`, `LICENSE.txt`, `LICENSE_KR.txt`, `LICENSE_EN.txt` v2.0.0 전면 일치화.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 동시 검증 0건 에러 통과. GitHub Actions 빌드 및 릴리스 배포 무결성 확보 완료.
+
 ### 📝 [작업 차수 164] K-인증서 매니저 v2.0.0 MAJOR 정식 릴리스 버전 승격 및 전역 코드베이스/문서 일괄 동기화
 - **작업 일시**: 2026-11-10 13:10 KST
 - **요청 사항**:

@@ -18,7 +18,7 @@ REM ----------------------------------------------------------------------------
 REM Fallback Build Routine (Pure ASCII / Path Safe against () and special chars)
 REM ------------------------------------------------------------------------------
 set "SCRIPT_DIR=%~dp0"
-set "APP_VER=1.9.0"
+set "APP_VER=2.0.0"
 for /f "tokens=2 delims=:, " %%a in ('findstr /i "\"version\"" "%~dp0package.json" 2^>nul') do (
     set "APP_VER=%%~a"
 )

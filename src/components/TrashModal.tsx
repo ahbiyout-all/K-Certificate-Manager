@@ -504,7 +504,7 @@ export const TrashModal: React.FC<TrashModalProps> = ({
             <span>보관소 자료는 Windows DPAPI 및 AES-256 Encrypted ZIP 압축 컨테이너로 이중 암호화되어 무단 개봉 및 열람을 완벽 차단합니다.</span>
           </div>
           <span className="text-[11px] font-mono text-emerald-400/80">
-            K-Certificate Protected Vault v1.9.0
+            K-Certificate Protected Vault v2.0.0
           </span>
         </div>
 
