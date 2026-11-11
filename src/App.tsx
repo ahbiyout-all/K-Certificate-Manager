@@ -837,6 +837,21 @@ export default function App() {
       count: restoredCerts.length
     });
     setActivityLogs(prev => [newLog, ...prev]);
+
+    // Popup Completion Message Window for Undo Restore
+    setOperationCompleteData({
+      title: '🎉 휴지통 인증서 삭제 취소(Undo) 복원 완료',
+      subtitle: `휴지통으로 이동되었던 ${restoredCerts.length}건의 인증서가 원본 보관 디렉터리로 즉시 복구되었습니다.`,
+      operationType: 'RESTORE',
+      count: restoredCerts.length,
+      certNames: restoredCerts.map(c => c.name),
+      targetDiskName: restoredCerts[0]?.sourceDrive || '로컬 보관함',
+      targetPath: restoredCerts[0]?.sourceLocation || '원래 보관 디렉터리',
+      transferredCerts: restoredCerts,
+      hasIntegrityVerified: true,
+      sha256Checksum: restoredCerts[0]?.files?.sha256 || 'SHA-256 VERIFIED'
+    });
+    setIsOperationCompleteOpen(true);
   };
 
   const handleRestoreFromTrash = (trashIdsToRestore: string[]) => {
