@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using KCert.Core.Vault;
 using KCertManager.Wpf.Models;
 using KCertManager.Wpf.Services;
@@ -389,6 +391,7 @@ namespace KCertManager.Wpf.Views
 
             if (PanelRestoredToolbar != null) PanelRestoredToolbar.Visibility = Visibility.Collapsed;
             if (PanelRestoredContent != null) PanelRestoredContent.Visibility = Visibility.Collapsed;
+            LoadTrashItems();
         }
 
         private void BtnTabRestored_Click(object sender, RoutedEventArgs e)
@@ -402,6 +405,7 @@ namespace KCertManager.Wpf.Views
 
             if (PanelRestoredToolbar != null) PanelRestoredToolbar.Visibility = Visibility.Visible;
             if (PanelRestoredContent != null) PanelRestoredContent.Visibility = Visibility.Visible;
+            LoadRestoredItems();
             UpdateVaultDiagnosticsText();
         }
 
@@ -588,49 +592,66 @@ namespace KCertManager.Wpf.Views
             UpdateSelectedState();
         }
 
-        private void BtnRestoreSelected_Click(object sender, RoutedEventArgs e)
+        private async void BtnRestoreSelected_Click(object sender, RoutedEventArgs e)
         {
             var selected = _items.Where(x => x != null && x.IsSelected).ToList();
             if (!selected.Any()) return;
 
+            Mouse.OverrideCursor = Cursors.Wait;
+            IsEnabled = false;
+
             int restoredCount = 0;
-            foreach (var item in selected)
+            var successItems = new List<TrashItem>();
+            string firstOrigPath = selected.FirstOrDefault()?.OriginalDirectoryPath ?? "원래 저장 디렉터리";
+
+            try
             {
-                var (success, msg) = _trashManager.Restore(item.Id);
-                if (success)
+                await Task.Run(() =>
                 {
-                    restoredCount++;
-                    AnyItemRestored = true;
-                    ActivityLogService.Instance.Log(
-                        LogCategory.RESTORE,
-                        LogLevel.SUCCESS,
-                        "휴지통에서 선택 복원 완료",
-                        $"인증서: {item.CertCommonName}",
-                        item.TrashDirectoryPath,
-                        item.OriginalDirectoryPath);
-                }
-                else
-                {
-                    ActivityLogService.Instance.Log(
-                        LogCategory.RESTORE,
-                        LogLevel.ERROR,
-                        "휴지통 선택 복원 실패",
-                        msg,
-                        item.TrashDirectoryPath,
-                        item.OriginalDirectoryPath);
-                }
+                    foreach (var item in selected)
+                    {
+                        var (success, msg) = _trashManager.Restore(item.Id);
+                        if (success)
+                        {
+                            restoredCount++;
+                            successItems.Add(item);
+                            ActivityLogService.Instance.Log(
+                                LogCategory.RESTORE,
+                                LogLevel.SUCCESS,
+                                "휴지통에서 선택 복원 완료",
+                                $"인증서: {item.CertCommonName}",
+                                item.TrashDirectoryPath,
+                                item.OriginalDirectoryPath);
+                        }
+                        else
+                        {
+                            ActivityLogService.Instance.Log(
+                                LogCategory.RESTORE,
+                                LogLevel.ERROR,
+                                "휴지통 선택 복원 실패",
+                                msg,
+                                item.TrashDirectoryPath,
+                                item.OriginalDirectoryPath);
+                        }
+                    }
+                });
+            }
+            finally
+            {
+                IsEnabled = true;
+                Mouse.OverrideCursor = null;
             }
 
             if (restoredCount > 0)
             {
-                string firstOrigPath = selected.FirstOrDefault(x => x != null)?.OriginalDirectoryPath ?? "원래 저장 디렉터리";
+                AnyItemRestored = true;
                 UserFriendlyMessageHelper.ShowOperationComplete(
                     "🎉 휴지통 인증서 선택 복원 완료",
                     $"격리 보관 휴지통에 보관 중이던 {restoredCount}건의 인증서가 원본 저장 경로로 성공적으로 복구되었습니다.",
                     restoredCount,
                     "휴지통 (임시 격리 보관소)",
                     firstOrigPath,
-                    selected.Where(x => x != null).Select(s => new OperationCompleteItem { Name = s.CertCommonName, IssuerAndPolicy = $"원래 경로: {s.OriginalDirectoryPath}" }),
+                    successItems.Select(s => new OperationCompleteItem { Name = s.CertCommonName, IssuerAndPolicy = $"원래 경로: {s.OriginalDirectoryPath}" }),
                     "• 복원된 인증서는 '내 컴퓨터 (NPKI/GPKI)' 및 원래 보관 디렉터리에서 즉시 사용할 수 있습니다.",
                     this);
                 LoadTrashItems();
@@ -641,12 +662,14 @@ namespace KCertManager.Wpf.Views
                 UserFriendlyMessageHelper.ShowErrorText(
                     "선택한 인증서를 복원하지 못했습니다.",
                     "복원 오류 안내",
-                    "• 대상 드라이브(USB)가 연결되어 있는지 확인해 주세요.\n• 관리자 권한으로 프로그램을 실행해 보세요.",
+                    "• 대상 디렉터리의 쓰기 권한을 확인해 주세요.\n• 관리자 권한으로 프로그램을 실행해 보세요.",
                     this);
+                LoadTrashItems();
+                LoadRestoredItems();
             }
         }
 
-        private void BtnRestoreAll_Click(object sender, RoutedEventArgs e)
+        private async void BtnRestoreAll_Click(object sender, RoutedEventArgs e)
         {
             if (_items.Count == 0)
             {
@@ -663,47 +686,104 @@ namespace KCertManager.Wpf.Views
 
             if (confirm != MessageBoxResult.Yes) return;
 
+            Mouse.OverrideCursor = Cursors.Wait;
+            IsEnabled = false;
+
             int restoredCount = 0;
-            foreach (var item in _items.ToList())
+            var itemsToRestore = _items.Where(x => x != null).ToList();
+            var successItems = new List<TrashItem>();
+            string firstOrigPath = itemsToRestore.FirstOrDefault()?.OriginalDirectoryPath ?? "원래 저장 디렉터리";
+
+            try
             {
-                if (item == null) continue;
-                var (success, msg) = _trashManager.Restore(item.Id);
-                if (success)
+                await Task.Run(() =>
                 {
-                    restoredCount++;
-                    AnyItemRestored = true;
-                    ActivityLogService.Instance.Log(
-                        LogCategory.RESTORE,
-                        LogLevel.SUCCESS,
-                        "휴지통 전체 복원 완료",
-                        $"인증서: {item.CertCommonName}",
-                        item.TrashDirectoryPath,
-                        item.OriginalDirectoryPath);
-                }
+                    foreach (var item in itemsToRestore)
+                    {
+                        if (item == null) continue;
+                        var (success, msg) = _trashManager.Restore(item.Id);
+                        if (success)
+                        {
+                            restoredCount++;
+                            successItems.Add(item);
+                            ActivityLogService.Instance.Log(
+                                LogCategory.RESTORE,
+                                LogLevel.SUCCESS,
+                                "휴지통 전체 복원 완료",
+                                $"인증서: {item.CertCommonName}",
+                                item.TrashDirectoryPath,
+                                item.OriginalDirectoryPath);
+                        }
+                        else
+                        {
+                            ActivityLogService.Instance.Log(
+                                LogCategory.RESTORE,
+                                LogLevel.ERROR,
+                                "휴지통 전체 복원 항목 실패",
+                                msg,
+                                item.TrashDirectoryPath,
+                                item.OriginalDirectoryPath);
+                        }
+                    }
+                });
+            }
+            finally
+            {
+                IsEnabled = true;
+                Mouse.OverrideCursor = null;
             }
 
             if (restoredCount > 0)
             {
-                string firstOrigPath = _items.FirstOrDefault(x => x != null)?.OriginalDirectoryPath ?? "원래 저장 디렉터리";
+                AnyItemRestored = true;
                 UserFriendlyMessageHelper.ShowOperationComplete(
                     "🎉 휴지통 인증서 전체 일괄 복원 완료",
                     $"휴지통에 격리 보관되어 있던 모든 인증서({restoredCount}건)가 원본 경로로 완벽하게 일괄 복원되었습니다.",
                     restoredCount,
                     "휴지통 (임시 격리 보관소)",
                     firstOrigPath,
-                    _items.Where(x => x != null).Select(s => new OperationCompleteItem { Name = s.CertCommonName, IssuerAndPolicy = $"원래 경로: {s.OriginalDirectoryPath}" }),
+                    successItems.Select(s => new OperationCompleteItem { Name = s.CertCommonName, IssuerAndPolicy = $"원래 경로: {s.OriginalDirectoryPath}" }),
                     "• 복원된 인증서는 '내 컴퓨터 (NPKI/GPKI)' 및 원래 보관 디렉터리에서 즉시 사용할 수 있습니다.",
+                    this);
+                LoadTrashItems();
+                LoadRestoredItems();
+            }
+            else
+            {
+                UserFriendlyMessageHelper.ShowErrorText(
+                    "휴지통의 인증서를 복원하지 못했습니다.",
+                    "복원 오류 안내",
+                    "• 대상 디렉터리의 쓰기 권한을 확인해 주세요.\n• 관리자 권한으로 프로그램을 다시 실행해 보세요.",
                     this);
                 LoadTrashItems();
                 LoadRestoredItems();
             }
         }
 
-        private void BtnRestoreItem_Click(object sender, RoutedEventArgs e)
+        private async void BtnRestoreItem_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.DataContext is TrashItem item)
             {
-                var (success, msg) = _trashManager.Restore(item.Id);
+                Mouse.OverrideCursor = Cursors.Wait;
+                IsEnabled = false;
+                bool success = false;
+                string msg = string.Empty;
+
+                try
+                {
+                    await Task.Run(() =>
+                    {
+                        var res = _trashManager.Restore(item.Id);
+                        success = res.Success;
+                        msg = res.Message;
+                    });
+                }
+                finally
+                {
+                    IsEnabled = true;
+                    Mouse.OverrideCursor = null;
+                }
+
                 if (success)
                 {
                     AnyItemRestored = true;
@@ -740,7 +820,7 @@ namespace KCertManager.Wpf.Views
                     UserFriendlyMessageHelper.ShowErrorText(
                         $"인증서를 원래 경로로 복원하지 못했습니다: {msg}",
                         "복원 오류 안내",
-                        "• 대상 드라이브(USB)가 연결되어 있는지 확인해 주세요.\n• 관리자 권한으로 프로그램을 실행해 보세요.",
+                        "• 대상 디렉터리의 쓰기 권한을 확인해 주세요.\n• 관리자 권한으로 프로그램을 실행해 보세요.",
                         this);
                 }
             }

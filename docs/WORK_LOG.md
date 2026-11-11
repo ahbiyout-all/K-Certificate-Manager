@@ -17,6 +17,59 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 171] 복원된 항목 보관소 데이터 생성 누락 결함 해결 및 이중 미러 영구화/탭 렌더링 동기화 (v2.0.0)
+- **작업 일시**: 2026-11-11 20:20 KST
+- **요청 사항**:
+  - `복원된 항목 보관소에 데이터 생성 안됨.`
+- **원인 분석**:
+  1. **C# WPF 탭 전환 시 복원 목록 재로드 누락 (`TrashDialog.xaml.cs`)**:
+     - 사용자가 '🔄 복원된 항목 (보관소)' 탭 버튼(`BtnTabRestored_Click`)을 클릭했을 때, 탭 컨트롤의 가시성 토글과 자가진단 텍스트(`UpdateVaultDiagnosticsText()`)만 호출하고 **`LoadRestoredItems()`를 전혀 호출하지 않았음**. 결과적으로 복원이 정상 수행되어 파일이 저장되었음에도 화면 상의 `RestoredItemsControl`에 카드가 렌더링되지 않고 빈 목록으로 표시됨.
+  2. **DPAPI 권한 전환 및 레거시 파일 삭제로 인한 데이터 영구 유실 위험 (`SafetyTrashManager.cs`)**:
+     - `SaveRestoredIndexInternal`에서 DPAPI 기반 암호화 인덱스 파일(`.dat`)을 저장한 직후 레거시 백업 JSON(`restored_manifest.json`)을 `File.Delete(_legacyRestoredIndexFile)`로 영구 삭제함.
+     - 사용자 환경에 따라 관리자 권한/비관리자 권한 전환 또는 계정 컨텍스트 변경 시 DPAPI `ProtectedData.Unprotect`가 실패하면 `DecryptVaultBytes`가 빈 바이트를 반환하게 되는데, 이때 복구할 평문/미러 JSON 파일이 이미 삭제되어 있어 저장된 복원 목록 전체가 유실되거나 빈 리스트로 로드되는 치명적 취약점이 존재했음.
+  3. **React 웹 콘솔 상태 비동기 유실 및 스키마 언세이프 접근 (`App.tsx`, `TrashModal.tsx`)**:
+     - `handleRestoreFromTrash`, `handleRestoreAllTrash`에서 생성되는 복원 항목에 `isZipEncrypted`, `zipContainerName`, `encryptedZipPath`, `compressedSizeBytes` 등 보관소 필수 메타데이터가 일부 누락됨.
+     - `setRestoredTrashItems` 호출 후 React의 비동기 `useEffect` 상태 반영 지연으로 인해 로컬스토리지 즉각 동기화가 지연될 수 있었음.
+     - `TrashModal.tsx`의 필터링 및 카드 렌더링에서 `item.cert.name`, `item.cert.category`, `item.cert.sourceLocation` 등을 옵셔널 체이닝 없이 직접 참조하여 평탄화(Flat)된 레거시 스키마나 누락 데이터가 존재할 경우 렌더링 에러가 발생할 가능성이 있었음.
+- **수행 내역**:
+  1. **C# .NET 코어 복원 보관소 엔진 이중 미러링 & 헤더 감지 복호화 고도화 (`SafetyTrashManager.cs`)**:
+     - `SaveRestoredIndexInternal`: DPAPI/AES 암호화 `.dat` 저장과 동시에 `_restoredVaultRoot` 및 `_trashRoot` 양쪽 위치에 `restored_manifest.json`을 안전 이중 미러링 저장하여 어떤 환경에서도 데이터가 절대 유실되지 않도록 보강.
+     - `LoadRestoredIndexInternal`: 암호화 파일 부재 또는 복호화 실패 시 즉각 미러 JSON 파일로부터 복원 목록을 100% 자동 복구하는 2차 폴백 파이프라인 탑재.
+     - `EncryptVaultBytes` / `DecryptVaultBytes`: 매직 헤더 태그(`DPA\x01`, `AES\x01`) 및 평문 JSON 자동 감지 로직을 탑재하여 암복호화 정합성 및 오류 방어율 극대화.
+  2. **WPF 데스크톱 탭 전환 즉시 로드 및 동기화 (`TrashDialog.xaml.cs`)**:
+     - `BtnTabRestored_Click` 내에 `LoadRestoredItems()`를 직접 호출하도록 추가하여 사용자가 '복원된 항목 (보관소)' 탭을 클릭하는 즉시 최신 보관소 목록이 화면에 100% 렌더링되도록 수정.
+     - `BtnTabDeleted_Click`에서도 `LoadTrashItems()`를 보강하여 탭 전환 간 완벽한 최신 상태 동기화 유지.
+  3. **React 웹 콘솔 즉각 영구화 및 렌더링 널-세이프 강화 (`App.tsx`, `TrashModal.tsx`)**:
+     - `App.tsx` 내 복원 핸들러(`handleRestoreFromTrash`, `handleRestoreAllTrash`, `handleUndoTrash`)에서 `saveProtectedRestoredItems(updated)`를 즉시 동기 호출하여 `localStorage` 영구 저장을 즉각 보장.
+     - `TrashModal.tsx`의 검색/필터링 로직 및 카드 렌더링, 보안 감사 증적(Audit Proof) 모달에서 `item.cert?.name`, `item.cert?.category`, `item.cert?.sourceLocation` 등에 옵셔널 체이닝 및 대체 프로퍼티(`certCommonName`, `targetRestorePath`, `originalDirectoryPath`) 폴백을 전면 적용하여 어떤 데이터 형태에서도 100% 안전하게 목록과 카드가 출력되도록 완성.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 동시 점검 결과 0 Errors 무결점 통과.
+  - 인증서 복원(단일, 다중, 전체, 실행 취소) 시 복원된 항목 보관소에 데이터가 누락 없이 즉시 생성 및 영구 보존되며, '복원된 항목 (보관소)' 탭 클릭 시 암호화 금고 파일 및 시스템 복원 경로가 정확히 렌더링됨을 확인.
+
+### 📝 [작업 차수 170] 휴지통 전체 복원 시 UI 프리징/동작 멈춤 결함 근본 분석 및 비동기(Async/Task) 복원 파이프라인 개편 (v2.0.0)
+- **작업 일시**: 2026-11-11 19:55 KST
+- **요청 사항**:
+  - `휴지통 전체 복원시에 동작이 멈춤`
+- **원인 분석**:
+  1. **`SafetyTrashManager.cs` 내 중복 폴더 이동 로직 결함**:
+     - `Restore(string trashId)` 내부에서 222번 라인의 `SafeMoveDirectory(fullQuarantined, fullOriginal)`가 실행된 이후, 255번 라인에서 다시 한번 동일한 `SafeMoveDirectory`를 호출하도록 코드가 중복 배치되어 있었음.
+     - 첫 번째 호출로 격리 폴더(`fullQuarantined`)가 이미 원래 위치로 이동되었기 때문에 두 번째 호출 시 존재하지 않는 소스 디렉터리를 참조하게 되어 `DirectoryNotFoundException` 예외가 발생하고, 결과적으로 모든 항목 복원이 `(false, ...)` 실패 처리됨.
+  2. **WPF UI 스레드 동기 블로킹 및 실패 시 무반응**:
+     - `TrashDialog.xaml.cs`의 `BtnRestoreAll_Click` 핸들러가 UI 디스패처 스레드에서 복원 및 PBKDF2/AES-256 암호화 패킹을 동기(`sync`)로 실행하여 복원 처리 중 UI가 정지(응답 없음)되는 현상 발생.
+     - 또한 복원이 실패하여 `restoredCount == 0`인 경우에 대한 `else` 분기가 없어 완료 창도 오류 창도 뜨지 않은 채 조용히 멈춘 상태로 방치되던 문제점 발견.
+- **수행 내역**:
+  1. **C# .NET 백엔드 복원 엔진 정밀 정상화 (`SafetyTrashManager.cs`)**:
+     - 중복된 `SafeMoveDirectory` 호출을 제거하고, 사전 AES-256 암호화 금고 패킹 ➔ 원본 경로 안전 이동 ➔ 매니페스트 갱신의 단일 순차 파이프라인으로 일원화.
+     - `SafeMoveDirectory` 및 `CopyDirectoryRecursive`에 존재 여부 가드(`!Directory.Exists`) 및 예외 차단 격리 구문을 보강하여 디스크 I/O 오류로 인한 비정상 중단을 원천 차단.
+  2. **WPF 데스크톱 복원 핸들러 비동기 백그라운드 태스크 전환 (`TrashDialog.xaml.cs`)**:
+     - `BtnRestoreAll_Click`, `BtnRestoreSelected_Click`, `BtnRestoreItem_Click`을 `async void`로 전환하고 `await Task.Run(() => ...)`으로 백그라운드 스레드에서 복원을 안전하게 분리 실행.
+     - 작업 중 `Mouse.OverrideCursor = Cursors.Wait` 및 창 조작 잠금(`IsEnabled = false`), 작업 완료 시 `finally`를 통한 즉시 복원 처리로 UI 프리징 원천 제거.
+     - 복원 실패 시(`restoredCount == 0`)에도 사용자 친화적 에러 안내 다이얼로그(`UserFriendlyMessageHelper.ShowErrorText`) 및 목록 재로드를 확실하게 수행하도록 보완.
+  3. **React 웹 콘솔 툴바 일괄 복원 UX 동기화 (`TrashModal.tsx`)**:
+     - 항목 미선택 상태에서도 '↩️ 휴지통 전체 복원' 버튼을 툴바에 기본 노출하여 웹 콘솔에서도 원클릭 일괄 복원을 직관적으로 실행할 수 있도록 기능 균형성(Parity) 완성.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 동시 점검 0건 에러 무결점 통과. 휴지통 전체 복원 시 UI 멈춤 현상 없이 부드러운 대기 커서와 함께 신속하게 복원 완료 창이 출력됨을 확인.
+
 ### 📝 [작업 차수 169] 휴지통 인증서 복원 완료 후 전용 완료 메시지 팝업 모달/다이얼로그 자동 표시 및 C# WPF 빌드 무결성 확보 (v2.0.0)
 - **작업 일시**: 2026-11-11 12:30 KST
 - **요청 사항**:

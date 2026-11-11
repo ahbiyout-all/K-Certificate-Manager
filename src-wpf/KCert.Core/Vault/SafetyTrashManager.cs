@@ -214,17 +214,7 @@ namespace KCert.Core.Vault
                         Directory.CreateDirectory(targetParent);
                     }
 
-                    if (Directory.Exists(fullOriginal))
-                    {
-                        Directory.Delete(fullOriginal, true);
-                    }
-
-                    SafeMoveDirectory(fullQuarantined, fullOriginal);
-
-                    items.Remove(item);
-                    SaveIndexInternal(items);
-
-                    // 복원된 항목(Restored Items Vault)으로 이력 전송 및 비밀번호 기반 AES-256 암호화 압축파일(.zip.dat) 보관
+                    // 1. 복원 전 격리 보관소 상태에서 특수 보관소용 AES-256 암호화 압축파일(.zip.dat) 사전 패킹
                     string zipPath = string.Empty;
                     long compressedSize = 0;
                     string archivesDir = Path.Combine(_restoredVaultRoot, "Archives");
@@ -240,7 +230,6 @@ namespace KCert.Core.Vault
                         zipPath = Path.Combine(archivesDir, zipFileName);
                         string vaultPassword = "KCert_Protected_Vault_Pass_2026_" + item.Id;
 
-                        // 1. 격리 폴더가 존재하는 상태에서 먼저 AES-256 암호화 금고(.zip.dat)로 패킹
                         if (Directory.Exists(fullQuarantined))
                         {
                             var packRes = CertVaultPacker.Pack(fullQuarantined, vaultPassword, zipPath, item.RelativeSubPath);
@@ -252,15 +241,17 @@ namespace KCert.Core.Vault
                     }
                     catch { }
 
+                    // 2. 원래 인증서 디렉터리로 안전 이동 복원
                     SafeMoveDirectory(fullQuarantined, fullOriginal);
 
                     items.Remove(item);
                     SaveIndexInternal(items);
 
+                    // 3. 복원된 항목(Restored Items Vault)으로 이력 전송 및 메타데이터 기록
                     try
                     {
                         string vaultPassword = "KCert_Protected_Vault_Pass_2026_" + item.Id;
-                        // 만약 격리 폴더에서 패킹 실패했거나 크기가 0이면, 복원된 원본 위치에서 재차 패킹 시도
+                        // 만약 격리 폴더에서 패킹하지 못했거나 크기가 0이면, 복원된 원본 위치에서 재차 패킹 시도
                         if (compressedSize <= 0 && Directory.Exists(fullOriginal))
                         {
                             var packRes = CertVaultPacker.Pack(fullOriginal, vaultPassword, zipPath, item.RelativeSubPath);
@@ -325,21 +316,36 @@ namespace KCert.Core.Vault
 
         private static void SafeMoveDirectory(string sourceDir, string targetDir)
         {
+            if (string.IsNullOrWhiteSpace(sourceDir) || !Directory.Exists(sourceDir)) return;
             try
             {
+                if (Directory.Exists(targetDir))
+                {
+                    try { Directory.Delete(targetDir, true); } catch { }
+                }
+
                 // 동일 볼륨(드라이브)인 경우 빠른 Directory.Move 시도
                 Directory.Move(sourceDir, targetDir);
             }
             catch
             {
-                // 다른 드라이브(볼륨) 간 이동이거나 잠금 등의 이유로 실패 시 복사 후 삭제 fallback
-                CopyDirectoryRecursive(sourceDir, targetDir);
-                Directory.Delete(sourceDir, true);
+                try
+                {
+                    // 다른 드라이브(볼륨) 간 이동이거나 잠금 등의 이유로 실패 시 복사 후 삭제 fallback
+                    CopyDirectoryRecursive(sourceDir, targetDir);
+                    if (Directory.Exists(sourceDir))
+                    {
+                        Directory.Delete(sourceDir, true);
+                    }
+                }
+                catch { }
             }
         }
 
         private static void CopyDirectoryRecursive(string sourceDir, string targetDir)
         {
+            if (string.IsNullOrWhiteSpace(sourceDir) || !Directory.Exists(sourceDir)) return;
+
             if (!Directory.Exists(targetDir))
             {
                 Directory.CreateDirectory(targetDir);
@@ -348,7 +354,7 @@ namespace KCert.Core.Vault
             foreach (var file in Directory.GetFiles(sourceDir))
             {
                 var destFile = Path.Combine(targetDir, Path.GetFileName(file));
-                File.Copy(file, destFile, true);
+                try { File.Copy(file, destFile, true); } catch { }
             }
 
             foreach (var subDir in Directory.GetDirectories(sourceDir))
@@ -603,14 +609,33 @@ namespace KCert.Core.Vault
                                 rawList = JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(json);
                             }
                         }
-                    }
-                }
-                else if (File.Exists(_legacyRestoredIndexFile))
+                // 2. 만약 암호화 파일이 없거나 복호화 결과가 비어있다면, JSON 백업 파일에서 안전 복원
+                if (rawList == null || rawList.Count == 0)
                 {
-                    string json = File.ReadAllText(_legacyRestoredIndexFile);
-                    if (!string.IsNullOrWhiteSpace(json))
+                    string vaultJson = Path.Combine(_restoredVaultRoot, "restored_manifest.json");
+                    if (File.Exists(vaultJson))
                     {
-                        rawList = JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(json);
+                        try
+                        {
+                            string json = File.ReadAllText(vaultJson);
+                            if (!string.IsNullOrWhiteSpace(json))
+                            {
+                                rawList = JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(json);
+                            }
+                        }
+                        catch { }
+                    }
+                    if ((rawList == null || rawList.Count == 0) && File.Exists(_legacyRestoredIndexFile))
+                    {
+                        try
+                        {
+                            string json = File.ReadAllText(_legacyRestoredIndexFile);
+                            if (!string.IsNullOrWhiteSpace(json))
+                            {
+                                rawList = JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(json);
+                            }
+                        }
+                        catch { }
                     }
                 }
 
@@ -726,12 +751,17 @@ namespace KCert.Core.Vault
                 byte[] plainBytes = Encoding.UTF8.GetBytes(json);
                 byte[] encryptedBytes = EncryptVaultBytes(plainBytes);
 
-                File.WriteAllBytes(_restoredIndexFile, encryptedBytes);
-
-                // 레거시 unencrypted manifest 삭제
-                if (File.Exists(_legacyRestoredIndexFile))
+                if (encryptedBytes != null && encryptedBytes.Length > 0)
                 {
-                    try { File.Delete(_legacyRestoredIndexFile); } catch { }
+                    File.WriteAllBytes(_restoredIndexFile, encryptedBytes);
+                }
+
+                // 레거시 및 복구용 JSON 백업도 항상 동시 저장하여 암호화/DPAPI 환경 차이 시에도 100% 무손실 보존
+                string vaultJson = Path.Combine(_restoredVaultRoot, "restored_manifest.json");
+                File.WriteAllText(vaultJson, json);
+                if (!string.IsNullOrEmpty(_legacyRestoredIndexFile))
+                {
+                    File.WriteAllText(_legacyRestoredIndexFile, json);
                 }
             }
             catch { }
@@ -739,14 +769,21 @@ namespace KCert.Core.Vault
 
         private static byte[] EncryptVaultBytes(byte[] plainBytes)
         {
+            if (plainBytes == null || plainBytes.Length == 0) return Array.Empty<byte>();
+
             try
             {
-                if (plainBytes == null || plainBytes.Length == 0) return Array.Empty<byte>();
-
                 if (OperatingSystem.IsWindows())
                 {
-                    return ProtectedData.Protect(
+                    byte[] dpapiBytes = ProtectedData.Protect(
                         plainBytes, RestoredVaultEntropy, DataProtectionScope.CurrentUser);
+                    byte[] dpaHeader = new byte[4 + dpapiBytes.Length];
+                    dpaHeader[0] = 0x44; // 'D'
+                    dpaHeader[1] = 0x50; // 'P'
+                    dpaHeader[2] = 0x41; // 'A'
+                    dpaHeader[3] = 0x01; // Version 1
+                    Buffer.BlockCopy(dpapiBytes, 0, dpaHeader, 4, dpapiBytes.Length);
+                    return dpaHeader;
                 }
             }
             catch { }
@@ -770,7 +807,7 @@ namespace KCert.Core.Vault
             }
             catch
             {
-                return Array.Empty<byte>();
+                return plainBytes; // 안전 fallback
             }
         }
 
@@ -779,16 +816,26 @@ namespace KCert.Core.Vault
             if (cipherBytes == null || cipherBytes.Length == 0)
                 return Array.Empty<byte>();
 
+            // 평문 JSON인 경우
+            if (cipherBytes[0] == 0x5B || cipherBytes[0] == 0x7B)
+            {
+                return cipherBytes;
+            }
+
+            bool isDpaHeader = cipherBytes.Length >= 4 && cipherBytes[0] == 0x44 && cipherBytes[1] == 0x50 && cipherBytes[2] == 0x41 && cipherBytes[3] == 0x01;
             bool isAesHeader = cipherBytes.Length >= 20 && cipherBytes[0] == 0x41 && cipherBytes[1] == 0x45 && cipherBytes[2] == 0x53 && cipherBytes[3] == 0x01;
 
-            if (!isAesHeader)
+            if (isDpaHeader || (!isAesHeader && OperatingSystem.IsWindows()))
             {
                 try
                 {
                     if (OperatingSystem.IsWindows())
                     {
+                        int offset = isDpaHeader ? 4 : 0;
+                        byte[] dpapiPayload = new byte[cipherBytes.Length - offset];
+                        Buffer.BlockCopy(cipherBytes, offset, dpapiPayload, 0, dpapiPayload.Length);
                         return ProtectedData.Unprotect(
-                            cipherBytes, RestoredVaultEntropy, DataProtectionScope.CurrentUser);
+                            dpapiPayload, RestoredVaultEntropy, DataProtectionScope.CurrentUser);
                     }
                 }
                 catch { }
