@@ -623,7 +623,16 @@ namespace KCertManager.Wpf.Views
 
             if (restoredCount > 0)
             {
-                UserFriendlyMessageHelper.ShowInfo($"선택한 {restoredCount}개의 인증서가 원래 경로로 성공적으로 복원되었습니다.", "선택 복원 완료", this);
+                string firstOrigPath = selected.FirstOrDefault(x => x != null)?.OriginalDirectoryPath ?? "원래 저장 디렉터리";
+                UserFriendlyMessageHelper.ShowOperationComplete(
+                    "🎉 휴지통 인증서 선택 복원 완료",
+                    $"격리 보관 휴지통에 보관 중이던 {restoredCount}건의 인증서가 원본 저장 경로로 성공적으로 복구되었습니다.",
+                    restoredCount,
+                    "휴지통 (임시 격리 보관소)",
+                    firstOrigPath,
+                    selected.Where(x => x != null).Select(s => new OperationCompleteItem { Name = s.CertCommonName, Details = $"원래 경로: {s.OriginalDirectoryPath}" }),
+                    "• 복원된 인증서는 '내 컴퓨터 (NPKI/GPKI)' 및 원래 보관 디렉터리에서 즉시 사용할 수 있습니다.",
+                    this);
                 LoadTrashItems();
                 LoadRestoredItems();
             }
@@ -675,7 +684,16 @@ namespace KCertManager.Wpf.Views
 
             if (restoredCount > 0)
             {
-                UserFriendlyMessageHelper.ShowInfo($"휴지통의 모든 인증서({restoredCount}건)가 원래 경로로 성공적으로 복원되었습니다.", "전체 복원 완료", this);
+                string firstOrigPath = _items.FirstOrDefault(x => x != null)?.OriginalDirectoryPath ?? "원래 저장 디렉터리";
+                UserFriendlyMessageHelper.ShowOperationComplete(
+                    "🎉 휴지통 인증서 전체 일괄 복원 완료",
+                    $"휴지통에 격리 보관되어 있던 모든 인증서({restoredCount}건)가 원본 경로로 완벽하게 일괄 복원되었습니다.",
+                    restoredCount,
+                    "휴지통 (임시 격리 보관소)",
+                    firstOrigPath,
+                    _items.Where(x => x != null).Select(s => new OperationCompleteItem { Name = s.CertCommonName, Details = $"원래 경로: {s.OriginalDirectoryPath}" }),
+                    "• 복원된 인증서는 '내 컴퓨터 (NPKI/GPKI)' 및 원래 보관 디렉터리에서 즉시 사용할 수 있습니다.",
+                    this);
                 LoadTrashItems();
                 LoadRestoredItems();
             }
@@ -697,7 +715,15 @@ namespace KCertManager.Wpf.Views
                         item.TrashDirectoryPath,
                         item.OriginalDirectoryPath);
 
-                    UserFriendlyMessageHelper.ShowInfo($"인증서 [{item.CertCommonName}]가 원래 경로로 성공적으로 복원되었습니다.", "복원 완료", this);
+                    UserFriendlyMessageHelper.ShowOperationComplete(
+                        "🎉 인증서 원래 경로 복원 완료",
+                        $"인증서 [{item.CertCommonName}]가 격리 휴지통에서 원래 경로({item.OriginalDirectoryPath})로 성공적으로 복원되었습니다.",
+                        1,
+                        "휴지통 (임시 격리 보관소)",
+                        item.OriginalDirectoryPath,
+                        new[] { new OperationCompleteItem { Name = item.CertCommonName, Details = $"원래 경로: {item.OriginalDirectoryPath}" } },
+                        "• 복원된 인증서는 로컬 보관함에서 즉시 사용 및 관리가 가능합니다.",
+                        this);
                     LoadTrashItems();
                     LoadRestoredItems();
                 }
