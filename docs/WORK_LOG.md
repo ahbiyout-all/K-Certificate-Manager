@@ -17,6 +17,21 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 168] 앱 시작 시 자동 업데이트 확인 및 팝업 안내 다이얼로그 즉시 구동 강화 (v2.0.0)
+- **작업 일시**: 2026-11-11 11:47 KST
+- **요청 사항**:
+  - `앱 시작시에 업데이트 가 있는지 확인하고, 사용자에게 자동 업데이트 팝업을 띄웁니다.`
+- **수행 내역**:
+  1. **앱 초기 구동 시 백그라운드 자동 업데이트 검사 파이프라인 무결성 강화 (`App.tsx`, `MainViewModel.cs`)**:
+     - **React 웹 콘솔 (`App.tsx`)**: 앱 진입 시 `checkForAppUpdates()`를 즉각 실행하여 GitHub 최신 릴리스/태그(v2.0.0+) 감지 시 `UpdateModal` 팝업을 자동 활성화하고 시각 토스트 알림 연동.
+     - **C# WPF 데스크톱 (`MainViewModel.cs`)**: 생성자 비동기 구동 시 `CheckForAppUpdatesAsync(isSilentWhenUpToDate: true)`의 반환값을 `Task<bool>`로 개편하여 새 버전 감지 시 `UpdateNotificationDialog.ShowDialog()` 모달을 즉시 자동 팝업.
+  2. **업데이트 모달과 시작 가이드 모달의 렌더링 순서 최적화**:
+     - 새 버전이 감지되었을 경우 업데이트 모달 팝업을 최우선 표출하고, 사용자가 업데이트 창을 닫은 이후에 시작 작업 선택 창(`StartupWorkflowModal`)으로 연결되도록 대기 처리.
+  3. **대화상자 내 공식 GitHub URL 표기 최신화 (`UpdateModal.tsx`, `MainViewModel.cs`)**:
+     - URL 소문자 표기를 `https://github.com/AhBiYout-all/K-Certificate-Manager`로 표준화.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 동시 검증 통과 (0 errors). 앱 구동 시작 직후 최신 버전 유무를 자동으로 대조하고 새 버전 감지 시 전용 팝업 창을 100% 자율 노출함을 확인.
+
 ### 📝 [작업 차수 167] 푸터 및 오른쪽 하단 전역 GitHub 저장소 경로 단독 풀 URL 동기화 (v2.0.0)
 - **작업 일시**: 2026-11-11 10:43 KST
 - **요청 사항**:

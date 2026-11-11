@@ -166,20 +166,20 @@ namespace KCertManager.Wpf.ViewModels
                     _ = RefreshCertificatesAsync();
                 }));
 
-                // 앱 시작 시 백그라운드 자동 업데이트 확인 및 작업 선택 창 연동
+                // 앱 시작 시 백그라운드 자동 업데이트 확인 및 사용자 알림 팝업 창 연동
                 try
                 {
                     await Task.Delay(1200);
-                    await CheckForAppUpdatesAsync(isSilentWhenUpToDate: true);
+                    bool hasUpdate = await CheckForAppUpdatesAsync(isSilentWhenUpToDate: true);
 
-                    // 업데이트 확인 후 작업 선택 창 다이얼로그 안내
-                    Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                    // 새 버전 업데이트 팝업이 표시되지 않은 일반 최신 상태인 경우에만 시작 작업 선택 창 다이얼로그 안내
+                    if (!hasUpdate && !DontShowStartupWorkflowAgain)
                     {
-                        if (!DontShowStartupWorkflowAgain)
+                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                         {
                             ShowStartupWorkflowDialog();
-                        }
-                    }));
+                        }));
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -2205,7 +2205,7 @@ namespace KCertManager.Wpf.ViewModels
             (DeleteSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
-        public async Task CheckForAppUpdatesAsync(bool isSilentWhenUpToDate = false)
+        public async Task<bool> CheckForAppUpdatesAsync(bool isSilentWhenUpToDate = false)
         {
             if (!isSilentWhenUpToDate)
             {
@@ -2228,7 +2228,7 @@ namespace KCertManager.Wpf.ViewModels
                                 info.LatestVersion,
                                 info.ReleaseName,
                                 info.ReleaseNotes,
-                                info.DownloadUrl ?? "https://github.com/ahbiyout-all/K-Certificate-Manager/releases",
+                                info.DownloadUrl ?? "https://github.com/AhBiYout-all/K-Certificate-Manager/releases",
                                 info.ReleaseUrl)
                             {
                                 Owner = Application.Current?.MainWindow
@@ -2242,7 +2242,7 @@ namespace KCertManager.Wpf.ViewModels
                                 $"🚀 새로운 K-인증서 매니저 버전(v{info.LatestVersion})이 감지되었습니다!\n\n" +
                                 $"• 현재 설치 버전: v{info.CurrentVersion}\n" +
                                 $"• GitHub 최신 버전: v{info.LatestVersion}\n\n" +
-                                $"🔗 공식 GitHub 저장소 경로:\n  https://github.com/ahbiyout-all/K-Certificate-Manager\n\n" +
+                                $"🔗 공식 GitHub 저장소 경로:\n  https://github.com/AhBiYout-all/K-Certificate-Manager\n\n" +
                                 "지금 GitHub 릴리스 페이지로 이동하여 새 버전을 다운로드하시겠습니까?",
                                 "K-인증서 매니저 - 최신 버전 업데이트 알림",
                                 MessageBoxButton.YesNo,
@@ -2262,6 +2262,7 @@ namespace KCertManager.Wpf.ViewModels
                             }
                         }
                     });
+                    return true;
                 }
                 else
                 {
@@ -2282,6 +2283,7 @@ namespace KCertManager.Wpf.ViewModels
                     {
                         StatusMessage = "준비 완료 (최신 버전 확인됨)";
                     }
+                    return false;
                 }
             }
             catch (Exception ex)
@@ -2294,6 +2296,7 @@ namespace KCertManager.Wpf.ViewModels
                         MessageBox.Show($"업데이트 확인 중 오류가 발생했습니다:\n{ex.Message}", "업데이트 확인", MessageBoxButton.OK, MessageBoxImage.Warning);
                     });
                 }
+                return false;
             }
         }
 

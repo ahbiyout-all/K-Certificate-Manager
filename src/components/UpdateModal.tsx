@@ -161,9 +161,9 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
               </span>
             </div>
             <div className="flex items-center justify-between bg-slate-950 px-3 py-2 rounded-lg border border-slate-800 font-mono text-[11px] text-sky-300 overflow-x-auto">
-              <span className="select-all">https://github.com/ahbiyout-all/K-Certificate-Manager</span>
+              <span className="select-all">https://github.com/AhBiYout-all/K-Certificate-Manager</span>
               <a
-                href={currentInfo.releaseUrl || "https://github.com/ahbiyout-all/K-Certificate-Manager"}
+                href={currentInfo.releaseUrl || "https://github.com/AhBiYout-all/K-Certificate-Manager"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ml-2 inline-flex items-center gap-1 text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-2 py-0.5 rounded font-sans font-semibold cursor-pointer shrink-0 transition-colors"
@@ -272,7 +272,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
           <div className="text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 leading-normal flex items-start gap-1.5">
             <AlertCircle className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
             <span>
-              <strong>안내</strong>: <code>push_to_github.bat</code>로 소스코드와 태그(v1.4.5)를 올린 후, GitHub의 <strong>Releases &gt; Draft a new release</strong>에서 'Publish release'를 완료하시면 정식 릴리스로 즉시 인식됩니다.
+              <strong>안내</strong>: GitHub에 소스코드와 버전 태그(v2.0.0)를 올린 후 <strong>Releases &gt; Publish release</strong>를 완료하시면 새 버전으로 자동 안내됩니다.
             </span>
           </div>
         </div>
@@ -281,7 +281,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-2">
             <a
-              href="https://github.com/ahbiyout-all/K-Certificate-Manager/tags"
+              href="https://github.com/AhBiYout-all/K-Certificate-Manager/tags"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 transition-colors"
