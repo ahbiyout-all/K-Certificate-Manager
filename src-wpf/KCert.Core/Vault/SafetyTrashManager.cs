@@ -609,6 +609,9 @@ namespace KCert.Core.Vault
                                 rawList = JsonSerializer.Deserialize<List<RestoredQuarantineItem>>(json);
                             }
                         }
+                    }
+                }
+
                 // 2. 만약 암호화 파일이 없거나 복호화 결과가 비어있다면, JSON 백업 파일에서 안전 복원
                 if (rawList == null || rawList.Count == 0)
                 {

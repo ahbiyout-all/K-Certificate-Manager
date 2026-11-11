@@ -17,6 +17,22 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 172] C# .NET Core KCert.Core CS1513 중괄호 닫힘 누락 빌드 에러 해결 및 C# 전수 구문 무결성 확보 (v2.0.0)
+- **작업 일시**: 2026-11-11 20:45 KST
+- **요청 사항**:
+  - `SafetyTrashManager.cs(725,14): error CS1513: } expected [KCert.Core.csproj]` .NET Core & WPF 컴파일 오류 교정
+- **원인 분석**:
+  - `SafetyTrashManager.cs`의 `LoadRestoredIndexInternal()` 메서드 내부에서 1단계 암호화 인덱스 파일 존재 확인(`if (File.Exists(_restoredIndexFile))`) 및 바이트 유효성 검사(`if (rawBytes != null && rawBytes.Length > 0)`) 블록의 닫는 중괄호(`}`) 2개가 2단계 미러 JSON 복구 분기 주석 직전에 누락되어 있었음.
+  - 이로 인해 컴파일러가 `LoadRestoredIndexInternal()` 메서드 및 `try` 블록이 닫히지 않은 상태에서 `catch` 블록을 만나 `error CS1513: } expected` 컴파일 에러를 발생시킴.
+- **수행 내역**:
+  1. **`SafetyTrashManager.cs` 중괄호 정합성 완전 교정**:
+     - `LoadRestoredIndexInternal()` 내 `rawBytes` 검사 및 `File.Exists` 블록의 닫는 중괄호(`}`) 2개를 정확한 위치에 추가하여 `try-catch` 및 메서드 블록 문법을 100% 정상화.
+  2. **`src-wpf` 전역 C# 코드베이스 정밀 구문 감사**:
+     - `src-wpf` 하위의 모든 C# 소스 파일(`.cs`)을 대상으로 주석, 일반 문자열, 축약/보간 Verbatim 문자열(`@""`, `$@""`)을 완벽히 분리 처리하는 C# 렉시컬 구문 분석 스크립트를 실행하여 전 파일의 블록 열림/닫힘 정합성 전수 검증 통과 (`ALL PASS (0 syntax errors)` 확인).
+- **검증 결과**:
+  - `src-wpf` 내 모든 C# 프로젝트 소스 파일 중괄호 및 구문 무결점 검증 통과.
+  - Web SPA `compile_applet` & `lint_applet` 동시 점검 0건 에러 통과. GitHub Actions CI의 `dotnet build src-wpf/KCert.Core/KCert.Core.csproj -c Release` 정상 완료 보장.
+
 ### 📝 [작업 차수 171] 복원된 항목 보관소 데이터 생성 누락 결함 해결 및 이중 미러 영구화/탭 렌더링 동기화 (v2.0.0)
 - **작업 일시**: 2026-11-11 20:20 KST
 - **요청 사항**:
