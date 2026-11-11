@@ -14,6 +14,7 @@ namespace KCertManager.Wpf.Views
         public int IndexNumber { get; set; }
         public string Name { get; set; } = string.Empty;
         public string IssuerAndPolicy { get; set; } = string.Empty;
+        public string Details { get => IssuerAndPolicy; set => IssuerAndPolicy = value; }
     }
 
     /// <summary>

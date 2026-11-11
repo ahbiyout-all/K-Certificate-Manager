@@ -630,7 +630,7 @@ namespace KCertManager.Wpf.Views
                     restoredCount,
                     "휴지통 (임시 격리 보관소)",
                     firstOrigPath,
-                    selected.Where(x => x != null).Select(s => new OperationCompleteItem { Name = s.CertCommonName, Details = $"원래 경로: {s.OriginalDirectoryPath}" }),
+                    selected.Where(x => x != null).Select(s => new OperationCompleteItem { Name = s.CertCommonName, IssuerAndPolicy = $"원래 경로: {s.OriginalDirectoryPath}" }),
                     "• 복원된 인증서는 '내 컴퓨터 (NPKI/GPKI)' 및 원래 보관 디렉터리에서 즉시 사용할 수 있습니다.",
                     this);
                 LoadTrashItems();
@@ -691,7 +691,7 @@ namespace KCertManager.Wpf.Views
                     restoredCount,
                     "휴지통 (임시 격리 보관소)",
                     firstOrigPath,
-                    _items.Where(x => x != null).Select(s => new OperationCompleteItem { Name = s.CertCommonName, Details = $"원래 경로: {s.OriginalDirectoryPath}" }),
+                    _items.Where(x => x != null).Select(s => new OperationCompleteItem { Name = s.CertCommonName, IssuerAndPolicy = $"원래 경로: {s.OriginalDirectoryPath}" }),
                     "• 복원된 인증서는 '내 컴퓨터 (NPKI/GPKI)' 및 원래 보관 디렉터리에서 즉시 사용할 수 있습니다.",
                     this);
                 LoadTrashItems();
@@ -721,7 +721,7 @@ namespace KCertManager.Wpf.Views
                         1,
                         "휴지통 (임시 격리 보관소)",
                         item.OriginalDirectoryPath,
-                        new[] { new OperationCompleteItem { Name = item.CertCommonName, Details = $"원래 경로: {item.OriginalDirectoryPath}" } },
+                        new[] { new OperationCompleteItem { Name = item.CertCommonName, IssuerAndPolicy = $"원래 경로: {item.OriginalDirectoryPath}" } },
                         "• 복원된 인증서는 로컬 보관함에서 즉시 사용 및 관리가 가능합니다.",
                         this);
                     LoadTrashItems();

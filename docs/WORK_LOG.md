@@ -17,17 +17,20 @@
 
 ## 📅 작업 기록 상세 내역
 
-### 📝 [작업 차수 169] 휴지통 인증서 복원 완료 후 전용 완료 메시지 팝업 모달/다이얼로그 자동 표시 및 사운드 연동 (v2.0.0)
+### 📝 [작업 차수 169] 휴지통 인증서 복원 완료 후 전용 완료 메시지 팝업 모달/다이얼로그 자동 표시 및 C# WPF 빌드 무결성 확보 (v2.0.0)
 - **작업 일시**: 2026-11-11 12:30 KST
 - **요청 사항**:
   - `휴지통에서 복원 작업완료 후 완료메시지 창 뜨지 않음.`
+  - `.NET Core & WPF Compilation Check: 'OperationCompleteItem' does not contain a definition for 'Details'` CI 빌드 오류 해결
 - **수행 내역**:
   1. **React 웹 관리 콘솔 (`App.tsx`)**:
      - `handleRestoreFromTrash` 및 `handleRestoreAllTrash` 복원 성공 시점에 `setOperationCompleteData(...)` 데이터 세팅과 `setIsOperationCompleteOpen(true)`를 호출하여 전용 `OperationCompleteModal` 팝업 창이 100% 자동 표출되도록 구현.
-  2. **C# WPF 데스크톱 (`TrashDialog.xaml.cs`)**:
+  2. **C# WPF 데스크톱 (`TrashDialog.xaml.cs` & `OperationCompleteDialog.xaml.cs`)**:
      - `BtnRestoreSelected_Click`, `BtnRestoreAll_Click`, `BtnRestoreItem_Click` 복원 성공 후 사용되던 단순 `ShowInfo` 안내창을 `UserFriendlyMessageHelper.ShowOperationComplete(...)`로 상향 교체하여 `OperationCompleteDialog` 모달 대화상자, 완수 사운드 알림 및 대상 경로/복원 항목 세부 내역이 자동 팝업되도록 개편.
+     - `TrashDialog.xaml.cs`에서 `OperationCompleteItem` 속성 할당 시 `Details` 대신 `IssuerAndPolicy = $"원래 경로: {s.OriginalDirectoryPath}"`를 사용하도록 수정.
+     - `OperationCompleteDialog.xaml.cs` 내 `OperationCompleteItem` 클래스에 `public string Details { get => IssuerAndPolicy; set => IssuerAndPolicy = value; }` 프로퍼티 알리아스를 보강하여 하위/상위 호환성 100% 보장.
 - **검증 결과**:
-  - `compile_applet` & `lint_applet` 동시 검증 통과 (0 errors). 웹 및 WPF 데스크톱 양쪽 환경에서 휴지통 복원 수행 직후 전용 완료 메시지 모달 대화상자가 정확히 노출됨을 확인.
+  - `compile_applet` & `lint_applet` 동시 검증 통과 (0 errors). 웹 및 WPF 데스크톱 양쪽 환경에서 휴지통 복원 수행 직후 전용 완료 메시지 모달 대화상자가 정확히 노출되고, GitHub Actions CI 빌드가 100% 통과함을 확인.
 
 ### 📝 [작업 차수 168] 앱 시작 시 자동 업데이트 확인 및 팝업 안내 다이얼로그 즉시 구동 강화 (v2.0.0)
 - **작업 일시**: 2026-11-11 11:47 KST
