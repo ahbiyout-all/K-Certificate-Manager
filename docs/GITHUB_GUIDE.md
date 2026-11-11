@@ -7,7 +7,7 @@
 ## 📌 1. GitHub 공식 저장소 개요
 
 - **저장소 명칭**: `K-Certificate-Manager`
-- **GitHub 저장소**: [https://github.com/AhBiYout-all](https://github.com/AhBiYout-all)
+- **GitHub 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
 - **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **개발자**: AhBiYout (GitHub: [@AhBiYout-all](https://github.com/AhBiYout-all))
 - **소속**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr)

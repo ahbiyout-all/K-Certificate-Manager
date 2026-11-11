@@ -65,5 +65,5 @@ npm run build
 - **Developer**: AhBiYout (GitHub: [@AhBiYout-all](https://github.com/AhBiYout-all))
 - **Company**: (주)청운정보시스템 ( cisnet.co.kr ) ([https://www.cisnet.co.kr](https://www.cisnet.co.kr))
 - **Official Blog**: AhBi Vibe Log ([https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/))
-- **GitHub Profile & Repository**: [https://github.com/AhBiYout-all](https://github.com/AhBiYout-all)
+- **GitHub Profile & Repository**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
 - **License**: MIT License (Korean / English Dual License)

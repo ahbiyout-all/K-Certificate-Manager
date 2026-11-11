@@ -17,6 +17,21 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 167] 푸터 및 오른쪽 하단 전역 GitHub 저장소 경로 단독 풀 URL 동기화 (v2.0.0)
+- **작업 일시**: 2026-11-11 10:43 KST
+- **요청 사항**:
+  - `오른쪽 하단에 깃허브주소 수정하세요.`
+- **수행 내역**:
+  1. **전역 GitHub 저장소 경로 단독 풀 URL(`https://github.com/AhBiYout-all/K-Certificate-Manager`) 동기화**:
+     - `src/version.ts`: `github` 주소를 `https://github.com/AhBiYout-all` 계정 주소에서 저장소 풀 경로인 `https://github.com/AhBiYout-all/K-Certificate-Manager`로 갱신.
+     - `src/App.tsx`: 우측 하단 푸터 바의 GitHub 저장소 링크 및 태그에 풀 저장소 경로 반영.
+     - `src-wpf/KCertManager.Wpf/Views/MainWindow.xaml`: 우측 하단 상태바 `GitHub 저장소` Hyperlink의 `NavigateUri`를 `https://github.com/AhBiYout-all/K-Certificate-Manager`로 최신화.
+     - `src-wpf/KCertManager.Wpf/Views/AboutDialog.xaml`: 프로그램 정보 다이얼로그 내 GitHub 저장소 텍스트 및 링크 URL 최신화.
+     - `installer.iss`: Inno Setup 시작 메뉴 바로가기 URL을 `https://github.com/AhBiYout-all/K-Certificate-Manager`로 갱신.
+     - `docs/USER_GUIDE.md`, `docs/GITHUB_GUIDE.md`, `docs/GITHUB_DOCS.md`, `docs/ARCHITECTURE.md`: 공식 문서 내 GitHub 저장소 주소 정규화.
+- **검증 결과**:
+  - `compile_applet` & `lint_applet` 동시 검증 통과 (0 errors). 웹 및 WPF 데스크톱 우측 하단 깃허브 주소가 정식 프로젝트 저장소 경로로 100% 동기화됨.
+
 ### 📝 [작업 차수 166] 인증서 상세정보 '📂 탐색기에서 열기' 실제 경로 미동작 결함 수정 및 ShellExecuteEx 파일 포커스 연동 (v2.0.0)
 - **작업 일시**: 2026-11-10 20:18 KST
 - **요청 사항**:

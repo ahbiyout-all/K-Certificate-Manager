@@ -263,7 +263,7 @@ K-인증서 매니저는 대한민국 공공 및 금융 환경에서 쓰이는 �
 
 ## 3. 정보 및 고객 지원 (Official Channels)
 - **개발자**: AhBiYout
-- **GitHub 공식 저장소**: [https://github.com/AhBiYout-all](https://github.com/AhBiYout-all)
+- **GitHub 공식 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
 - **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **소속**: [https://www.cisnet.co.kr/](https://www.cisnet.co.kr/)
 - **소속회사**: (주)청운정보시스템 ( cisnet.co.kr )

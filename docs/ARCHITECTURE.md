@@ -173,7 +173,7 @@
 
 ## 12. 메타데이터 & 개발자
 - **개발자**: AhBiYout
-- **GitHub 저장소**: [https://github.com/AhBiYout-all](https://github.com/AhBiYout-all)
+- **GitHub 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
 - **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **소속**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr)
 - **소속회사**: (주)청운정보시스템 ( cisnet.co.kr )
