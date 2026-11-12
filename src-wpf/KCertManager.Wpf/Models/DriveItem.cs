@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
 
 namespace KCertManager.Wpf.Models
@@ -22,6 +23,8 @@ namespace KCertManager.Wpf.Models
         public bool IsRemovable { get; set; }
         public bool IsReady { get; set; }
         public bool IsCdRom { get; set; }
+        public DriveType DriveType { get; set; } = DriveType.Fixed;
+        public bool IsFixed => !IsRemovable && !IsCdRom;
         public bool IsWritable => !IsCdRom && IsReady;
 
         public int CertificateCount

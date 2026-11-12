@@ -393,6 +393,7 @@ namespace KCertManager.Wpf.Services
                         IsRemovable = (isRemovable || busType == "USB"),
                         IsReady = isReady,
                         IsCdRom = false,
+                        DriveType = isRemovable ? DriveType.Removable : (isCdRom ? DriveType.CDRom : DriveType.Fixed),
                         DeviceKind = kind,
                         DeviceKindName = kindName,
                         BusType = busType,

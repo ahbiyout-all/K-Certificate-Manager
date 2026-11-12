@@ -2812,3 +2812,24 @@
      - `handleRestoreToUsbFromVault` 및 휴지통 필터(`setTrashItems`)에서도 exact ID 또는 exact USB target path로만 갱신되도록 정밀화하여 USB deletion이 C: drive certificate에 절대로 영향을 미치지 않도록 조치.
 - **빌드 및 검증**:
   - `compile_applet` 및 `lint_applet` co-execution 검증 완료 (0 오류).
+
+
+---
+
+### 📝 [작업 차수 175] WPF C# `DriveItem` 모델 `IsFixed` 및 `DriveType` 프로퍼티 추가로 CI/CD .NET 빌드 오류 해결
+- **작업 일시**: 2026-11-12 12:35 KST
+- **요청 사항**: GitHub Actions CI/CD `.NET Core & WPF Compilation Check` 빌드 실패 수정 (`CS1061: 'DriveItem' does not contain a definition for 'IsFixed'`, `CS0117: 'DriveItem' does not contain a definition for 'DriveType'`, `NU1510` 경고).
+- **원인 분석**:
+  - `UsbTransferViewModel.cs`에서 `DriveItem` 모델의 `IsFixed` 및 `DriveType` 프로퍼티를 참조하도록 개편되었으나, `DriveItem.cs` 모델 클래스 정의에 `IsFixed` 연산 프로퍼티(`!IsRemovable && !IsCdRom`)와 `DriveType` (System.IO.DriveType) 멤버가 선언되지 않아 발생함.
+- **수행 내용**:
+  1. **C# `DriveItem.cs` 모델 프로퍼티 보강**:
+     - `using System.IO;` 선언 추가.
+     - `public DriveType DriveType { get; set; } = DriveType.Fixed;` 추가.
+     - `public bool IsFixed => !IsRemovable && !IsCdRom;` 연산 프로퍼티 추가.
+  2. **`UsbDriveWatcher.cs` 동적 드라이브 생성 로직 연동**:
+     - `list.Add(new DriveItem { ..., DriveType = isRemovable ? DriveType.Removable : (isCdRom ? DriveType.CDRom : DriveType.Fixed) })` 설정.
+  3. **.NET 프로젝트 빌드 경고 억제 (`KCertManager.Wpf.csproj`, `KCert.Core.csproj`)**:
+     - `<NoWarn>$(NoWarn);SYSLIB0057;NU1510</NoWarn>` 추가로 NuGet 자동 패키지 참조 경고 억제.
+- **빌드 및 검증**:
+  - Node.js C# 괄호 및 렉시컬 구문 유효성 검사 100% 통과.
+  - `compile_applet` & `lint_applet` co-execution 0 error 성공.
