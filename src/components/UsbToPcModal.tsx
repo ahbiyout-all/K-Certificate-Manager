@@ -58,12 +58,36 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
 }) => {
   const [sourceTab, setSourceTab] = useState<UsbSourceTab>('drives');
   const [selectedUsbDrive, setSelectedUsbDrive] = useState<string>(initialDriveLetter || 'ALL');
+  const [targetPcDrive, setTargetPcDrive] = useState<string>('C:');
   const [detectedCerts, setDetectedCerts] = useState<UsbDetectedCert[]>([]);
   const [selectedCertIds, setSelectedCertIds] = useState<string[]>([]);
   const [targetUsername, setTargetUsername] = useState('Admin');
   const [duplicateStrategy, setDuplicateStrategy] = useState<'overwrite' | 'rename' | 'skip'>('overwrite');
   const [showUsageGuide, setShowUsageGuide] = useState(true);
   const [onlyWithCertsFilter, setOnlyWithCertsFilter] = useState(false);
+
+  // Analyze available PC local/fixed drives for destination drive selection (C:, D:, E:, etc.)
+  const pcLocalTargetDrives = useMemo(() => {
+    const fixed = availableDrives.filter(
+      d => d.type === 'fixed' || d.type === 'local' || d.deviceKind === 'c_drive' || d.deviceKind === 'secondary_fixed'
+    );
+    const existingLetters = new Set(fixed.map(d => d.letter.replace(':', '').toUpperCase()));
+    if (!existingLetters.has('C')) {
+      fixed.unshift({
+        id: 'local-c-drive',
+        name: '로컬 디스크 (C:)',
+        letter: 'C:',
+        type: 'fixed',
+        deviceKind: 'c_drive',
+        freeSpace: '가용 공간 충분',
+        totalSpace: '512 GB',
+        usagePercent: 35,
+        isPrimary: true,
+        fileSystem: 'NTFS'
+      });
+    }
+    return fixed;
+  }, [availableDrives]);
   
   // Processing & Progress
   const [isProcessing, setIsProcessing] = useState(false);
@@ -182,7 +206,13 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
         if (event.type === 'mount' || event.type === 'unmount' || event.type === 'update') {
           const refreshedUsb = getAvailableUsbCertificates(event.allDrives, selectedUsbDrive);
           setDetectedCerts(refreshedUsb);
-          setSelectedCertIds(refreshedUsb.map(c => c.id));
+          // 드라이브 자동 감지/갱신 이벤트 시 사용자가 해제/선택한 선택 상태(selectedCertIds)를 100% 보존
+          setSelectedCertIds(prev => {
+            if (prev.length === 0) return [];
+            const validIds = refreshedUsb.map(c => c.id);
+            const preserved = validIds.filter(id => prev.includes(id));
+            return preserved.length > 0 ? preserved : prev;
+          });
         }
       });
 
@@ -190,7 +220,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
         unsubscribe();
       };
     }
-  }, [isOpen, availableDrives, selectedUsbDrive, initialDriveLetter]);
+  }, [isOpen]);
 
   const handleSelectDrive = (driveKey: string) => {
     setSelectedUsbDrive(driveKey);
@@ -269,7 +299,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
       setLogs(prev => [
         ...prev,
         `[디스크 검증] USB 이동식 매체 파일 읽기 및 SHA-256 서명 지문 유효성 검사 진행`,
-        `[대상 시스템] Windows PC 기본 저장소: C:\\Users\\${targetUsername}\\AppData\\LocalLow\\`,
+        `[도착 디스크] 대상 PC 저장소 디스크: ${targetPcDrive} (경로: ${targetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow\\ 및 ${targetPcDrive}\\GPKI)`,
       ]);
 
       await new Promise(r => setTimeout(r, 500));
@@ -277,7 +307,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
 
       const copyDetails: string[] = [];
       certsToCopy.forEach(c => {
-        const dest = getLocalPcStandardPath(c, targetUsername);
+        const dest = getLocalPcStandardPath(c, targetUsername, targetPcDrive);
         copyDetails.push(`[복사 전송] ${c.name} (${c.issuer}) ➔ ${dest}`);
       });
       setLogs(prev => [...prev, ...copyDetails]);
@@ -287,7 +317,8 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
         certsToCopy,
         existingCertificates,
         targetUsername,
-        duplicateStrategy
+        duplicateStrategy,
+        targetPcDrive
       );
 
       setProgress(100);

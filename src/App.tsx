@@ -1049,9 +1049,9 @@ export default function App() {
     };
 
     setCertificates(prev => {
-      const existing = prev.find(c => c.id === item.cert.id || c.serialNumber === item.cert.serialNumber);
+      const existing = prev.find(c => c.id === item.cert.id || (c.sourceLocation && c.sourceLocation.trim().toUpperCase() === targetUsbPath.trim().toUpperCase()));
       if (existing) {
-        return prev.map(c => (c.id === item.cert.id || c.serialNumber === item.cert.serialNumber) ? restoredCertToUsb : c);
+        return prev.map(c => (c.id === existing.id) ? restoredCertToUsb : c);
       }
       return [restoredCertToUsb, ...prev];
     });
@@ -1244,7 +1244,10 @@ export default function App() {
       const newlyAddedIds: string[] = [];
 
       for (const importedCert of importedCerts) {
-        const existingIdx = nextList.findIndex(c => c.id === importedCert.id || c.subjectDn === importedCert.subjectDn || c.name === importedCert.name);
+        // Strictly match by exact certificate ID or exact destination PC sourceLocation to prevent name-based co-deletion
+        const existingIdx = nextList.findIndex(
+          c => c.id === importedCert.id || (c.sourceLocation && c.sourceLocation.trim().toUpperCase() === importedCert.sourceLocation.trim().toUpperCase())
+        );
 
         if (existingIdx >= 0) {
           nextList[existingIdx] = importedCert;
@@ -1260,11 +1263,10 @@ export default function App() {
       return nextList;
     });
 
-    // Also remove from trash if imported
+    // Also remove from trash if imported (strictly by exact certificate ID)
     setTrashItems(prev => {
       const importedIds = new Set(importedCerts.map(c => c.id));
-      const importedDns = new Set(importedCerts.map(c => c.subjectDn));
-      return prev.filter(t => !importedIds.has(t.cert.id) && !importedDns.has(t.cert.subjectDn));
+      return prev.filter(t => !importedIds.has(t.cert.id));
     });
 
     const newLog = logActivity({

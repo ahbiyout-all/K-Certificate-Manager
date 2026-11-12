@@ -21,6 +21,8 @@ namespace KCertManager.Wpf.ViewModels
 
         private ObservableCollection<DriveItem> _availableDrives = new();
         private DriveItem? _selectedSourceDrive;
+        private ObservableCollection<DriveItem> _availableTargetDrives = new();
+        private DriveItem? _selectedTargetDrive;
         private ObservableCollection<CertificateItem> _foundUsbCertificates = new();
         private string _targetUsername = Environment.UserName;
         private string _targetCategory = "NPKI";
@@ -44,6 +46,7 @@ namespace KCertManager.Wpf.ViewModels
             TransferToPcCommand = new RelayCommand(async () => await TransferToPcAsync(), () => FoundUsbCertificates.Any(x => x.IsSelected));
 
             RefreshDrives(initialDriveLetter);
+            RefreshTargetDrives();
         }
 
         public bool HasUsbDrives
@@ -56,6 +59,18 @@ namespace KCertManager.Wpf.ViewModels
         {
             get => _availableDrives;
             set => SetProperty(ref _availableDrives, value);
+        }
+
+        public ObservableCollection<DriveItem> AvailableTargetDrives
+        {
+            get => _availableTargetDrives;
+            set => SetProperty(ref _availableTargetDrives, value);
+        }
+
+        public DriveItem? SelectedTargetDrive
+        {
+            get => _selectedTargetDrive;
+            set => SetProperty(ref _selectedTargetDrive, value);
         }
 
         public DriveItem? SelectedSourceDrive
@@ -151,6 +166,32 @@ namespace KCertManager.Wpf.ViewModels
                 HasUsbDrives = false;
                 StatusMessage = $"USB 드라이브 목록 조회 중 오류: {ex.Message}";
                 System.Diagnostics.Debug.WriteLine($"[UsbTransfer RefreshDrives Error] {ex.Message}");
+            }
+        }
+
+        public void RefreshTargetDrives()
+        {
+            try
+            {
+                var localDrives = UsbDriveWatcher.GetAvailableDrives()
+                    .Where(d => d.IsFixed || d.Name.StartsWith("C", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                if (!localDrives.Any(d => d.Name.StartsWith("C", StringComparison.OrdinalIgnoreCase)))
+                {
+                    localDrives.Insert(0, new DriveItem { Name = "C:\\", VolumeLabel = "로컬 디스크 (C:)", DriveType = DriveType.Fixed, IsReady = true });
+                }
+
+                AvailableTargetDrives = new ObservableCollection<DriveItem>(localDrives);
+                SelectedTargetDrive = AvailableTargetDrives.FirstOrDefault(d => d.Name.StartsWith("C", StringComparison.OrdinalIgnoreCase)) ?? AvailableTargetDrives.FirstOrDefault();
+            }
+            catch
+            {
+                AvailableTargetDrives = new ObservableCollection<DriveItem>
+                {
+                    new DriveItem { Name = "C:\\", VolumeLabel = "로컬 디스크 (C:)", DriveType = DriveType.Fixed, IsReady = true }
+                };
+                SelectedTargetDrive = AvailableTargetDrives.FirstOrDefault();
             }
         }
 
@@ -321,7 +362,8 @@ namespace KCertManager.Wpf.ViewModels
                             continue;
                         }
 
-                        var transferResult = _backupService.CopyCertificateToLocalPc(cert.DirectoryPath, cat, TargetUsername);
+                        string targetDrive = SelectedTargetDrive?.Name?.TrimEnd('\\') ?? "C:";
+                        var transferResult = _backupService.CopyCertificateToLocalPc(cert.DirectoryPath, cat, TargetUsername, targetDrive);
                         if (transferResult.IsSuccess)
                         {
                             success++;

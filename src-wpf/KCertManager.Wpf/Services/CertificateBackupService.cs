@@ -85,15 +85,15 @@ namespace KCertManager.Wpf.Services
             return result;
         }
 
-        public CertTransferResult CopyCertificateToLocalPc(string sourceDirectory, string targetCategory = "NPKI", string username = "")
+        public CertTransferResult CopyCertificateToLocalPc(string sourceDirectory, string targetCategory = "NPKI", string username = "", string targetDriveLetter = "C:")
         {
             try
             {
                 if (string.IsNullOrEmpty(username))
                     username = Environment.UserName;
 
+                string cleanDrive = (string.IsNullOrWhiteSpace(targetDriveLetter) ? "C" : targetDriveLetter.TrimEnd(':', '\\', '/')).ToUpperInvariant() + ":\\";
                 string targetRoot;
-                string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\') + "\\";
 
                 bool isGpki = string.Equals(targetCategory, "GPKI", StringComparison.OrdinalIgnoreCase) ||
                               sourceDirectory.IndexOf(@"\GPKI\", StringComparison.OrdinalIgnoreCase) >= 0 ||
@@ -105,12 +105,12 @@ namespace KCertManager.Wpf.Services
 
                 if (isGpki)
                 {
-                    // GPKI 공무원 행정전자서명의 정부 정규 표준 위치는 C:\GPKI\Certificate\class2
+                    // GPKI 공무원 행정전자서명의 정부 정규 표준 위치는 {cleanDrive}GPKI\Certificate\class2
                     try
                     {
-                        var gpkiDir = Path.Combine(sysRoot, "GPKI", "Certificate", "class2");
+                        var gpkiDir = Path.Combine(cleanDrive, "GPKI", "Certificate", "class2");
                         if (!Directory.Exists(gpkiDir)) Directory.CreateDirectory(gpkiDir);
-                        targetRoot = sysRoot;
+                        targetRoot = cleanDrive;
                     }
                     catch
                     {
@@ -120,8 +120,17 @@ namespace KCertManager.Wpf.Services
                 }
                 else
                 {
-                    var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                    targetRoot = Path.Combine(userProfile, "AppData", "LocalLow");
+                    // 선택된 도착 디스크 (C:, D:, E: 등)의 Users AppData 경로로 안전 배치
+                    string driveUsersDir = Path.Combine(cleanDrive, "Users", username, "AppData", "LocalLow");
+                    if (cleanDrive.StartsWith("C", StringComparison.OrdinalIgnoreCase) || !Directory.Exists(cleanDrive))
+                    {
+                        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                        targetRoot = Path.Combine(userProfile, "AppData", "LocalLow");
+                    }
+                    else
+                    {
+                        targetRoot = driveUsersDir;
+                    }
                 }
 
                 string relativePath = CertTransferEngine.ResolveRelativePath(sourceDirectory);

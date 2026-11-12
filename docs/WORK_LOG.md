@@ -17,6 +17,30 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 173] USB ➔ PC(COM) 가져오기 도착 디스크(Target Drive) 자유 지정 기능 구현 및 선택 항목 복사 강제 전체선택 오류 완전 교정 (v2.0.0)
+- **작업 일시**: 2026-11-12 11:30 KST
+- **요청 사항**:
+  - `시작 가이드로 usb to com 작업시에 도착 디스크 지정되게 개선.`
+  - `복사시 선택을 해도 작업은 강제로 전체선택으로 무조건 복사되는 오류.`
+- **원인 분석**:
+  1. **도착 디스크(Target Drive) 고정 문제**:
+     - 기존 USB ➔ PC(COM) 복사 모달 및 서비스에서 목적지가 `C:\Users\{username}\AppData\LocalLow` 및 `C:\GPKI`로 단일 고정되어 있어, PC에 D:, E: 등 다른 하드디스크/SSD가 존재해도 도착 디스크를 사용자가 자유롭게 지정할 수 없었음.
+  2. **선택 항목 복사 시 강제 전체 선택 리셋 오류**:
+     - `UsbToPcModal.tsx`에서 백그라운드 드라이브 감지 폴링 서비스(`subscribeUsbDriveChanges`)의 `update` 이벤트가 1초마다 발생하거나 `useEffect` 의존성 배열(`availableDrives`, `selectedUsbDrive`) 재실행 시, `setSelectedCertIds(refreshedUsb.map(c => c.id))`가 주기적으로 실행되어 **사용자가 해제해둔 체크 선택 상태가 무조건 전체 선택으로 강제 리셋**되고 복사 버튼 클릭 시 전체 항목이 복사되던 결함 존재.
+     - C# WPF `UsbTransferViewModel.cs`에서도 드라이브 재탐색 및 항목 바인딩 시 사용자의 개별 `IsSelected` 선택 상태가 안전하게 보존되지 못하던 문제점 발견.
+- **수행 내역**:
+  1. **Web React SPA 도착 디스크 지정 & 선택 보존 고도화 (`UsbToPcModal.tsx`, `usbToPcService.ts`)**:
+     - `usbToPcService.ts`: `getLocalPcStandardPath` 및 `copyUsbCertificatesToComputer`에 `targetDriveLetter` 파라미터를 추가하여, 선택된 도착 디스크(`C:`, `D:`, `E:` 등)의 `AppData\LocalLow` 및 `GPKI` 경로로 정확히 배치되도록 확장.
+     - `UsbToPcModal.tsx`: `targetPcDrive` 선택 상태 및 도착 디스크 선택 드롭다운(C:, D:, E: 등) UI 구축. `useEffect` 및 `subscribeUsbDriveChanges` 수신기에서 `selectedCertIds`의 기존 선택 상태를 100% 보존하도록 개선하여 자동 리셋 결함 원천 차단.
+  2. **C# WPF 데스크톱 도착 디스크 선택 UI & 전송 엔진 연동 (`UsbTransferViewModel.cs`, `UsbTransferDialog.xaml`, `CertificateBackupService.cs`)**:
+     - `CertificateBackupService.cs`: `CopyCertificateToLocalPc`에 `targetDriveLetter` 지원을 탑재하여 지정된 로컬 디스크로 복사 전송되도록 보강.
+     - `UsbTransferViewModel.cs`: `AvailableTargetDrives` (로컬 디스크 C:, D:, E: 등) 및 `SelectedTargetDrive` 프로퍼티 신설. `TransferToPcAsync` 실행 시 지정된 도착 디스크로 전달.
+     - `UsbTransferDialog.xaml`: 가져올 USB 메모리 선택란 아래에 **'도착 PC 디스크 지정 (도착)'** 선택 ComboBox UI를 정식 탑재하여 출발지와 도착지를 한눈에 확인·지정할 수 있도록 개선.
+- **검증 결과**:
+  - Web SPA `compile_applet` & `lint_applet` 동시 점검 0건 에러 무결점 통과.
+  - C# `src-wpf` 전역 소스 렉시컬 구문 검사 `ALL PASS (0 syntax errors)` 통과.
+  - USB ➔ PC(COM) 복사 시 C:, D:, E: 등 도착 디스크가 지정한 대로 정확히 전송되며, 목록에서 원하는 인증서만 체크 선택했을 때 해당 선택 항목만 100% 신뢰성 있게 복사됨을 확인.
+
 ### 📝 [작업 차수 172] C# .NET Core KCert.Core CS1513 중괄호 닫힘 누락 빌드 에러 해결 및 C# 전수 구문 무결성 확보 (v2.0.0)
 - **작업 일시**: 2026-11-11 20:45 KST
 - **요청 사항**:
@@ -2766,3 +2790,25 @@
 
 
 
+
+
+---
+
+### 📝 [작업 차수 174] USB 인증서 삭제 시 컴퓨터(C:) 동일 소유자명 인증서 동시 삭제(Co-Deletion) 오류 해결
+- **작업 일시**: 2026-11-12 12:20 KST
+- **요청 사항**: "usb 인증서를 삭제 했는데 c에 같은 이름 인증서도 같이 삭제된 오류"
+- **배경 및 원인 분석**:
+  1. **USB ➔ PC 가져오기/동기화 시 소유자명 기반 레코드 덮어쓰기 현상**:
+     - `src/App.tsx`의 `handleImportFromUsbSuccess`에서 USB 인증서를 PC로 복사하거나 동기화할 때, 기존 목록과 비교하는 `findIndex` 조건이 `c.id === importedCert.id || c.subjectDn === importedCert.subjectDn || c.name === importedCert.name`으로 작성되어 있었음.
+     - 이로 인해 C: 드라이브 로컬 보관함에 존재하는 인증서(`cert-1`, `C:\Users\...`)와 USB에 저장된 동일 소유자명의 인증서(`E:\NPKI\...`)가 서로 다른 매체/위치의 별개 파일임에도 불구하고 `c.name === importedCert.name`으로 동일 항목 판정되어, C: 드라이브의 인증서 레코드가 가져온 인증서 항목으로 덮어써지며 1개로 병합되었음.
+     - 또한 `usbToPcService.ts`의 `copyUsbCertificatesToComputer`에서 중복 PC 대상 인증서 탐색 시 PC 디렉터리(`isPcCertificate`)뿐만 아니라 USB 매체의 인증서까지 중복 대상으로 오탐하여 USB 인증서의 ID를 가져온 PC 인증서 항목이 재사용하는 현상이 존재했음.
+  2. **삭제 시 C: 항목 동시 소멸 원인**:
+     - USB 인증서와 C: 인증서가 단일 항목으로 병합/오버라이트되었기 때문에, 사용자가 UI에서 "USB 인증서"를 삭제 처리할 경우 목록 전체에서 해당 소유자의 유일한 레코드가 제거되어 결과적으로 C: 드라이브의 인증서도 같이 소멸한 것처럼 동작하였음.
+- **수행 내용**:
+  1. **React Web SPA 매체 및 저장 위치별 엄격 분리 (Strict Isolation) 개편 (`src/App.tsx`, `src/utils/usbToPcService.ts`)**:
+     - `App.tsx` 내 `handleImportFromUsbSuccess` 매칭 조건을 소유자명(`c.name`)이나 SubjectDN(`c.subjectDn`) 기준이 아닌, **정확한 고유 ID (`c.id`) 또는 C: 도착 경로 (`sourceLocation` 대소문자 무시)** 기반으로 완전 변경.
+     - 이를 통해 동일 소유자(예: '홍길동', '최재호')라 하더라도 C: 로컬 보관함(`C:\Users\...`)과 USB 이동식 매체(`E:\NPKI\...`)의 인증서가 서로 독립된 고유 `id`를 가진 별개의 레드로 `certificates` 목록에 공존하도록 보장.
+     - `usbToPcService.ts` 내 `copyUsbCertificatesToComputer`의 기존 PC 인증서 중복 검사 로직에 `isPcCertificate(c)` 필터를 적용하여 PC 로컬 인증서만 대상으로 한정하고, 가져온 PC 인증서에는 항상 독립된 PC 전용 ID (`pc-imported-...`)를 부여하도록 보강.
+     - `handleRestoreToUsbFromVault` 및 휴지통 필터(`setTrashItems`)에서도 exact ID 또는 exact USB target path로만 갱신되도록 정밀화하여 USB deletion이 C: drive certificate에 절대로 영향을 미치지 않도록 조치.
+- **빌드 및 검증**:
+  - `compile_applet` 및 `lint_applet` co-execution 검증 완료 (0 오류).
