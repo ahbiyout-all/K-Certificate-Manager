@@ -63,11 +63,12 @@
 
 ## 5. 복사 목적지 선택 및 동일 디스크 자가 복사(Self-Copy) 금지 아키텍처
 
-1. **대상 디스크 지정 팝업 모달 (`TargetDrivePickerModal.tsx`)**:
+1. **대상 디스크 지정 팝업 모달 (`TargetDrivePickerModal.tsx` / `TargetDrivePickerDialog.xaml.cs`)**:
    - 일괄 복사 요청 시 타깃 드라이브를 먼저 선택하는 전용 UI 컴포넌트를 렌더링.
    - 물리 드라이브 목록을 실시간으로 가져와 카드 형태로 제공하며, 이동식 미연결 시 C: 드라이브 오복사 경고 및 안내 카드를 표출.
-2. **자가 복사(Self-Copy) 사전 차단 규칙 (`isSameDriveSelfCopy`)**:
-   - 원본 인증서가 위치한 루트 드라이브 문자(예: `C:\...`의 `C:`, 또는 `E:\...`의 `E:`)와 목적지 드라이브 문자를 정규화 대조.
+2. **자가 복사(Self-Copy) 사전 차단 규칙 (`isSameDriveSelfCopy` / `ResolveEffectiveDestinationRoot`)**:
+   - 원본 인증서가 위치한 루트/표준 보관 경로와 목적지 실제 저장 경로를 정규화 대조.
+   - **WPF 실제 목적지 판별 (`ResolveEffectiveDestinationRoot`)**: `CertificateBackupService.BackupCertificateToDrive`와 동일하게 `C:` 선택 시 `NPKI`/`EPKI`는 `%USERPROFILE%\AppData\LocalLow`, `GPKI`는 `C:\` 실제 경로로 환산하여 `C:\Users\...\AppData\LocalLow\NPKI` 인증서가 `C:`로 중복 자가 복사되는 현상을 원천 차단.
    - 동일 드라이브인 경우 복사 엔진 진입을 차단하고 `🚫 자가 복사 금지` 잠금 상태를 유지하여 원본 덮어쓰기 데이터 손상을 원천 방지.
 
 ---
@@ -171,11 +172,34 @@
 
 ---
 
-## 12. 메타데이터 & 개발자
+## 12. GitHub 이동 없는 앱 내 자동 다운로드·무인 셀프 설치 파이프라인 (`v2.1.0`)
+
+1. **WPF 데스크톱 셀프 업데이트 엔진 (`UpdateCheckerService.cs`, `UpdateNotificationDialog.xaml/.cs`)**:
+   - GitHub Releases REST API 조회 후 설치 애셋 URL(`https://github.com/AhBiYout-all/K-Certificate-Manager/releases/download/...`) 추출 및 `https://` 스킴·허용 호스트 검증.
+   - `DownloadAndInstallAsync`: `%TEMP%\KCertManager_AutoUpdate\v{ver}\` 경로로 설치 파일(`.exe`/`.zip`)을 스트리밍 다운로드하면서 진행률(`IProgress<UpdateDownloadProgress>`) 실시간 보고.
+   - PE 실행 파일(`MZ`) 또는 `PK` 매직 바이트 무결성 검증 후, UTF-8 BOM이 포함된 분리 실행 PowerShell 스크립트(`apply_self_update.ps1`)를 작성하여 프로세스 종료 대기 ➔ Inno Setup 무인 설치(`/SILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS`) ➔ `KCertManager.exe` 자동 재실행 ➔ 임시 폴더 정리를 순차 수행.
+2. **Web 관리 콘솔 인앱 업데이트 엔진 (`updateChecker.ts`, `UpdateModal.tsx`)**:
+   - `runInAppSelfUpdate`: 외부 페이지 이동 없이 `downloading` ➔ `verifying` (WebCrypto `SHA-256`) ➔ `installing` (Cache API 갱신 + `localStorage` `kcert_web_installed_version` 반영) 3단계 진행 상태를 실시간 렌더링.
+
+---
+
+## 13. WPF-Web 다크 테마 통합, 반응형 CSS Grid `auto-fill` & 쉬운 표현 UI 아키텍처 (`v2.1.0`)
+
+1. **다크 테마 Visual Parity & 토큰 단위 대비 오버라이드 (`src/index.css`, `App.tsx`)**:
+   - Web 콘솔 기본 테마를 WPF 다크 팔레트(`#0F1219` 캔버스 / `#1A1F2C` 카드)로 통일.
+   - `[data-theme="dark"]` 및 `[data-theme="pastel-black"]`에서 `[class~="..."]`와 `[class*=".../"]` 토큰 매칭으로 모달의 밝은 배경·그라데이션·파스텔 배지·진한 텍스트 클래스를 자동 반전하여 버튼 원색은 보존하면서 고대비 가독성 확보.
+2. **반응형 CSS Grid `auto-fill` 인증서 목록 (`CertificateList.tsx`)**:
+   - `grid-template-columns: repeat(auto-fill, minmax(300px, 1fr))` 반응형 카드 그리드를 기본 제공하고 `표 보기`와의 전환을 지원해 다양한 뷰포트에서 카드 자동 리플로우 구현.
+3. **쉬운 일상 표현 우선 + 접이식 보조 설명 (`더보기` / WPF `Expander`)**:
+   - Web 26개 컴포넌트와 WPF 전역 XAML·뷰모델 문구를 `개인키`, `원본 위치/저장 위치`, `찾는 위치`, `파일 손상 검사(SHA-256)` 기준으로 통일하고, 부가 경로/FAQ는 기본 접힘 영역으로 격리.
+
+---
+
+## 14. 메타데이터 & 개발자
 - **개발자**: AhBiYout
 - **GitHub 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
 - **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **소속**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr)
 - **소속회사**: (주)청운정보시스템 ( cisnet.co.kr )
-- **버전**: `v1.9.0` (SemVer 2.0.0)
+- **버전**: `v2.1.0` (SemVer 2.0.0)
 

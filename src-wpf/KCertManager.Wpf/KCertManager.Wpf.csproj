@@ -18,9 +18,9 @@
     <Authors>AhBiYout</Authors>
     <Product>K-Certificate Manager</Product>
     <Copyright>Copyright (c) 2026 AhBiYout. All rights reserved.</Copyright>
-    <Version>2.0.0</Version>
-    <AssemblyVersion>2.0.0.0</AssemblyVersion>
-    <FileVersion>2.0.0.0</FileVersion>
+    <Version>2.1.0</Version>
+    <AssemblyVersion>2.1.0.0</AssemblyVersion>
+    <FileVersion>2.1.0.0</FileVersion>
     <NoWarn>$(NoWarn);SYSLIB0057;NU1510</NoWarn>
 
     <!-- High Performance Single-File Compilation & Size Optimization -->

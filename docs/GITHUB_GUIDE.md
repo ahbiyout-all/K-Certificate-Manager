@@ -24,12 +24,12 @@
 * **`feature/*` / `bugfix/*`**: 신규 기능 구현 및 결함 수정을 위한 작업 브랜치.
 
 ### 2) 시맨틱 버저닝 (SemVer 2.0.0) 태깅
-* 태그 형식: `v{MAJOR}.{MINOR}.{PATCH}` (예: `v2.0.0`)
+* 태그 형식: `v{MAJOR}.{MINOR}.{PATCH}` (예: `v2.1.0`)
 * 태그 생성 시 GitHub Actions가 버전 문자열을 추출하여 Inno Setup 인스톨러 컴파일 및 GitHub Release 본문을 자동 생성합니다.
 * 동적 버전 판별 3단계 파이프라인:
-  1. **1차 기준**: Git Tag 문자열 (예: `v2.0.0` ➔ `2.0.0`)
+  1. **1차 기준**: Git Tag 문자열 (예: `v2.1.0` ➔ `2.1.0`)
   2. **2차 기준**: `package.json`의 `"version"` 필드
-  3. **3차 기준**: `docs/PATCHNOTES.md` 상단 최신 릴리스 헤더 (`### 🚀 [v2.0.0]`)
+  3. **3차 기준**: `docs/PATCHNOTES.md` 상단 최신 릴리스 헤더 (`### 🚀 [v2.1.0]`)
 
 ---
 
@@ -59,35 +59,35 @@
 * **트리거**: `v*` 태그 푸시, `main` 브랜치 푸시 또는 수동 실행(`workflow_dispatch`)
 * **러너 환경**: `windows-latest`
 * **주요 단계**:
-  1. **버전 자동 감지**: `package.json` 및 Git 참조에서 릴리스 버전(`2.0.0`) 추출
+  1. **버전 자동 감지**: `package.json` 및 Git 참조에서 릴리스 버전(`2.1.0`) 추출
   2. **런타임 환경 구성**: Node.js 24 런타임 및 .NET 10.0 / 8.0 SDK 설치
   3. **Web 콘솔 빌드**: `npm run build`를 통해 `dist/` 정적 번들 생성
   4. **C# WPF 데스크톱 컴파일**:
      * 순수 코어 라이브러리 `KCert.Core.dll` 및 암호화 라이브러리 `KCert.Crypto.dll` 빌드
-     * 정식 독립 실행형 데스크톱 앱 `KCertManager_v2.0.0.exe` (Self-Contained) 빌드
-     * 초경량 에디션 `KCertManager-Lite_v2.0.0.exe` (Framework-Dependent) 빌드
+     * 정식 독립 실행형 데스크톱 앱 `KCertManager_v2.1.0.exe` (Self-Contained) 빌드
+     * 초경량 에디션 `KCertManager-Lite_v2.1.0.exe` (Framework-Dependent) 빌드
   5. **Inno Setup 인스톨러 패키징**:
      * Inno Setup 6 자동 다운로드 및 ISCC 컴파일
-     * 폴더 풀림(Unpacked Multi-File) 레이아웃 설치 프로그램 `kcert-manager-v2.0.0-setup.exe` 생성
+     * 폴더 풀림(Unpacked Multi-File) 레이아웃 설치 프로그램 `kcert-manager-v2.1.0-setup.exe` 생성
      * Windows 방화벽 인바운드 규칙 사전 등록 및 무인 설치 스위치 검증
   6. **GitHub Release 자동 발행 (`softprops/action-gh-release@v2`)**:
      * 태그 기반 Release 생성 및 릴리스 노트 자동 등록
-     * 공식 설치 파일(`dist/v2.0.0/installer/kcert-manager-v2.0.0-setup.exe`) 단독 첨부 배포
+     * 공식 설치 파일(`dist/v2.1.0/installer/kcert-manager-v2.1.0-setup.exe`) 단독 첨부 배포
 
 ---
 
-## 📦 4. 최신 v2.0.0 GitHub Release 배포 명세
+## 📦 4. 최신 v2.1.0 GitHub Release 배포 명세
 
-* **릴리스 태그**: `v2.0.0`
-* **릴리스 타이틀**: `K-Certificate Manager v2.0.0 (MAJOR Release)`
+* **릴리스 태그**: `v2.1.0`
+* **릴리스 타이틀**: `K-Certificate Manager v2.1.0 (MINOR Release)`
 * **공식 첨부 자산 (Assets)**:
-  * `kcert-manager-v2.0.0-setup.exe` (~40MB, Inno Setup 윈도우 정식 설치 프로그램)
+  * `kcert-manager-v2.1.0-setup.exe` (~40MB, Inno Setup 윈도우 정식 설치 프로그램)
 * **핵심 기능 요약**:
-  1. **암호화 보호 보관소 (Encrypted Vault) 및 제한된 USB 복구 (`💾 USB로 제한 복구`)**: Windows DPAPI(CurrentUser) 및 AES-256 특수 암호화 보관소(`protected_restored_manifest.dat`) 구축 및 로컬 PC 오염 방지를 위한 외장 USB 전용 복구
-  2. **드라이브 카드 시각적 시인성 극대화를 위한 무한 유동 애니메이션 테두리(`Animated Moving Border Glow`)**: WPF 사이드바/피커/이동 다이얼로그 및 Web 컴포넌트에 60fps 무한 유동 그라데이션 및 14px 네온 글로우 펄스 탑재 (`WpfAnimatedBorderHelper.cs` & `index.css`)
-  3. **만료 인증서 정리창 (ExpiredCleanupDialog) 가로 너비 20% 대폭 확장 (984px)**: 긴 NPKI/GPKI/EPKI 경로 및 만료 상태 가독성 극대화
-  4. **Inno Setup 정식 인스톨러 완성 및 무인 설치 지원**: 프로세스 감지 강제 종료(`TerminateAppProcesses`), 방화벽 규칙 사전 조용 자동 등록 및 `/VERYSILENT /NORESTART` 지원
-  5. **빌드 파이프라인 개편: `/dist/v2.0.0/` 버전 번호별 하위 폴더 분리 배포 구조 구현**: `/dist/v2.0.0/web`, `/win-x64`, `/core-dll`, `/unpacked`, `/installer`
+  1. **인앱 자동 다운로드 · 무인 셀프 설치 엔진 (`DownloadAndInstallAsync`)**: 업데이트 팝업에서 확인 시 GitHub 브라우저 이동 없이 직접 패키지를 다운로드·검증 후 자동 설치 및 앱 재시작 수행
+  2. **WPF-Web 다크 테마 패리티 & CSS Grid `auto-fill` 반응형 카드 레이아웃**: Web 콘솔 기본 다크 테마 통일, 모달 대비 수정 및 화면 너비 기반 인증서 카드 자동 리플로우
+  3. **전역 UI 쉬운 일상 표현 우선 + 접이식 안내 개편**: Web 26개 모듈과 WPF 다이얼로그 전체의 문구 간결화 및 `더보기` / `Expander` 적용
+  4. **`C:\` 드라이브 자가 복사 차단 보정 및 비동기 안정화**: WPF 실제 저장 경로 판별 보정, Web `AbortError` 재시도 방지 및 최신 상태 참조 동기화
+  5. **빌드 파이프라인 `/dist/v2.1.0/` 분리 배포**: `/dist/v2.1.0/web`, `/win-x64`, `/core-dll`, `/unpacked`, `/installer`
 
 ---
 
@@ -105,7 +105,7 @@ K-인증서 매니저는 사용자가 최신 버전을 놓치지 않도록 GitHu
 [ 3단계: /repos/:owner/:repo/tags (Git 태그 직결 엔드포인트) ]
        │
        ▼
-[ 최신 v2.0.0 버전 즉각 감지 & 상단 헤더 업데이트 알림 배지 점등 ]
+[ 최신 v2.1.0 버전 즉각 감지 & 확인 시 앱 내 자동 다운로드·무인 셀프 설치 실행 ]
 ```
 
 * **타임스탬프 캐시 버스팅**: `?_t=Date.now()` 파라미터 및 `Cache-Control: no-cache` 헤더를 적용하여 GitHub API의 로컬 브라우저/프록시 캐시 문제를 완전 해결
@@ -135,7 +135,7 @@ GitHub 공개 저장소 운영 시 민감한 개인 인증서 정보가 원격�
 
 1. **버그 제보 (Bug Report)**:
    * [GitHub Issues](https://github.com/AhBiYout-all/K-Certificate-Manager/issues)에서 새로운 이슈를 생성합니다.
-   * 운영체제 버전(Windows 10 / 11), 사용 중인 K-인증서 매니저 버전(예: `v1.8.0`), 오류 발생 경로 및 스크린샷을 첨부해 주시면 신속히 반영됩니다.
+   * 운영체제 버전(Windows 10 / 11), 사용 중인 K-인증서 매니저 버전(예: `v2.1.0`), 오류 발생 경로 및 스크린샷을 첨부해 주시면 신속히 반영됩니다.
 2. **기능 제안 (Feature Request)**:
    * 새로운 공인인증서 경로 지원, UI 편의 기능 등 다양한 아이디어를 Issue로 남겨주세요.
 3. **Pull Request (PR) 가이드**:

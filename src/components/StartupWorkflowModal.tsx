@@ -179,8 +179,10 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
               
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-                    <Monitor className="w-6 h-6 text-white" />
+                  <div className="h-12 px-3.5 rounded-2xl bg-blue-600 text-white inline-flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform shrink-0">
+                    <Monitor className="w-5 h-5 text-white shrink-0" />
+                    <ArrowRight className="w-3.5 h-3.5 text-blue-100 shrink-0" />
+                    <Usb className="w-5 h-5 text-white shrink-0" />
                   </div>
                   {activeTabMode === 'pc_to_usb' && (
                     <span className="px-2 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-extrabold shadow-2xs animate-pulse">
@@ -233,8 +235,10 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-                    <Usb className="w-6 h-6 text-white" />
+                  <div className="h-12 px-3.5 rounded-2xl bg-emerald-600 text-white inline-flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform shrink-0">
+                    <Usb className="w-5 h-5 text-white shrink-0" />
+                    <ArrowRight className="w-3.5 h-3.5 text-emerald-100 shrink-0" />
+                    <Monitor className="w-5 h-5 text-white shrink-0" />
                   </div>
                   {activeTabMode === 'usb_to_pc' && (
                     <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-extrabold shadow-2xs animate-pulse">

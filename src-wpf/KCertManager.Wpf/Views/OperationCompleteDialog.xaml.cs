@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using KCert.Core.HardwareGuard;
 using KCertManager.Wpf.Services;
 
 namespace KCertManager.Wpf.Views
@@ -23,6 +24,7 @@ namespace KCertManager.Wpf.Views
     public partial class OperationCompleteDialog : Window
     {
         private readonly string _targetPath;
+        private readonly string? _removableDriveLetter;
 
         public OperationCompleteDialog(
             string title,
@@ -72,6 +74,14 @@ namespace KCertManager.Wpf.Views
             if (!string.IsNullOrWhiteSpace(guideTip))
             {
                 TxtGuideTip.Text = guideTip;
+            }
+
+            // 대상 경로가 이동식 USB 드라이브인 경우 [USB 안전 제거] 버튼 활성화
+            _removableDriveLetter = DetectRemovableUsbDrive(_targetPath);
+            if (!string.IsNullOrEmpty(_removableDriveLetter))
+            {
+                TxtEjectUsb.Text = $"{_removableDriveLetter} USB 안전 제거";
+                BtnEjectUsb.Visibility = Visibility.Visible;
             }
 
             // 설정 모달에서 '대상 USB 폴더 탐색기 자동 열기' 옵션이 활성화된 경우 자동으로 탐색기 실행
@@ -158,6 +168,72 @@ namespace KCertManager.Wpf.Views
             catch (Exception ex)
             {
                 MessageBox.Show($"대상 폴더 열기 실패: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private static string? DetectRemovableUsbDrive(string targetPath)
+        {
+            if (string.IsNullOrWhiteSpace(targetPath)) return null;
+            string trimmed = targetPath.Trim();
+            if (trimmed.Length < 2 || !char.IsLetter(trimmed[0]) || trimmed[1] != ':')
+                return null;
+
+            string driveLetter = char.ToUpperInvariant(trimmed[0]) + ":";
+            try
+            {
+                var info = new DriveInfo(driveLetter + "\\");
+                if (info.DriveType == DriveType.Removable)
+                    return driveLetter;
+
+                var details = NativeStorageInterop.QueryDriveDetails(driveLetter);
+                if (details != null && details.IsUsb)
+                    return driveLetter;
+            }
+            catch { }
+            return null;
+        }
+
+        private void BtnEjectUsb_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_removableDriveLetter)) return;
+
+            var res = NativeStorageInterop.EjectUsbDrive(_removableDriveLetter);
+            if (res.Success)
+            {
+                TxtEjectStatus.Text = $"✓ {res.Message}";
+                BannerEjectStatus.Visibility = Visibility.Visible;
+                BtnEjectUsb.IsEnabled = false;
+                TxtEjectUsb.Text = $"{_removableDriveLetter} 분리 완료";
+
+                ActivityLogService.Instance.Log(
+                    LogCategory.SYSTEM,
+                    LogLevel.SUCCESS,
+                    $"{_removableDriveLetter} USB 안전 제거 완료",
+                    res.Message,
+                    _removableDriveLetter,
+                    "Safely Ejected");
+
+                if (Application.Current?.MainWindow?.DataContext is ViewModels.MainViewModel vm)
+                {
+                    vm.RefreshDrives();
+                }
+            }
+            else if (res.IsLockedByOtherProcess)
+            {
+                var ask = MessageBox.Show(
+                    $"{res.Message}\n\nWindows 기본 '하드웨어 안전하게 제거' 창을 열어 분리하시겠습니까?",
+                    "USB 안전 제거 안내",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (ask == MessageBoxResult.Yes)
+                {
+                    NativeStorageInterop.OpenWindowsSafeRemovalDialog();
+                }
+            }
+            else
+            {
+                MessageBox.Show(res.Message, "USB 안전 제거 안내", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
     }

@@ -51,8 +51,12 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <Border Grid.Row="0" Width="44" Height="44" CornerRadius="22" Background="#1E3A8A" HorizontalAlignment="Left" Margin="0,0,0,12">
-                            <TextBlock Text="💻 ➔ 💾" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border Grid.Row="0" Height="44" MinWidth="96" Padding="14,0" CornerRadius="22" Background="#1E3A8A" HorizontalAlignment="Left" Margin="0,0,0,12">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock Text="💻" FontSize="17" VerticalAlignment="Center"/>
+                                <TextBlock Text="➔" FontSize="13" FontWeight="Bold" Foreground="#93C5FD" Margin="6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="💾" FontSize="17" VerticalAlignment="Center"/>
+                            </StackPanel>
                         </Border>
 
                         <TextBlock Grid.Row="1" Text="PC ➔ USB 복사" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
@@ -74,8 +78,12 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <Border Grid.Row="0" Width="44" Height="44" CornerRadius="22" Background="#065F46" HorizontalAlignment="Left" Margin="0,0,0,12">
-                            <TextBlock Text="💾 ➔ 💻" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border Grid.Row="0" Height="44" MinWidth="96" Padding="14,0" CornerRadius="22" Background="#065F46" HorizontalAlignment="Left" Margin="0,0,0,12">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock Text="💾" FontSize="17" VerticalAlignment="Center"/>
+                                <TextBlock Text="➔" FontSize="13" FontWeight="Bold" Foreground="#6EE7B7" Margin="6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="💻" FontSize="17" VerticalAlignment="Center"/>
+                            </StackPanel>
                         </Border>
 
                         <TextBlock Grid.Row="1" Text="USB ➔ PC 가져오기" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
@@ -97,7 +105,7 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <Border Grid.Row="0" Width="44" Height="44" CornerRadius="22" Background="#581C87" HorizontalAlignment="Left" Margin="0,0,0,12">
+                        <Border Grid.Row="0" MinWidth="44" Height="44" Padding="10,0" CornerRadius="22" Background="#581C87" HorizontalAlignment="Left" Margin="0,0,0,12">
                             <TextBlock Text="🖥️" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
 

@@ -9,6 +9,7 @@ import { isCertificateExpired } from '../utils/certParser';
 import { isUsbCertificate as isUsbCertHelper } from '../utils/driveFilter';
 import { getDriveColorInfo } from '../utils/driveColors';
 import { getAccurateIssuerInfo } from '../utils/issuerUtils';
+import { evaluateExpiryAlerts } from '../utils/certDiagnostics';
 import {
   Search,
   Copy,
@@ -101,6 +102,7 @@ interface CertificateListProps {
   canUndo?: boolean;
   onOpenUsbToPc?: (driveLetter?: string) => void;
   onNotifyCopy?: (msg: string) => void;
+  onOpenRenewalGuidance?: (certs: CertificateItem[]) => void;
 }
 
 export const CertificateList: React.FC<CertificateListProps> = ({
@@ -128,6 +130,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
   canUndo = false,
   onOpenUsbToPc,
   onNotifyCopy,
+  onOpenRenewalGuidance,
 }) => {
   const DEFAULT_COL_WIDTHS = useMemo(() => ({
     index: 46,
@@ -386,9 +389,76 @@ export const CertificateList: React.FC<CertificateListProps> = ({
   };
 
   const hasActiveFilter = categoryFilter !== 'ALL' || sourceFilter !== 'ALL' || searchQuery.trim().length > 0;
+  const [isExpiryBannerDismissed, setIsExpiryBannerDismissed] = useState(false);
+
+  const expiryAlert = useMemo(() => evaluateExpiryAlerts(certificates), [certificates]);
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 gap-3.5">
+    <div className="flex flex-col flex-1 min-h-0 gap-3">
+      {/* Conditional 1-Line Tiered Expiry Alert Bar */}
+      {!isExpiryBannerDismissed && expiryAlert.totalAlertCount > 0 && (
+        <div
+          className="wpf-native px-3.5 py-2 rounded-[6px] flex flex-wrap items-center justify-between gap-2 shrink-0 text-xs"
+          style={{
+            backgroundColor:
+              expiryAlert.urgencyLevel === 'critical'
+                ? 'var(--wpf-badge-expired-bg)'
+                : 'var(--wpf-badge-expiring-bg)',
+            border:
+              expiryAlert.urgencyLevel === 'critical'
+                ? '1px solid var(--wpf-badge-expired-border)'
+                : '1px solid var(--wpf-badge-expiring-border)',
+            color:
+              expiryAlert.urgencyLevel === 'critical'
+                ? 'var(--wpf-badge-expired-text)'
+                : 'var(--wpf-badge-expiring-text)',
+          }}
+        >
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <div className="truncate tabular-nums">
+              <span className="font-bold">만료 · 갱신 알림: </span>
+              <span>
+                {[
+                  expiryAlert.criticalCount > 0 ? `7일 이내 긴급 ${expiryAlert.criticalCount}건` : null,
+                  expiryAlert.warningCount > 0 ? `30일 이내 임박 ${expiryAlert.warningCount}건` : null,
+                  expiryAlert.expiredCount > 0 ? `만료 ${expiryAlert.expiredCount}건` : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </span>
+              {expiryAlert.earliestCert && (
+                <span className="hidden md:inline opacity-85">
+                  {' '}
+                  — 가장 빠른 만료: {expiryAlert.earliestCert.name} ({expiryAlert.earliestCert.validTo})
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {onOpenRenewalGuidance && (
+              <button
+                type="button"
+                onClick={() => onOpenRenewalGuidance(expiryAlert.affectedCerts)}
+                className="px-2.5 py-1 rounded-[4px] text-[11px] font-bold bg-[#2563EB] hover:bg-[#1D4ED8] text-white cursor-pointer whitespace-nowrap"
+              >
+                갱신 안내 보기
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsExpiryBannerDismissed(true)}
+              className="p-1 rounded-[4px] opacity-75 hover:opacity-100 cursor-pointer"
+              title="이번 세션에서 알림 숨기기"
+              aria-label="만료 알림 닫기"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main WPF DataGrid Card Container */}
       <div
         className="wpf-card wpf-native flex-1 min-h-0 flex flex-col overflow-hidden"

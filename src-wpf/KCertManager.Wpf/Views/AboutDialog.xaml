@@ -32,7 +32,7 @@
                 </Border>
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="K-Certificate Manager (K-인증서 매니저)" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <TextBlock Text="Desktop Edition v2.0.0 · .NET 10.0 / .NET 8.0 · 한·영 라이선스" FontSize="11.5" Foreground="{DynamicResource AccentTextBrush}"/>
+                    <TextBlock Text="Desktop Edition v2.1.0 · .NET 10.0 / .NET 8.0 · 한·영 라이선스" FontSize="11.5" Foreground="{DynamicResource AccentTextBrush}"/>
                 </StackPanel>
             </StackPanel>
 

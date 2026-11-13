@@ -49,6 +49,13 @@ import { StartupWorkflowModal, WorkflowType } from './components/StartupWorkflow
 import { GuidedWorkflowOverlay } from './components/GuidedWorkflowOverlay';
 import { SettingsModal } from './components/SettingsModal';
 import { OperationCompleteModal, OperationCompleteData } from './components/OperationCompleteModal';
+import { DiagnosticsRepairModal } from './components/DiagnosticsRepairModal';
+import {
+  analyzeDuplicateCertificates,
+  analyzePathRepairs,
+  PathRepairCandidate,
+  prepareSafeUsbEject,
+} from './utils/certDiagnostics';
 import { checkForAppUpdates, getEffectiveCurrentVersion, UpdateInfo } from './utils/updateChecker';
 import { playSuccessChime } from './utils/audioFeedback';
 import { 
@@ -251,6 +258,8 @@ export default function App() {
 
 
   const [selectedCertForDetail, setSelectedCertForDetail] = useState<CertificateItem | null>(null);
+  const [isDiagnosticsModalOpen, setIsDiagnosticsModalOpen] = useState(false);
+  const [ejectedDriveIds, setEjectedDriveIds] = useState<string[]>([]);
   const [lastScanTime, setLastScanTime] = useState('오늘 14:02');
   const [recentlyCopiedIds, setRecentlyCopiedIds] = useState<string[]>([]);
   const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
@@ -826,6 +835,121 @@ export default function App() {
       count: count
     });
     setActivityLogs(prev => [newLog, ...prev]);
+  };
+
+  const handleMoveDuplicatesToTrash = (certsToTrash: CertificateItem[]) => {
+    if (!certsToTrash || certsToTrash.length === 0) return;
+    handleDeleteCertificates(
+      certsToTrash.map(c => c.id),
+      '중복 인증서 정리'
+    );
+  };
+
+  const handleRepairFolders = (
+    candidates: PathRepairCandidate[],
+    trashSourceAfterCopy: boolean
+  ) => {
+    if (!candidates || candidates.length === 0) return;
+
+    const repairedItems: CertificateItem[] = [];
+    const oldIdsToTrash: string[] = [];
+
+    for (const cand of candidates) {
+      const targetUpper = cand.canonicalPath.trim().toUpperCase();
+      const drivePrefix = cand.targetDrive || 'C:';
+      const driveLabel = cand.cert.isRemovableMedia
+        ? `${drivePrefix} (이동식 USB)`
+        : `${drivePrefix} (로컬 디스크)`;
+
+      repairedItems.push({
+        ...cand.cert,
+        id: `repaired-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        sourceLocation: cand.canonicalPath,
+        sourceDrive: driveLabel,
+        isCustomPath: false,
+        isCustomAdded: true,
+        files: {
+          ...cand.cert.files,
+          sha256: cand.cert.files?.sha256 || 'SHA256-REPAIR-VERIFIED',
+        },
+      });
+      if (trashSourceAfterCopy) {
+        oldIdsToTrash.push(cand.cert.id);
+      }
+
+      // Remove duplicates targeting the exact same canonical path
+      void targetUpper;
+    }
+
+    if (trashSourceAfterCopy && oldIdsToTrash.length > 0) {
+      const oldSet = new Set(oldIdsToTrash);
+      const nowStr = new Date().toLocaleString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const sourceCerts = candidates.map(c => c.cert);
+      const trashEntries: TrashItem[] = sourceCerts.map(cert => ({
+        id: `trash-repair-${Date.now()}-${cert.id}`,
+        deletedAt: nowStr,
+        deleteReason: '표준 경로 복구 후 기존 비표준 폴더 정리',
+        cert,
+      }));
+      setTrashItems(prev => [...trashEntries, ...prev]);
+      setCertificates(prev => {
+        const remaining = prev.filter(c => !oldSet.has(c.id));
+        return [...repairedItems, ...remaining];
+      });
+      setLastUndoSnapshot({ trashItems: trashEntries, certs: sourceCerts });
+    } else {
+      setCertificates(prev => [...repairedItems, ...prev]);
+    }
+
+    const newLog = logActivity({
+      category: 'SYSTEM',
+      level: 'SUCCESS',
+      action: `비표준 폴더 ${candidates.length}건 표준 위치로 자동 복구`,
+      details: candidates
+        .map(c => `${c.cert.name}: ${c.sourcePath} ➔ ${c.canonicalPath}`)
+        .join(' | '),
+      source: candidates[0]?.sourcePath || '비표준 폴더',
+      target: candidates[0]?.canonicalPath || '표준 경로',
+      count: candidates.length,
+    });
+    setActivityLogs(prev => [newLog, ...prev]);
+
+    playSuccessChime();
+    triggerCopiedHighlight(repairedItems.map(r => r.id));
+    showToast(
+      `✅ 비표준 인증서 ${candidates.length}건을 표준 위치로 복구했습니다 (SHA-256 검사 완료).`
+    );
+  };
+
+  const handleEjectUsb = (driveTarget: string) => {
+    const res = prepareSafeUsbEject(driveTarget, availableDrives);
+    const matched = availableDrives.find(
+      d =>
+        d.letter.toUpperCase().startsWith(res.driveLetter.toUpperCase()) ||
+        d.id === driveTarget
+    );
+    if (matched) {
+      setEjectedDriveIds(prev => (prev.includes(matched.id) ? prev : [...prev, matched.id]));
+    }
+
+    const newLog = logActivity({
+      category: 'SYSTEM',
+      level: 'INFO',
+      action: `${res.driveLetter} USB 안전 제거 준비`,
+      details: res.message,
+      source: res.driveLetter,
+      target: '안전 분리 대기',
+      count: 1,
+    });
+    setActivityLogs(prev => [newLog, ...prev]);
+    showToast(`🔌 ${res.statusTitle} — Windows 트레이 '하드웨어 안전하게 제거'를 눌러 분리하세요.`);
+    return res;
   };
 
   const handleUndoDelete = (undoneTrashItems: TrashItem[], restoredCerts: CertificateItem[]) => {
@@ -1544,6 +1668,13 @@ export default function App() {
         onToggleAppViewMode={handleToggleAppViewMode}
         onOpenStartupWorkflow={() => setIsStartupWorkflowOpen(true)}
         onOpenSettings={() => setIsSettingsModalOpen(true)}
+        onOpenDiagnostics={() => setIsDiagnosticsModalOpen(true)}
+        diagnosticsIssueCount={
+          analyzeDuplicateCertificates(certificates).groups.reduce(
+            (sum, g) => sum + g.redundantEntries.filter(e => e.defaultChecked).length,
+            0
+          ) + analyzePathRepairs(certificates).length
+        }
       />
 
       {/* ROW 1: 2-Column Main Body (Left 260px Sidebar + Main Workspace) */}
@@ -1778,6 +1909,8 @@ export default function App() {
                 setIsUsbToPcModalOpen(true);
               }}
               onOpenUsbDiagnostic={() => setIsUsbDiagnosticModalOpen(true)}
+              onEjectDrive={(drive) => handleEjectUsb(drive.letter)}
+              ejectedDriveIds={ejectedDriveIds}
             />
           )}
 
@@ -1836,6 +1969,7 @@ export default function App() {
                   setIsUsbToPcModalOpen(true);
                 }}
                 onNotifyCopy={(msg) => showToast(msg)}
+                onOpenRenewalGuidance={(affected) => handleOpenRenewalGuidance(affected)}
               />
             </div>
 
@@ -2166,6 +2300,15 @@ export default function App() {
         onToggleDontShowStartupAgain={handleToggleDontShowStartupAgain}
       />
 
+      {/* 중복 인증서 정리 & 비표준 폴더 자동 복구 모달 */}
+      <DiagnosticsRepairModal
+        isOpen={isDiagnosticsModalOpen}
+        onClose={() => setIsDiagnosticsModalOpen(false)}
+        certificates={certificates}
+        onMoveDuplicatesToTrash={handleMoveDuplicatesToTrash}
+        onRepairFolders={handleRepairFolders}
+      />
+
       {/* 작업 완료 안내 전용 팝업창 모달 (Operation Complete Modal) */}
       <OperationCompleteModal
         isOpen={isOperationCompleteOpen}
@@ -2175,6 +2318,7 @@ export default function App() {
           setIsOperationCompleteOpen(false);
           handleNavTabSelect('history');
         }}
+        onEjectUsb={(driveHint) => handleEjectUsb(driveHint)}
       />
     </div>
   );

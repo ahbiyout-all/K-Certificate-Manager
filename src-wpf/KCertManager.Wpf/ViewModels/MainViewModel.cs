@@ -46,6 +46,7 @@ namespace KCertManager.Wpf.ViewModels
         private string _currentTheme = "dark";
         private string _currentSortMember = "NotAfter";
         private bool _isSortAscending = true;
+        private bool _isExpiryBannerDismissed;
 
         private bool _isSoundEnabled = true;
         private bool _isToastVisible;
@@ -93,6 +94,12 @@ namespace KCertManager.Wpf.ViewModels
             UndoDeleteCommand = new RelayCommand(UndoDelete, () => CanUndo);
             SelectAllCommand = new RelayCommand<bool?>(SelectAll);
             QuickBackupToDriveCommand = new RelayCommand<DriveItem>(async (drive) => await QuickBackupToDriveAsync(drive));
+            EjectDriveCommand = new RelayCommand<DriveItem>(ExecuteEjectDrive);
+            DismissExpiryBannerCommand = new RelayCommand(() =>
+            {
+                _isExpiryBannerDismissed = true;
+                OnPropertyChanged(nameof(HasExpiryAlert));
+            });
             CheckUpdatesCommand = new RelayCommand(async () => await CheckForAppUpdatesAsync());
             ShowStartupWorkflowCommand = new RelayCommand(ShowStartupWorkflowDialog);
             CloseToastCommand = new RelayCommand(() => IsToastVisible = false);
@@ -1063,6 +1070,8 @@ namespace KCertManager.Wpf.ViewModels
             }
         }
 
+        public CertificateBackupService BackupService => _backupService;
+
         public ObservableCollection<CertificateItem> AllCertificates => _allCertificates;
 
         public ObservableCollection<CertificateItem> FilteredCertificates
@@ -1214,6 +1223,48 @@ namespace KCertManager.Wpf.ViewModels
         public int TrashCount => _trashItems?.Count ?? 0;
         public int LogCount => ActivityLogService.Instance?.Logs?.Count ?? 0;
 
+        public bool HasExpiryAlert
+        {
+            get
+            {
+                if (_isExpiryBannerDismissed || _allCertificates == null) return false;
+                return _allCertificates.Any(x => x != null && (x.Status == ExpiryStatus.Expired || x.Status == ExpiryStatus.ExpiringSoon));
+            }
+        }
+
+        public bool IsExpiryCritical =>
+            _allCertificates != null &&
+            _allCertificates.Any(x => x != null && (x.Status == ExpiryStatus.Expired || x.RemainingDays <= 7));
+
+        public string ExpiryBannerMessage
+        {
+            get
+            {
+                if (_allCertificates == null) return string.Empty;
+                var critical = _allCertificates.Where(x => x != null && x.Status == ExpiryStatus.ExpiringSoon && x.RemainingDays <= 7).ToList();
+                var warning = _allCertificates.Where(x => x != null && x.Status == ExpiryStatus.ExpiringSoon && x.RemainingDays > 7).ToList();
+                var expired = _allCertificates.Where(x => x != null && x.Status == ExpiryStatus.Expired).ToList();
+
+                var parts = new List<string>();
+                if (critical.Count > 0) parts.Add($"7일 이내 긴급 {critical.Count}건");
+                if (warning.Count > 0) parts.Add($"30일 이내 임박 {warning.Count}건");
+                if (expired.Count > 0) parts.Add($"만료 {expired.Count}건");
+
+                if (parts.Count == 0) return string.Empty;
+
+                var earliest = critical.Concat(warning).Concat(expired)
+                    .OrderBy(x => x.RemainingDays)
+                    .FirstOrDefault();
+
+                string summary = "만료 · 갱신 알림: " + string.Join(" · ", parts);
+                if (earliest != null)
+                {
+                    summary += $" — 가장 빠른 만료: {earliest.CommonName} ({earliest.NotAfter:yyyy-MM-dd})";
+                }
+                return summary;
+            }
+        }
+
         #endregion
 
         #region Commands
@@ -1226,6 +1277,8 @@ namespace KCertManager.Wpf.ViewModels
         public ICommand UndoDeleteCommand { get; }
         public ICommand SelectAllCommand { get; }
         public ICommand QuickBackupToDriveCommand { get; }
+        public ICommand EjectDriveCommand { get; }
+        public ICommand DismissExpiryBannerCommand { get; }
         public ICommand CheckUpdatesCommand { get; }
 
         #endregion
@@ -1579,6 +1632,47 @@ namespace KCertManager.Wpf.ViewModels
             OnPropertyChanged(nameof(LogCount));
             OnPropertyChanged(nameof(HasUsbDrives));
             OnPropertyChanged(nameof(ConnectedUsbCount));
+            OnPropertyChanged(nameof(HasExpiryAlert));
+            OnPropertyChanged(nameof(IsExpiryCritical));
+            OnPropertyChanged(nameof(ExpiryBannerMessage));
+        }
+
+        private void ExecuteEjectDrive(DriveItem? drive)
+        {
+            if (drive == null || !drive.IsRemovable) return;
+
+            var res = NativeStorageInterop.EjectUsbDrive(drive.Name);
+            if (res.Success)
+            {
+                StatusMessage = res.Message;
+                ShowToast($"🔌 {res.Message}");
+                ActivityLogService.Instance.Log(
+                    LogCategory.SYSTEM,
+                    LogLevel.SUCCESS,
+                    $"{res.DriveLetter} USB 안전 제거 완료",
+                    res.Message,
+                    res.DriveLetter,
+                    "Safely Ejected");
+                RefreshDrives();
+                _ = RefreshCertificatesAsync();
+            }
+            else if (res.IsLockedByOtherProcess)
+            {
+                var ask = MessageBox.Show(
+                    $"{res.Message}\n\nWindows 기본 '하드웨어 안전하게 제거' 창을 열어 분리하시겠습니까?",
+                    "USB 안전 제거 안내",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (ask == MessageBoxResult.Yes)
+                {
+                    NativeStorageInterop.OpenWindowsSafeRemovalDialog();
+                }
+            }
+            else
+            {
+                MessageBox.Show(res.Message, "USB 안전 제거 안내", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         private async Task QuickBackupToDriveAsync(DriveItem? drive)

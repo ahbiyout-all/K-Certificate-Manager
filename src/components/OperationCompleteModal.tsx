@@ -18,8 +18,10 @@ import {
   Calendar,
   Building,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Usb
 } from 'lucide-react';
+import { extractDriveLetterFromPathOrLabel } from '../utils/certDiagnostics';
 
 export interface OperationCompleteData {
   title?: string;
@@ -50,6 +52,7 @@ interface OperationCompleteModalProps {
   onClose: () => void;
   data: OperationCompleteData | null;
   onOpenHistory?: () => void;
+  onEjectUsb?: (driveTarget: string) => { statusTitle: string; message: string } | void;
 }
 
 export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
@@ -57,14 +60,17 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
   onClose,
   data,
   onOpenHistory,
+  onEjectUsb,
 }) => {
   const [copiedPath, setCopiedPath] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
   const [showUsageGuide, setShowUsageGuide] = useState(false);
+  const [ejectFeedback, setEjectFeedback] = useState<{ statusTitle: string; message: string } | null>(null);
 
   useEffect(() => {
     if (isOpen && data) {
       playCompletionSound();
+      setEjectFeedback(null);
     }
   }, [isOpen, data]);
 
@@ -384,11 +390,21 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
               </ul>
             )}
           </div>
+          {/* 5. Post-Copy USB Safe Eject Status Banner */}
+          {isUsbTarget && ejectFeedback && (
+            <div className="bg-emerald-50 border border-emerald-300 rounded-xl px-3.5 py-2.5 text-xs text-emerald-950 flex items-start gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <div className="font-bold">{ejectFeedback.statusTitle}</div>
+                <p className="text-[11px] text-emerald-800 leading-relaxed">{ejectFeedback.message}</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Modal Footer */}
         <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 shrink-0">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={copyFullSummary}
@@ -421,6 +437,32 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
                 <span>백업 이력 보기</span>
               </button>
             )}
+
+            {isUsbTarget && onEjectUsb && (() => {
+              const targetDriveHint =
+                extractDriveLetterFromPathOrLabel(data.targetPath) ||
+                extractDriveLetterFromPathOrLabel(data.targetDiskName) ||
+                'USB';
+              return (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const res = onEjectUsb(targetDriveHint);
+                    setEjectFeedback(
+                      res || {
+                        statusTitle: `${targetDriveHint} USB 안전 분리 준비됨`,
+                        message:
+                          "브라우저 연결이 해제되었습니다. Windows 작업 표시줄의 '하드웨어 안전하게 제거'를 눌러 분리하세요.",
+                      }
+                    );
+                  }}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 transition-colors cursor-pointer"
+                >
+                  <Usb className="w-3.5 h-3.5 text-amber-700" />
+                  <span>{ejectFeedback ? `${targetDriveHint} 분리 준비됨` : `${targetDriveHint} USB 안전 제거`}</span>
+                </button>
+              );
+            })()}
           </div>
 
           <button

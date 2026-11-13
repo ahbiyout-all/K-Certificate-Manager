@@ -112,6 +112,22 @@ namespace KCert.Core.HardwareGuard
         };
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PREVENT_MEDIA_REMOVAL
+    {
+        [MarshalAs(UnmanagedType.I1)]
+        public bool PreventMediaRemoval;
+    }
+
+    public class UsbEjectResult
+    {
+        public bool Success { get; set; }
+        public string DriveLetter { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public bool IsLockedByOtherProcess { get; set; }
+        public int ErrorCode { get; set; }
+    }
+
     /// <summary>
     /// WMI 서비스를 완전히 배제하고 Windows Kernel32 DeviceIoControl을 직접 호출하는 초고속 네이티브 스토리지 쿼리 엔진
     /// (조회 속도: 0.1ms 미만, Non-Admin 권한 100% 호환)
@@ -119,6 +135,12 @@ namespace KCert.Core.HardwareGuard
     public static class NativeStorageInterop
     {
         private const uint IOCTL_STORAGE_QUERY_PROPERTY = 0x002D1400;
+        private const uint IOCTL_STORAGE_MEDIA_REMOVAL = 0x002D4804;
+        private const uint IOCTL_STORAGE_EJECT_MEDIA = 0x002D4808;
+        private const uint FSCTL_LOCK_VOLUME = 0x00090018;
+        private const uint FSCTL_DISMOUNT_VOLUME = 0x00090020;
+        private const uint GENERIC_READ = 0x80000000;
+        private const uint GENERIC_WRITE = 0x40000000;
         private const uint FILE_SHARE_READ = 0x00000001;
         private const uint FILE_SHARE_WRITE = 0x00000002;
         private const uint OPEN_EXISTING = 3;
@@ -152,6 +174,30 @@ namespace KCert.Core.HardwareGuard
             ref STORAGE_PROPERTY_QUERY lpInBuffer,
             uint nInBufferSize,
             byte[] lpOutBuffer,
+            uint nOutBufferSize,
+            out uint lpBytesReturned,
+            IntPtr lpOverlapped);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool DeviceIoControl(
+            SafeFileHandle hDevice,
+            uint dwIoControlCode,
+            IntPtr lpInBuffer,
+            uint nInBufferSize,
+            IntPtr lpOutBuffer,
+            uint nOutBufferSize,
+            out uint lpBytesReturned,
+            IntPtr lpOverlapped);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool DeviceIoControl(
+            SafeFileHandle hDevice,
+            uint dwIoControlCode,
+            ref PREVENT_MEDIA_REMOVAL lpInBuffer,
+            uint nInBufferSize,
+            IntPtr lpOutBuffer,
             uint nOutBufferSize,
             out uint lpBytesReturned,
             IntPtr lpOverlapped);
@@ -408,6 +454,173 @@ namespace KCert.Core.HardwareGuard
             }
 
             return $"{vendorId} {productId}".Trim();
+        }
+
+        /// <summary>
+        /// Windows Kernel32 볼륨 잠금(FSCTL_LOCK_VOLUME) -> 마운트 해제(FSCTL_DISMOUNT_VOLUME) ->
+        /// USB 미디어 분리(IOCTL_STORAGE_EJECT_MEDIA) 순서로 이동식 USB를 안전하게 제거합니다.
+        /// </summary>
+        public static UsbEjectResult EjectUsbDrive(string driveLetter)
+        {
+            if (string.IsNullOrWhiteSpace(driveLetter))
+            {
+                return new UsbEjectResult
+                {
+                    Success = false,
+                    Message = "분리할 드라이브 문자가 지정되지 않았습니다."
+                };
+            }
+
+            string cleanLetter = driveLetter.Trim().TrimEnd('\\', '/');
+            if (cleanLetter.Length >= 1 && char.IsLetter(cleanLetter[0]))
+            {
+                cleanLetter = char.ToUpperInvariant(cleanLetter[0]) + ":";
+            }
+            else
+            {
+                return new UsbEjectResult
+                {
+                    Success = false,
+                    DriveLetter = driveLetter,
+                    Message = $"올바른 드라이브 형식이 아닙니다: {driveLetter}"
+                };
+            }
+
+            // 시스템 드라이브(C:) 또는 고정 디스크 분리 시도 차단
+            string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\').ToUpperInvariant();
+            if (string.Equals(cleanLetter, sysRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                return new UsbEjectResult
+                {
+                    Success = false,
+                    DriveLetter = cleanLetter,
+                    Message = "Windows 시스템 드라이브는 안전 제거 대상에서 제외됩니다."
+                };
+            }
+
+            string rootSlash = cleanLetter + "\\";
+            uint winType = GetDriveType(rootSlash);
+            var details = QueryDriveDetails(cleanLetter);
+            bool isUsb = winType == DRIVE_REMOVABLE || (details != null && details.IsUsb);
+            if (!isUsb)
+            {
+                return new UsbEjectResult
+                {
+                    Success = false,
+                    DriveLetter = cleanLetter,
+                    Message = $"{cleanLetter} 드라이브는 이동식 USB가 아니므로 안전 제거할 수 없습니다."
+                };
+            }
+
+            string volumePath = @"\\.\" + cleanLetter;
+            using SafeFileHandle handle = CreateFile(
+                volumePath,
+                GENERIC_READ | GENERIC_WRITE,
+                FILE_SHARE_READ | FILE_SHARE_WRITE,
+                IntPtr.Zero,
+                OPEN_EXISTING,
+                0,
+                IntPtr.Zero);
+
+            if (handle.IsInvalid)
+            {
+                int err = Marshal.GetLastWin32Error();
+                return new UsbEjectResult
+                {
+                    Success = false,
+                    DriveLetter = cleanLetter,
+                    ErrorCode = err,
+                    IsLockedByOtherProcess = err == 5 || err == 32,
+                    Message = err == 5 || err == 32
+                        ? $"{cleanLetter} 드라이브가 다른 프로그램(파일 탐색기·백신 등)에서 사용 중입니다."
+                        : $"{cleanLetter} 장치 핸들을 열 수 없습니다 (Win32 오류 코드: {err})."
+                };
+            }
+
+            uint bytesReturned;
+            bool locked = false;
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                if (DeviceIoControl(handle, FSCTL_LOCK_VOLUME, IntPtr.Zero, 0, IntPtr.Zero, 0, out bytesReturned, IntPtr.Zero))
+                {
+                    locked = true;
+                    break;
+                }
+                System.Threading.Thread.Sleep(120);
+            }
+
+            if (!locked)
+            {
+                int err = Marshal.GetLastWin32Error();
+                return new UsbEjectResult
+                {
+                    Success = false,
+                    DriveLetter = cleanLetter,
+                    ErrorCode = err,
+                    IsLockedByOtherProcess = true,
+                    Message = $"다른 프로그램(탐색기 창·보안 모듈 등)이 {cleanLetter} 드라이브를 사용 중이어서 바로 분리하지 못했습니다."
+                };
+            }
+
+            if (!DeviceIoControl(handle, FSCTL_DISMOUNT_VOLUME, IntPtr.Zero, 0, IntPtr.Zero, 0, out bytesReturned, IntPtr.Zero))
+            {
+                int err = Marshal.GetLastWin32Error();
+                return new UsbEjectResult
+                {
+                    Success = false,
+                    DriveLetter = cleanLetter,
+                    ErrorCode = err,
+                    Message = $"{cleanLetter} 볼륨 마운트 해제에 실패했습니다 (오류 코드: {err})."
+                };
+            }
+
+            var prevent = new PREVENT_MEDIA_REMOVAL { PreventMediaRemoval = false };
+            DeviceIoControl(
+                handle,
+                IOCTL_STORAGE_MEDIA_REMOVAL,
+                ref prevent,
+                (uint)Marshal.SizeOf(typeof(PREVENT_MEDIA_REMOVAL)),
+                IntPtr.Zero,
+                0,
+                out bytesReturned,
+                IntPtr.Zero);
+
+            bool ejected = DeviceIoControl(handle, IOCTL_STORAGE_EJECT_MEDIA, IntPtr.Zero, 0, IntPtr.Zero, 0, out bytesReturned, IntPtr.Zero);
+            if (!ejected)
+            {
+                int err = Marshal.GetLastWin32Error();
+                return new UsbEjectResult
+                {
+                    Success = true, // Volume was successfully locked and dismounted cleanly
+                    DriveLetter = cleanLetter,
+                    ErrorCode = err,
+                    Message = $"{cleanLetter} 데이터 쓰기가 모두 안전하게 마운트 해제되었습니다. 이제 USB를 뽑아도 됩니다."
+                };
+            }
+
+            return new UsbEjectResult
+            {
+                Success = true,
+                DriveLetter = cleanLetter,
+                Message = $"{cleanLetter} USB 드라이브를 안전하게 분리했습니다. USB 메모리를 뽑아도 됩니다."
+            };
+        }
+
+        /// <summary>
+        /// 다른 프로세스 잠금 등으로 직접 분리가 실패한 경우 Windows 기본 '하드웨어 안전하게 제거' 창을 엽니다.
+        /// </summary>
+        public static void OpenWindowsSafeRemovalDialog()
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "rundll32.exe",
+                    Arguments = "shell32.dll,Control_RunDLL hotplug.dll",
+                    UseShellExecute = true
+                });
+            }
+            catch { }
         }
     }
 }

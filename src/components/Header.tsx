@@ -14,7 +14,8 @@ import {
   ShieldCheck,
   Sparkles,
   Info,
-  Palette
+  Palette,
+  FolderSync
 } from 'lucide-react';
 import { AppTheme } from '../types';
 import { THEME_OPTIONS } from '../data/themes';
@@ -58,6 +59,8 @@ interface HeaderProps {
   onToggleAppViewMode?: (mode: 'simple' | 'advanced') => void;
   onOpenStartupWorkflow?: () => void;
   onOpenSettings?: () => void;
+  onOpenDiagnostics?: () => void;
+  diagnosticsIssueCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -82,6 +85,8 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleAppViewMode,
   onOpenStartupWorkflow,
   onOpenSettings,
+  onOpenDiagnostics,
+  diagnosticsIssueCount = 0,
 }) => {
   const [soundSettings, setSoundSettings] = useState<SoundSettings>(getSoundSettings);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
@@ -375,6 +380,34 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Advanced Mode Only Quick Tools (Matches WPF MainWindow.xaml lines 153-195) */}
           {appViewMode === 'advanced' && (
             <>
+              {onOpenDiagnostics && (
+                <button
+                  type="button"
+                  onClick={onOpenDiagnostics}
+                  className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+                  title="중복 인증서 정리 및 잘못된 폴더 자동 복구"
+                >
+                  <FolderSync
+                    className="w-3.5 h-3.5"
+                    style={{
+                      color:
+                        diagnosticsIssueCount > 0
+                          ? 'var(--wpf-badge-expiring-text)'
+                          : 'var(--wpf-accent-text)',
+                    }}
+                  />
+                  <span>중복·폴더 점검</span>
+                  {diagnosticsIssueCount > 0 && (
+                    <span
+                      className="font-extrabold tabular-nums text-[11px]"
+                      style={{ color: 'var(--wpf-badge-expiring-text)' }}
+                    >
+                      {diagnosticsIssueCount}
+                    </span>
+                  )}
+                </button>
+              )}
+
               {onOpenPaths && (
                 <button
                   type="button"

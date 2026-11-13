@@ -517,7 +517,7 @@ export const TrashModal: React.FC<TrashModalProps> = ({
             <span>보관함 파일은 Windows DPAPI와 AES-256 방식으로 이중 암호화되어 안전하게 보호됩니다.</span>
           </div>
           <span className="text-[11px] font-mono text-emerald-400/80">
-            K-Certificate Protected Vault v2.0.0
+            K-Certificate Protected Vault v2.1.0
           </span>
         </div>
 

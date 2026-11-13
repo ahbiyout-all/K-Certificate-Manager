@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { HardDrive, Cpu, Check, Copy, ArrowDownLeft, Save } from 'lucide-react';
+import { HardDrive, Cpu, Check, Copy, ArrowDownLeft, Save, Usb } from 'lucide-react';
 import { DiskDrive, CertificateItem } from '../types';
 import { filterPhysicalDrivesOnly } from '../utils/driveFilter';
 import { getDriveColorInfo } from '../utils/driveColors';
@@ -12,6 +12,8 @@ interface ConnectedDrivesBarProps {
   onBackupToDrive?: (driveId: string) => void;
   onOpenUsbToPc?: (driveLetter?: string) => void;
   onOpenUsbDiagnostic?: () => void;
+  onEjectDrive?: (drive: DiskDrive) => void;
+  ejectedDriveIds?: string[];
 }
 
 export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
@@ -22,6 +24,8 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
   onBackupToDrive,
   onOpenUsbToPc,
   onOpenUsbDiagnostic,
+  onEjectDrive,
+  ejectedDriveIds = [],
 }) => {
   const [viewMode, setViewMode] = useState<'basic' | 'advanced'>(() => {
     try {
@@ -280,6 +284,25 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
                     >
                       <ArrowDownLeft className="w-3 h-3" />
                       <span>가져오기</span>
+                    </button>
+                  )}
+                  {isUsb && onEjectDrive && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEjectDrive(drive);
+                      }}
+                      className="wpf-btn-secondary wpf-native px-2.5 py-1 text-[11px] font-semibold flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                      style={{
+                        color: ejectedDriveIds.includes(drive.id)
+                          ? 'var(--wpf-badge-valid-text)'
+                          : 'var(--wpf-badge-expiring-text)',
+                      }}
+                      title={`${drive.letter} USB 안전 제거 준비`}
+                    >
+                      <Usb className="w-3 h-3" />
+                      <span>{ejectedDriveIds.includes(drive.id) ? '분리 준비됨' : '안전 제거'}</span>
                     </button>
                   )}
                 </div>

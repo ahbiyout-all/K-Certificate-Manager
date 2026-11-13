@@ -7,9 +7,9 @@
 ## 📌 프로젝트 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v2.0.0` (Semantic Versioning: `2.0.0`)
+- **현재 버전**: `v2.1.0` (Semantic Versioning: `2.1.0`)
 - **개발자**: AhBiYout
-- **GitHub 저장소**: [https://github.com/AhBiYout-all](https://github.com/AhBiYout-all)
+- **GitHub 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
 - **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **소속**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr)
 - **소속회사**: (주)청운정보시스템 ( cisnet.co.kr )
@@ -22,10 +22,13 @@
 | 파일명 | 설명 |
 | :--- | :--- |
 | [`VERSIONING_POLICY.md`](./VERSIONING_POLICY.md) | **버전 관리 표준 정책**: SemVer 2.0.0 (MAJOR.MINOR.PATCH) 3단계 분류, 의사결정 트리 및 동기화 체크리스트 |
-| [`PATCHNOTES.md`](./PATCHNOTES.md) | **버전 릴리스 패치노트**: v1.0.0부터 v1.8.0까지의 상세 기능 변경, 보안 패치 및 릴리스 히스토리 |
+| [`PATCHNOTES.md`](./PATCHNOTES.md) | **버전 릴리스 패치노트**: v1.0.0부터 최신 **v2.1.0**까지의 상세 기능 변경, 보안 패치 및 감사 이력 |
+| [`GITHUB_DOCS.md`](./GITHUB_DOCS.md) | **GitHub 공식 기술/운영 레퍼런스**: v2.1.0 기능 명세, 빌드/린트 검증, Inno Setup 및 방화벽 자동 등록 통합 안내 |
+| [`BLOG_v2.1.0.md`](./BLOG_v2.1.0.md) | **공식 구글 블로그 배포 통합 문서 (최신)**: v2.1.0 블로그 게시용 전용 문서 (`[작성 모드]` & `[HTML 편집 모드]` 듀얼 제공) |
+| [`BLOGGER_POST_COMPOSE_MODE.md`](./BLOGGER_POST_COMPOSE_MODE.md) | **구글 블로그 전용 원고 [작성 모드 (서식 있는 텍스트)]**: Blogger 에디터에 그대로 복사·붙여넣기하는 최신 **v2.1.0** 서식 지원 마크다운 원고 |
+| [`BLOGGER_POST_HTML_MODE.html`](./BLOGGER_POST_HTML_MODE.html) | **구글 블로그 전용 원고 [HTML 편집 모드]**: Blogger HTML 모드에 즉시 붙여넣기 가능한 최신 **v2.1.0** 반응형 모던 인라인 HTML 원고 |
+| [`BLOG_v1.9.0.md`](./BLOG_v1.9.0.md) | **공식 구글 블로그 배포 통합 문서**: v1.9.0 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
 | [`BLOG_v1.8.0.md`](./BLOG_v1.8.0.md) | **공식 구글 블로그 배포 통합 문서**: v1.8.0 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
-| [`BLOGGER_POST_COMPOSE_MODE.md`](./BLOGGER_POST_COMPOSE_MODE.md) | **구글 블로그 전용 원고 [작성 모드 (서식 있는 텍스트)]**: Blogger 에디터에 그대로 복사·붙여넣기하는 최신 v1.8.0 서식 지원 마크다운 원고 |
-| [`BLOGGER_POST_HTML_MODE.html`](./BLOGGER_POST_HTML_MODE.html) | **구글 블로그 전용 원고 [HTML 편집 모드]**: Blogger HTML 모드에 즉시 붙여넣기 가능한 최신 v1.8.0 반응형 모던 인라인 HTML 원고 |
 | [`BLOG_v1.7.2.md`](./BLOG_v1.7.2.md) | **공식 구글 블로그 배포 통합 문서**: v1.7.2 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
 | [`BLOG_v1.7.1.md`](./BLOG_v1.7.1.md) | **공식 구글 블로그 배포 문서**: v1.7.1 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
 | [`BLOG_v1.7.0.md`](./BLOG_v1.7.0.md) | **공식 구글 블로그 배포 문서**: v1.7.0 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
@@ -33,11 +36,11 @@
 | [`BLOG_v1.5.0.md`](./BLOG_v1.5.0.md) | **공식 구글 블로그 배포 문서**: v1.5.0 공식 구글 블로그(Blogger) 게시용 10단계 표준 마크다운 원고 |
 | [`AI_INSTRUCTIONS.md`](../AI_INSTRUCTIONS.md) | **AI 개발 행동 강령 & 유지보수 가이드**: 자아검증 수칙, 듀얼 아키텍처, 보안 하드닝, 빌드/배포 자동화 파이프라인 명세 |
 | [`LICENSE.md`](./LICENSE.md) | **소프트웨어 라이선스 & 법적 고지**: 한국어(`LICENSE_KR.txt`)·영어(`LICENSE_EN.txt`) 2종 라이선스 정의, 무상 이용 조건 및 보증 부인 |
-| [`USER_GUIDE.md`](./USER_GUIDE.md) | **사용자 매뉴얼**: 모던 일체형 타이틀바, 4종 테마, 인증서 탐색, USB 백업, USB➔PC 복사, 만료/타인 정리 및 휴지통 가이드 |
-| [`BUILD_GUIDE.md`](./BUILD_GUIDE.md) | **빌드 및 배포 가이드**: .NET 10 / .NET 8 자동 감지 빌드(`build.bat`), Inno Setup 단일 설치파일(`kcert-manager-v1.7.2-setup.exe`), GitHub 업로드(`push_to_github.bat`) 안내 |
-| [`GITHUB_GUIDE.md`](./GITHUB_GUIDE.md) | **GitHub 운영·CI/CD 및 릴리스 배포 가이드**: 저장소 구조, GitHub Actions 매트릭스(`ci.yml`, `build.yml`), v1.7.2 릴리스 배포 파이프라인, 이슈/PR 기여 가이드 |
-| [`AUTO_UPDATE_GUIDE.md`](./AUTO_UPDATE_GUIDE.md) | **자동 업데이트 가이드**: GitHub Releases REST API 기반 실시간 버전 확인, SemVer 비교, 커스텀 업데이트 알림 팝업창(`UpdateNotificationDialog`) 및 릴리스 배포 파이프라인 |
-| [`WPF_NATIVE_GUIDE.md`](./WPF_NATIVE_GUIDE.md) | **C# WPF 데스크톱 개발 가이드**: MVVM 아키텍처, 모던 일체형 타이틀바(`WindowChrome`), 드롭다운 테마 선택기, 4대 테마 시스템 안내 |
+| [`USER_GUIDE.md`](./USER_GUIDE.md) | **사용자 매뉴얼**: 쉬운 일상 표현 UI, 반응형 카드 레이아웃, 인앱 자동 업데이트, 암호화 보호 보관함 및 USB 백업/복구 가이드 |
+| [`BUILD_GUIDE.md`](./BUILD_GUIDE.md) | **빌드 및 배포 가이드**: .NET 10 / .NET 8 자동 감지 빌드(`build.bat`/`build.ps1`), 버전별 분리 출력(`dist/v2.1.0/`), Inno Setup(`kcert-manager-v2.1.0-setup.exe`) 안내 |
+| [`GITHUB_GUIDE.md`](./GITHUB_GUIDE.md) | **GitHub 운영·CI/CD 및 릴리스 배포 가이드**: 저장소 구조, GitHub Actions 매트릭스(`build.yml`), v2.1.0 릴리스 배포 파이프라인, 이슈/PR 기여 가이드 |
+| [`AUTO_UPDATE_GUIDE.md`](./AUTO_UPDATE_GUIDE.md) | **자동 업데이트 가이드**: GitHub 이동 없는 인앱 자동 다운로드·무인 셀프 설치(`DownloadAndInstallAsync`, `apply_self_update.ps1`, Web 3단계 업데이트) 명세 |
+| [`WPF_NATIVE_GUIDE.md`](./WPF_NATIVE_GUIDE.md) | **C# WPF 데스크톱 개발 가이드**: v2.1.0 MVVM 아키텍처, 유동 네온 테두리(`WpfAnimatedBorderHelper`), 인앱 자동 업데이트, `C:\` 자가 복사 방지 명세 |
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | **시스템 아키텍처**: 인증서 파일 쌍 규격, 경로 매핑, 양방향 전송 파이프라인, 5대 서브시스템 및 7대 보안 하드닝 설계 원칙 |
 | [`PURE_CREATIVE_DLL_ARCHITECTURE.md`](./PURE_CREATIVE_DLL_ARCHITECTURE.md) | **순수 창작 DLL 아키텍처 및 세부 동작 원리서**: 100% C# 순수 창작 `KCert.Core.dll` 및 `KCert.Crypto.dll`의 5대 서브시스템, ASN.1 바이너리 파서, PKCS#8 키 분석기, 중복 탐지, PFX 변환 엔진 기술 명세 |
 | [`KCERT_CRYPTO_DLL_SPECIFICATION.md`](./KCERT_CRYPTO_DLL_SPECIFICATION.md) | **KCert.Crypto.dll 순수 창작 암호화 & 전자서명 엔진 기술 명세서**: KISA SEED-128 (RFC 4269), KISA ARIA (RFC 5794), PKCS#8 signPri.key 복호화, VID 영지식 본인확인, RSA-SHA256 전자서명 시뮬레이션 동작 원리 및 기존 DLL 결함 교정 상세서 |
@@ -115,5 +118,18 @@
     - 가로 슬라이더 바 바로 옆에 눈에 잘 띄는 `[⚙️ 환경 설정]` 버튼을 영구 배치하여 설정 창 호출 직관성 극대화
     - C# WPF 데스크톱 전용 `SettingsDialog.xaml` 신설 및 `SettingsService`를 통한 로컬 환경설정(`kcert_settings.json`) 영구 동기화
     - '다시 표시하지 않음' CheckBox를 `MainViewModel.DontShowStartupWorkflowAgain`에 Two-Way 양방향 바인딩하여 설정 상태 실시간 반영
-
-
+24. **순수 창작 DLL 분리, 가로바 스크롤러 & 전역 고대비 툴팁 시스템 (v1.8.0)**
+    - `KCert.Core.dll` 및 `KCert.Crypto.dll` 독립 분리, 상단 헤더 가로 스크롤바 및 마우스 휠 좌우 이동, 4대 테마 전역 고대비 툴팁 제공.
+25. **암호화 보호 보관함, 제한된 USB 복구 & 984px 만료 정리창 (v1.9.0)**
+    - Windows DPAPI + AES-256 이중 암호화 보호 보관소(`protected_restored_manifest.dat`), 오직 이동식 USB로만 복구 가능한 제한 복구(`💾 USB로 제한 복구`), 984px 광폭 `ExpiredCleanupDialog` 탑재.
+26. **60fps 무한 유동 애니메이션 테두리(Animated Moving Border Glow) (v2.0.0)**
+    - WPF `WpfAnimatedBorderHelper.cs` 및 Web `src/index.css` 2중 레이어 그라데이션을 결합해 선택/USB/로컬 드라이브 카드에 대각 무한 유동 네온 테두리 적용.
+27. **GitHub 이동 없는 앱 내 자동 다운로드·무인 셀프 설치 엔진 탑재 (v2.1.0 신규)**
+    - 시작 시 또는 수동 확인 시 뜨는 업데이트 알림창에서 `[확인 (자동 다운로드 · 설치)]`를 누르면 외부 브라우저로 이동하지 않고 설치 파일(`kcert-manager-v*-setup.exe`)을 직접 스트리밍 다운로드·검증(`MZ`/`PK` 헤더) 후 숨김 PowerShell 스크립트(`apply_self_update.ps1`)로 무인 설치 및 자동 재실행.
+    - Web 콘솔 역시 `runInAppSelfUpdate`를 통해 3단계 스트림 다운로드 ➔ WebCrypto SHA-256 검사 ➔ Cache Storage 갱신을 인앱으로 직접 완료.
+28. **WPF-Web 다크 테마 통합 & 반응형 CSS Grid `auto-fill` 인증서 카드 레이아웃 (v2.1.0 신규)**
+    - Web 콘솔 기본 테마를 WPF 다크 테마(`#0F1219` / `#1A1F2C`)로 통일하고 다크·파스텔 블랙 모달의 밝은 배경/텍스트 대비 결함을 완전 수정.
+    - `CertificateList`에 화면 너비에 따라 카드가 자동 리플로우되는 CSS Grid `repeat(auto-fill, minmax(300px, 1fr))` 레이아웃 및 카드/표 보기 전환 탑재.
+29. **전역 UI 쉬운 일상 표현 우선 개편 & 3차 심층 감사 결함 수정 (v2.1.0 신규)**
+    - Web 26개 모듈과 WPF 전역 다이얼로그의 긴 설명을 1줄 요약 + 기본 접힘 토글(`더보기` / `Expander`)로 정리하고, 전문 용어를 쉬운 일상 표현 + 용어 병기로 통일.
+    - WPF `C:\` 드라이브 자가 복사 판별 보강(`ResolveEffectiveDestinationRoot`) 및 Web `AbortError` 취소 재시도·stale closure 수정 완료.

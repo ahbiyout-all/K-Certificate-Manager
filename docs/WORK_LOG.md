@@ -7,7 +7,7 @@
 ## 📌 프로젝트 기본 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v2.0.0` (Semantic Versioning 2.0.0 MAJOR Release)
+- **현재 버전**: `v2.1.0` (Semantic Versioning 2.0.0 MINOR Release)
 - **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
 - **구글 공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **공식 홈페이지**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr) ((주)청운정보시스템)
@@ -16,6 +16,28 @@
 ---
 
 ## 📅 작업 기록 상세 내역
+
+### 📝 [작업 차수 184] SemVer `v2.1.0` (MINOR) 버전업 및 전체 GitHub 기술 문서 · 구글 블로거(작성 모드 / HTML 편집 모드) 동기화 완료
+- **작업 일시**: 2026-11-13 09:05 KST
+- **요청 사항**:
+  - `버전업이 필요하지 않나요?`
+  - `docs폴더 문서들을 수정된 최신 내용으로 업데이트 합니다.`
+  - `문서폴더에 깃허브용 문서 업데이트, 구글 블로거용 문서를 생성 해주세요.  [작성 모드 (서식 있는 텍스트)] 및 [HTML 편집 모드]`
+- **SemVer 2.0.0 버전업 판단 근거 (`v2.0.0` ➔ `v2.1.0`, `MINOR`)**:
+  - 기존 인증서 데이터 포맷·보안 규격·백업 구조의 하위 호환성은 100% 유지되면서도, ▲GitHub 이동 없는 앱 내 자동 다운로드·무인 셀프 설치 엔진(WPF `DownloadAndInstallAsync` + `apply_self_update.ps1`, Web `runInAppSelfUpdate`) ▲WPF-Web 다크 테마 통합 및 반응형 CSS Grid `auto-fill` 인증서 카드 레이아웃 ▲전역 UI 쉬운 일상 표현 우선 + 접이식 `더보기`/`Expander` 개편 ▲3차 심층 전수 감사 결함 수정(`C:\` 자가 복사 판별 보강 등)이 추가되어 `docs/VERSIONING_POLICY.md` 기준 **`MINOR`(`v2.1.0`)** 버전업 확정.
+- **수행 내역**:
+  1. **런타임 · WPF · 빌드/배포 스크립트 8대 영역 `2.1.0` (`2026-11-13`) 전역 동기화**:
+     - Web: `package.json`, `src/version.ts`, `src/components/TrashModal.tsx`.
+     - WPF: `KCertManager.Wpf.csproj`, `KCert.Core.csproj`, `KCert.Crypto.csproj`, `UpdateCheckerService.cs`, `AboutDialog.xaml/.cs`, `MainWindow.xaml`, `UpdateNotificationDialog.xaml`.
+     - Build/CI: `installer.iss`, `build.ps1`, `build.bat`, `build.cmd`, `.github/workflows/build.yml`.
+  2. **GitHub 및 `/docs/` 기술 문서 최신화**:
+     - 루트 `README.md`, `docs/README.md`, `docs/PATCHNOTES.md`, `docs/GITHUB_DOCS.md`, `docs/GITHUB_GUIDE.md`, `docs/AUTO_UPDATE_GUIDE.md`, `docs/BUILD_GUIDE.md`, `docs/USER_GUIDE.md`, `docs/WPF_NATIVE_GUIDE.md`, `docs/ARCHITECTURE.md` 일괄 업데이트.
+  3. **구글 블로거(Blogger) 배포 문서 갱신 및 생성**:
+     - `docs/BLOGGER_POST_COMPOSE_MODE.md` (`[작성 모드 (서식 있는 텍스트)]`), `docs/BLOGGER_POST_HTML_MODE.html` (`[HTML 편집 모드]`), 통합 문서 `docs/BLOG_v2.1.0.md` 작성 완료.
+- **검증 결과**:
+  - 전 파일 `2.1.0` 버전 교차 일관성 검증, `BLOGGER_POST_HTML_MODE.html` 태그 밸런스 검증, WPF XAML/C# 정적 검증, Web SPA `compile_applet` 및 `lint_applet` 동시 검증 완료.
+
+---
 
 ### 📝 [작업 차수 183] 심층 전수 감사 3차(Self-Reflection & Deep Audit Pass 3) 및 테마 대비·상태 동기화·WPF C:\ 자가 복사 버그·문구 일관성 수정 (v2.0.0)
 - **작업 일시**: 2026-11-13 08:40 KST

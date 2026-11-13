@@ -206,18 +206,24 @@
             </Grid>
         </Border>
 
-        <!-- 4. Practical Usage Next Steps Guide Tip (Collapsed by Default) -->
-        <Border Grid.Row="3" Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="10,8" Margin="0,0,0,14" BorderBrush="#1D4ED8" BorderThickness="1">
-            <Expander x:Name="ExpanderGuideTip" IsExpanded="False" Foreground="#93C5FD" FontSize="11.5" FontWeight="Bold" Cursor="Hand">
-                <Expander.Header>
-                    <TextBlock Text="💡 복사 후 사용 안내 보기" FontSize="11.5" FontWeight="Bold" Foreground="#93C5FD"/>
-                </Expander.Header>
-                <TextBlock x:Name="TxtGuideTip"
-                           Margin="0,8,0,2"
-                           Text="• 다른 PC에서 USB를 꽂은 뒤 [이동식 디스크]를 선택해 로그인하세요.&#x0a;• 분리 전 작업 표시줄의 '하드웨어 안전하게 제거'를 눌러 주세요."
-                           FontSize="10.8" FontWeight="Normal" Foreground="{DynamicResource TextSecondaryBrush}" LineHeight="17" TextWrapping="Wrap"/>
-            </Expander>
-        </Border>
+        <!-- 4. Practical Usage Next Steps Guide Tip & Eject Status -->
+        <StackPanel Grid.Row="3" Margin="0,0,0,14">
+            <Border Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="10,8" BorderBrush="#1D4ED8" BorderThickness="1">
+                <Expander x:Name="ExpanderGuideTip" IsExpanded="False" Foreground="#93C5FD" FontSize="11.5" FontWeight="Bold" Cursor="Hand">
+                    <Expander.Header>
+                        <TextBlock Text="💡 복사 후 사용 안내 보기" FontSize="11.5" FontWeight="Bold" Foreground="#93C5FD"/>
+                    </Expander.Header>
+                    <TextBlock x:Name="TxtGuideTip"
+                               Margin="0,8,0,2"
+                               Text="• 다른 PC에서 USB를 꽂은 뒤 [이동식 디스크]를 선택해 로그인하세요.&#x0a;• 분리 전 'USB 안전 제거' 버튼 또는 작업 표시줄의 '하드웨어 안전하게 제거'를 눌러 주세요."
+                               FontSize="10.8" FontWeight="Normal" Foreground="{DynamicResource TextSecondaryBrush}" LineHeight="17" TextWrapping="Wrap"/>
+                </Expander>
+            </Border>
+
+            <Border x:Name="BannerEjectStatus" Visibility="Collapsed" Background="#064E3B" BorderBrush="#10B981" BorderThickness="1" CornerRadius="8" Padding="12,8" Margin="0,8,0,0">
+                <TextBlock x:Name="TxtEjectStatus" Text="" FontSize="11.5" FontWeight="SemiBold" Foreground="#A7F3D0" TextWrapping="Wrap"/>
+            </Border>
+        </StackPanel>
 
         <!-- 5. Bottom Action Buttons -->
         <Grid Grid.Row="4">
@@ -229,10 +235,17 @@
                     </StackPanel>
                 </Button>
 
-                <Button x:Name="BtnOpenFolder" Click="BtnOpenFolder_Click" Style="{StaticResource SecondaryButton}" Padding="12,7">
+                <Button x:Name="BtnOpenFolder" Click="BtnOpenFolder_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" Padding="12,7">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="📁 " FontSize="11"/>
                         <TextBlock Text="대상 폴더 열기" FontSize="11.5"/>
+                    </StackPanel>
+                </Button>
+
+                <Button x:Name="BtnEjectUsb" Visibility="Collapsed" Click="BtnEjectUsb_Click" Background="#92400E" Foreground="#FEF3C7" BorderBrush="#D97706" BorderThickness="1" FontWeight="Bold" Padding="12,7" Cursor="Hand">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🔌 " FontSize="11"/>
+                        <TextBlock x:Name="TxtEjectUsb" Text="USB 안전 제거" FontSize="11.5" FontWeight="Bold"/>
                     </StackPanel>
                 </Button>
             </StackPanel>

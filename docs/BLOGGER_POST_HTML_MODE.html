@@ -1,25 +1,26 @@
 <!-- 
   ==============================================================================
-  K-Certificate Manager (K-인증서 매니저) v1.9.0
+  K-Certificate Manager (K-인증서 매니저) v2.1.0
   구글 블로그 원고 - HTML 편집 모드 (HTML Edit Mode)
-  Developer: AhBiYout (GitHub: https://github.com/AhBiYout-all)
+  Developer: AhBiYout (GitHub: https://github.com/AhBiYout-all/K-Certificate-Manager)
   Company: (주)청운정보시스템 ( cisnet.co.kr ) (https://www.cisnet.co.kr)
   Blog: https://ahbiyoutvibe.blogspot.com/
+  Release Date: 2026-11-13
   ==============================================================================
 -->
 
 <!-- 1. 제목 (Title) -->
 <h1 style="color: #0f172a; font-size: 24px; font-weight: bold; border-bottom: 3px solid #2563eb; padding-bottom: 10px; margin-bottom: 20px;">
-  K-인증서 매니저 v1.9.0 정식 릴리스: 공무원(GPKI·EPKI) &amp; 금융 공동인증서(NPKI) 원클릭 USB 이동·백업, 암호화 보호 보관소 &amp; USB 제한 복구 솔루션
+  K-인증서 매니저 v2.1.0 정식 릴리스: GitHub 이동 없는 앱 내 자동 다운로드·무인 셀프 설치, 반응형 카드 그리드 &amp; 다크 테마 통합, 쉬운 일상 표현 UI 개편
 </h1>
 
 <!-- 2. 본문 (Body) -->
-<div style="font-size: 15px; line-height: 1.7; color: #334155; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin-bottom: 25px;">
+<div style="font-size: 15px; line-height: 1.75; color: #334155; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin-bottom: 25px;">
   <p style="margin-top: 0;">
-    대한민국 공무원 행정전자서명(GPKI), 교육부 전자서명(EPKI), 국방부 전자서명(MPKI) 및 시중은행 금융 공동인증서(NPKI)를 컴퓨터(C:\)와 이동식 USB 메모리 간에 간편하고 안전하게 일괄 복사·백업·이동할 수 있는 통합 공인인증서 관리 프로그램 <strong>K-인증서 매니저(K-Certificate Manager) v1.9.0</strong> 정식 버전이 출시되었습니다.
+    대한민국 공무원 인증서(GPKI), 교육기관 인증서(EPKI), 국방부 인증서(MPKI) 및 은행·공동 인증서(NPKI)를 내 컴퓨터(<code>C:\</code>)와 이동식 USB 메모리 간에 안전하게 복사·백업·이동할 수 있는 통합 인증서 관리 프로그램 <strong>K-인증서 매니저(K-Certificate Manager) v2.1.0</strong> 정식 버전이 출시되었습니다.
   </p>
   <p style="margin-bottom: 0;">
-    ActiveX나 별도 보안 프로그램 설치 없이, 지능형 딥스캔 엔진이 시스템 내 모든 공인인증서를 자동 감지하며, Windows DPAPI / AES-256 특수 암호화로 보호되는 <strong>암호화 보호 보관소(Encrypted Protected Vault)</strong>와 <strong>제한된 USB 복구 (<code>💾 USB로 제한 복구</code>)</strong> 기능을 제공하여 소중한 인증서의 오염이나 임의 유출을 완벽하게 차단합니다. 또한 만료 인증서 정리창 가로 너비를 20% 확대하여 가독성을 높였고, 정식 Inno Setup 무인 설치와 방화벽 자동 등록을 완비했습니다.
+    이번 <strong>v2.1.0</strong>에서는 별도 브라우저로 GitHub 웹사이트에 이동할 필요 없이, <strong>업데이트 안내 창에서 <code>[확인 (자동 다운로드 · 설치)]</code>만 누르면 앱 내부에서 설치 패키지를 내려받아 무인 셀프 설치 및 자동 재실행까지 한 번에 완료</strong>되도록 개편했습니다. 또한 C# WPF 데스크톱과 동일한 <strong>통합 다크 테마(<code>#0F1219</code>)</strong>, 화면 폭에 따라 카드가 자동 리플로우(Reflow)되는 <strong>CSS Grid <code>auto-fill</code> 반응형 인증서 카드 목록</strong>, 그리고 <strong>쉬운 일상 표현 우선 + <code>더보기</code> 접이식 UI</strong>를 적용해 누구나 한눈에 인증서를 관리할 수 있습니다.
   </p>
 </div>
 
@@ -27,29 +28,28 @@
 <h2 style="color: #1e293b; font-size: 18px; font-weight: bold; border-left: 4px solid #10b981; padding-left: 10px; margin-top: 25px; margin-bottom: 12px;">
   ✨ 3. 주요 업데이트 (Recent Highlights)
 </h2>
-<ul style="font-size: 14.5px; line-height: 1.7; color: #475569; padding-left: 20px; margin-bottom: 25px;">
-  <li><strong>🔒 암호화 보호 보관소 (Encrypted Vault) 고도화 (Web &amp; WPF)</strong>: 복원된 항목의 매니페스트(<code>protected_restored_manifest.dat</code>)를 Windows DPAPI(CurrentUser) 및 AES-256으로 이중 암호화하여 타인의 무단 접근 완벽 차단.</li>
-  <li><strong>🛡️ 실시간 보안 인스펙터 &amp; 자가진단 엔진</strong>: SHA-256 체크섬, 파일 크기, 암호화 알고리즘 상태 실시간 표출 및 매니페스트 복호화 무결성 원클릭 자가진단 지원.</li>
-  <li><strong>📦 암호화 백업 내보내기 (<code>.dat</code>)</strong>: 원본 개인키 노출 없는 암호화 바이너리 매니페스트 안전 백업 파일 내보내기 기능 완비.</li>
-  <li><strong>🔍 포렌식 보안 감사 증적 (<code>[🔍 보안 증적]</code>)</strong>: 인증서별 소유자/발급자 DN, 유효기간, 복구 전·후 SHA-256 무결성 검증, DPAPI/AES-256 보호 등급 감사 증적표 모달 제공.</li>
-  <li><strong>🔎 다차원 실시간 검색 및 카테고리 필터링</strong>: 보관소 내 인증서명/발급기관/일련번호 실시간 검색창 및 <code>전체</code>, <code>NPKI</code>, <code>GPKI</code>, <code>EPKI</code> 분류 지원.</li>
-  <li><strong>💾 제한된 USB 복구 (<code>💾 USB로 제한 복구</code>) 지원</strong>: 특수 보관소 내 인증서를 로컬 PC 파일 오염 방지를 위해 오직 이동식 USB 메모리의 표준 규격 경로(<code>\NPKI</code>, <code>\GPKI</code>, <code>\EPKI</code>)로만 안전 복구 허용.</li>
-  <li><strong>📏 만료 인증서 정리창 (ExpiredCleanupDialog) 가로 너비 20% 대폭 확대</strong>: 기존 <code>Width="820"</code>에서 <code>Width="984"</code>로 가로 크기를 확대하여 저장 경로 및 만료 상태, 발급기관명의 가독성과 시인성 극대화.</li>
-  <li><strong>⚙️ Inno Setup 정식 인스톨러 완성 및 무인 설치 지원</strong>: Unpacked Multi-File 개별 파일 설치, 기존 실행 프로세스 강제 종료(<code>TerminateAppProcesses</code>), Windows 프로그램 추가/제거 정식 등록, 방화벽 규칙 사전 조용 자동 등록 및 <code>/VERYSILENT /NORESTART</code> 무인 설치 지원.</li>
-  <li><strong>🚀 빌드 파이프라인 개편 및 버전별 하위 폴더 분리</strong>: 자동 빌드 결과물을 메인 <code>/dist</code> 폴더 아래 버전별 하위 폴더(<code>/dist/v1.9.0/web</code>, <code>/win-x64</code>, <code>/core-dll</code>, <code>/unpacked</code>, <code>/installer</code>)로 체계적으로 분리 적재.</li>
-  <li><strong>🧩 순수 독립 C# 코어 &amp; 암호화 DLL 탑재</strong>: 3rd-party 의존성 0%의 <code>KCert.Core.dll</code> (X.509/ASN.1/OID 파서) 및 <code>KCert.Crypto.dll</code> (SEED-128/PKCS#8/RSA-SHA256) 완비.</li>
-  <li><strong>🎵 완료 알림음(SuccessChime) 피드백 및 상단 헤더 볼륨 슬라이더</strong>: 복사/백업 완료 알림음 및 0~100% 가로 슬라이더 바, 4대 테마 전역 고대비 툴팁 시스템 연동.</li>
+<ul style="font-size: 14.5px; line-height: 1.75; color: #475569; padding-left: 20px; margin-bottom: 25px;">
+  <li><strong>🚀 GitHub 이동 없는 앱 내 자동 다운로드 · 무인 셀프 설치 엔진 탑재 (WPF &amp; Web)</strong>:
+    <ul>
+      <li><strong>C# WPF 데스크톱</strong>: 업데이트 창에서 <code>[확인 (자동 다운로드 · 설치)]</code> 클릭 시 브라우저 이동 없이 <code>kcert-manager-v*-setup.exe</code>를 직접 스트리밍 다운로드(진행률·MB 실시간 표시), PE 실행 파일(<code>MZ</code>/<code>PK</code>) 검증 후 숨김 스크립트(<code>apply_self_update.ps1</code>)로 무인 설치(<code>/SILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS</code>) 및 자동 재실행까지 원스톱 처리.</li>
+      <li><strong>Web 관리 콘솔</strong>: 외부 페이지 이탈 없이 인앱 3단계(스트림 다운로드 ➔ 파일 손상 검사(SHA-256) ➔ 오프라인 캐시 갱신) 완료.</li>
+    </ul>
+  </li>
+  <li><strong>🎨 WPF-Web 다크 테마 통합 &amp; 반응형 CSS Grid <code>auto-fill</code> 카드 레이아웃</strong>: Web 콘솔 기본 테마를 WPF 다크 테마(<code>#0F1219</code> / <code>#1A1F2C</code>)로 통일하고 다크·파스텔 블랙 모달 대비 결함을 완전 교정했으며, 화면 너비에 따라 카드가 자동 재배치되는 <code>repeat(auto-fill, minmax(300px, 1fr))</code> 카드 뷰 및 <code>표 보기</code> 전환 지원.</li>
+  <li><strong>💬 전역 UI 쉬운 일상 표현 우선 + 접이식 <code>더보기</code> UI 개편 (Web &amp; WPF)</strong>: 긴 경로·FAQ·복사 후 가이드를 1줄 핵심 요약 + 기본 접힘 토글(<code>더보기</code> / WPF <code>Expander</code>)로 정리하고, <code>개인키</code>, <code>원본 위치/저장 위치</code>, <code>찾는 위치</code>, <code>파일 손상 검사(SHA-256)</code>, <code>보안 점검</code> 등 쉬운 표현으로 통일.</li>
+  <li><strong>🛡️ 3차 심층 전수 감사(Deep Audit) 결함 일괄 수정</strong>: WPF <code>C:\</code> 드라이브 자가 복사 차단 보강(<code>ResolveEffectiveDestinationRoot</code>) 및 Web 폴더 선택 취소(<code>AbortError</code>) 불필요 재시도 제거·목록 상태 동기화 개선.</li>
+  <li><strong>🔒 암호화 보호 보관함(DPAPI / AES-256) &amp; 60fps 유동 애니메이션 테두리 완비</strong>: 복원 매니페스트 이중 암호화 보호, 이동식 USB 전용 제한 복구, 984px 광폭 만료 정리창, 대각 무한 유동 네온 테두리 기본 탑재.</li>
 </ul>
 
 <!-- 4. 앱 그림 (App Screenshot) -->
 <h2 style="color: #1e293b; font-size: 18px; font-weight: bold; border-left: 4px solid #3b82f6; padding-left: 10px; margin-top: 25px; margin-bottom: 12px;">
   📷 4. 앱 화면 안내 (App Visual)
 </h2>
-<div style="text-align: center; margin-top: 15px; margin-bottom: 25px; background: #0f172a; color: #f8fafc; border-radius: 12px; padding: 25px;">
-  <div style="font-size: 32px; margin-bottom: 10px;">💻 💾 🛡️</div>
-  <div style="font-size: 16px; font-weight: bold; color: #38bdf8;">K-인증서 매니저 v1.9.0 메인 컨트롤 인터페이스</div>
+<div style="text-align: center; margin-top: 15px; margin-bottom: 25px; background: #0f1219; color: #f8fafc; border: 1px solid #1e293b; border-radius: 12px; padding: 25px;">
+  <div style="font-size: 32px; margin-bottom: 10px;">💻 🔄 🛡️</div>
+  <div style="font-size: 16px; font-weight: bold; color: #38bdf8;">K-인증서 매니저 v2.1.0 통합 다크 인터페이스 &amp; 인앱 자동 업데이트</div>
   <p style="font-size: 13px; color: #94a3b8; margin-top: 8px; margin-bottom: 0;">
-    상단 볼륨 슬라이더 · 환경 설정 · 원클릭 PC ➔ USB 백업 · 암호화 보호 보관소 · 984px 광폭 만료 인증서 정리창
+    원클릭 인앱 자동 다운로드·셀프 설치 · 반응형 CSS Grid(auto-fill) 카드 뷰 · WPF-Web 다크 테마 통합 · 접이식 더보기 UI
   </p>
 </div>
 
@@ -60,14 +60,14 @@
 <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 16px; margin-bottom: 25px;">
   <p style="margin-top: 0; font-size: 14.5px;">
     <strong>공식 깃허브 최신 릴리스 다운로드:</strong><br />
-    👉 <a href="https://github.com/AhBiYout-all" target="_blank" rel="noopener noreferrer" style="color: #2563eb; font-weight: bold; text-decoration: underline;">https://github.com/AhBiYout-all</a>
+    👉 <a href="https://github.com/AhBiYout-all/K-Certificate-Manager" target="_blank" rel="noopener noreferrer" style="color: #2563eb; font-weight: bold; text-decoration: underline;">https://github.com/AhBiYout-all/K-Certificate-Manager</a>
   </p>
   <p style="font-size: 14.5px;">
     <strong>공식 구글 블로그 안내:</strong><br />
     👉 <a href="https://ahbiyoutvibe.blogspot.com/" target="_blank" rel="noopener noreferrer" style="color: #2563eb; font-weight: bold; text-decoration: underline;">https://ahbiyoutvibe.blogspot.com/</a>
   </p>
   <p style="margin-bottom: 0; font-size: 14.5px;">
-    <strong>설치 안내:</strong> <code>kcert-manager-v1.9.0-setup.exe</code> 실행 시 마법사의 안내에 따라 바탕화면 바로가기 생성 및 방화벽 자동 등록과 함께 안전하게 설치가 완료됩니다.<br />
+    <strong>설치 및 자동 업데이트 안내:</strong> <code>kcert-manager-v2.1.0-setup.exe</code> 실행 시 바탕화면 바로가기 생성 및 방화벽 자동 등록과 함께 설치가 완료되며, 기존 설치 사용자는 앱 시작 시 뜨는 업데이트 창에서 <strong><code>[확인 (자동 다운로드 · 설치)]</code></strong> 버튼만으로 자동 업데이트가 완료됩니다.<br />
     <em>(기업용 무인 자동 설치 옵션: <code>/VERYSILENT /NORESTART</code>)</em>
   </p>
 </div>
@@ -83,15 +83,15 @@
   </tr>
   <tr style="border-bottom: 1px solid #e2e8f0;">
     <td style="padding: 10px; font-weight: bold;">애플리케이션 버전</td>
-    <td style="padding: 10px; color: #2563eb; font-weight: bold;">v1.9.0 (Semantic Versioning 2.0.0)</td>
+    <td style="padding: 10px; color: #2563eb; font-weight: bold;">v2.1.0 (Semantic Versioning 2.0.0)</td>
   </tr>
   <tr style="border-bottom: 1px solid #e2e8f0;">
     <td style="padding: 10px; font-weight: bold;">독립 코어 DLL</td>
-    <td style="padding: 10px;"><code>KCert.Core.dll</code> v1.9.0 / <code>KCert.Crypto.dll</code> v1.9.0</td>
+    <td style="padding: 10px;"><code>KCert.Core.dll</code> v2.1.0 / <code>KCert.Crypto.dll</code> v2.1.0</td>
   </tr>
   <tr>
     <td style="padding: 10px; font-weight: bold;">릴리스 일자</td>
-    <td style="padding: 10px;">2026년 11월 6일</td>
+    <td style="padding: 10px;">2026년 11월 13일</td>
   </tr>
 </table>
 
@@ -112,7 +112,7 @@
 </h2>
 <div style="background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 15px; font-size: 14px; line-height: 1.8; margin-bottom: 25px;">
   <div><strong>개발자</strong>: AhBiYout</div>
-  <div><strong>GitHub 저장소</strong>: <a href="https://github.com/AhBiYout-all" target="_blank" rel="noopener noreferrer" style="color: #0284c7;">https://github.com/AhBiYout-all</a></div>
+  <div><strong>GitHub 저장소</strong>: <a href="https://github.com/AhBiYout-all/K-Certificate-Manager" target="_blank" rel="noopener noreferrer" style="color: #0284c7;">https://github.com/AhBiYout-all/K-Certificate-Manager</a></div>
   <div><strong>공식 구글 블로그</strong>: <a href="https://ahbiyoutvibe.blogspot.com/" target="_blank" rel="noopener noreferrer" style="color: #0284c7;">https://ahbiyoutvibe.blogspot.com/</a></div>
   <div><strong>소속</strong>: <a href="https://www.cisnet.co.kr" target="_blank" rel="noopener noreferrer" style="color: #0284c7;">https://www.cisnet.co.kr</a></div>
   <div><strong>소속회사</strong>: (주)청운정보시스템 ( cisnet.co.kr )</div>
@@ -123,64 +123,67 @@
   📜 9. 전체 업데이트 이력 (Full Update History)
 </h2>
 <div style="font-size: 13.5px; line-height: 1.7; color: #475569; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 25px;">
-  <p style="margin-top: 0; font-weight: bold; color: #0f172a;">[v1.9.0] - 2026-11-06</p>
+  <p style="margin-top: 0; font-weight: bold; color: #0f172a;">[v2.1.0] - 2026-11-13</p>
   <ul>
-    <li>암호화 보호 보관소 구축: 복원 이력 매니페스트(<code>protected_restored_manifest.dat</code>)를 Windows DPAPI(CurrentUser) 및 AES-256 이중 암호화하여 타인의 무단 접근 차단.</li>
+    <li>GitHub 이동 없는 앱 내 자동 다운로드 · 무인 셀프 설치 엔진 탑재 (WPF &amp; Web): <code>[확인 (자동 다운로드 · 설치)]</code> 클릭 시 스트리밍 다운로드, <code>MZ</code>/<code>PK</code>·SHA-256 검증, 무인 설치 및 자동 재실행 지원.</li>
+    <li>WPF-Web 다크 테마 통합 &amp; 반응형 CSS Grid <code>auto-fill</code> 인증서 카드 레이아웃 적용 및 모달 대비 결함 완전 교정.</li>
+    <li>전역 UI 쉬운 일상 표현 우선 + 접이식 <code>더보기</code> 토글 개편 (<code>개인키</code>, <code>원본 위치/저장 위치</code>, <code>찾는 위치</code>, <code>파일 손상 검사(SHA-256)</code>).</li>
+    <li>3차 심층 전수 감사 수정: WPF <code>C:\</code> 드라이브 자가 복사 차단 보강 및 Web 폴더 선택 취소(<code>AbortError</code>)·목록 상태 동기화 개선.</li>
+  </ul>
+
+  <p style="font-weight: bold; color: #0f172a;">[v2.0.0] - 2026-11-10</p>
+  <ul>
+    <li>60fps 무한 유동 애니메이션 테두리(Animated Moving Border Glow) 전면 탑재 (WPF &amp; Web): 선택 드라이브 무지개 네온, USB 에메랄드/청록, 로컬 블루 그라데이션 적용.</li>
+    <li>WPF 데스크톱 UI 대칭 완성 및 <code>/dist/v2.0.0/</code> 버전별 분리 빌드 파이프라인 확립.</li>
+  </ul>
+
+  <p style="font-weight: bold; color: #0f172a;">[v1.9.0] - 2026-11-06</p>
+  <ul>
+    <li>암호화 보호 보관함 구축: 복원 이력 매니페스트(<code>protected_restored_manifest.dat</code>)를 Windows DPAPI(CurrentUser) 및 AES-256 이중 암호화하여 타인의 무단 접근 차단.</li>
     <li>제한된 USB 복구 (<code>💾 USB로 제한 복구</code>) 신설: 로컬 PC 파일 오염 방지를 위해 외장 USB 메모리(<code>\NPKI</code>, <code>\GPKI</code>, <code>\EPKI</code>)로만 안전 복구 허용.</li>
     <li>만료 인증서 정리창 (ExpiredCleanupDialog) 가로 너비 20% 대폭 확대: 기존 820px에서 984px로 확장하여 긴 인증서 저장 경로 시인성 극대화.</li>
     <li>Inno Setup 정식 인스톨러 배포 최적화: Unpacked Multi-File 개별 파일 설치, 기존 프로세스 강제 종료, 프로그램 추가/제거 등록, 방화벽 조용 자동 등록 및 무인 설치(<code>/VERYSILENT</code>) 완비.</li>
-    <li>빌드 파이프라인 버전별 하위 폴더 분리: <code>dist/</code> 하위 <code>dist/v1.9.0/web</code>, <code>win-x64</code>, <code>core-dll</code>, <code>unpacked</code>, <code>installer</code> 등 버전별 폴더 체계적 적재.</li>
   </ul>
 
   <p style="font-weight: bold; color: #0f172a;">[v1.8.0] - 2026-10-31</p>
   <ul>
     <li>독립 C# 코어 &amp; 암호화 DLL 2종 분리: 3rd-party 의존성 0%의 <code>KCert.Core.dll</code> 및 <code>KCert.Crypto.dll</code> 독립 라이브러리 모듈화.</li>
-    <li>상단 헤더 가로바 스크롤러 및 마우스 휠 연동: 툴바 위 마우스 휠 조작 시 좌우 가로 스크롤 지원 및 창 드래그 간섭 차단.</li>
-    <li>4대 테마 전역 고대비 툴팁 시스템 신설: 다크, 회색, 베이지, 화이트 전 테마에서 WCAG AAA 고대비 폰트 가독성 확보.</li>
+    <li>상단 헤더 가로바 스크롤러·마우스 휠 연동 및 4대 테마 전역 고대비 툴팁 시스템 신설.</li>
   </ul>
 
   <p style="font-weight: bold; color: #0f172a;">[v1.7.2] - 2026-10-31</p>
   <ul>
-    <li>상단 헤더 가로 볼륨 슬라이더 바 탑재: 원클릭 음소거 및 0~100% 가로 슬라이더 바, 소리 미리듣기 상시 노출.</li>
-    <li>⚙️ 환경 설정 모달 &amp; SettingsDialog 구축: 테마 선택, 알림음 볼륨, 시작 안내 설정 영구 보존.</li>
+    <li>상단 헤더 가로 볼륨 슬라이더 바 탑재 및 ⚙️ 환경 설정 모달 · <code>SettingsDialog</code> 구축.</li>
   </ul>
 
   <p style="font-weight: bold; color: #0f172a;">[v1.7.1] - 2026-10-28</p>
   <ul>
-    <li>만료 인증서 정리 수량과 안전 격리 휴지통 수량 1:1 완벽 동기화: <code>trash_manifest.json</code> 메타데이터 누락 방지 및 카운트 일치 보장.</li>
-    <li>GitHub Actions 런타임 최신화: Node.js 24 및 22 LTS 공식 워크플로 전환.</li>
+    <li>만료 인증서 정리 수량과 안전 휴지통 수량 1:1 동기화 및 GitHub Actions Node.js 24/22 LTS 전환.</li>
   </ul>
 
   <p style="font-weight: bold; color: #0f172a;">[v1.7.0] - 2026-10-27</p>
   <ul>
-    <li>인증서 복사·백업 성공 알림음(SuccessChime) 제어 기능 탑재: 완료 알림음 ON/OFF 및 볼륨 조절 슬라이더, 프리셋 버튼 제공.</li>
-    <li>보안 삭제 증적 로그 감사 시스템 신설: 영구 삭제 파일 경로, SubjectDN, 일련번호, SHA-256 증적 캡처 및 감사 보고서(<code>.log</code>) 내보내기 지원.</li>
-    <li>인증서 목록 컬럼 최소 폭 자유 조절(30px) 및 세로 그리드 구분선 도입.</li>
+    <li>인증서 복사·백업 성공 알림음(SuccessChime) 제어 기능 및 보안 삭제 증적 로그 감사 시스템 신설.</li>
   </ul>
 
   <p style="font-weight: bold; color: #0f172a;">[v1.6.5] - 2026-10-25</p>
   <ul>
-    <li>최좌측 1번 인덱스(1, 2, 3...) 일원화: 모든 테이블 및 대화상자에서 번호 1부터 시작하도록 통일.</li>
-    <li>최좌측 번호 열 상시 고정(Frozen &amp; Sticky Column) 보장: 가로 스크롤 시에도 1번 열 고정 표시.</li>
-    <li>작업 로그 대화상자 고정 번호 열 신설 및 동적 재색인 연동.</li>
+    <li>최좌측 1번 인덱스(1, 2, 3...) 일원화 및 고정열(Frozen &amp; Sticky Column) 보장.</li>
   </ul>
 
   <p style="font-weight: bold; color: #0f172a;">[v1.6.4] - 2026-10-25</p>
   <ul>
-    <li>작업완료 안내 전용 팝업창(Operation Complete Dialog) 신설: 출발지/도착지 경로 시각화, SHA-256 무결성 실드 배지, 대상 폴더 열기 지원.</li>
-    <li>윈도우 창 제어 버튼(최소화/최대화/닫기) 독립 고정: 창 크기 축소 시에도 상시 노출 보장.</li>
-    <li>인증서 DataGrid 상시 가로 스크롤바 사라짐 방지 및 목적지 드라이브 기본 C: 자동 선택 지원.</li>
+    <li>작업완료 안내 전용 팝업창(Operation Complete Dialog) 신설 및 윈도우 창 제어 버튼 독립 고정.</li>
   </ul>
 
   <p style="font-weight: bold; color: #0f172a;">[v1.6.3] - 2026-10-21</p>
   <ul>
-    <li>상세 사이드바 닫힘 시 목록창 가로 반응형 자동 확장 및 여백 채움.</li>
-    <li>시작가이드 PC ➔ USB 복사하기 전용 대화창 구축: USB ➔ PC 대화창과의 레이아웃 형식 일체화.</li>
+    <li>상세 사이드바 닫힘 시 목록창 가로 반응형 자동 확장 및 시작가이드 PC ➔ USB 전용 대화창 통일.</li>
   </ul>
 
   <p style="font-weight: bold; color: #0f172a;">[v1.6.2] - 2026-10-20</p>
   <ul>
-    <li>드라이브 쓰기 오류 및 권한 거부 전용 알림 모달 구축: 원인별 해결 조치 체크리스트 제공.</li>
+    <li>드라이브 쓰기 오류 및 권한 거부 전용 알림 모달 구축.</li>
   </ul>
 
   <p style="font-weight: bold; color: #0f172a;">[v1.6.1] - 2026-10-20</p>
@@ -190,8 +193,7 @@
 
   <p style="font-weight: bold; color: #0f172a; margin-bottom: 0;">[v1.5.0] - 2026-10-08</p>
   <ul style="margin-bottom: 0;">
-    <li>시작 작업 선택 마법사(PC➔USB, USB➔PC) 및 단계별 가이드 모션 오버레이 구축.</li>
-    <li>SHA-256 전자서명 무결성 검증 실드 배지 및 자가 복사 방지 필터링 탑재.</li>
+    <li>시작 작업 선택 마법사(PC➔USB, USB➔PC), 단계별 가이드 모션 및 SHA-256 파일 손상 검사 배지 탑재.</li>
   </ul>
 </div>
 

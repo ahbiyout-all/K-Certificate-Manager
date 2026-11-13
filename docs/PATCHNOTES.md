@@ -14,6 +14,24 @@
 
 ---
 
+### 🚀 [v2.1.0] - 2026-11-13
+**변경 구분**: `MINOR` (앱 내 직접 다운로드·무인 셀프 설치 자동 업데이트 엔진 탑재, WPF-Web 다크 테마 통합 및 반응형 CSS Grid `auto-fill` 인증서 카드 레이아웃 적용, 전역 UI 쉬운 일상 표현 우선 개편, 3차 심층 전수 감사 버그 일괄 수정)
+#### ✨ 주요 개선 및 신규 기능 (Improvements & Features)
+- **GitHub 이동 없는 앱 내 자동 다운로드 및 무인 셀프 설치 엔진 탑재 (WPF & Web)**:
+  - **C# WPF (`UpdateCheckerService.cs`, `UpdateNotificationDialog.xaml/.cs`, `MainViewModel.cs`)**: 시작 시 또는 수동 확인 시 뜨는 업데이트 알림 창에서 `[확인 (자동 다운로드 · 설치)]` 버튼 클릭 시 외부 브라우저로 이동하지 않고 설치 패키지(`kcert-manager-v*-setup.exe`)를 직접 스트리밍 다운로드.
+  - PE 실행 파일(`MZ`)·ZIP(`PK`) 매직 바이트 검증 및 분리 실행 PowerShell 스크립트(`apply_self_update.ps1`)를 통한 무인 설치(`/SILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS`)·자동 재실행 지원.
+  - **Web 콘솔 (`updateChecker.ts`, `UpdateModal.tsx`)**: 외부 링크 이동 대신 인앱 3단계(스트림 다운로드 ➔ WebCrypto SHA-256 검증 ➔ Cache Storage 갱신 및 `kcert_web_installed_version` 반영) 진행률 표시 구현.
+- **WPF 데스크톱 디자인 Web 콘솔 통합 및 반응형 CSS Grid `auto-fill` 카드 레이아웃 적용**:
+  - Web 콘솔 기본 테마를 WPF 다크 테마(`#0F1219` / `#1A1F2C`)로 통일하고, `[data-theme="dark"]` 및 `[data-theme="pastel-black"]` 내 밝은 모달/그라데이션/파스텔 배지 대비 결함을 토큰 단위 선택자로 완벽 교정(`src/index.css`).
+  - `CertificateList.tsx`에 화면 폭에 따라 카드가 자동 리플로우(Reflow)되는 CSS Grid `repeat(auto-fill, minmax(300px, 1fr))` 반응형 카드 레이아웃 및 카드/테이블 뷰 전환 기능 적용.
+- **전역 UI 쉬운 일상 표현 우선 + 전문 용어 병기 개편 (Web 26개 모듈 & WPF 전역 다이얼로그)**:
+  - 장문의 경로·FAQ·절차 설명을 1줄 핵심 요약 + 기본 접힘 토글(`더보기` / WPF `Expander`)로 정리하고, `비밀키`→`개인키`, `출발지/도착지`→`원본 위치/저장 위치`, `탐색 경로`→`찾는 위치`, `무결성/자가진단`→`파일 손상 검사(SHA-256)/보안 점검`으로 통일.
+- **3차 심층 전수 감사(Self-Reflection & Deep Audit) 결함 수정**:
+  - **WPF `C:\` 드라이브 자가 복사 판별 수정 (`TargetDrivePickerDialog.xaml.cs`)**: `CertificateBackupService`의 실제 저장 경로(`ResolveEffectiveDestinationRoot`) 기준으로 비교하여 `C:\Users\...\AppData\LocalLow\NPKI` 인증서의 `C:` 재복사 차단 누락 해결.
+  - **Web 비동기 상태 및 예외 처리 보강**: `usbToPcService.ts` 내 `AbortError`(사용자 폴더 선택 취소) 불필요 재시도 제거; `App.tsx`의 `certificatesRef`·`handleRefreshRef` 도입으로 stale closure 해소 및 `handleTogglePath` 사용자 추가 인증서 보존; `StartupWorkflowModal.tsx` 단계 전환 정리.
+
+---
+
 ### 🚀 [v2.0.0] - 2026-11-10
 **변경 구분**: `MAJOR` (드라이브 카드 전면 60fps 무한 유동 그라데이션 테두리(Animated Moving Border Glow) 및 네온 글로우 발광 브러시 탑재, Windows DPAPI / AES-256 이중 암호화 보호 보관소 완성, 제한된 USB 복구 엔진 신설, 만료 정리창 984px(20% 확장) 가독성 극대화, Inno Setup 무인 설치 및 방화벽 사전 등록 정식 인스톨러 완성, `/dist/v2.0.0/` 버전별 하위 폴더 분리 배포 파이프라인 완비)
 #### ✨ 주요 개선 및 신규 기능 (Improvements & Features)

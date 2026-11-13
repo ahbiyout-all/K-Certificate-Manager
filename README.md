@@ -1,9 +1,9 @@
-# K-Certificate Manager (K-인증서 매니저) v2.0.0
+# K-Certificate Manager (K-인증서 매니저) v2.1.0
 
 <div align="center">
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Version](https://img.shields.io/badge/Version-v2.0.0-green.svg)
+![Version](https://img.shields.io/badge/Version-v2.1.0-green.svg)
 ![React](https://img.shields.io/badge/React-19.0-61dafb.svg)
 ![Vite](https://img.shields.io/badge/Vite-6.2-646cff.svg)
 ![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512bd4.svg)
@@ -17,30 +17,26 @@
 
 ---
 
-## 🚀 최신 릴리스 정보 (Latest Release: v2.0.0)
+## 🚀 최신 릴리스 정보 (Latest Release: v2.1.0)
 
-> **버전**: `v2.0.0` (Semantic Versioning 2.0.0 MAJOR Release)  
-> **출시일**: 2026-11-10  
-> **상세 변경 내역**: [docs/PATCHNOTES.md](./docs/PATCHNOTES.md) • [GitHub 배포 가이드](./docs/GITHUB_GUIDE.md) • [버전 관리 정책](./docs/VERSIONING_POLICY.md)
+> **버전**: `v2.1.0` (Semantic Versioning 2.0.0 MINOR Release)  
+> **출시일**: 2026-11-13  
+> **상세 변경 내역**: [docs/PATCHNOTES.md](./docs/PATCHNOTES.md) • [GitHub 문서](./docs/GITHUB_DOCS.md) • [GitHub 배포 가이드](./docs/GITHUB_GUIDE.md) • [버전 관리 정책](./docs/VERSIONING_POLICY.md)
 
-### 🌟 v2.0.0 핵심 업데이트 내용
-- **드라이브 카드 시각적 시인성 극대화를 위한 무한 유동 애니메이션 테두리(Animated Moving Border Glow) 전면 탑재 (WPF & Web)**:
-  - 60fps 대각 무한 유동 `LinearGradientBrush` 및 14px `DropShadowEffect` 네온 글로우 발광 브러시 엔진(`WpfAnimatedBorderHelper.cs` & `index.css`) 개발
-  - 메인 화면 좌측 사이드바 `복사 / 백업 대상 드라이브` 카드(`SidebarTargetDriveBorder`), 간편 백업 카드, 피커 팝업(`TargetDrivePickerDialog`), PC➔USB / USB➔PC 전용 다이얼로그 전 영역 탑재
-  - 드라이브 선택 상태(선택: 무지개 네온 그라데이션, 미선택 USB: 에메랄드/청록, 미선택 로컬: 블루)에 따라 딜레이 없이 실시간 동적 발광 반응
-- **암호화 보호 보관소(Encrypted Protected Vault) 및 제한된 USB 복구 (`💾 USB로 제한 복구`) 신설 (Web & WPF)**:
-  - 복원된 인증서 이력 매니페스트(`protected_restored_manifest.dat`)를 Windows DPAPI(CurrentUser) 및 AES-256 특수 암호화로 격리 저장하여 무단 접근 차단
-  - 특수 보관소 내 인증서를 로컬 PC 파일 오염 방지 목적으로 이동식 USB 메모리의 표준 규격 경로(`\NPKI`, `\GPKI`, `\EPKI`)로만 안전 복구 허용
-- **만료 인증서 정리 대화상자 (ExpiredCleanupDialog) 984px 가로 너비 20% 대폭 확장 (WPF)**:
-  - 기존 820px에서 984px로 확장하여 긴 NPKI/GPKI/EPKI 인증서 저장 경로와 만료일자 가독성 극대화
-- **Inno Setup 정식 인스톨러 및 무인 설치(Silent Install) 지원 (`installer.iss`)**:
-  - Unpacked Multi-File 개별 파일 설치, 기존 실행 프로세스 안전 종료(`TerminateAppProcesses`), Windows 프로그램 추가/제거 정식 등록, 방화벽 규칙 자동 조용 등록 및 `/VERYSILENT /NORESTART` 무인 설치 지원
-- **빌드 파이프라인 개편: `/dist/v2.0.0/` 버전 번호별 하위 디렉터리 분리 배포 구조 구현**:
-  - 자동 빌드 결과물을 메인 `dist/` 폴더 아래 `/dist/v2.0.0/web`, `/win-x64`, `/core-dll`, `/unpacked`, `/installer` 등 독립 하위 폴더로 체계적 적재
-- **순수 창작 독립 C# 코어 & 암호화 DLL 2종 분리 구축 (`KCert.Core.dll`, `KCert.Crypto.dll`)**:
-  - 외부 3rd-party 의존성 0%의 C# 순수 X.509/ASN.1 파서, OID 식별자 분류기, SEED-128 암호화 및 PKCS#8 개인키 복호화 라이브러리 탑재
-- **상단 헤더 가로바 스크롤 및 4대 테마 전역 고대비 툴팁**:
-  - 상단 메뉴 마우스 휠(`PreviewMouseWheel`) 연동 및 윈도우 드래그 조작과의 간섭 완벽 차단, 전 테마 고대비 툴팁 보장
+### 🌟 v2.1.0 핵심 업데이트 내용
+- **GitHub 이동 없는 인앱 자동 다운로드 · 무인 셀프 설치 엔진 (`UpdateCheckerService` & `updateChecker.ts`)**:
+  - 앱 시작 시 또는 업데이트 확인 시 뜨는 알림 창에서 **`[확인 (자동 다운로드 · 설치)]`** 클릭만으로 외부 브라우저(GitHub)로 이동하지 않고 설치 패키지(`kcert-manager-v*-setup.exe`)를 직접 다운로드
+  - PE 바이너리(`MZ`)·SHA-256 무결성 검증 후 분리 PowerShell 업데이터(`apply_self_update.ps1`)가 무인 설치(`/SILENT`) 및 앱 자동 재실행까지 원스톱 처리 (Web 콘솔은 3단계 스트림 검증 및 로컬 버전 반영 지원)
+- **WPF 데스크톱 ➔ Web 콘솔 디자인 통일 & 반응형 CSS Grid `auto-fill` 카드 레이아웃 (`CertificateList`)**:
+  - Web 콘솔 기본 테마를 WPF 다크 테마(`#0F1219` / `#1A1F2C`)와 동일한 고대비 다크 팔레트로 통일하고 모달/배지 대비 결함 전면 해결
+  - `CertificateList`를 화면 너비에 따라 카드가 자동 리플로우(Reflow)되는 CSS Grid `repeat(auto-fill, minmax(300px, 1fr))` 반응형 카드 뷰 + 테이블 뷰 전환 구조로 고도화
+- **전역 UI 쉬운 일상 표현 우선 + 전문 용어 병기 개편 (Web & WPF)**:
+  - `공무원 인증서 (GPKI)`, `교육기관 인증서 (EPKI)`, `은행·공동 인증서 (NPKI)`, `찾는 위치`, `원본 위치`/`저장 위치`, `파일 손상 검사 (SHA-256)` 등 직관적 한국어로 단축하고, 부가 설명은 접이식 토글(`더보기` / `Expander`)로 정리해 인지 부담 최소화
+- **3차 심층 전수 감사(Self-Reflection & Deep Audit) 안정성 강화**:
+  - **WPF `C:\` 드라이브 자가 복사 차단 보정**: `AppData\LocalLow\NPKI·EPKI` 및 `C:\GPKI` 실제 저장 경로 기준(`ResolveEffectiveDestinationRoot`)으로 자가 복사를 정확히 판별
+  - **Web 비동기 신뢰성 개선**: `AbortError`(사용자 폴더 선택 취소) 불필요 재시도 중단, `handleRefresh` / `F5` 최신 참조 동기화, `handleTogglePath` 사용자 추가 인증서 보존
+- **기존 v2.0.0 핵심 기반 계승**:
+  - 60fps 무한 유동 애니메이션 테두리(`WpfAnimatedBorderHelper.cs` & `index.css`), Windows DPAPI/AES-256 암호화 보호 보관함 & 제한된 USB 복구, 순수 C# DLL(`KCert.Core.dll`, `KCert.Crypto.dll`), `/dist/v2.1.0/` 버전별 분리 배포 파이프라인 완비
 
 ---
 
@@ -130,7 +126,7 @@ npm run dev
 build.bat
 ```
 
-빌드가 완료되면 `dist/v2.0.0/` 폴더에 버전별 하위 디렉터리(`web`, `win-x64`, `core-dll`, `unpacked`, `installer`)로 배포용 포터블 실행 파일 및 Inno Setup 설치 프로그램(`setup.exe`)이 체계적으로 분리 생성됩니다.
+빌드가 완료되면 `dist/v2.1.0/` 폴더에 버전별 하위 디렉터리(`web`, `win-x64`, `core-dll`, `unpacked`, `installer`)로 배포용 포터블 실행 파일 및 Inno Setup 설치 프로그램(`kcert-manager-v2.1.0-setup.exe`)이 체계적으로 분리 생성됩니다.
 
 ---
 

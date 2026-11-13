@@ -1,6 +1,6 @@
 # K-인증서 매니저 C# WPF MVVM 데스크톱 버전 개발 가이드
 
-K-Certificate Manager (K-인증서 매니저)의 **C# .NET 10 / .NET 8 WPF MVVM 네이티브 윈도우 데스크톱 애플리케이션 (`v1.6.5`)** 아키텍처 및 빌드 가이드입니다.
+K-Certificate Manager (K-인증서 매니저)의 **C# .NET 10 / .NET 8 WPF MVVM 네이티브 윈도우 데스크톱 애플리케이션 (`v2.1.0`)** 아키텍처 및 빌드 가이드입니다.
 
 ---
 
@@ -49,22 +49,29 @@ KCertManager.sln (솔루션 파일)
     ├── Services/
     │   ├── CertificateScannerService.cs  # KCert.Core.Discovery & Parser 위임 호출
     │   ├── CertificateBackupService.cs   # KCert.Core.Vault 원자적 전송 & 격리 위임
+    │   ├── UpdateCheckerService.cs       # GitHub API 조회 + 인앱 스트리밍 다운로드·무인 셀프 설치 엔진
+    │   ├── SettingsService.cs            # %LocalAppData%\KCertManager\kcert_settings.json 영구 저장
+    │   ├── WpfAnimatedBorderHelper.cs    # 60fps 대각 무한 유동 네온 테두리 & 글로우 헬퍼
     │   ├── UsbDriveWatcher.cs            # KCert.Core.HardwareGuard 핫플러그 위임
-    │   └── UserFriendlyMessageHelper.cs  # 한국어 친화적 오류/해결 방법 안내 대화상자 도우미
+    │   └── UserFriendlyMessageHelper.cs  # 쉬운 한국어 안내/해결 방법 대화상자 도우미
     ├── ViewModels/
-    │   ├── MainViewModel.cs          # 메인 화면 상태, 드롭다운 테마 전환, 검색/필터링, 백업/삭제
-    │   ├── UsbTransferViewModel.cs   # USB ➔ PC 역방향 가져오기 다이얼로그 뷰모델
-    │   └── PcToUsbTransferViewModel.cs # PC ➔ USB 백업 다이얼로그 뷰모델
+    │   ├── MainViewModel.cs              # 메인 화면 상태, 드롭다운 테마 전환, 검색/필터링, 백업/삭제
+    │   ├── UsbTransferViewModel.cs       # USB ➔ PC 역방향 가져오기 다이얼로그 뷰모델
+    │   └── PcToUsbTransferViewModel.cs   # PC ➔ USB 백업 다이얼로그 뷰모델
     └── Views/
-        ├── MainWindow.xaml / .cs     # 모던 일체형 타이틀바(WindowChrome) 및 테마 ComboBox 드롭다운 메인 UI
-        ├── CertificateDetailDialog.xaml / .cs # PKCS#8 키 암호화 알고리즘 및 지문 상세 뷰
-        ├── UpdateNotificationDialog.xaml / .cs # 커스텀 업데이트 알림 전용 팝업 창
-        ├── OperationCompleteDialog.xaml / .cs # [신규] 복사/백업 완료 안내 전용 팝업 창
-        ├── PcToUsbTransferDialog.xaml / .cs  # [신규] PC ➔ USB 복사하기 전용 대화창
-        ├── UsbTransferDialog.xaml / .cs  # USB ➔ PC 가져오기 창
-        ├── ActivityLogDialog.xaml / .cs  # [신규] 작업 로그 및 감사 이력 창 (Frozen 번호 열)
-        ├── RenewalGuidanceDialog.xaml / .cs # 인증서 갱신 안내 및 공식 포털 연결 창
-        └── AboutDialog.xaml / .cs    # 프로그램 정보 및 한·영 2종 라이선스 고지 창
+        ├── MainWindow.xaml / .cs         # 모던 일체형 타이틀바(WindowChrome) 및 테마 ComboBox 드롭다운 메인 UI
+        ├── CertificateDetailDialog.xaml / .cs # PKCS#8 개인키 암호화 방식 및 지문 상세 뷰
+        ├── UpdateNotificationDialog.xaml / .cs # 인앱 자동 다운로드·셀프 설치 진행 UI 탑재 업데이트 창
+        ├── OperationCompleteDialog.xaml / .cs # 복사/백업 완료 안내 전용 팝업 창
+        ├── PcToUsbTransferDialog.xaml / .cs  # PC ➔ USB 복사하기 전용 대화창
+        ├── UsbTransferDialog.xaml / .cs      # USB ➔ PC 가져오기 창
+        ├── TargetDrivePickerDialog.xaml / .cs # 대상 드라이브 선택 + ResolveEffectiveDestinationRoot 자가 복사 차단
+        ├── ExpiredCleanupDialog.xaml / .cs   # 984px 광폭 만료 인증서 정리 창
+        ├── TrashDialog.xaml / .cs            # 안전 휴지통 + DPAPI 암호화 보호 보관함 & USB 제한 복구
+        ├── SettingsDialog.xaml / .cs         # 환경 설정(알림음 볼륨, 테마, 시작 안내) 창
+        ├── ActivityLogDialog.xaml / .cs      # 작업 로그 및 보안 삭제 증적 창 (Frozen 번호 열)
+        ├── RenewalGuidanceDialog.xaml / .cs  # 인증서 갱신 안내 및 공식 포털 연결 창
+        └── AboutDialog.xaml / .cs            # 프로그램 정보 및 한·영 2종 라이선스 고지 창
 ```
 
 > 📖 `KCert.Core.dll`의 상세 내부 메커니즘, OID 표 및 보안 하드닝 구조는 [`KCERT_CORE_DLL_SPEC.md`](./KCERT_CORE_DLL_SPEC.md)를 참조하세요.
@@ -74,15 +81,16 @@ KCertManager.sln (솔루션 파일)
 ## ⚡ 2. 핵심 기능 및 기술 구현 특징
 
 1. **모던 일체형 타이틀바 (`WindowChrome`) & 4종 테마**:
-   - Windows 기본 흰색 타이틀바를 제거하고, 앱 내부 헤더(`🛡️ K-인증서 매니저 v1.6.5`) 우측에 최소화(`─`), 최대화/복원(`□`/`❐`), 종료(`✕`) 버튼을 일체화.
+   - Windows 기본 흰색 타이틀바를 제거하고, 앱 내부 헤더(`🛡️ K-인증서 매니저 v2.1.0`) 우측에 최소화(`─`), 최대화/복원(`□`/`❐`), 종료(`✕`) 버튼을 일체형으로 통합.
    - 다크 · 회색 · 화이트 · 베이지 4가지 테마 전환 시 타이틀바부터 하단 상태바까지 완벽 색상 동기화.
    - **다크 테마 시작 즉시 시인성 완벽 보장**: `App.xaml` 정적 리소스에 `AccentTextBrush` 및 `MutedTextBrush`를 선언하고 윈도우 인스턴스화 시점에 `ApplyTheme("dark")`를 3중 사전 주입하여 시작 즉시 검은색 글자로 뭉개지는 현상을 영구 차단.
-2. **일반 사용자 친화적 [간편 모드] vs [상세 모드] 듀얼 UX 시스템**:
+2. **일반 사용자 친화적 [간편 모드] vs [상세 모드] 듀얼 UX & 쉬운 표현 UI (v2.1.0)**:
    - **간편 모드 (기본)**: 상단에 복잡하던 NVMe/SATA/USB 진단 패널을 **1줄 슬림 원클릭 배너**(`⚡ 간편 백업: 대상 드라이브 [💾 USB] | [⚡ 원클릭 전체 복사] | [📥 USB ➔ PC 넣기]`)로 압축하고, 상단 6대 고급 도구 버튼을 감추어 인증서 목록(DataGrid)을 시원하게 노출.
-   - **상세 모드**: NVMe/SATA/USB 포트 규격, 물리 모델명, 파티션 라벨 및 6대 고급 도구(탐색 경로, 백업 이력, 작업 로그, 보안 수칙, 업데이트 확인, 정보) 활성화.
-3. **앱 시작 시 백그라운드 자동 업데이트 확인 파이프라인**:
-   - 윈도우 UI 렌더링 완료 1.2초 후 비동기 호출 (`CheckForAppUpdatesAsync(isSilentWhenUpToDate: true)`).
-   - 새 버전 감지 시에만 업데이트 팝업을 띄우고, 최신 버전이거나 오프라인/폐쇄망일 때는 방해 창 없이 하단 상태바에 조용히 `"준비 완료 (최신 버전 확인됨)"`으로 점등.
+   - **상세 모드**: NVMe/SATA/USB 포트 규격, 물리 모델명, 파티션 라벨 및 6대 고급 도구(찾는 위치, 백업 이력, 작업 로그, 보안 수칙, 업데이트 확인, 정보) 활성화.
+   - **접이식 `Expander` & 쉬운 한국어**: 긴 설명은 기본 접힘 `Expander`로 이동하고 `개인키`, `원본 위치 / 저장 위치`, `찾는 위치`, `파일 손상 검사(SHA-256)` 등 쉬운 일상 표현으로 통일.
+3. **인앱 자동 다운로드·무인 셀프 설치 업데이트 파이프라인 (v2.1.0)**:
+   - 윈도우 UI 렌더링 완료 후 비동기 호출 (`CheckForAppUpdatesAsync(isSilentWhenUpToDate: true)`).
+   - 새 버전 발견 시 `UpdateNotificationDialog`에서 `[확인 (자동 다운로드 · 설치)]`를 누르면 브라우저로 이동하지 않고 `UpdateCheckerService.DownloadAndInstallAsync`가 `%TEMP%\KCertManager_AutoUpdate\v{ver}\`로 설치 패키지를 스트리밍 다운로드 후 `MZ`/`PK` 헤더 검증 및 hidden PowerShell 스크립트(`apply_self_update.ps1`)로 `/SILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS` 무인 설치와 재실행을 자동 수행.
 4. **순수 C# X.509 파서 (`System.Security.Cryptography.X509Certificates`)**:
    - `signCert.der` 바이너리로부터 Subject DN, CN, 발급자(CA), 유효기간, 일련번호, 암호 알고리즘을 네이티브로 직접 추출 (512KB 초과 비정상 파일 DoS 방어 포함).
 5. **화이트리스트 기반 무결성 전송 (SHA-256 & Path Traversal 차단)**:
@@ -96,8 +104,11 @@ KCertManager.sln (솔루션 파일)
    - 가로 스크롤 시에도 최좌측 번호 열이 고정되어 항상 표시되며, `MainViewModel`, `ActivityLogService`, 각 대화상자 코드비하인드에서 1-based(`1, 2, 3...`) 인덱싱을 실시간 유지.
 9. **작업 완료 안내 전용 팝업 대화상자 (`OperationCompleteDialog`, v1.6.5)**:
    - 복사/가져오기 완료 시 `UserFriendlyMessageHelper.ShowOperationComplete(...)`를 통해 무결성(SHA-256) 검증 결과, 출발지➔도착지 경로, 완료 인증서 목록 및 대상 폴더 열기 액션을 모던 커스텀 대화상자로 표시.
-10. **창 제어 버튼(최소/최대/닫기) 독립 격리 고정**:
-    - `MainWindow.xaml` 상단 타이틀바 Grid `Column="2" (Auto)`에 창 제어 버튼을 독립 격리하여 창 크기를 줄여도 버튼이 화면 밖으로 밀려나지 않고 최우측 상단에 100% 온전하게 고정 노출 보장.
+10. **창 제어 버튼(최소/최대/닫기) 독립 격리 & `C:\` 자가 복사 정밀 차단 (v2.1.0)**:
+    - `MainWindow.xaml` 상단 타이틀바 Grid `Column="2" (Auto)`에 창 제어 버튼을 독립 격리하여 창 크기를 줄여도 버튼이 최우측 상단에 고정 노출됨.
+    - `TargetDrivePickerDialog.xaml.cs`에 `ResolveEffectiveDestinationRoot`를 도입해 `C:` 선택 시 `NPKI`/`EPKI`는 `%USERPROFILE%\AppData\LocalLow`, `GPKI`는 `C:\` 실제 목적지 기준으로 자가 복사를 차단.
+11. **60fps 유동 애니메이션 테두리 & DPAPI 암호화 보호 보관함 (`v1.9.0 ~ v2.0.0`)**:
+    - `WpfAnimatedBorderHelper.cs`를 통한 대각 무한 유동 네온 테두리 및 `System.Security.Cryptography.ProtectedData` (8.0.0) 기반 `protected_restored_manifest.dat` 암호화 보호 보관함 · USB 제한 복구 지원.
 
 ---
 
@@ -107,12 +118,13 @@ KCertManager.sln (솔루션 파일)
 - **Windows 10 / 11 (x64 / ARM64)**
 - **.NET 10.0 SDK** 또는 **.NET 8.0 SDK** (Visual Studio 2022 이상)
 
-### 📦 2가지 배포 바이너리 비교 (Full vs Lite)
+### 📦 배포 바이너리 및 인스톨러 (`dist/v2.1.0/`)
 
 | 구분 | 파일명 | 예상 용량 | .NET 런타임 설치 필요 여부 | 특징 및 권장 환경 |
 | :--- | :--- | :--- | :--- | :--- |
-| **데스크톱 풀버전** | `KCertManager_v1.6.5.exe` | **약 60~75MB** | **불필요 (완전 단독 실행)** | .NET 런타임 및 WPF 라이브러리가 내장된 독립 실행형(Self-Contained). 모든 윈도우 PC에서 바로 실행 가능. |
-| **라이트 에디션** | `KCertManager-Lite_v1.6.5.exe` | **약 1~2MB** | **필요 (.NET Desktop Runtime)** | 초경량 프레임워크 종속형(Framework-Dependent). 네트워크 전송 및 USB 보관에 최적화된 초소형 바이너리. |
+| **정식 설치 마법사** | `kcert-manager-v2.1.0-setup.exe` | **약 35~75MB** | **불필요 (완전 단독 실행)** | Inno Setup 기반 Unpacked Multi-File 설치, 방화벽 규칙 자동 등록, 무인 셀프 업데이트 지원. |
+| **데스크톱 풀버전** | `KCertManager_v2.1.0.exe` | **약 60~75MB** | **불필요 (완전 단독 실행)** | .NET 런타임 및 WPF 라이브러리가 내장된 독립 실행형(Self-Contained). 모든 윈도우 PC에서 바로 실행 가능. |
+| **라이트 에디션** | `KCertManager-Lite_v2.1.0.exe` | **약 1~2MB** | **필요 (.NET Desktop Runtime)** | 초경량 프레임워크 종속형(Framework-Dependent). 네트워크 전송 및 USB 보관에 최적화된 초소형 바이너리. |
 
 > 💡 **두 파일의 용량이 동일(약 1~2MB)하게 나오는 경우 원인 및 해결책:**
 > - `build.bat` 실행 시 로컬 환경에 `.NET 8 win-x64 런타임 팩`이 캐시되어 있지 않으면, 1차 독립실행형 빌드가 프레임워크 종속 모드로 자동 폴백되어 두 파일이 모두 라이트 버전과 동일한 옵션으로 빌드됩니다.

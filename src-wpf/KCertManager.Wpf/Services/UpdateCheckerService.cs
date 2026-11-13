@@ -16,8 +16,8 @@ namespace KCertManager.Wpf.Services
     public class AppUpdateInfo
     {
         public bool HasUpdate { get; set; }
-        public string CurrentVersion { get; set; } = "2.0.0";
-        public string LatestVersion { get; set; } = "2.0.0";
+        public string CurrentVersion { get; set; } = "2.1.0";
+        public string LatestVersion { get; set; } = "2.1.0";
         public string ReleaseName { get; set; } = string.Empty;
         public string ReleaseNotes { get; set; } = string.Empty;
         public string ReleaseUrl { get; set; } = "https://github.com/AhBiYout-all/K-Certificate-Manager/releases";
@@ -53,7 +53,7 @@ namespace KCertManager.Wpf.Services
     {
         private const string GITHUB_REPO = "AhBiYout-all/K-Certificate-Manager";
         private const string INNO_APP_ID_REG_KEY = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\{8F5B123A-4C2E-497B-902B-6277D8C7B8E1}_is1";
-        public const string CURRENT_VERSION = "2.0.0";
+        public const string CURRENT_VERSION = "2.1.0";
 
         public static async Task<AppUpdateInfo> CheckForUpdatesAsync()
         {

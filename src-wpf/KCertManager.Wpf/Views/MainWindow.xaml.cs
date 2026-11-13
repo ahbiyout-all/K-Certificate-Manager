@@ -479,6 +479,44 @@ namespace KCertManager.Wpf.Views
             dialog.ShowDialog();
         }
 
+        private void OpenExpiryRenewalGuidance_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel == null) return;
+            var urgentCerts = ViewModel.AllCertificates
+                .Where(c => c.Status == ExpiryStatus.Expired || c.Status == ExpiryStatus.ExpiringSoon)
+                .OrderBy(c => c.RemainingDays)
+                .ToList();
+
+            var dialog = new RenewalGuidanceDialog(urgentCerts.Any() ? urgentCerts : ViewModel.AllCertificates)
+            {
+                Owner = this
+            };
+            dialog.ShowDialog();
+        }
+
+        private void OpenDiagnostics_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel == null) return;
+            try
+            {
+                var dialog = new DiagnosticsRepairDialog(
+                    ViewModel.AllCertificates,
+                    ViewModel.BackupService,
+                    () => ViewModel.RefreshCertificatesAsync())
+                {
+                    Owner = this
+                };
+                if (dialog.ShowDialog() == true)
+                {
+                    ViewModel.RefreshTrash();
+                }
+            }
+            catch (Exception ex)
+            {
+                UserFriendlyMessageHelper.ShowError(ex, "중복 인증서 정리 및 폴더 자동 복구 창 열기");
+            }
+        }
+
         private void OpenSearchLocations_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new SearchLocationsDialog(ViewModel?.CustomSearchPaths)

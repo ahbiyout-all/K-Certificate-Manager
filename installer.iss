@@ -11,7 +11,7 @@
 #define MyAppName "K-Certificate Manager"
 #define MyAppNameKR "K-인증서 매니저"
 #ifndef MyAppVersion
-  #define MyAppVersion "2.0.0"
+  #define MyAppVersion "2.1.0"
 #endif
 #define MyAppPublisher "AhBiYout"
 #define MyAppURL "https://www.cisnet.co.kr"
