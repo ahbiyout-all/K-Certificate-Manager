@@ -1647,7 +1647,7 @@ namespace KCertManager.Wpf.ViewModels
                 StatusMessage = res.Message;
                 ShowToast($"🔌 {res.Message}");
                 ActivityLogService.Instance.Log(
-                    LogCategory.SYSTEM,
+                    LogCategory.SECURITY,
                     LogLevel.SUCCESS,
                     $"{res.DriveLetter} USB 안전 제거 완료",
                     res.Message,

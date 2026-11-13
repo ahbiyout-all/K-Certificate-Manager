@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using KCert.Core.HardwareGuard;
+using KCertManager.Wpf.Models;
 using KCertManager.Wpf.Services;
 
 namespace KCertManager.Wpf.Views
@@ -206,7 +207,7 @@ namespace KCertManager.Wpf.Views
                 TxtEjectUsb.Text = $"{_removableDriveLetter} 분리 완료";
 
                 ActivityLogService.Instance.Log(
-                    LogCategory.SYSTEM,
+                    LogCategory.SECURITY,
                     LogLevel.SUCCESS,
                     $"{_removableDriveLetter} USB 안전 제거 완료",
                     res.Message,
