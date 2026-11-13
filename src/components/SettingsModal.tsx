@@ -226,7 +226,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-bold">환경 설정 (Settings)</h3>
+                <h3 className="text-base sm:text-lg font-bold">환경 설정</h3>
                 {justSavedNotification && (
                   <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full font-medium animate-fadeIn">
                     <Check className="w-3 h-3" /> 저장됨
@@ -234,7 +234,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 )}
               </div>
               <p className="text-xs text-slate-400">
-                복사 완료 알림음(SuccessChime), 볼륨 크기, 화면 모드 및 기본 동작 설정
+                알림음, 시작 안내, 탐색 경로 및 화면 테마 설정
               </p>
             </div>
           </div>
@@ -255,7 +255,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200/90 rounded-xl text-xs text-slate-600">
             <div className="font-bold text-slate-800 flex items-center gap-1.5">
               <Sliders className="w-4 h-4 text-blue-600" />
-              <span>관리자 설정 메뉴 그룹 (접이식 5개 항목)</span>
+              <span>설정 항목 (5개)</span>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -263,19 +263,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onClick={handleExpandAll}
                 className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-lg border border-slate-200 shadow-2xs transition-colors cursor-pointer"
               >
-                전체 펼치기 ↕️
+                전체 펼치기
               </button>
               <button
                 type="button"
                 onClick={handleCollapseAll}
                 className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-lg border border-slate-200 shadow-2xs transition-colors cursor-pointer"
               >
-                전체 접기 📁
+                전체 접기
               </button>
             </div>
           </div>
 
-          {/* SECTION 1: 단계별 사운드 피드백 (시작음 / 완료음 / 오류음) 설정 (접이식) */}
+          {/* SECTION 1: 단계별 사운드 피드백 */}
           <div className="bg-slate-50 border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
             <button
               type="button"
@@ -288,7 +288,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                    <span>인증서 복사 및 USB 백업 사운드 피드백</span>
+                    <span>알림음 설정</span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       soundSettings.enabled ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
                     }`}>
@@ -296,7 +296,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </span>
                   </h4>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    작업 단계별(시작음, 완료음, 오류음) 음향 효과 및 마스터 볼륨 설정
+                    복사 완료·오류 시 소리 알림 및 볼륨 설정
                   </p>
                 </div>
               </div>
@@ -413,11 +413,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         />
                         <div>
                           <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                            <span>헤더 상단 사운드 가로 소리조절바 표시</span>
-                            <span className="px-1.5 py-0.2 bg-slate-200 text-slate-700 text-[10px] font-medium rounded">기본: 비활성</span>
+                            <span>상단 메뉴에 볼륨 조절바 표시</span>
+                            <span className="px-1.5 py-0.2 bg-slate-200 text-slate-700 text-[10px] font-medium rounded">기본: 꺼짐</span>
                           </div>
                           <p className="text-[11px] text-slate-500 mt-0.5">
-                            상단 헤더 메뉴에 실시간 볼륨 조절 슬라이더 바를 표시합니다. (체크 해제 시 상단 헤더 소리조절바가 숨겨집니다)
+                            켜면 상단 헤더에서 바로 볼륨을 조절할 수 있습니다.
                           </p>
                         </div>
                       </label>
@@ -429,9 +429,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                        단계별 음향 효과 개별 제어 및 미리듣기
+                        상황별 알림음 미리듣기
                       </span>
-                      <span className="text-[11px] text-slate-400">각 단계별 클릭 시 실시간 시연</span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -441,8 +440,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       }`}>
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="font-bold text-xs text-emerald-950 flex items-center gap-1.5">
-                            <span className="text-base">🎉</span>
-                            <span>완료음 (Completion Chime)</span>
+                            <span>완료음</span>
                           </span>
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input
@@ -455,7 +453,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           </label>
                         </div>
                         <p className="text-[11px] text-slate-600 mb-2.5">
-                          복사·백업 성공 시 청명한 3음 하모닉 상승 차임 (Eb5➔G5➔C6)
+                          복사·백업 성공 시 재생
                         </p>
                         <button
                           type="button"
@@ -465,7 +463,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           }`}
                         >
                           <Play className={`w-3.5 h-3.5 ${testingPhase === 'complete' ? 'animate-spin' : ''}`} />
-                          <span>완료음 실시간 미리듣기 🔊</span>
+                          <span>완료음 듣기</span>
                         </button>
                       </div>
 
@@ -475,8 +473,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       }`}>
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="font-bold text-xs text-amber-950 flex items-center gap-1.5">
-                            <span className="text-base">⚠️</span>
-                            <span>오류음 (Error Caution)</span>
+                            <span>오류음</span>
                           </span>
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input
@@ -489,7 +486,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           </label>
                         </div>
                         <p className="text-[11px] text-slate-600 mb-2.5">
-                          쓰기 실패·권한 거부 등 오류 시 주의 2음 하강 톤 (F4➔Db4)
+                          쓰기 금지·권한 오류 시 재생
                         </p>
                         <button
                           type="button"
@@ -499,7 +496,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           }`}
                         >
                           <Play className={`w-3.5 h-3.5 ${testingPhase === 'error' ? 'animate-spin' : ''}`} />
-                          <span>오류음 실시간 미리듣기 ⚠️</span>
+                          <span>오류음 듣기</span>
                         </button>
                       </div>
                     </div>
@@ -522,15 +519,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                    <span>시작 가이드 및 안내 설정</span>
+                    <span>시작 가이드</span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       !dontShowStartupAgain ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-slate-200 text-slate-700'
                     }`}>
-                      {!dontShowStartupAgain ? '시작 팝업 자동 실행' : '메인 직접 진입'}
+                      {!dontShowStartupAgain ? '자동 실행' : '끄기'}
                     </span>
                   </h4>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    앱 시작 시 작업 선택 마법사(PC ➔ USB / USB ➔ PC) 노출 설정
+                    앱 시작 시 작업 선택창 표시 여부
                   </p>
                 </div>
               </div>
@@ -556,10 +553,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     />
                     <div>
                       <div className="font-bold text-slate-800 text-xs">
-                        앱 실행 시 작업 선택창 (PC ➔ USB / USB ➔ PC) 자동으로 띄우기
+                        시작할 때 작업 선택창 열기
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                        체크를 해제하면 시작 시 팝업 없이 바로 메인 인증서 관리 대시보드로 진입합니다. (상단 헤더의 [시작 가이드] 버튼을 통해 언제든 다시 열 수 있습니다.)
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        끄면 바로 전체 목록 화면이 열립니다. 상단 [시작 가이드]로 언제든 다시 열 수 있습니다.
                       </p>
                     </div>
                   </label>
@@ -568,7 +565,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
-          {/* SECTION 3: 인증서 탐색 및 GPKI 경로 최적화 (접이식) */}
+          {/* SECTION 3: 인증서 탐색 및 GPKI 경로 최적화 */}
           <div className="bg-slate-50 border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
             <button
               type="button"
@@ -581,15 +578,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                    <span>인증서 탐색 및 GPKI(행정전자서명) 경로 최적화</span>
+                    <span>공무원 인증서(GPKI) 폴더 최적화</span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       excludeLocalLowGpki ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'
                     }`}>
-                      {excludeLocalLowGpki ? 'GPKI 최적화 (LocalLow 제외)' : '전체 탐색'}
+                      {excludeLocalLowGpki ? '표준 폴더만' : '전체 찾기'}
                     </span>
                   </h4>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    행정안전부 공식 C:\GPKI\Certificate\class2 우선 탐색 설정
+                    정부 표준 폴더(C:\GPKI) 우선 탐색 설정
                   </p>
                 </div>
               </div>
@@ -614,11 +611,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   />
                   <div>
                     <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                      <span>AppData\LocalLow\GPKI 경로 탐색 제외</span>
+                      <span>미사용 폴더(AppData\LocalLow\GPKI) 제외</span>
                       <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">권장</span>
                     </div>
-                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                      공무원 행정전자서명(GPKI)의 정부 공식 표준 경로는 <strong className="text-slate-700">C:\GPKI\Certificate\class2</strong>입니다. 온-나라, 새올 등 행정망에서 사용되지 않는 비권장 폴더(<code className="font-mono text-slate-600 bg-slate-100 px-1 rounded">AppData\LocalLow\GPKI</code>)를 탐색 대상에서 배제합니다.
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      행정망 표준 폴더(<strong className="text-slate-700">C:\GPKI\Certificate\class2</strong>)만 깔끔하게 찾습니다.
                     </p>
                   </div>
                 </label>
@@ -626,7 +623,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
-          {/* SECTION 4: USB 탐색기 자동 열기 옵션 (접이식) */}
+          {/* SECTION 4: USB 탐색기 자동 열기 옵션 */}
           <div className="bg-slate-50 border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
             <button
               type="button"
@@ -639,15 +636,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                    <span>USB 탐색기 자동 열기 옵션 (Auto-Open USB Folder)</span>
+                    <span>복사 후 USB 폴더 자동 열기</span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       autoOpenUsbFolder ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-slate-200 text-slate-700'
                     }`}>
-                      {autoOpenUsbFolder ? '자동 열기 ON' : '자동 열기 OFF'}
+                      {autoOpenUsbFolder ? '켜짐' : '꺼짐'}
                     </span>
                   </h4>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    인증서 복사 성공 시 대상 USB 폴더를 윈도우 탐색기로 즉시 노출
+                    복사 완료 시 USB 탐색기 창을 바로 엽니다
                   </p>
                 </div>
               </div>
@@ -672,11 +669,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   />
                   <div>
                     <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                      <span>인증서 복사 성공 시 대상 USB 폴더를 탐색기로 자동 열기</span>
-                      <span className="px-1.5 py-0.2 bg-blue-100 text-blue-800 text-[10px] font-bold rounded">편의 옵션</span>
+                      <span>복사 완료 시 대상 USB 폴더 자동 열기</span>
+                      <span className="px-1.5 py-0.2 bg-blue-100 text-blue-800 text-[10px] font-bold rounded">편의</span>
                     </div>
-                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                      인증서 복사 또는 USB 백업 작업이 성공적으로 완료되면, 대상 USB 드라이브 폴더를 윈도우 시스템 파일 탐색기(explorer.exe)로 자동으로 열어줍니다.
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      복사가 끝나면 저장된 USB 폴더를 파일 탐색기로 바로 열어 확인합니다.
                     </p>
                   </div>
                 </label>
@@ -684,7 +681,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
-          {/* SECTION 5: 디스플레이 및 테마 (접이식) */}
+          {/* SECTION 5: 디스플레이 및 테마 */}
           <div className="bg-slate-50 border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
             <button
               type="button"
@@ -697,13 +694,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                    <span>디스플레이 및 테마</span>
+                    <span>화면 모드 및 테마</span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
-                      {appViewMode === 'simple' ? '간편 모드' : '전문가 모드'} · {theme}
+                      {appViewMode === 'simple' ? '간편 모드' : '상세 모드'} · {theme}
                     </span>
                   </h4>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    간편/전문가 모드 선택 및 4종 파스텔 테마 색상 설정
+                    보기 방식 및 4가지 색상 테마 설정
                   </p>
                 </div>
               </div>

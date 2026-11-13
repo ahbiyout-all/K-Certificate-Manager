@@ -124,9 +124,11 @@ export interface BackupHistoryItem {
   targetPath: string;
   certificatesCount: number;
   certNames: string[];
+  certIds?: string[];
   status: 'success' | 'failed';
   hashCheckPassed: boolean;
   checksum?: string;
+  retryAttemptsUsed?: number;
 }
 
 export interface TrashItem {

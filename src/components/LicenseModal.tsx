@@ -140,8 +140,8 @@ This software is permanently distributed free of charge (Free License) for civil
               </div>
               <p className="text-xs text-slate-300">
                 {lang === 'en'
-                  ? 'K-Certificate Manager Terms of Use, Copyright & Open Source Licenses (Korean / English)'
-                  : '한국어(Korean) 및 영어(English) 2종 라이선스 정의 · 이용 약관 및 오픈소스 고지'}
+                  ? 'K-Certificate Manager Terms of Use, Copyright & Open Source Licenses (EN)'
+                  : '무료 사용권 · 저작권 및 오픈소스 라이선스 안내 (KR / EN)'}
               </p>
             </div>
           </div>

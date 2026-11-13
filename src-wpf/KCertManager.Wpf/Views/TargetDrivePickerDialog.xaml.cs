@@ -77,7 +77,7 @@ namespace KCertManager.Wpf.Views
             SelectedDrive = null;
             BtnConfirm.IsEnabled = false;
             TxtConfirmBtnText.Text = "선택한 드라이브로 복사 시작";
-            TxtSelectionStatus.Text = "목적지 드라이브를 선택해 주세요.";
+            TxtSelectionStatus.Text = "저장할 드라이브를 선택해 주세요.";
 
             bool hasRemovable = _drives.Any(d => d.IsRemovable && d.IsReady);
             BorderNoUsbWarning.Visibility = hasRemovable ? Visibility.Collapsed : Visibility.Visible;
@@ -101,14 +101,13 @@ namespace KCertManager.Wpf.Views
 
             foreach (var drive in _drives)
             {
-                string targetRoot = (drive.Name ?? "").TrimEnd('\\').ToUpperInvariant() + "\\";
-
                 // Check self copy: are all selected certs already in the EXACT target destination directory?
                 bool isSelfCopy = _certsToCopy.Count > 0 && _certsToCopy.All(c =>
                 {
                     if (string.IsNullOrWhiteSpace(c?.DirectoryPath)) return false;
                     try
                     {
+                        string targetRoot = ResolveEffectiveDestinationRoot(drive, c);
                         string safeRel = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(c.DirectoryPath);
                         string expectedDstDir = Path.GetFullPath(Path.Combine(targetRoot, safeRel)).TrimEnd('\\');
                         string currentSrcDir = Path.GetFullPath(c.DirectoryPath).TrimEnd('\\');
@@ -290,10 +289,10 @@ namespace KCertManager.Wpf.Views
                     if (isSelfCopy)
                     {
                         MessageBox.Show(
-                            $"선택하신 인증서가 이미 {drive.Name} 드라이브에 저장되어 있습니다.\n\n" +
-                            "동일한 드라이브로의 자가 복사(Self-Copy)는 원본 손상 방지를 위해 제한됩니다.\n" +
-                            "다른 USB 메모리나 다른 로컬 디스크를 목적지로 선택해 주세요.",
-                            "자가 복사(Self-Copy) 제한",
+                            $"선택한 인증서가 이미 {drive.Name}에 저장되어 있습니다.\n\n" +
+                            "같은 드라이브로의 복사는 원본 보호를 위해 제한됩니다.\n" +
+                            "다른 USB 메모리나 다른 드라이브를 선택해 주세요.",
+                            "같은 위치 복사 제한",
                             MessageBoxButton.OK,
                             MessageBoxImage.Warning);
                         return;
@@ -322,12 +321,12 @@ namespace KCertManager.Wpf.Views
                 {
                     if (border.Tag is DriveItem d)
                     {
-                        string targetRoot = (d.Name ?? "").TrimEnd('\\').ToUpperInvariant() + "\\";
                         bool isSelfCopy = _certsToCopy.Count > 0 && _certsToCopy.All(c =>
                         {
                             if (string.IsNullOrWhiteSpace(c?.DirectoryPath)) return false;
                             try
                             {
+                                string targetRoot = ResolveEffectiveDestinationRoot(d, c);
                                 string safeRel = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(c.DirectoryPath);
                                 string expectedDstDir = Path.GetFullPath(Path.Combine(targetRoot, safeRel)).TrimEnd('\\');
                                 string currentSrcDir = Path.GetFullPath(c.DirectoryPath).TrimEnd('\\');
@@ -350,9 +349,28 @@ namespace KCertManager.Wpf.Views
 
             if (SelectedDrive == null)
             {
-                TxtSelectionStatus.Text = "선택 가능한 외부 목적지 드라이브가 없습니다. 이동식 USB 메모리를 PC에 연결해 주세요.";
+                TxtSelectionStatus.Text = "복사 가능한 다른 드라이브가 없습니다. USB 메모리를 연결해 주세요.";
                 TxtConfirmBtnText.Text = "USB 메모리를 연결해 주세요";
             }
+        }
+
+        private static string ResolveEffectiveDestinationRoot(DriveItem drive, CertificateItem cert)
+        {
+            string cleanTarget = (drive.Name ?? "").TrimEnd('\\').ToUpperInvariant();
+            string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\').ToUpperInvariant();
+
+            if (string.Equals(cleanTarget, sysRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                if (cert.Category == CertCategory.GPKI)
+                {
+                    return sysRoot + "\\";
+                }
+
+                var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                return Path.Combine(userProfile, "AppData", "LocalLow");
+            }
+
+            return cleanTarget + "\\";
         }
 
         private void SelectCard(Border cardBorder, DriveItem drive)

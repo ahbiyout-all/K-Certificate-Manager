@@ -36,7 +36,7 @@ namespace KCertManager.Wpf.ViewModels
         private string _selectedFilter = "ALL";
         private string _searchKeyword = string.Empty;
         private bool _isBusy;
-        private string _statusMessage = "준비 완료 (로컬 보안 격리)";
+        private string _statusMessage = "준비 완료 (오프라인 보안)";
         private List<TrashItem> _lastDeletedBatch = new();
         private bool _canUndo;
 
@@ -646,8 +646,8 @@ namespace KCertManager.Wpf.ViewModels
                 }
 
                 GuidedWorkflowStep = 2;
-                GuidedWorkflowStepTitle = "2단계: 대상 USB 지정 및 복사 실행";
-                GuidedWorkflowStepDescription = $"선택된 인증서({selected.Count}건)를 저장할 대상 USB 드라이브를 지정합니다. 복사 창에서 대상 드라이브를 선택 후 [복사 시작]을 누르세요.";
+                GuidedWorkflowStepTitle = "2단계: 저장할 USB 선택";
+                GuidedWorkflowStepDescription = $"선택한 인증서 {selected.Count}건을 저장할 USB 드라이브를 고른 뒤 [복사 시작]을 누르세요.";
 
                 // Step 2로 진입 시 즉시 복사 창 실행!
                 ExecuteGuidedCopy();
@@ -886,8 +886,8 @@ namespace KCertManager.Wpf.ViewModels
                 }
                 else if (GuidedWorkflowStep == 2)
                 {
-                    GuidedWorkflowStepTitle = "2단계: 백업 대상 USB 지정 및 복사 실행";
-                    GuidedWorkflowStepDescription = "하단 또는 상단 드라이브 바에서 대상 USB를 지정 후 [백업/복사] 버튼을 누르세요.";
+                    GuidedWorkflowStepTitle = "2단계: 저장할 USB 선택";
+                    GuidedWorkflowStepDescription = "선택한 인증서를 저장할 USB 드라이브를 고른 뒤 [복사 시작]을 누르세요.";
                 }
             }
         }
@@ -1237,7 +1237,7 @@ namespace KCertManager.Wpf.ViewModels
             try
             {
                 IsBusy = true;
-                StatusMessage = "인증서 보관함 고속 스캔 중 (1단계 Fast-Pass)...";
+                StatusMessage = "인증서 찾는 중...";
 
                 if (customPaths != null)
                 {
@@ -1254,7 +1254,7 @@ namespace KCertManager.Wpf.ViewModels
                         DispatchUpdateCertificates(list);
                     });
                     IsBusy = false;
-                    StatusMessage = $"스캔 완료: 총 {TotalCount}개 인증서 발견됨.";
+                    StatusMessage = $"총 {TotalCount}개 인증서를 찾았습니다.";
                     return;
                 }
 
@@ -1266,7 +1266,7 @@ namespace KCertManager.Wpf.ViewModels
                 DispatchUpdateCertificates(fastList);
 
                 IsBusy = false; // 사용자 UI 즉각 사용 가능하게 전환!
-                StatusMessage = $"표준 인증서 {fastList.Count}개 즉시 감지됨 (비표준 심층 백그라운드 탐색 진행 중...)";
+                StatusMessage = $"표준 인증서 {fastList.Count}개 표시됨 (추가 폴더 확인 중...)";
 
                 // =========================================================================
                 // [2단계 Deep-Pass]: 비표준 및 외장 디스크 심층 탐색을 백그라운드 비동기로 실행
@@ -1730,13 +1730,13 @@ namespace KCertManager.Wpf.ViewModels
 
                 if (IsGuidedWorkflowActive)
                 {
-                    GuidedWorkflowStepTitle = $"🛡️ 시작가이드 알림: 중복 파일 감지 ({duplicateConflicts.Count}건)";
-                    GuidedWorkflowStepDescription = $"선택한 인증서 중 {duplicateConflicts.Count}건이 대상 드라이브({targetDriveName})에 이미 존재합니다. 처리 옵션 [{actualConflictOption}] 선택 완료 후 복사를 진행합니다.";
+                    GuidedWorkflowStepTitle = $"🛡️ 같은 인증서 확인 ({duplicateConflicts.Count}건)";
+                    GuidedWorkflowStepDescription = $"{targetDriveName}에 이미 있는 {duplicateConflicts.Count}건의 처리 방법을 선택해 복사를 진행합니다.";
                 }
             }
 
             IsBusy = true;
-            StatusMessage = $"선택한 {selected.Count}개 인증서를 {targetDrive.Name}로 복사 중... (처리 방식: {actualConflictOption})";
+            StatusMessage = $"{targetDrive.Name}로 인증서 {selected.Count}개 복사 중...";
             // 복사 시작음 영구 제거됨 (PlayStartSound 호출 제거)
 
             int success = 0;
@@ -1765,8 +1765,8 @@ namespace KCertManager.Wpf.ViewModels
                         {
                             if (IsGuidedWorkflowActive)
                             {
-                                GuidedWorkflowStepTitle = "⚠️ 시작가이드 알림: 복사 경로 오류 (동일 위치 자가 복사 금지)";
-                                GuidedWorkflowStepDescription = $"선택한 인증서({cert.CommonName})가 이미 대상 드라이브({targetDriveName})의 동일 경로에 위치하여 자가 복사가 자동 제외되었습니다. 다른 목적지 드라이브를 선택하세요.";
+                                GuidedWorkflowStepTitle = "⚠️ 같은 위치 복사 불가";
+                                GuidedWorkflowStepDescription = $"'{cert.CommonName}'은(는) 이미 {targetDriveName}에 있어 건너뛰었습니다. 다른 드라이브를 선택하세요.";
                                 PlayErrorSound();
                             }
                             var sameResult = new BackupHistoryItem
@@ -1932,8 +1932,8 @@ namespace KCertManager.Wpf.ViewModels
                 if (IsGuidedWorkflowActive && GuidedWorkflowStep == 2)
                 {
                     GuidedWorkflowStep = 3;
-                    GuidedWorkflowStepTitle = "3단계: 복사 완료 및 무결성 검증 완료";
-                    GuidedWorkflowStepDescription = $"선택한 인증서가 대상 드라이브({targetDriveName})로 안전하게 복사되었습니다. 우측 사이드바에서 복사된 인증서의 상세 경로와 SHA-256 무결성을 확인하실 수 있습니다.";
+                    GuidedWorkflowStepTitle = "3단계: 복사 및 손상 검사 완료";
+                    GuidedWorkflowStepDescription = $"{targetDriveName}에 복사를 마쳤습니다. 오른쪽 상세 패널에서 저장 위치와 검사 결과를 확인하세요.";
                 }
             }
 
@@ -1950,15 +1950,15 @@ namespace KCertManager.Wpf.ViewModels
                 string targetPath = lastSuccessItem?.DestinationPath ?? $"{targetDriveName}\\";
 
                 UserFriendlyMessageHelper.ShowOperationComplete(
-                    "인증서 복사 및 백업 완료!",
-                    $"선택하신 인증서 {success}개가 대상 {targetTypeName}({targetDriveName})로 안전하게 복사/백업되었습니다.",
+                    "인증서 복사 완료!",
+                    $"{targetTypeName}({targetDriveName})에 인증서 {success}개를 안전하게 복사했습니다.",
                     success,
                     sourcePath,
                     targetPath,
                     completeItems,
                     isTargetUsb
-                        ? "• USB 메모리를 타 PC에 연결하여 은행 및 공공기관 로그인 시 [이동식 디스크]를 선택하시면 즉시 사용하실 수 있습니다.\n• 분리 전 윈도우 우측 하단의 '하드웨어 안전하게 제거'를 누르시면 파일 손상을 예방할 수 있습니다."
-                        : "• 복사된 대상 디스크의 NPKI/GPKI 표준 폴더를 백업 보관용으로 안전하게 관리하세요.\n• 필요 시 언제든지 복원 기능을 통해 원본 PC로 되돌릴 수 있습니다.");
+                        ? "• 다른 PC에서 USB를 꽂은 뒤 [이동식 디스크]를 선택해 로그인하세요.\n• 분리 전 작업 표시줄의 '하드웨어 안전하게 제거'를 눌러 주세요."
+                        : "• 복사된 표준 폴더를 백업용으로 보관하세요.\n• 필요할 때 언제든 다시 복원할 수 있습니다.");
             }
             else
             {
@@ -1971,42 +1971,41 @@ namespace KCertManager.Wpf.ViewModels
 
                 if (IsGuidedWorkflowActive)
                 {
-                    GuidedWorkflowStepTitle = "❌ 시작가이드 알림: 복사 경로 오류 발생";
-                    GuidedWorkflowStepDescription = $"인증서 복사 중 경로 오류가 발생했습니다: {(string.IsNullOrEmpty(firstFailMsg) ? "드라이브 I/O 또는 쓰기 권한 오류" : firstFailMsg)}. 매체 쓰기 금지 LOCK 해제 및 저장 공간을 확인하세요.";
+                    GuidedWorkflowStepTitle = "❌ 복사 오류 발생";
+                    GuidedWorkflowStepDescription = $"복사 실패: {(string.IsNullOrEmpty(firstFailMsg) ? "쓰기 권한 또는 공간 부족" : firstFailMsg)} · USB 잠금 해제와 여유 공간을 확인하세요.";
                 }
 
-                string errorCategoryTitle = "인증서 복사 오류 안내";
-                string detailedTip = "• 대상 디스크/USB의 남은 용량이 충분한지 확인해 주세요.\n• USB의 경우 '쓰기 금지(Lock)' 스위치가 꺼져 있는지 확인해 주세요.\n• 권한 문제가 지속될 경우 관리자 권한으로 실행해 보세요.";
+                string errorCategoryTitle = "인증서 복사 실패";
+                string detailedTip = "• USB·디스크의 남은 용량과 쓰기 금지(잠금) 여부를 확인하세요.\n• 필요하면 앱을 관리자 권한으로 실행해 보세요.";
 
                 if (firstFailMsg.IndexOf("write-protected", StringComparison.OrdinalIgnoreCase) >= 0 ||
                     firstFailMsg.IndexOf("쓰기 금지", StringComparison.OrdinalIgnoreCase) >= 0 ||
                     firstFailMsg.IndexOf("read-only", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    errorCategoryTitle = "USB 드라이브 쓰기 금지(Write-Protected) 감지";
-                    detailedTip = "1. USB 메모리 측면의 물리 LOCK 스위치를 UNLOCK 방향으로 전환하세요.\n" +
-                                  "2. Windows 파일 탐색기에서 대상 드라이브 속성 > [읽기 전용] 체크를 해제하세요.\n" +
-                                  "3. 관리자 권한 명령 프롬프트에서 diskpart 실행 후 attributes disk clear readonly를 수행하세요.\n" +
-                                  "4. 사내 보안 DLP(USB 쓰기 통제) 솔루션의 예외 승인을 요청하세요.";
+                    errorCategoryTitle = "USB 쓰기 금지 (Read-Only) 감지";
+                    detailedTip = "1. USB 측면 잠금(Lock) 스위치를 해제하세요.\n" +
+                                  "2. 드라이브 속성에서 [읽기 전용] 체크를 해제하세요.\n" +
+                                  "3. 사내 보안 프로그램의 USB 쓰기 제한 여부를 확인하세요.";
                 }
                 else if (firstFailMsg.IndexOf("space", StringComparison.OrdinalIgnoreCase) >= 0 ||
                          firstFailMsg.IndexOf("공간이 부족", StringComparison.OrdinalIgnoreCase) >= 0 ||
                          firstFailMsg.IndexOf("disk full", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    errorCategoryTitle = "대상 디스크 저장 공간 부족 (Disk Full)";
-                    detailedTip = "1. 대상 드라이브의 휴지통을 비우거나 불필요한 대용량 파일을 정리하여 여유 공간을 확보하세요.\n" +
-                                  "2. 다른 충분한 여유 공간이 있는 USB 드라이브를 선택하여 복사하세요.";
+                    errorCategoryTitle = "저장 공간 부족";
+                    detailedTip = "1. 대상 드라이브의 불필요한 파일을 비워 공간을 확보하세요.\n" +
+                                  "2. 여유 공간이 충분한 다른 USB를 선택하세요.";
                 }
                 else if (firstFailMsg.IndexOf("access", StringComparison.OrdinalIgnoreCase) >= 0 ||
                          firstFailMsg.IndexOf("권한", StringComparison.OrdinalIgnoreCase) >= 0 ||
                          firstFailMsg.IndexOf("denied", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    errorCategoryTitle = "드라이브 쓰기 권한 부족 (Permission Denied)";
+                    errorCategoryTitle = "쓰기 권한 부족";
                     detailedTip = "1. 프로그램을 [관리자 권한으로 실행]해 보세요.\n" +
-                                  "2. 대상 폴더에 대한 쓰기 권한을 확인하고 보안 프로그램(DLP/백신)의 차단 여부를 점검하세요.";
+                                  "2. 백신·보안 프로그램이 폴더 쓰기를 막고 있는지 확인하세요.";
                 }
 
                 UserFriendlyMessageHelper.ShowWarning(
-                    $"인증서 {selected.Count}개 중 {success}개 성공, {selected.Count - success}개 복사 차단됨 ({targetDriveName}).\n\n[오류 원인 요약]\n{(string.IsNullOrEmpty(firstFailMsg) ? "드라이브 I/O 또는 쓰기 권한 오류" : firstFailMsg)}",
+                    $"{targetDriveName}: {selected.Count}개 중 {success}개 성공, {selected.Count - success}개 실패\n원인: {(string.IsNullOrEmpty(firstFailMsg) ? "쓰기 권한 또는 입출력 오류" : firstFailMsg)}",
                     errorCategoryTitle,
                     detailedTip);
             }
@@ -2068,8 +2067,8 @@ namespace KCertManager.Wpf.ViewModels
             }
 
             var promptMsg = toDelete.Count == 1
-                ? $"인증서 [{toDelete[0].CommonName}]를 삭제(안전 격리 휴지통 이동)하시겠습니까?\n삭제 후 즉시 되돌릴 수 있습니다."
-                : $"선택한 {toDelete.Count}개의 인증서를 모두 삭제(안전 격리 휴지통 이동)하시겠습니까?\n삭제 후 즉시 되돌릴 수 있습니다.";
+                ? $"[{toDelete[0].CommonName}] 인증서를 휴지통으로 옮기시겠습니까?\n(휴지통에서 언제든 복원 가능)"
+                : $"선택한 인증서 {toDelete.Count}개를 휴지통으로 옮기시겠습니까?\n(휴지통에서 언제든 복원 가능)";
 
             var confirm = MessageBox.Show(promptMsg, "인증서 삭제 확인", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (confirm != MessageBoxResult.Yes) return;
@@ -2209,7 +2208,7 @@ namespace KCertManager.Wpf.ViewModels
         {
             if (!isSilentWhenUpToDate)
             {
-                StatusMessage = "GitHub 공식 저장소 최신 릴리스 및 버전 확인 중...";
+                StatusMessage = "최신 버전 확인 중...";
             }
 
             try
@@ -2219,17 +2218,12 @@ namespace KCertManager.Wpf.ViewModels
                 {
                     StatusMessage = $"새 버전(v{info.LatestVersion}) 감지됨";
 
+                    bool runFallbackSelfUpdate = false;
                     Application.Current?.Dispatcher?.Invoke(() =>
                     {
                         try
                         {
-                            var dialog = new KCertManager.Wpf.Views.UpdateNotificationDialog(
-                                info.CurrentVersion,
-                                info.LatestVersion,
-                                info.ReleaseName,
-                                info.ReleaseNotes,
-                                info.DownloadUrl ?? "https://github.com/AhBiYout-all/K-Certificate-Manager/releases",
-                                info.ReleaseUrl)
+                            var dialog = new KCertManager.Wpf.Views.UpdateNotificationDialog(info)
                             {
                                 Owner = Application.Current?.MainWindow
                             };
@@ -2237,31 +2231,31 @@ namespace KCertManager.Wpf.ViewModels
                         }
                         catch
                         {
-                            // Fallback if dialog creation fails
+                            // Fallback if dialog creation fails: execute silent self-update directly without opening GitHub
                             var res = MessageBox.Show(
-                                $"🚀 새로운 K-인증서 매니저 버전(v{info.LatestVersion})이 감지되었습니다!\n\n" +
-                                $"• 현재 설치 버전: v{info.CurrentVersion}\n" +
-                                $"• GitHub 최신 버전: v{info.LatestVersion}\n\n" +
-                                $"🔗 공식 GitHub 저장소 경로:\n  https://github.com/AhBiYout-all/K-Certificate-Manager\n\n" +
-                                "지금 GitHub 릴리스 페이지로 이동하여 새 버전을 다운로드하시겠습니까?",
-                                "K-인증서 매니저 - 최신 버전 업데이트 알림",
+                                $"새 버전(v{info.LatestVersion})이 있습니다. (현재: v{info.CurrentVersion})\n\n확인 시 앱에서 바로 다운받아 자동 설치합니다.",
+                                "새 버전 업데이트",
                                 MessageBoxButton.YesNo,
                                 MessageBoxImage.Information);
 
-                            if (res == MessageBoxResult.Yes)
-                            {
-                                try
-                                {
-                                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                                    {
-                                        FileName = !string.IsNullOrWhiteSpace(info.DownloadUrl) ? info.DownloadUrl : info.ReleaseUrl,
-                                        UseShellExecute = true
-                                    });
-                                }
-                                catch { }
-                            }
+                            runFallbackSelfUpdate = res == MessageBoxResult.Yes;
                         }
                     });
+
+                    if (runFallbackSelfUpdate)
+                    {
+                        StatusMessage = $"새 버전(v{info.LatestVersion}) 다운로드 및 설치 중...";
+                        var selfRes = await UpdateCheckerService.DownloadAndInstallAsync(info);
+                        if (selfRes.Success && selfRes.ShouldShutdownForInstall)
+                        {
+                            Application.Current?.Dispatcher?.Invoke(() => Application.Current?.Shutdown());
+                        }
+                        else if (!selfRes.Success)
+                        {
+                            Application.Current?.Dispatcher?.Invoke(() =>
+                                MessageBox.Show(selfRes.Message, "자동 업데이트 오류", MessageBoxButton.OK, MessageBoxImage.Warning));
+                        }
+                    }
                     return true;
                 }
                 else
@@ -2272,9 +2266,8 @@ namespace KCertManager.Wpf.ViewModels
                         Application.Current?.Dispatcher?.Invoke(() =>
                         {
                             MessageBox.Show(
-                                $"현재 설치된 K-인증서 매니저(v{info.CurrentVersion})가 가장 최신 버전입니다.\n\n" +
-                                "모든 최신 규격과 보안 패치가 완벽하게 적용되어 있습니다.",
-                                "최신 버전 확인 완료",
+                                $"현재 최신 버전(v{info.CurrentVersion})을 사용 중입니다.",
+                                "업데이트 확인",
                                 MessageBoxButton.OK,
                                 MessageBoxImage.Information);
                         });

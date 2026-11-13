@@ -80,7 +80,7 @@ namespace KCertManager.Wpf.Views
             }
 
             if (GridTrash != null) GridTrash.ItemsSource = _items;
-            if (BtnTabDeleted != null) BtnTabDeleted.Content = $"🗑️ 삭제된 항목 (격리 보관 중 {_items.Count}건)";
+            if (BtnTabDeleted != null) BtnTabDeleted.Content = $"🗑️ 삭제된 항목 ({_items.Count}건)";
             UpdateFooterCount();
             UpdateSelectedState();
         }
@@ -135,7 +135,7 @@ namespace KCertManager.Wpf.Views
             }
 
             if (ListRestoredCards != null) ListRestoredCards.ItemsSource = _restoredItems;
-            if (BtnTabRestored != null) BtnTabRestored.Content = $"🔄 복원된 항목 (보관소 {_rawRestoredList.Count}건)";
+            if (BtnTabRestored != null) BtnTabRestored.Content = $"🔄 복원된 항목 ({_rawRestoredList.Count}건)";
             UpdateFooterCount();
         }
 
@@ -152,7 +152,7 @@ namespace KCertManager.Wpf.Views
                         string hashSample = checksum.Length >= 16 
                             ? checksum.Substring(0, 16) + "..." 
                             : checksum;
-                        TxtVaultDiagnostics.Text = $"매니페스트: protected_restored_manifest.dat ({status.FileSizeBytes} 바이트) | SHA-256: {hashSample} | {status.DiagnosticMessage}";
+                        TxtVaultDiagnostics.Text = $"보관 기록 크기: {status.FileSizeBytes:N0} 바이트 | 검사값(SHA-256): {hashSample} | {status.DiagnosticMessage}";
                     }
                 }
             }
@@ -177,20 +177,20 @@ namespace KCertManager.Wpf.Views
             {
                 var status = _backupService.GetVaultSecurityStatus();
                 string details = 
-                    $"• 보안 알고리즘: {status.EncryptionAlgorithm}\n" +
-                    $"• 매니페스트 경로: {status.ManifestFilePath}\n" +
-                    $"• 암호화 데이터 크기: {status.FileSizeBytes:N0} 바이트\n" +
-                    $"• 마지막 수정 시각: {status.LastModifiedUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}\n" +
-                    $"• SHA-256 무결성 해시: {status.Sha256Checksum}\n" +
-                    $"• 보관된 복원 이력: {status.TotalItemsCount}건\n" +
-                    $"• 자가 진단(Self-Test) 상태: {(status.IsSelfTestPassed ? "✓ 무결성 검증 통과 (100% 정상)" : "⚠️ 진단 경고")}\n\n" +
-                    $"안내: 복원된 항목의 매니페스트는 Windows DPAPI 및 AES-256으로 이중 암호화되어 있어 현재 사용자 외의 타인이나 악성 프로세스로부터 완벽히 보호됩니다.";
+                    $"• 암호화 방식: {status.EncryptionAlgorithm}\n" +
+                    $"• 기록 파일 위치: {status.ManifestFilePath}\n" +
+                    $"• 파일 크기: {status.FileSizeBytes:N0} 바이트\n" +
+                    $"• 마지막 저장 시각: {status.LastModifiedUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}\n" +
+                    $"• 파일 검사값 (SHA-256): {status.Sha256Checksum}\n" +
+                    $"• 보관된 복원 기록: {status.TotalItemsCount}건\n" +
+                    $"• 보안 점검 결과: {(status.IsSelfTestPassed ? "✓ 파일 손상 검사 통과" : "⚠️ 점검 필요")}\n\n" +
+                    $"안내: 복원 기록은 Windows 사용자 암호화(DPAPI) + AES-256으로 이중 보호되어 다른 사람이나 외부 프로그램이 열어볼 수 없습니다.";
 
-                UserFriendlyMessageHelper.ShowInfo(details, "암호화 보호 보관소(Encrypted Vault) 자가진단 리포트", this);
+                UserFriendlyMessageHelper.ShowInfo(details, "암호화 보관함 보안 점검 결과", this);
             }
             catch (Exception ex)
             {
-                UserFriendlyMessageHelper.ShowError(ex, "보관소 자가진단 오류");
+                UserFriendlyMessageHelper.ShowError(ex, "보관함 보안 점검 오류");
             }
         }
 
@@ -200,15 +200,15 @@ namespace KCertManager.Wpf.Views
             {
                 if (_rawRestoredList.Count == 0)
                 {
-                    UserFriendlyMessageHelper.ShowInfo("내보낼 복원 보관소 이력이 없습니다.", "안내", this);
+                    UserFriendlyMessageHelper.ShowInfo("내보낼 복원 기록이 없습니다.", "안내", this);
                     return;
                 }
 
                 var sfd = new Microsoft.Win32.SaveFileDialog
                 {
                     FileName = $"protected_vault_backup_{DateTime.Now:yyyyMMdd_HHmmss}.dat",
-                    Filter = "암호화 보관소 백업 파일 (*.dat)|*.dat|모든 파일 (*.*)|*.*",
-                    Title = "암호화 보호 보관소(.dat) 백업 파일 내보내기"
+                    Filter = "암호화 보관함 백업 파일 (*.dat)|*.dat|모든 파일 (*.*)|*.*",
+                    Title = "암호화 백업 파일(.dat) 내보내기"
                 };
 
                 if (sfd.ShowDialog(this) == true)
@@ -216,7 +216,7 @@ namespace KCertManager.Wpf.Views
                     var (success, msg) = _backupService.ExportVaultBackup(sfd.FileName);
                     if (success)
                     {
-                        UserFriendlyMessageHelper.ShowInfo(msg, "보관소 백업 내보내기 완료", this);
+                        UserFriendlyMessageHelper.ShowInfo(msg, "백업 내보내기 완료", this);
                     }
                     else
                     {
@@ -250,7 +250,7 @@ namespace KCertManager.Wpf.Views
             }
             catch (Exception ex)
             {
-                UserFriendlyMessageHelper.ShowErrorText($"보관소 폴더를 여는 중 오류가 발생했습니다: {ex.Message}", "폴더 열기 실패", "• 파일 탐색기 권한을 확인해 주세요.", this);
+                UserFriendlyMessageHelper.ShowErrorText($"보관 폴더를 여는 중 오류가 발생했습니다: {ex.Message}", "폴더 열기 실패", "• 파일 탐색기 권한을 확인해 주세요.", this);
             }
         }
 
@@ -284,13 +284,13 @@ namespace KCertManager.Wpf.Views
                         }
                         else
                         {
-                            UserFriendlyMessageHelper.ShowInfo("보관소 금고 파일이 아직 디스크에 생성되지 않았습니다.", "안내", this);
+                            UserFriendlyMessageHelper.ShowInfo("암호화 백업 파일이 아직 생성되지 않았습니다.", "안내", this);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    UserFriendlyMessageHelper.ShowErrorText($"금고 폴더를 여는 중 오류가 발생했습니다: {ex.Message}", "폴더 열기 실패", "• 파일 탐색기 권한을 확인해 주세요.", this);
+                    UserFriendlyMessageHelper.ShowErrorText($"보관 폴더를 여는 중 오류가 발생했습니다: {ex.Message}", "폴더 열기 실패", "• 파일 탐색기 권한을 확인해 주세요.", this);
                 }
             }
         }
@@ -307,9 +307,9 @@ namespace KCertManager.Wpf.Views
                     if (string.IsNullOrEmpty(zipPath) || !System.IO.File.Exists(zipPath))
                     {
                         UserFriendlyMessageHelper.ShowErrorText(
-                            $"암호화 금고 파일이 디스크에 존재하지 않습니다.\n({zipPath})",
-                            "금고 파일 미발견",
-                            "• '보관소 자가진단'을 실행하여 금고 파일을 자동 동기화해 주세요.",
+                            $"암호화 백업 파일이 없습니다.\n({zipPath})",
+                            "파일 없음",
+                            "• '보안 점검'을 실행해 보관 파일을 다시 확인해 주세요.",
                             this);
                         return;
                     }
@@ -318,30 +318,30 @@ namespace KCertManager.Wpf.Views
                     if (isValid)
                     {
                         string details = 
-                            $"[🔒 AES-256-GCM 암호화 금고 검증 통과]\n" +
+                            $"[🔒 AES-256 암호화 백업 검사 통과]\n" +
                             $"• 인증서 소유자명: {item.CertCommonName}\n" +
-                            $"• 암호화 금고 파일: {System.IO.Path.GetFileName(zipPath)}\n" +
-                            $"• 저장 디렉터리: {System.IO.Path.GetDirectoryName(zipPath)}\n" +
-                            $"• 금고 데이터 크기: {fileSize:N0} 바이트 ({item.FormattedCompressedSize})\n" +
-                            $"• SHA-256 무결성 해시: {sha256}\n" +
-                            $"• 보안 알고리즘: AES-256-GCM + PBKDF2 (100,000회 스트레칭)\n" +
-                            $"• 검증 결과: {message}\n\n" +
-                            $"안내: 이 금고 파일은 일반 사용자가 임의로 개봉할 수 없도록 이중 암호화되어 안전하게 보관됩니다.";
+                            $"• 암호화 백업 파일: {System.IO.Path.GetFileName(zipPath)}\n" +
+                            $"• 저장 폴더: {System.IO.Path.GetDirectoryName(zipPath)}\n" +
+                            $"• 파일 크기: {fileSize:N0} 바이트 ({item.FormattedCompressedSize})\n" +
+                            $"• 파일 검사값 (SHA-256): {sha256}\n" +
+                            $"• 암호화 방식: Windows 사용자 암호화(DPAPI) + AES-256\n" +
+                            $"• 검사 결과: {message}\n\n" +
+                            $"안내: 이 파일은 이중 암호화로 보호되어 임의로 열어볼 수 없습니다.";
 
-                        UserFriendlyMessageHelper.ShowInfo(details, "✓ 특수 암호화 금고 무결성 검증 완료", this);
+                        UserFriendlyMessageHelper.ShowInfo(details, "✓ 암호화 백업 파일 검사 완료", this);
                     }
                     else
                     {
                         UserFriendlyMessageHelper.ShowErrorText(
-                            $"금고 검증 경고: {message}",
-                            "금고 검증 실패",
-                            "• 금고 파일이 변조되었거나 패스워드 파생 키가 일치하지 않습니다.",
+                            $"파일 검사 경고: {message}",
+                            "파일 검사 실패",
+                            "• 보관 파일이 손상되었거나 암호화 키가 일치하지 않습니다.",
                             this);
                     }
                 }
                 catch (Exception ex)
                 {
-                    UserFriendlyMessageHelper.ShowError(ex, "금고 검증 중 오류");
+                    UserFriendlyMessageHelper.ShowError(ex, "파일 손상 여부 검사 중 오류");
                 }
             }
         }
@@ -356,19 +356,19 @@ namespace KCertManager.Wpf.Views
                     $"• 발급기관: {item.IssuerName}\n" +
                     $"• 구분: {item.Category}\n" +
                     $"• 만료일: {item.NotAfter:yyyy-MM-dd}\n\n" +
-                    $"[격리 및 복원 무결성 증적]\n" +
+                    $"[복원 및 파일 손상 검사 기록]\n" +
                     $"• 복원 완료 시각: {item.RestoredAt:yyyy-MM-dd HH:mm:ss}\n" +
                     $"• 이전 삭제 사유: {item.DeleteReason}\n" +
-                    $"• 복구 전 무결성: {item.IntegrityBefore}\n" +
-                    $"• 복구 후 무결성: {item.IntegrityAfter}\n\n" +
-                    $"[보관소 암호화 수준 및 파일 경로]\n" +
-                    $"• 암호화 금고 파일: {item.EncryptedZipPath}\n" +
-                    $"• 압축 데이터 크기: {item.FormattedCompressedSize}\n" +
-                    $"• 시스템 복원 반영 위치: {item.OriginalDirectoryPath}\n" +
-                    $"• 매니페스트 보호: Windows DPAPI (CurrentUser) + AES-256 GCM\n" +
-                    $"• 무결성 상태: {item.StatusBadge}";
+                    $"• 복구 전 검사: {item.IntegrityBefore}\n" +
+                    $"• 복구 후 검사: {item.IntegrityAfter}\n\n" +
+                    $"[암호화 보관 정보]\n" +
+                    $"• 암호화 백업 파일: {item.EncryptedZipPath}\n" +
+                    $"• 압축 파일 크기: {item.FormattedCompressedSize}\n" +
+                    $"• 복원된 위치: {item.OriginalDirectoryPath}\n" +
+                    $"• 보호 방식: Windows 사용자 암호화(DPAPI) + AES-256\n" +
+                    $"• 검사 상태: {item.StatusBadge}";
 
-                UserFriendlyMessageHelper.ShowInfo(proofDetails, "🔒 복원 인증서 보안 감사 증적 (Audit Proof)", this);
+                UserFriendlyMessageHelper.ShowInfo(proofDetails, "🔒 복원 파일 검사 기록", this);
             }
         }
 
@@ -376,7 +376,7 @@ namespace KCertManager.Wpf.Views
         {
             if (TxtTrashCount != null)
             {
-                TxtTrashCount.Text = $"격리 보관된 인증서: {_items.Count}개 | 복원 보관소: {_rawRestoredList.Count}개";
+                TxtTrashCount.Text = $"휴지통: {_items.Count}개 | 복원 보관함: {_rawRestoredList.Count}개";
             }
         }
 
@@ -413,14 +413,14 @@ namespace KCertManager.Wpf.Views
         {
             if (_rawRestoredList.Count == 0)
             {
-                UserFriendlyMessageHelper.ShowInfo("복원 보관소가 이미 비어 있습니다.", "안내", this);
+                UserFriendlyMessageHelper.ShowInfo("복원 기록이 이미 비어 있습니다.", "안내", this);
                 return;
             }
 
             var confirm = MessageBox.Show(
                 this,
-                "복원된 인증서 항목의 모든 이력 기록을 삭제하시겠습니까?",
-                "복원 이력 전체 비우기 확인",
+                "복원된 인증서 기록을 모두 지우시겠습니까?",
+                "복원 기록 전체 비우기 확인",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
@@ -428,7 +428,7 @@ namespace KCertManager.Wpf.Views
             {
                 _backupService.ClearRestoredTrashHistory();
                 LoadRestoredItems();
-                UserFriendlyMessageHelper.ShowInfo("복원 이력 보관소를 완전히 비웠습니다.", "비우기 완료", this);
+                UserFriendlyMessageHelper.ShowInfo("복원 기록을 모두 비웠습니다.", "비우기 완료", this);
             }
         }
 
@@ -451,9 +451,9 @@ namespace KCertManager.Wpf.Views
                 if (!targetDrives.Any())
                 {
                     UserFriendlyMessageHelper.ShowErrorText(
-                        "연결된 이동식 USB 메모리를 찾을 수 없습니다.",
-                        "제한된 USB 복구 안내",
-                        "• 특수 보관소의 제한 복구 기능은 파일 오염 및 임의 생성을 방지하기 위해 이동식 USB 매체로만 복원이 허용됩니다.\n• USB 메모리를 컴퓨터에 연결하신 후 다시 시도해 주세요.",
+                        "연결된 USB 메모리가 없습니다.",
+                        "USB 복구 안내",
+                        "• 안전을 위해 USB 메모리로만 복원할 수 있습니다.\n• USB 메모리를 PC에 연결한 뒤 다시 시도해 주세요.",
                         this);
                     return;
                 }
@@ -467,7 +467,7 @@ namespace KCertManager.Wpf.Views
 
                 if (!System.IO.Directory.Exists(sourceToCopy))
                 {
-                    // 원본 폴더가 미존재하더라도 보관소의 AES-256 암호화 금고 파일(.zip.dat)로부터 즉각 복원 시도
+                    // 원본 폴더가 없어도 암호화 백업 파일(.zip.dat)에서 복원 시도
                     string zipPath = item.EncryptedZipPath;
                     if (System.IO.File.Exists(zipPath))
                     {
@@ -486,9 +486,9 @@ namespace KCertManager.Wpf.Views
                 if (!System.IO.Directory.Exists(sourceToCopy))
                 {
                     UserFriendlyMessageHelper.ShowErrorText(
-                        $"복원 대상 인증서 폴더 또는 금고 파일을 찾을 수 없습니다.\n({item.OriginalDirectoryPath})",
+                        $"복원할 인증서 폴더 또는 암호화 백업 파일을 찾을 수 없습니다.\n({item.OriginalDirectoryPath})",
                         "복구 오류",
-                        "• 원래 복원 경로에 인증서가 존재하거나 특수 암호화 금고(.zip.dat)가 유지되어 있어야 복구할 수 있습니다.",
+                        "• 원래 위치에 인증서가 있거나 암호화 백업 파일(.zip.dat)이 남아 있어야 복원할 수 있습니다.",
                         this);
                     return;
                 }
@@ -517,15 +517,15 @@ namespace KCertManager.Wpf.Views
                     ActivityLogService.Instance.Log(
                         LogCategory.RESTORE,
                         LogLevel.SUCCESS,
-                        "특수 보관소 ➔ USB 제한 복구 완료",
-                        $"인증서 [{item.CertCommonName}] ➔ USB ({usbDrive.Name}) {subFolder} 제한 복원 완료",
+                        "보관함 ➔ USB 복원 완료",
+                        $"인증서 [{item.CertCommonName}]를 USB ({usbDrive.Name})로 복원했습니다.",
                         item.OriginalDirectoryPath,
                         destDir,
                         1);
 
                     SoundService.PlayCompletionSound();
                     UserFriendlyMessageHelper.ShowOperationComplete(
-                        "특수 보관소 ➔ USB 제한 복구 완료!",
+                        "USB 복원 완료!",
                         1,
                         usbDrive.Name,
                         destDir,
@@ -538,7 +538,7 @@ namespace KCertManager.Wpf.Views
                 catch (Exception ex)
                 {
                     UserFriendlyMessageHelper.ShowErrorText(
-                        $"USB 제한 복구 실패: {ex.Message}",
+                        $"USB 복원 실패: {ex.Message}",
                         "복구 오류",
                         "• USB 쓰기 금지 해제 여부를 확인해 주세요.\n• 관리자 권한으로 실행해 보세요.",
                         this);
@@ -646,13 +646,13 @@ namespace KCertManager.Wpf.Views
             {
                 AnyItemRestored = true;
                 UserFriendlyMessageHelper.ShowOperationComplete(
-                    "🎉 휴지통 인증서 선택 복원 완료",
-                    $"격리 보관 휴지통에 보관 중이던 {restoredCount}건의 인증서가 원본 저장 경로로 성공적으로 복구되었습니다.",
+                    "🎉 선택한 인증서 복원 완료",
+                    $"휴지통에 있던 {restoredCount}건의 인증서를 원래 위치로 복원했습니다.",
                     restoredCount,
-                    "휴지통 (임시 격리 보관소)",
+                    "휴지통 (임시 보관함)",
                     firstOrigPath,
                     successItems.Select(s => new OperationCompleteItem { Name = s.CertCommonName, IssuerAndPolicy = $"원래 경로: {s.OriginalDirectoryPath}" }),
-                    "• 복원된 인증서는 '내 컴퓨터 (NPKI/GPKI)' 및 원래 보관 디렉터리에서 즉시 사용할 수 있습니다.",
+                    "• 복원된 인증서는 내 PC 목록과 원래 폴더에서 바로 사용할 수 있습니다.",
                     this);
                 LoadTrashItems();
                 LoadRestoredItems();
@@ -737,13 +737,13 @@ namespace KCertManager.Wpf.Views
             {
                 AnyItemRestored = true;
                 UserFriendlyMessageHelper.ShowOperationComplete(
-                    "🎉 휴지통 인증서 전체 일괄 복원 완료",
-                    $"휴지통에 격리 보관되어 있던 모든 인증서({restoredCount}건)가 원본 경로로 완벽하게 일괄 복원되었습니다.",
+                    "🎉 휴지통 인증서 전체 복원 완료",
+                    $"휴지통에 있던 모든 인증서({restoredCount}건)를 원래 위치로 복원했습니다.",
                     restoredCount,
-                    "휴지통 (임시 격리 보관소)",
+                    "휴지통 (임시 보관함)",
                     firstOrigPath,
                     successItems.Select(s => new OperationCompleteItem { Name = s.CertCommonName, IssuerAndPolicy = $"원래 경로: {s.OriginalDirectoryPath}" }),
-                    "• 복원된 인증서는 '내 컴퓨터 (NPKI/GPKI)' 및 원래 보관 디렉터리에서 즉시 사용할 수 있습니다.",
+                    "• 복원된 인증서는 내 PC 목록과 원래 폴더에서 바로 사용할 수 있습니다.",
                     this);
                 LoadTrashItems();
                 LoadRestoredItems();
@@ -796,13 +796,13 @@ namespace KCertManager.Wpf.Views
                         item.OriginalDirectoryPath);
 
                     UserFriendlyMessageHelper.ShowOperationComplete(
-                        "🎉 인증서 원래 경로 복원 완료",
-                        $"인증서 [{item.CertCommonName}]가 격리 휴지통에서 원래 경로({item.OriginalDirectoryPath})로 성공적으로 복원되었습니다.",
+                        "🎉 인증서 복원 완료",
+                        $"인증서 [{item.CertCommonName}]를 원래 위치({item.OriginalDirectoryPath})로 복원했습니다.",
                         1,
-                        "휴지통 (임시 격리 보관소)",
+                        "휴지통 (임시 보관함)",
                         item.OriginalDirectoryPath,
                         new[] { new OperationCompleteItem { Name = item.CertCommonName, IssuerAndPolicy = $"원래 경로: {item.OriginalDirectoryPath}" } },
-                        "• 복원된 인증서는 로컬 보관함에서 즉시 사용 및 관리가 가능합니다.",
+                        "• 복원된 인증서는 내 PC 목록에서 바로 사용할 수 있습니다.",
                         this);
                     LoadTrashItems();
                     LoadRestoredItems();
@@ -836,7 +836,7 @@ namespace KCertManager.Wpf.Views
 
             var confirm = MessageBox.Show(
                 this,
-                $"휴지통에 있는 {_items.Count}개의 격리 인증서를 영구적으로 삭제하시겠습니까?\n\n※ 영구 삭제 후에는 되돌릴 수 없습니다.",
+                $"휴지통에 있는 {_items.Count}개의 인증서를 완전히 삭제하시겠습니까?\n\n※ 영구 삭제 후에는 되돌릴 수 없습니다.",
                 "휴지통 영구 비우기 확인",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
@@ -849,14 +849,14 @@ namespace KCertManager.Wpf.Views
                 ActivityLogService.Instance.Log(
                     LogCategory.DELETE,
                     LogLevel.WARN,
-                    "휴지통 영구 비우기 (보안 삭제 증적)",
-                    $"총 {count}개 인증서 영구 폐기 증적: {evidenceSummary}",
+                    "휴지통 영구 비우기",
+                    $"총 {count}개 인증서 영구 삭제: {evidenceSummary}",
                     "Trash",
                     "Permanent Purge",
                     count);
 
                 LoadTrashItems();
-                UserFriendlyMessageHelper.ShowInfo("휴지통의 모든 항목을 완전히 비우고 보안 삭제 증적을 기록했습니다.", "휴지통 비우기 완료", this);
+                UserFriendlyMessageHelper.ShowInfo("휴지통의 모든 항목을 완전히 비웠습니다.", "휴지통 비우기 완료", this);
             }
         }
 

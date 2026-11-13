@@ -152,13 +152,13 @@ export const SearchLocationsPanel: React.FC<SearchLocationsPanelProps> = ({
           </div>
           <div>
             <h2 className="text-sm sm:text-base font-semibold text-slate-800 flex items-center gap-2">
-              인증서 위치 탐색 관리자
+              인증서 찾는 위치
               <span className="text-xs font-normal text-slate-500 hidden sm:inline">
-                (기본 경로 자동 탐색 및 사용자 지정 디스크 지원)
+                (기본 폴더 + 직접 지정)
               </span>
             </h2>
             <p className="text-xs text-slate-500">
-              Windows 표준 NPKI/GPKI 경로를 우선 탐색한 뒤, 추가 드라이브나 USB 폴더를 수동 지정할 수 있습니다.
+              기본 NPKI·GPKI 폴더를 자동 탐색하며 원하는 USB·폴더도 추가할 수 있습니다.
             </p>
           </div>
         </div>
@@ -236,7 +236,7 @@ export const SearchLocationsPanel: React.FC<SearchLocationsPanelProps> = ({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 bg-blue-50/70 p-3 rounded-lg border border-blue-100">
                 <div className="text-xs text-blue-900 flex items-center gap-2">
                   <span className="text-sm">🔒</span>
-                  <span className="font-semibold">시스템 표준 인증서 경로는 항상 자동으로 탐색되며 임의 수정/삭제가 불가(읽기 전용)합니다.</span>
+                  <span className="font-semibold">기본 인증서 위치는 항상 자동으로 탐색됩니다 (수정 불가).</span>
                 </div>
                 <div className="text-xs font-semibold text-slate-700 shrink-0">
                   {isScanning ? (
@@ -299,7 +299,7 @@ export const SearchLocationsPanel: React.FC<SearchLocationsPanelProps> = ({
               <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200 flex items-start gap-2.5 text-xs text-amber-900">
                 <HardDrive className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-semibold">이동식 저장 매체(USB) 연결 안내:</span> PC에 USB 메모리가 연결되어 있는 경우, 드라이브 루트의 <code className="bg-amber-100 px-1 py-0.5 rounded font-mono font-bold">NPKI</code> 또는 <code className="bg-amber-100 px-1 py-0.5 rounded font-mono font-bold">GPKI</code> 폴더를 자동으로 읽어들입니다. 연결되지 않은 경우 아래 [사용자 직접 경로 지정]에서 USB 드라이브 폴더를 직접 선택할 수 있습니다.
+                  <span className="font-semibold">USB 자동 인식:</span> USB 최상위의 <code className="bg-amber-100 px-1 py-0.5 rounded font-mono font-bold">NPKI</code>·<code className="bg-amber-100 px-1 py-0.5 rounded font-mono font-bold">GPKI</code> 폴더를 자동으로 찾습니다.
                 </div>
               </div>
             </div>
@@ -315,10 +315,10 @@ export const SearchLocationsPanel: React.FC<SearchLocationsPanelProps> = ({
                     <Folder className="w-5 h-5" />
                   </div>
                   <h3 className="text-sm font-semibold text-slate-800 mb-1">
-                    내 PC / USB 폴더 직접 선택 (추천)
+                    내 PC·USB 폴더 직접 선택 (추천)
                   </h3>
                   <p className="text-xs text-slate-500 mb-3 max-w-xs">
-                    브라우저 File System API를 통해 USB 메모리나 외장 드라이브의 인증서 폴더를 직접 선택하여 즉시 탐색합니다.
+                    USB나 외장 드라이브의 인증서 폴더를 골라 바로 불러옵니다.
                   </p>
                   <button
                     type="button"

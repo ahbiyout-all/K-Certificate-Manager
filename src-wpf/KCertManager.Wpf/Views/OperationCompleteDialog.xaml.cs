@@ -114,9 +114,9 @@ namespace KCertManager.Wpf.Views
                 sb.AppendLine("[K-인증서 매니저 작업 완료 보고서]");
                 sb.AppendLine($"• 작업 제목: {TxtTitle.Text}");
                 sb.AppendLine($"• 완료 일시: {TxtTimestamp.Text}");
-                sb.AppendLine($"• 복사 건수: {TxtCount.Text}건 성공 (SHA-256 무결성 검증 통과)");
-                sb.AppendLine($"• 출발지: {TxtSourcePath.Text}");
-                sb.AppendLine($"• 도착지: {TxtTargetPath.Text}");
+                sb.AppendLine($"• 복사 건수: {TxtCount.Text}건 성공 (SHA-256 파일 손상 없음)");
+                sb.AppendLine($"• 원본 위치: {TxtSourcePath.Text}");
+                sb.AppendLine($"• 저장 위치: {TxtTargetPath.Text}");
                 sb.AppendLine("• 복사된 인증서 목록:");
                 if (ListCertificates.ItemsSource is IEnumerable<OperationCompleteItem> items)
                 {

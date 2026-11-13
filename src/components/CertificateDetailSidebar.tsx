@@ -379,7 +379,7 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
                     </div>
                     <div className="text-[11.5px] font-semibold text-[#10B981] flex items-center gap-1 mt-0.5">
                       <KeyRound className="w-3.5 h-3.5 shrink-0" />
-                      <span>개인키 보유 완료 (정상 페어 무결성 통과)</span>
+                      <span>개인키 정상 보유 (사용 가능)</span>
                     </div>
                   </div>
                 </div>

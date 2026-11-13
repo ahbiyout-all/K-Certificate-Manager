@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   X,
   HardDrive,
@@ -64,7 +64,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
   const [selectedCertIds, setSelectedCertIds] = useState<string[]>([]);
   const [targetUsername, setTargetUsername] = useState('Admin');
   const [duplicateStrategy, setDuplicateStrategy] = useState<'overwrite' | 'rename' | 'skip'>('overwrite');
-  const [showUsageGuide, setShowUsageGuide] = useState(true);
+  const [showUsageGuide, setShowUsageGuide] = useState(false);
   const [onlyWithCertsFilter, setOnlyWithCertsFilter] = useState(false);
 
   // Analyze available PC local/fixed drives for destination drive selection (C:, D:, E:, etc.)
@@ -201,24 +201,31 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
     return usbDrivesWithStats.filter(item => item.certCount > 0).length;
   }, [usbDrivesWithStats]);
 
+  const selectedUsbDriveRef = useRef<string>(selectedUsbDrive);
+  useEffect(() => {
+    selectedUsbDriveRef.current = selectedUsbDrive;
+  }, [selectedUsbDrive]);
+
   // Load default simulated USB certs on open or drive filter change, and listen for live events
   useEffect(() => {
     if (isOpen) {
+      const nextDrive = initialDriveLetter ? initialDriveLetter.replace(':', '') : selectedUsbDriveRef.current;
       if (initialDriveLetter) {
-        setSelectedUsbDrive(initialDriveLetter.replace(':', ''));
+        setSelectedUsbDrive(nextDrive);
+        selectedUsbDriveRef.current = nextDrive;
       }
-      const driveFilter = initialDriveLetter ? initialDriveLetter.replace(':', '') : selectedUsbDrive;
-      const initialUsb = getAvailableUsbCertificates(availableDrives, driveFilter);
+      const initialUsb = getAvailableUsbCertificates(availableDrives, nextDrive);
       setDetectedCerts(initialUsb);
       setSelectedCertIds(initialUsb.map(c => c.id));
       setImportResult(null);
       setProgress(0);
       setLogs([]);
       setErrorMessage(null);
+      setShowCelebration(false);
 
       const unsubscribe = subscribeUsbDriveChanges((event) => {
         if (event.type === 'mount' || event.type === 'unmount' || event.type === 'update') {
-          const refreshedUsb = getAvailableUsbCertificates(event.allDrives, selectedUsbDrive);
+          const refreshedUsb = getAvailableUsbCertificates(event.allDrives, selectedUsbDriveRef.current);
           setDetectedCerts(refreshedUsb);
           // 드라이브 자동 감지/갱신 이벤트 시 사용자가 해제/선택한 선택 상태(selectedCertIds)를 100% 보존
           setSelectedCertIds(prev => {
@@ -234,10 +241,11 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
         unsubscribe();
       };
     }
-  }, [isOpen]);
+  }, [isOpen, initialDriveLetter]);
 
   const handleSelectDrive = (driveKey: string) => {
     setSelectedUsbDrive(driveKey);
+    selectedUsbDriveRef.current = driveKey;
     const certs = getAvailableUsbCertificates(availableDrives, driveKey);
     setDetectedCerts(certs);
     setSelectedCertIds(certs.map(c => c.id));
@@ -409,14 +417,14 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base sm:text-lg font-bold text-white">
-                  컴퓨터로 인증서 복사
+                  내 컴퓨터로 인증서 복사
                 </h3>
                 <span className="text-[10px] px-2 py-0.5 bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 rounded-full font-bold">
-                  USB ➔ PC 로컬 등록
+                  USB ➔ PC 저장
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                이동식 USB에 저장된 공무원(GPKI·EPKI) 및 금융(NPKI) 인증서를 내 컴퓨터의 표준 위치로 안전하게 복사하고 연동을 안내합니다.
+                USB의 인증서를 내 컴퓨터 기본 폴더로 안전하게 복사합니다.
               </p>
             </div>
           </div>
@@ -442,38 +450,38 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                   <CheckCircle2 className="w-8 h-8 relative z-10" />
                 </div>
                 <h4 className="text-lg font-bold text-emerald-950 flex items-center justify-center gap-2">
-                  <span>컴퓨터로 인증서 복사 및 시스템 등록 완료!</span>
+                  <span>컴퓨터 복사 완료</span>
                   <span className="px-2 py-0.5 bg-emerald-600 text-white rounded-full text-xs font-bold shadow-xs">
-                    등록 완료
+                    완료
                   </span>
                 </h4>
                 <p className="text-xs sm:text-sm text-emerald-800 mt-1 max-w-lg mx-auto">
-                  선택하신 {importResult.importedCount + importResult.updatedCount}명의 인증서가 로컬 하드디스크({cleanTargetPcDrive}) 표준 폴더에 성공적으로 안착되었습니다.
+                  인증서 {importResult.importedCount + importResult.updatedCount}건을 내 컴퓨터({cleanTargetPcDrive})에 복사했습니다.
                 </p>
                 <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
                   <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full border border-emerald-300 text-xs font-mono text-emerald-900">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>표준 계층 무결성 통과 · SHA-256 검증 완료</span>
+                    <span>손상 검사 완료 (SHA-256)</span>
                   </div>
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-900 rounded-full text-xs font-semibold border border-blue-200">
                     <RefreshCw className="w-3.5 h-3.5 text-blue-600" />
-                    <span>인증서 목록 자동 새로고침 완료</span>
+                    <span>목록 새로고침 완료</span>
                   </div>
                 </div>
               </div>
 
               {/* Path Mapping Summary */}
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3 text-xs text-slate-700">
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5 text-xs text-slate-700">
                 <div className="font-semibold text-slate-900 flex items-center gap-1.5 text-sm">
                   <Laptop className="w-4 h-4 text-blue-600" />
-                  <span>내 컴퓨터 저장 완료 위치 (Windows 표준)</span>
+                  <span>저장 위치</span>
                 </div>
                 <div className="p-2.5 bg-white rounded-lg border border-slate-200 font-mono text-[11px] text-slate-800 break-all">
                   {importResult.targetBaseFolder}
                 </div>
                 <div className="space-y-1 text-slate-600">
-                  <p>• <strong>인터넷뱅킹 / 홈택스 / 금융권</strong>: [하드디스크] ➔ [NPKI] 선택 시 즉시 인식됩니다.</p>
-                  <p>• <strong>정부24 / 온-나라 / 나이스(NEIS)</strong>: [하드디스크] ➔ [GPKI / EPKI] 선택 시 인증서가 활성화됩니다.</p>
+                  <p>• <strong>은행·홈택스</strong>: [하드디스크] ➔ [NPKI]에서 바로 선택됩니다.</p>
+                  <p>• <strong>정부24·교육청</strong>: [하드디스크] ➔ [GPKI / EPKI]에서 바로 선택됩니다.</p>
                 </div>
               </div>
 
@@ -505,22 +513,30 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
           ) : (
             /* Configure & Select View */
             <>
-              {/* Guidance Callout */}
-              <div className="p-3.5 bg-blue-50/80 rounded-xl border border-blue-200 text-xs text-slate-800 flex items-start gap-3">
-                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5">
-                  <ArrowDownLeft className="w-4 h-4" />
-                </div>
-                <div className="space-y-1">
-                  <div className="font-bold text-blue-950 flex items-center gap-1.5">
-                    <span>'컴퓨터로 인증서 복사' 작업 가이드</span>
-                    <span className="px-1.5 py-0.2 bg-blue-200 text-blue-900 rounded text-[10px] font-bold">
-                      안내
+              {/* Guidance Callout with Collapsible Detail */}
+              <div className="p-3 bg-blue-50/80 rounded-xl border border-blue-200 text-xs text-slate-800">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
+                      <ArrowDownLeft className="w-4 h-4" />
+                    </div>
+                    <span className="font-bold text-blue-950">
+                      복사 후 USB 없이도 [하드디스크]에서 바로 사용할 수 있습니다.
                     </span>
                   </div>
-                  <p className="text-slate-700 leading-relaxed">
-                    USB 내의 인증서를 내 PC 로컬(AppData\LocalLow)에 표준 계층으로 등록합니다. 복사 완료 후 인터넷뱅킹 및 행정망에서 <strong>[하드디스크]</strong>를 선택하면 USB 없이도 바로 인증서로 로그인할 수 있습니다.
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowUsageGuide(prev => !prev)}
+                    className="text-[11px] font-bold text-blue-700 hover:underline shrink-0 cursor-pointer"
+                  >
+                    {showUsageGuide ? '접기 ▲' : '저장 경로 보기 ▼'}
+                  </button>
                 </div>
+                {showUsageGuide && (
+                  <p className="text-[11px] text-slate-600 mt-2 pl-9.5 leading-relaxed">
+                    표준 위치(<code className="font-mono">AppData\LocalLow</code> 및 <code className="font-mono">C:\GPKI</code>)에 자동 저장되어 은행·공공기관 인증서 창에서 즉시 인식됩니다.
+                  </p>
+                )}
               </div>
 
               {/* Step 1: Visual Transfer Diagram */}
@@ -651,10 +667,10 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                           </div>
                           <div className="space-y-1">
                             <h5 className="text-xs font-bold text-amber-950">
-                              연결된 USB 이동식 드라이브를 찾을 수 없습니다
+                              연결된 USB가 없습니다
                             </h5>
                             <p className="text-[11px] text-amber-800 leading-relaxed">
-                              인증서(NPKI / GPKI)가 저장된 USB 메모리를 컴퓨터에 꽂아주시거나, 위의 <strong>[USB 폴더 직접 열기]</strong>를 눌러 인증서 폴더를 직접 지정해 주세요.
+                              USB를 꽂거나 위 <strong>[USB 폴더 직접 열기]</strong>로 폴더를 선택하세요.
                             </p>
                             <button
                               type="button"
@@ -1094,7 +1110,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
 
                   <div className="sm:col-span-2 space-y-1">
                     <label className="block text-[11px] font-bold text-slate-700">
-                      목적지에 동일한 인증서/파일이 이미 존재할 경우 해결 방법:
+                      같은 인증서가 이미 있을 때:
                     </label>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
@@ -1227,7 +1243,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
               {/* Footer Actions */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200">
                 <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
-                  <span>* 무결성 SHA-256 자동 검증 및 연결 오류 시 최대 3회 자동 재시도</span>
+                  <span>* 복사 후 파일 손상 검사(SHA-256) 및 오류 시 최대 3회 자동 재시도</span>
                   <button
                     type="button"
                     onClick={() => {

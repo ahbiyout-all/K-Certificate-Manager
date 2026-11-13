@@ -173,7 +173,12 @@ async function computeSha256(message: string): Promise<string> {
  * 실시간 암호화 보호 보관소 보안 상태 및 무결성 진단
  */
 export async function getVaultSecurityDiagnostics(items: RestoredTrashItem[]): Promise<VaultSecurityDiagnostics> {
-  const encryptedRaw = localStorage.getItem(PROTECTED_VAULT_KEY) || '';
+  let encryptedRaw = '';
+  try {
+    encryptedRaw = localStorage.getItem(PROTECTED_VAULT_KEY) || '';
+  } catch {
+    encryptedRaw = '';
+  }
   const byteSize = new Blob([encryptedRaw]).size;
   const checksum = encryptedRaw ? await computeSha256(encryptedRaw) : '신규 보관소 (데이터 없음)';
 

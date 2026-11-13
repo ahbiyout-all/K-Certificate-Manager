@@ -165,19 +165,19 @@ export const TrashModal: React.FC<TrashModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold">안전 격리 휴지통 & 암호화 보호 보관소</h2>
+                <h2 className="text-base font-bold">인증서 휴지통 · 보호 보관함</h2>
                 <div className="flex gap-1.5">
                   <span className="text-[10px] font-bold px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-full">
-                    격리 {trashItems.length}건
+                    삭제 {trashItems.length}건
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                    <span>보관소 {restoredTrashItems.length}건</span>
+                    <span>보관 {restoredTrashItems.length}건</span>
                   </span>
                 </div>
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                복원된 항목 및 보관소 자료는 비밀번호 기반 AES-256 및 ZIP 암호화 압축 파일(.zip.dat)로 격리 보호되어 타인의 무단 열람이 차단됩니다.
+                삭제한 인증서를 암호화(AES-256)해 안전하게 보관·복원합니다.
               </p>
             </div>
           </div>
@@ -196,7 +196,7 @@ export const TrashModal: React.FC<TrashModalProps> = ({
               }`}
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>🗑️ 삭제된 항목 (격리 보관 중 {trashItems.length})</span>
+              <span>🗑️ 삭제된 항목 ({trashItems.length})</span>
             </button>
             <button
               onClick={() => setActiveTab('restored')}
@@ -205,7 +205,7 @@ export const TrashModal: React.FC<TrashModalProps> = ({
               }`}
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>🔄 복원된 항목 (보관소 {restoredTrashItems.length})</span>
+              <span>🔄 복원된 항목 ({restoredTrashItems.length})</span>
             </button>
           </div>
         </div>
@@ -292,7 +292,7 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                     title="암호화 무결성 및 DPAPI/AES-256 자가 진단 실행"
                   >
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>보관소 자가진단</span>
+                    <span>보관함 자가진단</span>
                   </button>
 
                   <button 
@@ -323,7 +323,7 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                   <ShieldCheck className="w-3.5 h-3.5" />
                 </span>
                 <div className="min-w-0 truncate">
-                  <span className="font-bold text-emerald-300">보안 수준: Windows DPAPI (CurrentUser) + AES-256 GCM 이중 보호</span>
+                  <span className="font-bold text-emerald-300">보안 수준: Windows 사용자 암호화(DPAPI) + AES-256 이중 보호</span>
                   <span className="mx-2 text-slate-600">|</span>
                   <span className="text-[11px] text-slate-400 font-mono">
                     protected_restored_manifest.dat ({diagnostics?.byteSize ?? 0} B)
@@ -332,10 +332,10 @@ export const TrashModal: React.FC<TrashModalProps> = ({
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-[11px] font-mono text-slate-400">
-                  SHA-256: {diagnostics?.sha256Checksum ? `${diagnostics.sha256Checksum.slice(0, 16)}...` : '진단 중...'}
+                  SHA-256: {diagnostics?.sha256Checksum ? `${diagnostics.sha256Checksum.slice(0, 16)}...` : '확인 중...'}
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  ✓ 100% 암호화 정상
+                  ✓ 암호화 보호 정상
                 </span>
               </div>
             </div>
@@ -409,7 +409,7 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                         </span>
                         <span className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold rounded-md shrink-0 flex items-center gap-1">
                           <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                          <span>🔒 AES-256 Encrypted ZIP 보관 완료</span>
+                          <span>🔒 암호화 압축 보관</span>
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -419,16 +419,16 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                             className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer shadow-2xs transition-colors"
                           >
                             <Usb className="w-3.5 h-3.5" />
-                            <span>💾 USB로 제한 복구</span>
+                            <span>💾 USB로 복원</span>
                           </button>
                         )}
                         <button 
                           onClick={() => setSelectedProofItem(item)} 
                           className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                          title="SHA-256 무결성 및 암호화 증적 확인"
+                          title="파일 손상 검사 및 암호화 기록 확인"
                         >
                           <FileCheck className="w-3.5 h-3.5 text-blue-600" />
-                          <span>🔍 보안 증적</span>
+                          <span>🔍 검사 기록</span>
                         </button>
                         <button 
                           onClick={() => onDeleteRestoredItem(item.id)} 
@@ -458,12 +458,12 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                     <div className="p-2.5 bg-slate-900 text-slate-200 rounded-lg border border-slate-800 text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                       <div className="flex items-center gap-1.5 text-sky-300">
                         <Shield className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                        <span>복구 전: {item.integrityBeforeAfter?.beforeStatus || '격리 보관소 파티션 SHA-256 해시 검증 통과 (100% 무결성)'}</span>
+                        <span>복구 전: {item.integrityBeforeAfter?.beforeStatus || '암호화 보관함 파일 손상 검사 통과 (SHA-256)'}</span>
                       </div>
                       <span className="hidden sm:inline text-emerald-400 font-bold">➔</span>
                       <div className="flex items-center gap-1.5 text-emerald-300">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        <span>복구 후: {item.integrityBeforeAfter?.afterStatus || '원래 위치 복원 후 signCert.der/signPri.key 서명 쌍 무결성 정상 동기화'}</span>
+                        <span>복구 후: {item.integrityBeforeAfter?.afterStatus || '원래 위치 복구 완료 (개인키 정상)'}</span>
                       </div>
                     </div>
 
@@ -472,23 +472,23 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
                           <ShieldCheck className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                          <span className="font-bold text-sky-300">🔒 특수 격리 암호화 금고 보관 파일 (무단 접근 차단 보호 저장소):</span>
+                          <span className="font-bold text-sky-300">🔒 암호화 보호 보관 파일:</span>
                           <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                            AES-256-GCM + DPAPI 암호화
+                            AES-256 · DPAPI 암호화
                           </span>
                         </div>
                         <button
                           onClick={() => setSelectedProofItem(item)}
                           className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 rounded text-[10px] font-bold cursor-pointer transition-colors"
                         >
-                          🔍 금고 검증
+                          🔍 보관함 검증
                         </button>
                       </div>
                       <div className="font-mono text-sky-200 text-[10.5px] truncate pl-5">
                         {item.encryptedZipPath || item.vaultArchiveLocation || `%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault\\Archives\\${item.id}_encrypted_vault.zip.dat`}
                       </div>
                       <div className="text-[10px] text-slate-400 pl-5">
-                        압축 크기: {(item.compressedSizeBytes || 2845).toLocaleString()} 바이트 (비밀번호 및 고유 키 없이 파일 열람 불가)
+                        압축 크기: {(item.compressedSizeBytes || 2845).toLocaleString()} 바이트 (암호화되어 무단 열람 불가)
                       </div>
                     </div>
 
@@ -496,11 +496,11 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                     <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 flex flex-col gap-1 text-[11px]">
                       <div className="flex items-center gap-1.5 text-slate-700">
                         <FolderOpen className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                        <span className="font-bold shrink-0">📂 시스템 복원 적용 위치 (인증서 사용 경로):</span>
+                        <span className="font-bold shrink-0">📂 복원 저장 위치:</span>
                         <span className="font-mono text-slate-900 truncate font-semibold">{item.cert?.sourceLocation || (item as any).targetRestorePath || (item as any).originalDirectoryPath || 'C:\\NPKI\\...'}</span>
                       </div>
                       <div className="text-[10px] text-slate-500 pl-5">
-                        ※ 금융/행정 업무 정상 사용을 위해 지정 경로로 복원되었으며, 특수 보관소(%LOCALAPPDATA%)에는 무단 열람이 차단된 AES-256 암호화 압축본이 안전하게 격리 보관됩니다.
+                        ※ 원래 폴더로 복원되었으며, 보관함 사본은 암호화해 안전하게 보호합니다.
                       </div>
                     </div>
                   </div>
@@ -514,7 +514,7 @@ export const TrashModal: React.FC<TrashModalProps> = ({
         <div className="px-4 py-2.5 bg-emerald-950 text-emerald-200 flex items-center justify-between border-t border-emerald-900 text-xs">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>보관소 자료는 Windows DPAPI 및 AES-256 Encrypted ZIP 압축 컨테이너로 이중 암호화되어 무단 개봉 및 열람을 완벽 차단합니다.</span>
+            <span>보관함 파일은 Windows DPAPI와 AES-256 방식으로 이중 암호화되어 안전하게 보호됩니다.</span>
           </div>
           <span className="text-[11px] font-mono text-emerald-400/80">
             K-Certificate Protected Vault v2.0.0
@@ -539,7 +539,7 @@ export const TrashModal: React.FC<TrashModalProps> = ({
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2 text-slate-900 font-bold text-base">
                 <FileCheck className="w-5 h-5 text-emerald-600" />
-                <span>복원 인증서 보안 감사 증적 (Audit Proof)</span>
+                <span>복원 파일 검사 기록</span>
               </div>
               <button onClick={() => setSelectedProofItem(null)} className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer">
                 <X className="w-4 h-4" />
@@ -556,20 +556,20 @@ export const TrashModal: React.FC<TrashModalProps> = ({
               </div>
 
               <div className="p-3 bg-slate-50 rounded-xl space-y-1.5 border border-slate-200">
-                <div className="font-bold text-slate-700">[격리 및 복원 무결성 증적]</div>
+                <div className="font-bold text-slate-700">[복원 및 파일 손상 검사]</div>
                 <div>• 복원 완료 시각: <span className="font-mono text-slate-800">{selectedProofItem.restoredAt}</span></div>
                 <div>• 이전 삭제 사유: <span className="text-slate-800">{selectedProofItem.deleteReason}</span></div>
-                <div>• 복구 전 무결성: <span className="text-emerald-700">{selectedProofItem.integrityBeforeAfter?.beforeStatus || '격리 보관소 파티션 SHA-256 검증 통과'}</span></div>
-                <div>• 복구 후 무결성: <span className="text-emerald-700">{selectedProofItem.integrityBeforeAfter?.afterStatus || '원위치 복원 후 signCert/signPri Pair 무결성 정상 동기화'}</span></div>
-                <div className="truncate">• 암호화 금고 파일: <span className="font-mono text-sky-700">{selectedProofItem.encryptedZipPath || selectedProofItem.vaultArchiveLocation || `%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault\\Archives\\${selectedProofItem.id}_encrypted_vault.zip.dat`}</span></div>
-                <div className="truncate">• 시스템 복원 경로: <span className="font-mono text-slate-800">{selectedProofItem.cert?.sourceLocation || (selectedProofItem as any).targetRestorePath || (selectedProofItem as any).originalDirectoryPath || '-'}</span></div>
+                <div>• 복구 전 검사: <span className="text-emerald-700">{selectedProofItem.integrityBeforeAfter?.beforeStatus || '암호화 보관함 파일 손상 없음 (SHA-256)'}</span></div>
+                <div>• 복구 후 검사: <span className="text-emerald-700">{selectedProofItem.integrityBeforeAfter?.afterStatus || '원래 위치 복구 완료 (개인키 정상)'}</span></div>
+                <div className="truncate">• 암호화 파일: <span className="font-mono text-sky-700">{selectedProofItem.encryptedZipPath || selectedProofItem.vaultArchiveLocation || `%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault\\Archives\\${selectedProofItem.id}_encrypted_vault.zip.dat`}</span></div>
+                <div className="truncate">• 복원 저장 위치: <span className="font-mono text-slate-800">{selectedProofItem.cert?.sourceLocation || (selectedProofItem as any).targetRestorePath || (selectedProofItem as any).originalDirectoryPath || '-'}</span></div>
               </div>
 
               <div className="p-3 bg-emerald-50 rounded-xl space-y-1 border border-emerald-200 text-emerald-900">
-                <div className="font-bold">[보관소 암호화 수준]</div>
-                <div>• 아카이브 컨테이너: 비밀번호 기반 AES-256 Encrypted ZIP 압축 (.zip.dat)</div>
-                <div>• 매니페스트 보호: Windows DPAPI (CurrentUser) + AES-256 GCM 이중 보호</div>
-                <div>• 무단 열람 차단: 비밀번호 및 암호화 키 없이는 파일 열람 불가 (외부 유출 원천 차단)</div>
+                <div className="font-bold">[보관함 암호화 방식]</div>
+                <div>• 압축 파일: 비밀번호 기반 AES-256 암호화 압축 (.zip.dat)</div>
+                <div>• 목록 보호: Windows DPAPI + AES-256 GCM 이중 암호화</div>
+                <div>• 접근 제한: 비밀번호와 암호 키 없이는 파일을 열 수 없습니다.</div>
               </div>
             </div>
 
@@ -609,7 +609,7 @@ export const TrashModal: React.FC<TrashModalProps> = ({
               <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-900 flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                 <div>
-                  <div className="font-bold">자가 진단 상태: {diagnostics.isSelfTestPassed ? '✓ 무결성 검증 통과 (100% 정상)' : '⚠️ 진단 경고'}</div>
+                  <div className="font-bold">자가 진단 상태: {diagnostics.isSelfTestPassed ? '✓ 파일 손상 없음 (정상)' : '⚠️ 진단 경고'}</div>
                   <div className="text-[11px] mt-0.5">{diagnostics.diagnosticMessage}</div>
                 </div>
               </div>

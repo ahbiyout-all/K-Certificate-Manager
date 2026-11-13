@@ -63,6 +63,10 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [importJsonText, setImportJsonText] = useState('');
   const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [showBatchLinksPanel, setShowBatchLinksPanel] = useState(false);
+  const [showFaqGuide, setShowFaqGuide] = useState(false);
+  const [confirmResetAll, setConfirmResetAll] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   // Load and reload institutions
   const refreshInstitutions = () => {
@@ -91,29 +95,23 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
     return g.institution.orgCategory === categoryFilter;
   });
 
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedUrl(id);
-    setTimeout(() => setCopiedUrl(null), 2000);
-  };
-
-  const handleOpenLink = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
-  const handleOpenAllPortals = () => {
-    const urls = Array.from(new Set(groups.map(g => g.institution.portalUrl)));
-    if (urls.length > 3) {
-      if (!confirm(`총 ${urls.length}개의 발급기관 홈페이지 탭을 엽니다. 브라우저의 팝업 차단을 해제해야 할 수 있습니다. 계속하시겠습니까?`)) {
-        return;
+  const copyToClipboard = async (text: string, id: string) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        setCopiedUrl(id);
+        setTimeout(() => setCopiedUrl(null), 2000);
       }
+    } catch {
+      // ignore clipboard error in restricted iframe
     }
-    urls.forEach(url => {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    });
   };
 
-  const handleCopyAllGuide = () => {
+  const uniquePortalInstitutions = Array.from(
+    new Map(groups.map(g => [g.institution.portalUrl, g.institution])).values()
+  );
+
+  const handleCopyAllGuide = async () => {
     let text = `[K-인증서 매니저 - 인증서 발급기관 일괄 갱신 안내]\n`;
     text += `총 선택 인증서: ${totalCerts}건 (만료임박: ${expiringCount}건 / 만료: ${expiredCount}건 / 정상: ${validCount}건)\n\n`;
 
@@ -136,9 +134,15 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
     text += `2. 이미 만료된 인증서는 갱신이 불가하며 신규/재발급 신청이 필요합니다.\n`;
     text += `3. 사이트 URL이나 기관명이 변경된 경우 [기관 정보 수정] 버튼으로 언제든 최신 주소로 변경 가능합니다.`;
 
-    navigator.clipboard.writeText(text);
-    setCopiedAllText(true);
-    setTimeout(() => setCopiedAllText(false), 2500);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        setCopiedAllText(true);
+        setTimeout(() => setCopiedAllText(false), 2500);
+      }
+    } catch {
+      // ignore clipboard error in restricted iframe
+    }
   };
 
   const handleEditInstitution = (inst: RenewalInstitution) => {
@@ -163,12 +167,12 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
     refreshInstitutions();
   };
 
-  const handleResetAllToDefault = () => {
-    if (confirm('모든 발급기관 사이트 주소 및 이름을 초기 표준값으로 복원하시겠습니까?')) {
-      resetAllInstitutionsToDefault();
-      refreshInstitutions();
-      alert('모든 발급기관 사이트 정보가 초기 기본값으로 복원되었습니다.');
-    }
+  const handleExecuteResetAllToDefault = () => {
+    resetAllInstitutionsToDefault();
+    refreshInstitutions();
+    setConfirmResetAll(false);
+    setStatusMessage('모든 발급기관 사이트 정보가 초기 기본값으로 복원되었습니다.');
+    setTimeout(() => setStatusMessage(null), 4000);
   };
 
   const handleExportJSON = () => {
@@ -237,7 +241,7 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                선택된 인증서의 발급기관(행안부 GPKI, 교육부 EPKI, 은행 등) 갱신 센터 바로가기 및 사이트 URL 변경 대비 관리
+                선택한 인증서의 발급기관 갱신 사이트 바로가기 및 주소 관리
               </p>
             </div>
           </div>
@@ -290,22 +294,48 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
                   <Download className="w-3.5 h-3.5" />
                   <span>설정 내보내기 (JSON)</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={handleResetAllToDefault}
-                  className="px-3 py-1 bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800/80 rounded font-semibold flex items-center gap-1 transition-all cursor-pointer"
-                  title="사용자 수정을 모두 초기화하고 공식 기본값으로 되돌림"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>전체 기본값 복원</span>
-                </button>
+                {confirmResetAll ? (
+                  <div className="flex items-center gap-1.5 bg-rose-950/90 border border-rose-700 px-2.5 py-1 rounded">
+                    <span className="text-rose-200 font-semibold">모두 초기화할까요?</span>
+                    <button
+                      type="button"
+                      onClick={handleExecuteResetAllToDefault}
+                      className="px-2 py-0.5 bg-rose-600 hover:bg-rose-500 text-white rounded font-bold cursor-pointer"
+                    >
+                      복원 확인
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmResetAll(false)}
+                      className="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded font-semibold cursor-pointer"
+                    >
+                      취소
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmResetAll(true)}
+                    className="px-3 py-1 bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800/80 rounded font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                    title="사용자 수정을 모두 초기화하고 공식 기본값으로 되돌림"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>전체 기본값 복원</span>
+                  </button>
+                )}
               </div>
             </div>
+            {statusMessage && (
+              <div className="px-3 py-2 bg-emerald-950/70 border border-emerald-700 text-emerald-200 rounded-lg font-semibold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>{statusMessage}</span>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
               <div>
                 <p className="text-slate-400 leading-relaxed mb-2">
-                  정부조직 개편, 은행 사명 변경, 또는 도메인 주소(URL) 변경 시 각 카드 우측의 <strong>[기관 정보 및 URL 수정]</strong> 버튼을 통해 즉시 최신 주소로 변경할 수 있습니다. 변경된 내용은 브라우저에 안전하게 보존됩니다.
+                  기관명이나 사이트 주소(URL)가 바뀌면 각 카드의 <strong>[정보/URL 수정]</strong>에서 바로 고쳐 저장할 수 있습니다.
                 </p>
               </div>
               <div className="bg-slate-800/80 p-3 rounded-lg border border-slate-700 space-y-2">
@@ -382,15 +412,54 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
             </button>
             <button
               type="button"
-              onClick={handleOpenAllPortals}
+              onClick={() => setShowBatchLinksPanel(prev => !prev)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
-              title="선택된 모든 발급기관의 홈페이지 탭을 일괄 실행"
+              title="선택된 모든 발급기관 포털 바로가기 링크 목록 펼치기/닫기"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              <span>전체 사이트 일괄 열기</span>
+              <span>{showBatchLinksPanel ? '포털 모음 닫기' : `전체 포털 링크 모음 (${uniquePortalInstitutions.length})`}</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showBatchLinksPanel ? 'rotate-180' : ''}`} />
             </button>
           </div>
         </div>
+
+        {/* Inline Expandable Batch Portal Links Panel (replaces blocked multi-tab window.open) */}
+        {showBatchLinksPanel && (
+          <div className="bg-indigo-50/80 border-b border-indigo-200 px-6 py-3 shrink-0">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <span className="text-xs font-bold text-indigo-950">
+                연계 발급기관 포털 바로가기 ({uniquePortalInstitutions.length}곳)
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  copyToClipboard(
+                    uniquePortalInstitutions.map(i => `${i.portalName || i.name}: ${i.portalUrl}`).join('\n'),
+                    'batch-urls'
+                  )
+                }
+                className="text-[11px] font-bold px-2.5 py-1 bg-white hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md inline-flex items-center gap-1 cursor-pointer"
+              >
+                {copiedUrl === 'batch-urls' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                <span>{copiedUrl === 'batch-urls' ? '전체 주소 복사됨' : '모든 포털 URL 복사'}</span>
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {uniquePortalInstitutions.map(inst => (
+                <a
+                  key={inst.id}
+                  href={inst.portalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-indigo-600 hover:text-white text-indigo-900 border border-indigo-200 rounded-lg text-xs font-bold transition-colors shadow-2xs"
+                >
+                  <span>{inst.shortName || inst.name}</span>
+                  <ExternalLink className="w-3 h-3 opacity-75" />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Category Filter Pills & Add Button */}
         <div className="px-6 py-2.5 bg-white border-b border-slate-100 flex items-center justify-between gap-2 overflow-x-auto shrink-0">
@@ -502,15 +571,16 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
                         </button>
 
                         {/* Search Fallback on Domain Fail */}
-                        <button
-                          type="button"
-                          onClick={() => window.open(getSearchFallbackUrl(institution, 'naver'), '_blank', 'noopener,noreferrer')}
+                        <a
+                          href={getSearchFallbackUrl(institution, 'naver')}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
                           title="사이트 접속 불가 또는 도메인 개편 시 네이버 검색으로 최신 갱신 페이지 찾기"
                         >
                           <Search className="w-3.5 h-3.5 text-emerald-600" />
                           <span>검색으로 찾기</span>
-                        </button>
+                        </a>
 
                         <button
                           type="button"
@@ -531,15 +601,16 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
                           )}
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => handleOpenLink(institution.portalUrl)}
+                        <a
+                          href={institution.portalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
                           title={`${institution.portalName}로 새 창 열기`}
                         >
                           <span>홈페이지 바로가기</span>
                           <ExternalLink className="w-3.5 h-3.5" />
-                        </button>
+                        </a>
                       </div>
                     </div>
 
@@ -577,14 +648,15 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
                         갱신 대상 인증서 ({certs.length}건)
                       </span>
                       {institution.secondaryUrl && (
-                        <button
-                          type="button"
-                          onClick={() => handleOpenLink(institution.secondaryUrl!)}
+                        <a
+                          href={institution.secondaryUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1 hover:underline cursor-pointer"
                         >
                           <span>{institution.secondaryUrlLabel || institution.secondaryUrl}</span>
                           <ExternalLink className="w-3 h-3" />
-                        </button>
+                        </a>
                       )}
                     </div>
 
@@ -661,37 +733,46 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
             })
           )}
 
-          {/* Practical Renewal Instructions FAQ Box */}
-          <div className="bg-indigo-50/70 border border-indigo-200 rounded-xl p-4.5 space-y-2.5">
-            <h4 className="font-bold text-sm text-indigo-950 flex items-center gap-2">
-              <Info className="w-4 h-4 text-indigo-700" />
-              공동/공인인증서 갱신 및 사이트 변경 대비 가이드
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-indigo-900 leading-relaxed">
-              <div className="bg-white/80 p-3 rounded-lg border border-indigo-100">
-                <p className="font-bold text-indigo-950 mb-1">1. 사이트명 및 URL 변경 시 대응</p>
-                <p>은행명 개편(예: KEB하나 ➔ 하나은행, 대구은행 ➔ iM뱅크)이나 신규 갱신 센터 주소가 열리면 각 카드의 <strong>[정보/URL 수정]</strong>을 눌러 즉시 변경할 수 있습니다.</p>
+          {/* Collapsible Renewal FAQ Guide */}
+          <div className="bg-indigo-50/70 border border-indigo-200 rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowFaqGuide(prev => !prev)}
+              className="w-full px-4.5 py-3 flex items-center justify-between text-left cursor-pointer hover:bg-indigo-100/50 transition-colors"
+            >
+              <span className="font-bold text-xs sm:text-sm text-indigo-950 flex items-center gap-2">
+                <Info className="w-4 h-4 text-indigo-700 shrink-0" />
+                <span>자주 묻는 갱신 안내 (갱신 가능 기간 · 사이트 변경 시)</span>
+              </span>
+              <ChevronDown className={`w-4 h-4 text-indigo-700 transition-transform ${showFaqGuide ? 'rotate-180' : ''}`} />
+            </button>
+            {showFaqGuide && (
+              <div className="px-4.5 pb-4 grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs text-indigo-900 leading-relaxed">
+                <div className="bg-white/80 p-3 rounded-lg border border-indigo-100">
+                  <p className="font-bold text-indigo-950 mb-0.5">1. 사이트 주소 변경 시</p>
+                  <p>기관명·도메인이 바뀌면 <strong>[정보/URL 수정]</strong>에서 바로 새 주소로 수정하세요.</p>
+                </div>
+                <div className="bg-white/80 p-3 rounded-lg border border-indigo-100">
+                  <p className="font-bold text-indigo-950 mb-0.5">2. 갱신 가능 기간</p>
+                  <p>만료 <strong>30일 전 ~ 만료일 당일</strong>까지만 온라인 갱신이 가능합니다.</p>
+                </div>
+                <div className="bg-white/80 p-3 rounded-lg border border-indigo-100">
+                  <p className="font-bold text-indigo-950 mb-0.5">3. 페이지가 열리지 않을 때</p>
+                  <p><strong>[검색으로 찾기]</strong>를 누르면 최신 갱신 안내 페이지를 찾아줍니다.</p>
+                </div>
+                <div className="bg-white/80 p-3 rounded-lg border border-indigo-100">
+                  <p className="font-bold text-indigo-950 mb-0.5">4. 갱신 완료 후</p>
+                  <p>메인 화면에서 <strong>[새로고침(F5)]</strong> 후 새 인증서를 USB에 다시 복사하세요.</p>
+                </div>
               </div>
-              <div className="bg-white/80 p-3 rounded-lg border border-indigo-100">
-                <p className="font-bold text-indigo-950 mb-1">2. 갱신 가능 기간</p>
-                <p>유효기간 만료 <strong>30일 전부터 만료일 당일(24:00)까지</strong>만 온라인 갱신이 가능합니다. 이 기간 이전에는 갱신 메뉴가 활성화되지 않습니다.</p>
-              </div>
-              <div className="bg-white/80 p-3 rounded-lg border border-indigo-100">
-                <p className="font-bold text-indigo-950 mb-1">3. 사이트 접속 불가 시 [검색으로 찾기]</p>
-                <p>도메인이 리다이렉트되지 않거나 차단된 경우 각 기관의 <strong>[검색으로 찾기]</strong> 버튼을 누르면 네이버의 최신 갱신 인증센터 페이지로 자동 연결됩니다.</p>
-              </div>
-              <div className="bg-white/80 p-3 rounded-lg border border-indigo-100">
-                <p className="font-bold text-indigo-950 mb-1">4. 갱신 완료 후 K-인증서 매니저 동기화</p>
-                <p>발급기관에서 갱신을 마친 후 메인화면의 <strong>[새로고침(F5)]</strong> 버튼을 누르면 새 유효기간이 반영됩니다. 이후 이동식 디스크(USB)로 백업을 갱신 복사하세요.</p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Footer */}
         <div className="px-6 py-4 bg-white border-t border-slate-200 flex items-center justify-between shrink-0">
           <div className="text-xs text-slate-500">
-            * 사용자가 수정한 사이트명과 URL은 브라우저에 안전하게 저장되며 언제든 [기본값 복원]이 가능합니다.
+            * 수정한 사이트 주소는 이 기기에 자동 저장됩니다.
           </div>
           <div className="flex items-center gap-2">
             <button

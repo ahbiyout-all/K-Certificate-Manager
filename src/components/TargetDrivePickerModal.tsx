@@ -107,7 +107,7 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
                 </span>
               </h2>
               <p className="text-xs text-blue-200/80 mt-0.5">
-                인증서를 안전하게 복사 보관할 이동식 USB 메모리 또는 디스크를 선택해 주세요.
+                인증서를 복사할 USB 또는 드라이브를 선택하세요.
               </p>
             </div>
           </div>
@@ -242,10 +242,10 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div>
                 <div className="font-bold text-amber-950 dark:text-amber-100">
-                  💡 이동식 USB 메모리가 연결되지 않았습니다.
+                  USB가 연결되지 않았습니다
                 </div>
                 <p className="mt-0.5 text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
-                  인증서를 USB 메모리로 복사하시려면 USB를 컴퓨터 포트에 연결해 주세요. 연결 시 목적지 목록이 즉시 새로고침됩니다.
+                  USB 메모리를 꽂으면 목록에 바로 표시됩니다.
                 </p>
               </div>
             </div>
@@ -257,10 +257,10 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
               <div>
                 <div className="font-bold text-rose-950 dark:text-rose-100">
-                  🛑 동일 디스크 자가 복사 제한
+                  같은 드라이브로 복사할 수 없습니다
                 </div>
                 <p className="mt-0.5 text-[11px] text-rose-800 dark:text-rose-300 leading-relaxed">
-                  선택한 인증서가 이미 {activeDrive?.letter} 드라이브에 저장되어 있습니다. 자기 자신 디스크로는 복사할 수 없으니 다른 목적지 드라이브(USB 메모리 등)를 선택해 주세요.
+                  이미 {activeDrive?.letter} 드라이브에 있는 인증서입니다. 다른 드라이브를 선택해 주세요.
                 </p>
               </div>
             </div>

@@ -1821,6 +1821,14 @@ export function classifyUsbIoError(error: any): {
   reason: string;
   actionGuide: string;
 } {
+  if (error?.name === 'AbortError') {
+    return {
+      isTransient: false,
+      reason: '사용자가 작업을 취소했습니다(AbortError)',
+      actionGuide: '재시도 없이 즉시 중단',
+    };
+  }
+
   const msg = (error?.message || String(error || '')).toLowerCase();
 
   if (msg.includes('busy') || msg.includes('ebusy') || msg.includes('locked') || msg.includes('in use')) {
@@ -1901,7 +1909,18 @@ export async function executeUsbOperationWithRetry<T>(
       };
     } catch (err: any) {
       const errClassification = classifyUsbIoError(err);
-      logs.push(`[⚠️ ${attempt}회차 오류] ${err.message || 'I/O 오류 발생'} (${errClassification.reason})`);
+      logs.push(`[⚠️ ${attempt}회차 오류] ${err?.message || 'I/O 오류 발생'} (${errClassification.reason})`);
+
+      if (err?.name === 'AbortError' || !errClassification.isTransient) {
+        logs.push(`[⏹️ 작업 중단] ${errClassification.reason}`);
+        return {
+          success: false,
+          error: err?.message || errClassification.reason,
+          attemptsUsed: attempt,
+          retried: attempt > 1,
+          logs,
+        };
+      }
 
       if (attempt < maxAttempts) {
         logs.push(`[🔄 자동 재시도 ${attempt}/${maxAttempts}] ${currentDelay}ms 후 ${attempt + 1}회차 자동 재시도 진행 (${errClassification.actionGuide})...`);
@@ -1922,7 +1941,7 @@ export async function executeUsbOperationWithRetry<T>(
         logs.push(`[❌ 최종 실패] 최대 재시도 횟수(${maxAttempts}회)를 초과하여 작업이 중단되었습니다.`);
         return {
           success: false,
-          error: err.message || '최대 재시도 초과',
+          error: err?.message || '최대 재시도 초과',
           attemptsUsed: attempt,
           retried: true,
           logs,

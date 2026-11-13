@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   X, 
   Check,
@@ -175,20 +175,36 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     return Object.values(colWidths).reduce((sum: number, w: number) => sum + w, 0);
   }, [colWidths]);
 
-  // Sync drive selection when modal opens or available drives change
+  const wasOpenRef = useRef(false);
+
+  // Sync drive selection when modal opens or selected drive becomes unavailable (preserve user selection during polling)
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) {
+      wasOpenRef.current = false;
+      return;
+    }
+
+    const justOpened = !wasOpenRef.current;
+    wasOpenRef.current = true;
+    const currentStillExists = Boolean(selectedDriveId && availableDrives.some(d => d.id === selectedDriveId));
+
+    if (justOpened) {
       if (initialDriveId && availableDrives.some(d => d.id === initialDriveId)) {
         setSelectedDriveId(initialDriveId);
       } else if (preferredUsbDrive) {
         setSelectedDriveId(preferredUsbDrive.id);
       } else {
         // If no USB drive is connected and no explicit drive clicked, do NOT auto-select C: drive!
-        // Require explicit drive selection by user.
+        setSelectedDriveId('');
+      }
+    } else if (!currentStillExists) {
+      if (preferredUsbDrive) {
+        setSelectedDriveId(preferredUsbDrive.id);
+      } else {
         setSelectedDriveId('');
       }
     }
-  }, [isOpen, initialDriveId, availableDrives]);
+  }, [isOpen, initialDriveId, availableDrives, selectedDriveId, preferredUsbDrive]);
 
   const targetDrive = availableDrives.find(d => d.id === selectedDriveId) || null;
 
@@ -413,7 +429,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
     try {
       const retryResult = await executeUsbOperationWithRetry<BackupResult>(
-        `USB ${targetDrive.letter} 인증서 복사 및 무결성 기록`,
+        `USB ${targetDrive.letter} 인증서 복사 및 파일 검사`,
         async (attempt) => {
           setCurrentAttempt(attempt);
 
@@ -434,13 +450,14 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           await new Promise(r => setTimeout(r, 300));
           setProgress(attempt === 1 ? 30 : 45);
 
+          const backupDateTag = new Date().toISOString().slice(0, 10).replace(/-/g, '');
           const copyLogs: string[] = [];
           effectiveSelectedCerts.forEach(cert => {
             const stdPath = getStandardDirectoryPath(cert);
             if (skippedCertIds.includes(cert.id)) {
               copyLogs.push(`[중복 건너뜀] ⏭️ ${cert.name} (${cert.category}) -> 이미 존재하여 복사 건너뜀`);
             } else if (archivedCertIds.includes(cert.id)) {
-              copyLogs.push(`[기존 백업 보존] 📦 ${cert.name} -> 기존 폴더를 ${targetDrive.letter}\\${stdPath}_backup_20260909 로 보존 후 새 파일 복사`);
+              copyLogs.push(`[기존 백업 보존] 📦 ${cert.name} -> 기존 폴더를 ${targetDrive.letter}\\${stdPath}_backup_${backupDateTag} 로 보존 후 새 파일 복사`);
             } else if (overwrittenCertIds.includes(cert.id)) {
               copyLogs.push(`[덮어쓰기 갱신] 🔄 ${cert.name} (${cert.category}) -> ${targetDrive.letter}\\${stdPath} 기존 인증서 최신 교체`);
             } else {
@@ -476,7 +493,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               }
               setLogs(prev => [...prev, `[디스크 쓰기 완료] 총 ${res.count}개 파일이 디스크에 성공적으로 쓰여졌습니다.`]);
             } catch (err: any) {
-              if (err.name !== 'AbortError') {
+              if (err?.name === 'AbortError') {
+                setLogs(prev => [...prev, '[안내] 실제 USB 폴더 선택이 취소되어 앱 내 보관함 동기화만 진행합니다.']);
+              } else {
                 throw err;
               }
             }
@@ -520,7 +539,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         setProgress(100);
         setLogs(prev => [
           ...prev,
-          `[완료] 무결성 검증 통과 (해시: ${retryResult.data?.checksum})`,
+          `[완료] 파일 손상 없음 확인 (SHA-256: ${retryResult.data?.checksum})`,
           retryResult.retried
             ? `[⚡ 자동 복구 완료] ${retryResult.attemptsUsed}회차 재시도로 일시적 연결 불안정 극복 및 백업 성공!`
             : `[보관 준비 완료] ${targetDrive.letter} 이동식 디스크 규격 백업 생성 성공!`,
@@ -531,16 +550,21 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         playCompletionSound();
         setShowCelebration(true);
 
-        // Record history
+        // Record history excluding skipped and same-drive self-copy items to match backupService result
+        const copiedCerts = effectiveSelectedCerts.filter(
+          c => !skippedIds(c.id, skippedCertIds) && !isSameDriveSelfCopy(c, targetDrive)
+        );
         onBackupSuccess({
           id: `backup-${Date.now()}`,
           timestamp: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
           targetDisk: `${targetDrive.letter} ${targetDrive.name}`,
           targetPath: `${targetDrive.letter}\\ (NPKI/GPKI 표준 구조)`,
-          certificatesCount: effectiveSelectedCerts.length - skippedCertIds.length,
-          certNames: effectiveSelectedCerts.filter(c => !skippedIds(c.id, skippedCertIds)).map(c => c.name),
+          certificatesCount: copiedCerts.length,
+          certNames: copiedCerts.map(c => c.name),
+          certIds: copiedCerts.map(c => c.id),
           status: 'success',
           hashCheckPassed: true,
+          checksum: retryResult.data.checksum,
           retryAttemptsUsed: retryResult.attemptsUsed,
         });
       } else {
@@ -647,13 +671,13 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   </div>
                   <div>
                     <h4 className="text-sm sm:text-base font-bold flex items-center gap-2">
-                      <span>중복 방지 체크 (동일 인증서 덮어쓰기 확인)</span>
+                      <span>중복 인증서 확인</span>
                       <span className="px-2.5 py-0.5 bg-amber-950/70 border border-amber-300/40 rounded-full text-xs font-semibold text-amber-200">
                         {duplicateResult.conflicts.length}건 감지
                       </span>
                     </h4>
                     <p className="text-[11px] text-amber-100/90 mt-0.5">
-                      이미 복사된 대상 드라이브 <strong>{targetDrive.letter} ({targetDrive.name})</strong>에서 원본과 동일한 인증서가 감지되었습니다.
+                      대상 <strong>{targetDrive.letter} ({targetDrive.name})</strong>에 같은 인증서가 이미 있습니다.
                     </p>
                   </div>
                 </div>
@@ -674,10 +698,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
                   <div className="space-y-1">
                     <p className="font-bold text-amber-900 text-xs">
-                      기존 인증서 덮어쓰기 여부를 선택해 주세요.
+                      처리 방식을 선택해 주세요.
                     </p>
                     <p className="text-[11px] text-amber-800 leading-relaxed">
-                      대상 드라이브에 이미 동일한 이름과 경로의 인증서가 존재합니다. 실수로 인한 데이터 유실을 방지하기 위해 <strong>[덮어쓰기]</strong>, <strong>[중복 건너뛰기]</strong>, 또는 <strong>[기존 백업 보존]</strong> 중 원하는 방식을 선택해 진행하세요.
+                      <strong>덮어쓰기</strong>, <strong>건너뛰기</strong>, <strong>기존 파일 따로 보관</strong> 중 선택해 진행합니다.
                     </p>
                   </div>
                 </div>
@@ -702,7 +726,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                         <span>덮어쓰기 (권장)</span>
                       </div>
                       <p className="text-[10px] text-slate-500 font-normal leading-tight">
-                        기존 폴더 파일을 최신 인증서로 갱신 교체합니다.
+                        기존 파일을 최신 인증서로 교체합니다.
                       </p>
                     </button>
 
@@ -720,7 +744,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                         <span>중복 건너뛰기</span>
                       </div>
                       <p className="text-[10px] text-slate-500 font-normal leading-tight">
-                        기존 인증서는 유지하고 새 항목만 복사합니다.
+                        기존 파일은 두고 새 항목만 복사합니다.
                       </p>
                     </button>
 
@@ -735,10 +759,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     >
                       <div className="flex items-center gap-1.5 font-bold">
                         <Archive className="w-3.5 h-3.5 text-purple-600" />
-                        <span>기존 백업 보존</span>
+                        <span>기존 파일 따로 보관</span>
                       </div>
                       <p className="text-[10px] text-slate-500 font-normal leading-tight">
-                        기존 폴더를 `_backup`으로 안전 보존 후 복사합니다.
+                        기존 폴더를 _backup으로 남기고 새 파일을 복사합니다.
                       </p>
                     </button>
                   </div>
@@ -910,13 +934,13 @@ export const BackupModal: React.FC<BackupModalProps> = ({
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-bold flex items-center gap-2">
-                <span>인증서 디스크 복사 및 안전 백업</span>
+                <span>인증서 복사 및 백업</span>
                 <span className="px-2 py-0.5 bg-blue-900/80 text-blue-300 border border-blue-500/30 rounded text-[11px] font-normal">
-                  중복 방지 &amp; 쓰기 보호 검사
+                  중복·잠금 자동 검사
                 </span>
               </h3>
               <p className="text-xs text-slate-400">
-                선택된 <span className="text-blue-300 font-semibold">{effectiveSelectedCerts.length}명</span>의 공무원·은행 인증서를 대상 디스크의 쓰기 권한 점검 후 안전하게 복사합니다.
+                선택한 <span className="text-blue-300 font-semibold">{effectiveSelectedCerts.length}건</span>의 인증서를 선택한 드라이브로 안전하게 복사합니다.
               </p>
             </div>
           </div>
@@ -974,16 +998,16 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               </div>
 
               {/* Usage Guide for Bank / Gov portals */}
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2 text-xs text-slate-700">
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs text-slate-700">
                 <div className="font-semibold text-slate-900 flex items-center gap-1.5 text-sm">
                   <FolderTree className="w-4 h-4 text-blue-600" />
-                  <span>이동식 디스크(USB) 사용 요령</span>
+                  <span>USB 사용 안내</span>
                 </div>
                 <p>
-                  1. 복사된 USB 드라이브의 <strong>최상위 폴더(루트)</strong>에 <code className="bg-blue-100 text-blue-800 px-1 py-0.5 rounded font-mono font-bold">NPKI</code> (은행용) 및 <code className="bg-blue-100 text-blue-800 px-1 py-0.5 rounded font-mono font-bold">GPKI</code> (공무원용) 표준 폴더가 생성되었습니다.
+                  1. USB 최상위 폴더에 <code className="bg-blue-100 text-blue-800 px-1 py-0.5 rounded font-mono font-bold">NPKI</code>(은행) · <code className="bg-blue-100 text-blue-800 px-1 py-0.5 rounded font-mono font-bold">GPKI</code>(공무원) 폴더로 저장됩니다.
                 </p>
                 <p>
-                  2. 인터넷뱅킹, 정부24, 온-나라, 나이스(NEIS) 등에서 <strong>[이동식 디스크]</strong>를 선택하면 복사된 사용자의 인증서가 즉시 나타납니다.
+                  2. 은행·정부 사이트 인증서 창에서 <strong>[이동식 디스크]</strong>를 선택해 바로 로그인하세요.
                 </p>
               </div>
 
@@ -1256,7 +1280,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
                             {/* 6. 만료일 */}
                             <td style={{ width: `${colWidths.notAfter}px` }} className="w-[120px] py-2 px-3 text-center font-mono text-[11px] text-slate-600">
-                              <span className="truncate block">{cert.expiryDate}</span>
+                              <span className="truncate block">{cert.validTo || '-'}</span>
                             </td>
 
                             {/* 7. 상태 */}
@@ -1295,11 +1319,11 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   </div>
                   <div className="space-y-0.5 text-xs">
                     <div className="font-bold text-blue-950 flex items-center gap-1.5">
-                      <span>디스크 ➔ 디스크, USB ➔ USB 자유 복사 지원</span>
+                      <span>디스크 ↔ USB 자유 복사</span>
                       <span className="text-[10px] px-1.5 py-0.2 bg-blue-600 text-white rounded font-bold">다중 드라이브</span>
                     </div>
                     <div className="text-[11px] text-blue-900 leading-relaxed font-medium">
-                      컴퓨터 내장 디스크(C:, D:) 간 상호 복사는 물론, 복수의 USB 메모리 간 복사 및 디스크 ↔ USB 백업/복원을 안전하게 수행합니다.
+                      내 컴퓨터(C:, D:)와 여러 USB 메모리 간 양방향 복사를 지원합니다.
                     </div>
                   </div>
                 </div>
@@ -1456,13 +1480,13 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                     <div className="space-y-1">
                       <div className="font-bold text-amber-950 text-xs flex items-center gap-2">
-                        <span>복사 목적지 디스크 선택 필요 (USB 미연결)</span>
+                        <span>복사할 드라이브를 선택하세요 (USB 미연결)</span>
                         <span className="px-2 py-0.2 bg-amber-200 text-amber-900 rounded-full text-[10px] font-extrabold">
-                          목적지 미선택
+                          미선택
                         </span>
                       </div>
                       <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
-                        현재 USB 메모리가 연결되지 않았습니다. C: 내장 디스크 오복사를 방지하기 위해 <strong>상단 디스크 목록(C:, D: 등)에서 복사 목적지 디스크를 클릭하여 직접 선택</strong>해 주시거나 USB를 연결해 주세요.
+                        USB를 연결하거나 위 목록에서 복사할 대상 드라이브를 직접 클릭하세요.
                       </p>
                     </div>
                   </div>
@@ -1471,13 +1495,13 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
                     <div className="space-y-1">
                       <div className="font-bold text-rose-950 text-xs flex items-center gap-2">
-                        <span>동일 디스크/USB 자가 복사(Self-Copy) 금지</span>
+                        <span>같은 드라이브로 복사할 수 없음</span>
                         <span className="px-2 py-0.2 bg-rose-200 text-rose-900 rounded-full text-[10px] font-extrabold">
-                          복사 차단됨
+                          자가 복사 제한
                         </span>
                       </div>
                       <p className="text-[11px] text-rose-800 leading-relaxed font-medium">
-                        선택된 {effectiveSelectedCerts.length}개 인증서가 모두 이미 <strong>{targetDrive.letter} ({targetDrive.name})</strong> 드라이브에 존재합니다. 같은 디스크나 USB 내에서의 자가 복사는 원본 훼손 방지를 위해 엄격히 제한됩니다. 상단 목록에서 다른 목적지 드라이브(C:, D:, 타 USB)를 선택해 주세요.
+                        선택한 {effectiveSelectedCerts.length}건이 이미 <strong>{targetDrive.letter}</strong>에 있습니다. 다른 드라이브를 선택해 주세요.
                       </p>
                     </div>
                   </div>
@@ -1499,39 +1523,39 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                       </div>
                       <div>
                         <div className="font-bold flex items-center gap-2 flex-wrap">
-                          <span>선택 드라이브 쓰기 &amp; 중복 상태:</span>
+                          <span>드라이브 상태:</span>
                           {isCurrentTargetLocked ? (
                             <span className="text-rose-700 font-extrabold flex items-center gap-1">
                               <Lock className="w-3.5 h-3.5" />
-                              쓰기 금지 보호 활성화
+                              쓰기 금지 (잠김)
                             </span>
                           ) : (
                             <span className="text-emerald-700 font-extrabold flex items-center gap-1">
                               <CheckCircle2 className="w-3.5 h-3.5" />
-                              쓰기 가능 (I/O OK)
+                              복사 가능
                             </span>
                           )}
                           {currentDriveDuplicates > 0 && (
                             <span className="px-1.5 py-0.2 bg-amber-100 text-amber-800 border border-amber-300 rounded text-[10px] font-bold flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3 text-amber-600" />
-                              동일 인증서 {currentDriveDuplicates}건 감지됨
+                              중복 {currentDriveDuplicates}건
                             </span>
                           )}
                           {selfCopyCount > 0 && (
                             <span className="px-1.5 py-0.2 bg-rose-100 text-rose-800 border border-rose-300 rounded text-[10px] font-bold flex items-center gap-1">
                               <AlertCircle className="w-3 h-3 text-rose-600" />
-                              자가 복사 제외 {selfCopyCount}건
+                              동일 위치 제외 {selfCopyCount}건
                             </span>
                           )}
                         </div>
                         <p className="text-[11px] text-slate-500 mt-0.5">
                           {isCurrentTargetLocked
-                            ? `${targetDrive.letter} 드라이브는 읽기 전용으로 잠겨 있어 백업 시 즉시 차단됩니다.`
+                            ? `${targetDrive.letter} 드라이브가 잠겨 있어 복사할 수 없습니다.`
                             : selfCopyCount > 0
-                            ? `선택한 인증서 중 ${selfCopyCount}건은 이미 ${targetDrive.letter}에 존재하여 복사 대상에서 자동 제외됩니다.`
+                            ? `${selfCopyCount}건은 이미 ${targetDrive.letter}에 있어 자동으로 제외됩니다.`
                             : currentDriveDuplicates > 0
-                            ? `복사 시작 시 기존 ${currentDriveDuplicates}건에 대한 덮어쓰기 여부를 묻는 '중복 방지 체크' 모달이 실행됩니다.`
-                            : `${targetDrive.letter} (${targetDrive.name}) - I/O 임시 프로브 및 신규 폴더 생성 준비 완료`}
+                            ? `기존 ${currentDriveDuplicates}건의 덮어쓰기 여부를 복사 시 확인합니다.`
+                            : `${targetDrive.letter} (${targetDrive.name}) 복사 준비 완료`}
                         </p>
                       </div>
                     </div>
@@ -1668,8 +1692,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               {/* Step 2: Backup & Conflict Resolution Options */}
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3.5">
                 <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                  <span>표준 복사 및 무결성 옵션</span>
-                  <span className="text-[11px] text-slate-500 font-normal">표준 구조 NPKI / GPKI 백업</span>
+                  <span>복사 및 손상 검사 옵션</span>
+                  <span className="text-[11px] text-slate-500 font-normal">표준 폴더 (NPKI · GPKI)</span>
                 </div>
 
                 <div className="space-y-2">
@@ -1682,10 +1706,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     />
                     <div>
                       <span className="font-semibold text-slate-900">
-                        표준 디렉토리 구조 자동 구성 (NPKI 및 GPKI)
+                        표준 폴더 구조 자동 정리 (NPKI · GPKI)
                       </span>
                       <p className="text-[11px] text-slate-500">
-                        공무원 인증서는 <code className="font-mono">GPKI/Certificate/class2/</code>, 은행 인증서는 <code className="font-mono">NPKI/yessign/USER/</code> 표준 계층으로 자동 분기하여 복사합니다.
+                        공무원(GPKI)·은행(NPKI) 인증서를 표준 위치에 맞게 자동 분류합니다.
                       </p>
                     </div>
                   </label>
@@ -1699,10 +1723,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     />
                     <div>
                       <span className="font-semibold text-slate-900">
-                        SHA-256 전자서명 무결성 검증서 (CERT_BACKUP_INTEGRITY.txt) 자동 생성
+                        파일 손상 검사서 생성 (SHA-256 검증)
                       </span>
                       <p className="text-[11px] text-slate-500">
-                        백업된 각 인증서 파일의 해시값과 복사 시각, 발급자 정보를 포함하여 위변조 여부를 보증합니다.
+                        복사된 파일의 손상 여부를 확인할 수 있는 검증 목록을 함께 저장합니다.
                       </p>
                     </div>
                   </label>
@@ -1718,10 +1742,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                       <div>
                         <span className="font-semibold text-blue-700 flex items-center gap-1">
                           <FolderOpen className="w-3.5 h-3.5" />
-                          연결된 USB 폴더에 직접 파일 쓰기 (File System Access API)
+                          연결된 USB 폴더에 직접 저장
                         </span>
                         <p className="text-[11px] text-slate-500">
-                          선택한 이동식 디스크(USB) 폴더의 쓰기 권한을 사전 검증 후 표준 NPKI/GPKI 구조로 직접 기록합니다.
+                          지정한 USB 폴더의 쓰기 권한을 확인한 뒤 바로 저장합니다.
                         </p>
                       </div>
                     </label>
@@ -1733,7 +1757,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                       <CopyCheck className="w-4 h-4 text-amber-600" />
-                      <span>목적지 동일 파일 충돌 해결 방침 (중복 처리 옵션):</span>
+                      <span>같은 인증서가 이미 있을 때:</span>
                     </div>
                     {currentDriveDuplicates > 0 && (
                       <span className="px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded-full text-[10px] font-bold flex items-center gap-1">
@@ -1818,13 +1842,13 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5 font-bold text-xs text-blue-950 flex-wrap">
-                          <span>USB I/O 내결함성 자동 재시도</span>
+                          <span>오류 시 자동 재시도</span>
                           <span className="px-1.5 py-0.2 bg-blue-200/80 text-blue-900 rounded text-[10px] font-bold">
-                            최대 3회 Auto-Retry
+                            최대 3회
                           </span>
                         </div>
                         <p className="text-[11px] text-blue-800 leading-tight mt-0.5">
-                          USB 쓰기 중 일시적 연결 끊김, 버퍼 경합, 핸들 지연 시 최대 3회 지수 백오프로 자동 재시도합니다.
+                          USB 연결이 일시적으로 끊겨도 최대 3회까지 자동으로 다시 복사합니다.
                         </p>
                       </div>
                     </div>
@@ -1849,7 +1873,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                       <div className="flex items-center gap-1 flex-wrap">
                         <button
                           type="button"
+                          disabled={!targetDrive}
                           onClick={() => {
+                            if (!targetDrive) return;
                             setCopyErrorModalInfo({
                               title: 'USB 드라이브 쓰기 금지(Write-Protected) 감지',
                               summary: `${targetDrive.letter} (${targetDrive.name}) 드라이브가 '쓰기 금지(Read-Only Lock)' 상태로 보호되어 있어 인증서 저장이 차단되었습니다.`,
@@ -1869,7 +1895,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                             });
                           }}
                           title="쓰기 금지(Write-Protected) 에러 알림 모달을 확인합니다."
-                          className="px-2 py-1.5 rounded-lg text-[10px] font-semibold border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-800 transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-2xs"
+                          className="px-2 py-1.5 rounded-lg text-[10px] font-semibold border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-800 transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           <Lock className="w-3 h-3 text-rose-600" />
                           <span>🔒 쓰기금지</span>
@@ -1877,7 +1903,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
                         <button
                           type="button"
+                          disabled={!targetDrive}
                           onClick={() => {
+                            if (!targetDrive) return;
                             setCopyErrorModalInfo({
                               title: '드라이브/폴더 파일 쓰기 권한 거부 (Permission Denied)',
                               summary: `브라우저 보안 샌드박스 또는 Windows 운영체제 보안 정책으로 인해 ${targetDrive.letter} 드라이브 대상 폴더 생성 및 쓰기 권한이 거부되었습니다.`,
@@ -1897,7 +1925,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                             });
                           }}
                           title="접근 권한 거부(Permission Denied) 에러 알림 모달을 확인합니다."
-                          className="px-2 py-1.5 rounded-lg text-[10px] font-semibold border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-2xs"
+                          className="px-2 py-1.5 rounded-lg text-[10px] font-semibold border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           <ShieldAlert className="w-3 h-3 text-amber-600" />
                           <span>🛡️ 권한거부</span>
@@ -1905,7 +1933,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
                         <button
                           type="button"
+                          disabled={!targetDrive}
                           onClick={() => {
+                            if (!targetDrive) return;
                             setCopyErrorModalInfo({
                               title: '대상 디스크 저장 공간 부족 (Disk Full)',
                               summary: `${targetDrive.letter} (${targetDrive.name}) 드라이브의 남은 용량이 부족하여 인증서 파일(signCert.der / signPri.key)을 기록할 수 없습니다.`,
@@ -1924,7 +1954,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                             });
                           }}
                           title="저장 공간 부족(Disk Full) 에러 알림 모달을 확인합니다."
-                          className="px-2 py-1.5 rounded-lg text-[10px] font-semibold border border-orange-300 bg-orange-50 hover:bg-orange-100 text-orange-900 transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-2xs"
+                          className="px-2 py-1.5 rounded-lg text-[10px] font-semibold border border-orange-300 bg-orange-50 hover:bg-orange-100 text-orange-900 transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           <HardDrive className="w-3 h-3 text-orange-600" />
                           <span>💾 공간부족</span>

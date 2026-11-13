@@ -16,7 +16,9 @@ import {
   KeyRound,
   FileCheck2,
   Calendar,
-  Building
+  Building,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
 export interface OperationCompleteData {
@@ -58,6 +60,7 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
 }) => {
   const [copiedPath, setCopiedPath] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
+  const [showUsageGuide, setShowUsageGuide] = useState(false);
 
   useEffect(() => {
     if (isOpen && data) {
@@ -67,31 +70,59 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
 
   if (!isOpen || !data) return null;
 
-  const isUsbTarget = 
-    data.operationType === 'PC_TO_USB' || 
+  const diskLabel = data.targetDiskName || '';
+  const isExplicitLocalDisk =
+    data.operationType === 'USB_TO_PC' ||
+    data.operationType === 'RESTORE' ||
+    diskLabel.includes('로컬 디스크') ||
+    diskLabel.includes('로컬 보관함') ||
+    diskLabel.includes('내장') ||
+    /^(C|D):/i.test(diskLabel.trim());
+
+  const isUsbTarget =
+    data.operationType === 'PC_TO_USB' ||
     data.operationType === 'USB_RESTORE' ||
-    (data.operationType === 'BACKUP' && !data.targetDiskName.includes('C:'));
-  const isPcTarget = data.operationType === 'USB_TO_PC' || data.targetDiskName.includes('C:');
+    (data.operationType === 'BACKUP' && !isExplicitLocalDisk);
+  const isPcTarget = data.operationType === 'USB_TO_PC' || isExplicitLocalDisk;
+
+  let autoOpenUsbEnabled = false;
+  try {
+    autoOpenUsbEnabled = localStorage.getItem('kcert_auto_open_usb_folder') === 'true';
+  } catch {
+    autoOpenUsbEnabled = false;
+  }
 
   const defaultTitle = isUsbTarget
-    ? '이동식 디스크(USB) 인증서 복사 완료!'
+    ? 'USB 복사 완료'
     : isPcTarget
-      ? '컴퓨터(PC) 로컬 보관함 복사 완료!'
-      : '인증서 복사 및 백업 작업 완료!';
+      ? '내 컴퓨터 복사 완료'
+      : '인증서 백업 완료';
 
   const defaultSubtitle = isUsbTarget
-    ? `선택하신 인증서 ${data.count}건이 대상 USB 메모리로 안전하게 복사되었으며, SHA-256 데이터 무결성 검증을 100% 통과했습니다.`
+    ? `인증서 ${data.count}건을 USB로 복사했습니다 (손상 검사 완료).`
     : isPcTarget
-      ? `외부 매체의 인증서 ${data.count}건이 컴퓨터 로컬 표준 보관소(AppData\\LocalLow)로 안전하게 등록되었습니다.`
-      : `선택하신 인증서 ${data.count}건이 대상 저장소로 성공적으로 복사/백업되었습니다.`;
+      ? `인증서 ${data.count}건을 내 컴퓨터 표준 폴더에 등록했습니다.`
+      : `인증서 ${data.count}건을 안전하게 백업했습니다.`;
 
   const effectiveTitle = data.title || defaultTitle;
 
+  const safeCopyText = async (text: string, onSuccess: () => void) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        onSuccess();
+      }
+    } catch {
+      // ignore clipboard permission denial inside iframe
+    }
+  };
+
   const copyTargetPath = () => {
     if (data.targetPath) {
-      navigator.clipboard.writeText(data.targetPath);
-      setCopiedPath(true);
-      setTimeout(() => setCopiedPath(false), 2000);
+      safeCopyText(data.targetPath, () => {
+        setCopiedPath(true);
+        setTimeout(() => setCopiedPath(false), 2000);
+      });
     }
   };
 
@@ -100,14 +131,15 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
 • 작업 구분: ${effectiveTitle}
 • 완료 시각: ${data.timestamp || '방금 전'}
 • 복사 건수: 총 ${data.count}건 (${data.certNames.join(', ')})
-• 출발지: ${data.sourcePath || '로컬 PC 보관소 (AppData\\LocalLow\\NPKI)'}
-• 도착지: ${data.targetDiskName} (${data.targetPath || '표준 인증서 경로'})
-• 무결성 상태: ${data.checksum || 'SHA-256 해시 검증 통과 (100% 일치)'}
+• 원본 위치: ${data.sourcePath || '내 컴퓨터 (AppData\\LocalLow\\NPKI)'}
+• 저장 위치: ${data.targetDiskName} (${data.targetPath || '표준 인증서 폴더'})
+• 파일 검사: ${data.checksum || 'SHA-256 파일 손상 없음'}
 • 활용 안내: ${isUsbTarget ? 'USB를 PC에 연결하여 은행/정부24 [이동식 디스크] 선택 로그인' : '인터넷뱅킹/공공기관 [하드디스크] 선택 로그인'}`;
 
-    navigator.clipboard.writeText(summaryText);
-    setCopiedSummary(true);
-    setTimeout(() => setCopiedSummary(false), 2000);
+    safeCopyText(summaryText, () => {
+      setCopiedSummary(true);
+      setTimeout(() => setCopiedSummary(false), 2000);
+    });
   };
 
   return (
@@ -132,7 +164,7 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
                   </span>
                   <span className="text-xs text-emerald-100/90 flex items-center gap-1">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-200" />
-                    <span>무결성 검증 통과</span>
+                    <span>파일 손상 없음</span>
                   </span>
                 </div>
                 <h3 id="operation-complete-title" className="text-lg sm:text-xl font-extrabold tracking-tight mt-0.5 text-white">
@@ -167,10 +199,10 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
             </div>
 
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-              <span className="text-[11px] font-bold text-slate-500 block">데이터 무결성</span>
+              <span className="text-[11px] font-bold text-slate-500 block">파일 검사</span>
               <div className="flex items-center gap-1.5 mt-1 text-xs font-bold text-blue-700">
                 <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-                <span>SHA-256 일치</span>
+                <span>SHA-256 손상 없음</span>
               </div>
             </div>
 
@@ -183,7 +215,7 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
           </div>
 
           {/* USB Auto Open Active Badge */}
-          {isUsbTarget && localStorage.getItem('kcert_auto_open_usb_folder') === 'true' && (
+          {isUsbTarget && autoOpenUsbEnabled && (
             <div className="p-2.5 bg-emerald-50 border border-emerald-300/80 rounded-xl text-xs text-emerald-950 flex items-center justify-between gap-2 shadow-2xs animate-fadeIn">
               <div className="flex items-center gap-2 min-w-0">
                 <FolderOpen className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -200,7 +232,7 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <HardDrive className="w-3.5 h-3.5 text-blue-600" />
-                <span>복사 전송 경로 (Route)</span>
+                <span>복사 위치 안내</span>
               </span>
               {data.targetPath && (
                 <button
@@ -226,7 +258,7 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
 
             <div className="flex items-center gap-2 text-xs">
               <div className="flex-1 bg-white p-2 rounded-lg border border-slate-200/90 shadow-2xs truncate">
-                <span className="text-[10px] font-bold text-slate-400 block">출발지 (Source)</span>
+                <span className="text-[10px] font-bold text-slate-400 block">원본 위치</span>
                 <span className="font-mono text-slate-700 font-semibold truncate block" title={data.sourcePath || 'C:\\Users\\...\\AppData\\LocalLow\\NPKI'}>
                   {data.sourcePath || 'C:\\Users\\...\\AppData\\LocalLow\\NPKI'}
                 </span>
@@ -237,7 +269,7 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
               </div>
 
               <div className="flex-1 bg-emerald-50/70 p-2 rounded-lg border border-emerald-200 shadow-2xs truncate">
-                <span className="text-[10px] font-bold text-emerald-700 block">도착지 (Destination)</span>
+                <span className="text-[10px] font-bold text-emerald-700 block">저장 위치</span>
                 <span className="font-mono text-emerald-900 font-bold truncate block" title={data.targetPath || data.targetDiskName}>
                   {data.targetDiskName}
                 </span>
@@ -253,7 +285,7 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
                 <span>복사 완료된 인증서 목록 ({data.certNames.length}개)</span>
               </span>
               <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                signCert.der + signPri.key 무결성 검증 완료
+                인증서·개인키 파일 정상 확인
               </span>
             </div>
 
@@ -307,37 +339,50 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
             </div>
           </div>
 
-          {/* 4. Practical Usage Next Steps Guide */}
-          <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl space-y-2 text-xs text-blue-900">
-            <div className="flex items-center gap-1.5 font-bold text-blue-950">
-              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-              <span>작업 완료 후 활용 가이드 (How to Use)</span>
-            </div>
-            <ul className="space-y-1.5 text-slate-700 text-[11.5px] leading-relaxed">
-              {isUsbTarget ? (
-                <>
-                  <li className="flex items-start gap-1.5">
-                    <span className="text-blue-600 font-bold shrink-0">•</span>
-                    <span><strong>이동식 USB 메모리 사용</strong>: 타 PC 또는 노트북에 USB를 꽂고 인터넷뱅킹·정부24 로그인 창에서 <strong>[이동식 디스크]</strong>를 선택하시면 즉시 사용하실 수 있습니다.</span>
-                  </li>
-                  <li className="flex items-start gap-1.5">
-                    <span className="text-blue-600 font-bold shrink-0">•</span>
-                    <span><strong>안전 제거 권장</strong>: 작업 후 윈도우 우측 하단 트레이의 '하드웨어 안전하게 제거'를 누르고 USB를 분리하시면 파일 손상을 예방할 수 있습니다.</span>
-                  </li>
-                </>
+          {/* 4. Collapsible Practical Usage Next Steps Guide */}
+          <div className="bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-blue-900 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowUsageGuide(prev => !prev)}
+              className="w-full px-3.5 py-2.5 flex items-center justify-between font-bold text-blue-950 hover:bg-blue-100/50 transition-colors cursor-pointer"
+            >
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                <span>복사 후 사용 안내</span>
+              </span>
+              {showUsageGuide ? (
+                <ChevronDown className="w-4 h-4 text-blue-700" />
               ) : (
-                <>
-                  <li className="flex items-start gap-1.5">
-                    <span className="text-blue-600 font-bold shrink-0">•</span>
-                    <span><strong>내 컴퓨터 로컬 보관소 등록</strong>: 은행 및 공공기관 서명 로그인 창에서 <strong>[하드디스크]</strong>를 선택하시면 USB 연결 없이도 바로 인증서로 로그인할 수 있습니다.</span>
-                  </li>
-                  <li className="flex items-start gap-1.5">
-                    <span className="text-blue-600 font-bold shrink-0">•</span>
-                    <span><strong>공용 PC 주의</strong>: PC방이나 공용 컴퓨터에서 작업하신 경우, 업무 종료 후 인증서 보관함에서 해당 인증서를 삭제하여 보안을 유지해 주세요.</span>
-                  </li>
-                </>
+                <ChevronRight className="w-4 h-4 text-blue-700" />
               )}
-            </ul>
+            </button>
+            {showUsageGuide && (
+              <ul className="space-y-1.5 text-slate-700 text-[11.5px] leading-relaxed px-3.5 pb-3 pt-1 border-t border-blue-200/70">
+                {isUsbTarget ? (
+                  <>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-blue-600 font-bold shrink-0">•</span>
+                      <span><strong>USB 사용:</strong> 은행·정부 사이트 로그인 창에서 <strong>[이동식 디스크]</strong>를 선택하세요.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-blue-600 font-bold shrink-0">•</span>
+                      <span><strong>안전 제거:</strong> 작업 후 윈도우 트레이에서 '하드웨어 안전 제거'를 실행한 뒤 분리하세요.</span>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-blue-600 font-bold shrink-0">•</span>
+                      <span><strong>하드디스크 사용:</strong> 은행·정부 사이트에서 <strong>[하드디스크]</strong> 선택 시 USB 없이 로그인됩니다.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-blue-600 font-bold shrink-0">•</span>
+                      <span><strong>공용 PC 주의:</strong> 공용 PC에서는 사용 후 인증서를 반드시 삭제하세요.</span>
+                    </li>
+                  </>
+                )}
+              </ul>
+            )}
           </div>
         </div>
 

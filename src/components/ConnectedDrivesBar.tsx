@@ -117,7 +117,7 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
             }`}
             style={filterType !== 'all' ? { color: 'var(--wpf-text-secondary)' } : undefined}
           >
-            PC 내부(NVMe/SATA) 포함 전체
+            <span>내 컴퓨터 포함 전체</span>
           </button>
         </div>
 

@@ -57,12 +57,12 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-bold">KCert 순수 창작 핵심 DLL 명세</h3>
+                <h3 className="text-base sm:text-lg font-bold">핵심 엔진 정보</h3>
                 <span className="text-[10px] font-mono px-2 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded font-semibold">
-                  KCert.Core + KCert.Crypto
+                  KCert.Core · KCert.Crypto
                 </span>
               </div>
-              <p className="text-xs text-slate-400">외부 서드파티 제로(Zero BouncyCastle) · 순수 100% C# 독립 실행</p>
+              <p className="text-xs text-slate-400">외부 보안 모듈 없이 자체 엔진으로 안전 처리</p>
             </div>
           </div>
 
@@ -137,10 +137,10 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
               <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl space-y-1 text-indigo-950">
                 <div className="font-bold text-indigo-900 flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-indigo-600" />
-                  <span>KCert.Crypto : 대한민국 국가 암호화 & 전자서명 순수 창작 DLL (BouncyCastle 제로 의존)</span>
+                  <span>자체 암호 처리 엔진 (KCert.Crypto)</span>
                 </div>
                 <p className="text-xs text-indigo-800 leading-relaxed">
-                  국내 최초 수준의 100% C# 순수 창작 구현체로, 외부 거대 라이브러리(BouncyCastle)나 노후 32비트 C++ DLL 없이 KISA SEED-128, ARIA 대칭키 암복호화, PKCS#8 개인키 파싱 및 복호화, VID 영지식 본인확인을 단독 처리합니다.
+                  국내 표준 암호화(SEED·ARIA), 개인키 복호화, 본인확인을 외부 라이브러리 없이 직접 처리합니다.
                 </p>
               </div>
 
@@ -149,40 +149,40 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
                 <div className="p-3 rounded-xl border border-indigo-100 bg-indigo-50/40 space-y-1.5">
                   <div className="font-bold text-xs text-indigo-900 flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
-                    <span>KisaSeedEngine (RFC 4269)</span>
+                    <span>국내 표준 SEED 암호 (KisaSeedEngine)</span>
                   </div>
                   <p className="text-[11px] text-slate-600 leading-normal">
-                    128비트 블록/키, 16라운드 Feistel 네트워크. 4개 사전 계산 룩업 테이블(SS0~SS3)을 통한 0-오버헤드 G-함수 및 CBC/PKCS#7 순수 C# 구현체.
+                    인증서 파일 암·복호화에 쓰는 국내 표준 SEED 알고리즘을 자체 지원합니다.
                   </p>
                 </div>
 
                 <div className="p-3 rounded-xl border border-blue-100 bg-blue-50/40 space-y-1.5">
                   <div className="font-bold text-xs text-blue-900 flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                    <span>KisaAriaEngine (RFC 5794)</span>
+                    <span>차세대 ARIA 암호 (KisaAriaEngine)</span>
                   </div>
                   <p className="text-[11px] text-slate-600 leading-normal">
-                    차세대 국가 표준 치환-확산 네트워크(SPN) 블록 암호. 12/14/16 라운드 및 Involution S-Box 치환 계층 순수 C# 탑재.
+                    공공·금융 최신 인증서에 쓰이는 국가 표준 ARIA 암호화를 처리합니다.
                   </p>
                 </div>
 
                 <div className="p-3 rounded-xl border border-emerald-100 bg-emerald-50/40 space-y-1.5">
                   <div className="font-bold text-xs text-emerald-900 flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                    <span>KCertPrivateKeyDecryptor</span>
+                    <span>개인키 비밀번호 검증 (PKCS#8)</span>
                   </div>
                   <p className="text-[11px] text-slate-600 leading-normal">
-                    PKCS#8 EncryptedPrivateKeyInfo 파싱 및 PBKDF2 키 유도 후 signPri.key를 0.5ms 만에 복호화하여 표준 .NET RSA 인스턴스로 복원.
+                    signPri.key 비밀번호를 빠르게 검증하고 안전하게 복호화합니다.
                   </p>
                 </div>
 
                 <div className="p-3 rounded-xl border border-purple-100 bg-purple-50/40 space-y-1.5">
                   <div className="font-bold text-xs text-purple-900 flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-purple-600"></span>
-                    <span>KCertVidEngine (OID 1.2.410.200004.10.1.1)</span>
+                    <span>개인정보 보호 본인확인 (VID)</span>
                   </div>
                   <p className="text-[11px] text-slate-600 leading-normal">
-                    가상식별번호(VID) 영지식(Zero-Knowledge) 본인확인. 주민/사업자등록번호 평문 노출 없이 Hash(ID+Random) 비교로 신원 무결성 검증.
+                    주민·사업자번호 원본을 저장하지 않고 해시 비교로만 본인 여부를 확인합니다.
                   </p>
                 </div>
               </div>
@@ -191,10 +191,10 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
               <div className="border border-emerald-200 bg-emerald-50/60 rounded-xl p-3 space-y-1 text-emerald-950">
                 <div className="font-bold text-xs text-emerald-900 flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>기존 DLL 결함 교정: 개인키 결합 완전한 PFX (.pfx) 생성 지원</span>
+                  <span>완전한 백업 파일(.pfx) 변환 지원</span>
                 </div>
                 <p className="text-[11px] text-emerald-800 leading-relaxed">
-                  기존 공개키 전용 내보내기 결함을 완벽히 교정하여, signPri.key 복호화 후 RSA 개인키를 cert.CopyWithPrivateKey()로 결합함으로써 금융권/정부24 및 브라우저에서 즉시 작동하는 완전한 PKCS#12 인증서 번들을 생성합니다.
+                  인증서와 개인키를 하나로 묶어 브라우저나 타 기기에서도 바로 쓸 수 있는 PFX 파일로 내보냅니다.
                 </p>
               </div>
             </div>
@@ -205,10 +205,10 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-1 text-blue-950">
                 <div className="font-bold text-blue-900 flex items-center gap-1.5">
                   <KeyRound className="w-4 h-4 text-blue-600" />
-                  <span>KCert.Core.Parser : 정책 OID 역해석 및 인증서 무결성 검증</span>
+                  <span>인증서 정보 읽기 엔진 (KCert.Core.Parser)</span>
                 </div>
                 <p className="text-xs text-blue-800 leading-relaxed">
-                  금융결제원(yessign), 코스콤(SignKorea), 한국정보인증(KICA), 한국전자인증(CrossCert), 한국무역정보통신(Tradesign) 5대 공인인증기관 및 행정자치부 GPKI, 교육부 EPKI의 정책 OID를 역해석합니다.
+                  은행(NPKI), 공무원(GPKI), 교육기관(EPKI) 인증서의 발급기관과 용도를 자동으로 구분합니다.
                 </p>
               </div>
 
@@ -293,27 +293,27 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
               <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1 text-emerald-950">
                 <div className="font-bold text-emerald-900 flex items-center gap-1.5">
                   <FolderSearch className="w-4 h-4 text-emerald-600" />
-                  <span>KCert.Core.Discovery : 지능형 표준 경로 자동 수집 및 BFS 탐색</span>
+                  <span>인증서 자동 탐색 (KCert.Core.Discovery)</span>
                 </div>
                 <p className="text-xs text-emerald-800 leading-relaxed">
-                  Windows 시스템 권한 거부(Access Denied) 예외를 완벽히 우회하며, AppData\LocalLow, 사용자 홈, C:\ 루트 및 연결된 모든 USB 드라이브를 순회합니다.
+                  내 컴퓨터 표준 폴더와 연결된 USB 드라이브에서 인증서를 빠르게 찾아냅니다.
                 </p>
               </div>
 
               <div className="space-y-2 border border-slate-200 rounded-xl p-3.5">
-                <div className="font-bold text-xs text-slate-800">표준 탐색 대상 위치:</div>
+                <div className="font-bold text-xs text-slate-800">기본 탐색 위치:</div>
                 <div className="font-mono text-xs text-slate-700 bg-slate-50 p-2.5 rounded border border-slate-200 space-y-1">
-                  <div>1. %USERPROFILE%\AppData\LocalLow\[NPKI | GPKI | EPKI] (최신 기본 경로)</div>
-                  <div>2. %USERPROFILE%\[NPKI | GPKI | EPKI] (구버전 호환 경로)</div>
-                  <div>3. C:\[NPKI | GPKI | EPKI] (루트 직하 금융결제원 경로)</div>
-                  <div>4. [Drive]:\[NPKI | GPKI | EPKI] (이동식 USB 전체)</div>
+                  <div>1. %USERPROFILE%\AppData\LocalLow\[NPKI | GPKI | EPKI] (Windows 기본)</div>
+                  <div>2. %USERPROFILE%\[NPKI | GPKI | EPKI] (구버전 호환)</div>
+                  <div>3. C:\[NPKI | GPKI | EPKI] (공무원 표준 위치)</div>
+                  <div>4. [USB]:\[NPKI | GPKI | EPKI] (이동식 USB)</div>
                 </div>
               </div>
 
               <div className="space-y-2 border border-slate-200 rounded-xl p-3.5">
-                <div className="font-bold text-xs text-slate-800">안전 BFS 방어 기능:</div>
+                <div className="font-bold text-xs text-slate-800">오류 없는 안전 탐색:</div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  <code>System Volume Information</code>, <code>$RECYCLE.BIN</code>, <code>Windows</code> 등 시스템 특수 디렉터리 접근 시 비동기 예외를 스킵하고 순회 큐(Queue)를 유지하여 프로그램 다운 현상을 100% 방지합니다.
+                  시스템 보호 폴더 접근 제한은 자동으로 건너뛰어 탐색 중 멈춤 현상을 방지합니다.
                 </p>
               </div>
             </div>
@@ -324,19 +324,19 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
               <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-1 text-purple-950">
                 <div className="font-bold text-purple-900 flex items-center gap-1.5">
                   <HardDrive className="w-4 h-4 text-purple-600" />
-                  <span>KCert.Core.HardwareGuard : WMI 핫플러그 감시 & 쓰기방지 락 프로브</span>
+                  <span>USB 자동 감지 · 잠금 확인 (HardwareGuard)</span>
                 </div>
                 <p className="text-xs text-purple-800 leading-relaxed">
-                  USB 삽입·제거 이벤트를 백그라운드 WMI 비동기 스레드로 실시간 감지하며, 600ms 지연 마운트 디바운스를 적용하여 파일 입출력 오류를 원천 차단합니다.
+                  USB를 꽂거나 뺄 때 바로 인식하며, 쓰기 금지 여부를 복사 전에 미리 확인합니다.
                 </p>
               </div>
 
               <div className="space-y-2 border border-slate-200 rounded-xl p-3.5">
-                <div className="font-bold text-xs text-slate-800">하드웨어 가드 핵심 기술:</div>
+                <div className="font-bold text-xs text-slate-800">주요 보호 기능:</div>
                 <div className="space-y-1.5 text-xs text-slate-600">
-                  <div>• <strong>WMI 비동기 모니터링:</strong> <code>Win32_VolumeChangeEvent</code> 쿼리로 이벤트 실시간 캐치</div>
-                  <div>• <strong>600ms 스마트 디바운스:</strong> 윈도우 OS가 USB 드라이브를 인식한 직후 마운트 지연 시간 대기</div>
-                  <div>• <strong>읽기전용 락 비파괴 프로브:</strong> 물리적 쓰기 금지 락(Read-Only Switch) 및 NTFS 권한 상태를 사전 진단</div>
+                  <div>• <strong>실시간 USB 감지:</strong> 드라이브 연결·해제를 즉시 반영 (WMI)</div>
+                  <div>• <strong>안정 대기(600ms):</strong> 장치 인식 직후 안정화 후 안전 읽기</div>
+                  <div>• <strong>쓰기 금지 사전 확인:</strong> 잠긴 USB에 복사를 시도하기 전 미리 안내</div>
                 </div>
               </div>
             </div>

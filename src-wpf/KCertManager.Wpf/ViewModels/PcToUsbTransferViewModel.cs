@@ -407,12 +407,12 @@ namespace KCertManager.Wpf.ViewModels
 
             if (selectedCount == 0)
             {
-                StatusMessage = "복사할 PC 인증서를 1개 이상 체크(선택)해 주세요.";
+                StatusMessage = "복사할 인증서를 1개 이상 선택하세요.";
             }
             else
             {
                 string targetType = SelectedTargetDrive.IsRemovable ? "USB 메모리" : "로컬 디스크";
-                StatusMessage = $"선택한 {selectedCount}건의 인증서를 목적지 {targetType}({SelectedTargetDrive.Name})로 복사할 준비가 되었습니다.";
+                StatusMessage = $"{selectedCount}건 선택됨 · 저장할 위치: {targetType}({SelectedTargetDrive.Name})";
             }
         }
 
@@ -454,8 +454,8 @@ namespace KCertManager.Wpf.ViewModels
             {
                 try { System.Media.SystemSounds.Hand.Play(); } catch { }
                 MessageBox.Show(
-                    $"[자가 복사 금지 / 복사 경로 오류]\n\n선택한 모든 인증서가 이미 목적지 드라이브({targetDriveName})의 동일한 경로에 보관 중인 원본입니다.\n\n동일 위치로의 자가 복사는 원본 훼손 방지를 위해 제한되오니, 목적지 목록에서 연결된 이동식 USB 메모리 등 다른 드라이브를 선택해 주세요.",
-                    "복사 경로 오류 - 자가 복사 차단 안내",
+                    $"선택한 인증서가 이미 {targetDriveName}에 있습니다.\n\n다른 드라이브(USB 메모리 등)를 선택해 주세요.",
+                    "같은 위치 복사 불가",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;
@@ -569,13 +569,13 @@ namespace KCertManager.Wpf.ViewModels
                             : (targetDriveName.EndsWith("\\") ? $"{targetDriveName}NPKI" : $"{targetDriveName}\\NPKI")));
 
                 UserFriendlyMessageHelper.ShowOperationComplete(
-                    "인증서 USB 복사 / 백업 완료!",
-                    $"선택하신 인증서 {success}개가 {targetDriveName} ({targetDesc})로 안전하게 복사/백업되었습니다.",
+                    "인증서 복사 완료!",
+                    $"{targetDriveName} ({targetDesc})에 인증서 {success}개를 안전하게 복사했습니다.",
                     success,
                     sourcePath,
                     targetPath,
                     completeItems,
-                    "• USB 메모리를 타 PC에 연결하여 은행 및 공공기관 로그인 시 [이동식 디스크]를 선택하시면 즉시 사용하실 수 있습니다.\n• 분리 전 윈도우 우측 하단의 '하드웨어 안전하게 제거'를 누르시면 파일 손상을 예방할 수 있습니다.");
+                    "• 다른 PC에서 USB를 꽂은 뒤 [이동식 디스크]를 선택해 로그인하세요.\n• 분리 전 작업 표시줄의 '하드웨어 안전하게 제거'를 눌러 주세요.");
 
                 TransferCompleted?.Invoke();
             }

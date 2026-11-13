@@ -14,7 +14,9 @@ import {
   Compass,
   Zap,
   Info,
-  Laptop
+  Laptop,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { BRANDING_ASSETS } from '../data/brandingAssets';
 import { getInlineDriveBadge } from '../utils/driveBadgeUtils';
@@ -48,6 +50,8 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
     } catch {}
     return recentMode === 'usb_to_pc' ? 'usb_to_pc' : 'pc_to_usb';
   });
+
+  const [showRouteDetails, setShowRouteDetails] = useState(false);
 
   // Synchronize when recentMode prop updates
   useEffect(() => {
@@ -127,13 +131,13 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-400/30 rounded-full text-[11px] font-bold tracking-wide uppercase">
-                  시작 가이드 모션
+                <span className="px-2.5 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-400/30 rounded-full text-[11px] font-bold tracking-wide">
+                  시작 가이드
                 </span>
                 <span className="text-slate-400 text-xs">| K-인증서 매니저</span>
               </div>
               <h2 className="text-lg sm:text-xl font-black tracking-tight text-white mt-0.5">
-                작업 선택 및 단계별 가이드 모션 시작
+                원하는 작업을 선택하세요
               </h2>
             </div>
           </div>
@@ -150,12 +154,12 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-6 sm:p-8 space-y-6">
-          <div className="text-center max-w-xl mx-auto space-y-2">
+          <div className="text-center max-w-xl mx-auto space-y-1">
             <p className="text-sm sm:text-base font-bold text-slate-800">
-              수행하고자 하는 인증서 작업 모드를 선택하세요.
+              작업을 선택하면 단계별로 바로 안내합니다
             </p>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              선택하신 작업 모드에 맞춰 **출발지·도착지 표준 경로 검증과 화면 내 가이드 포커스링**이 단계별로 자동 안내됩니다.
+            <p className="text-xs text-slate-500">
+              복사 방향에 맞춰 저장 위치를 자동으로 확인합니다.
             </p>
           </div>
 
@@ -187,27 +191,19 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
 
                 <div>
                   <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-extrabold text-[11px] mb-1.5">
-                    <span>1단계 ➔ 3단계 가이드</span>
+                    <span>3단계 가이드</span>
                   </div>
                   <h3 className="text-base font-black text-slate-900 group-hover:text-blue-700 transition-colors flex items-center gap-1.5">
                     <span>PC ➔ USB 복사하기</span>
                     <ArrowRight className="w-4 h-4 text-blue-600 group-hover:translate-x-1 transition-transform" />
                   </h3>
 
-                  {/* Route Summary Pill */}
-                  <div className="mt-2 p-2 rounded-xl bg-blue-50/90 border border-blue-200 text-[11px] leading-tight space-y-1">
-                    <div className="text-blue-900 font-bold flex items-center gap-1">
-                      <span className="text-blue-600">출발:</span>
-                      <span className="font-mono text-[10.5px]">내 컴퓨터 C: (AppData / C:\GPKI)</span>
-                    </div>
-                    <div className="text-emerald-900 font-bold flex items-center gap-1">
-                      <span className="text-emerald-600">도착:</span>
-                      <span className="font-mono text-[10.5px]">이동식 USB ({'{드라이브}:\\'}NPKI·GPKI)</span>
-                    </div>
+                  <div className="mt-2 px-2.5 py-1.5 rounded-xl bg-blue-50/90 border border-blue-200 text-[11px] font-bold text-blue-900">
+                    내 컴퓨터 ➔ USB 메모리 (은행·공무원 인증서)
                   </div>
 
                   <p className="text-xs text-slate-600 font-medium leading-relaxed mt-2">
-                    컴퓨터의 금융(AppData) 및 행정·공무원(정부 표준 C:\GPKI) 보관함에서 유효한 인증서를 자동 감지하여 USB 메모리에 안전하게 복사/백업합니다.
+                    내 컴퓨터의 유효한 인증서를 USB로 안전하게 백업합니다.
                   </p>
                 </div>
               </div>
@@ -215,7 +211,7 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
               <div className="pt-4 mt-4 border-t border-blue-100/80 flex items-center justify-between text-xs font-bold text-blue-600">
                 <span className="flex items-center gap-1 text-[11px]">
                   <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-                  <span>가이드 모션 실행</span>
+                  <span>단계별 안내</span>
                 </span>
                 <span className="px-2.5 py-1 bg-blue-600 text-white rounded-lg group-hover:bg-blue-700 transition-colors shadow-2xs">
                   시작 ➔
@@ -242,34 +238,26 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                   </div>
                   {activeTabMode === 'usb_to_pc' && (
                     <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-extrabold shadow-2xs animate-pulse">
-                      ★ 최근 선택 모드
+                      최근 선택
                     </span>
                   )}
                 </div>
 
                 <div>
                   <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-extrabold text-[11px] mb-1.5">
-                    <span>1단계 ➔ 3단계 가이드</span>
+                    <span>3단계 가이드</span>
                   </div>
                   <h3 className="text-base font-black text-slate-900 group-hover:text-emerald-700 transition-colors flex items-center gap-1.5">
                     <span>USB ➔ PC 가져오기</span>
                     <ArrowRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-1 transition-transform" />
                   </h3>
 
-                  {/* Route Summary Pill */}
-                  <div className="mt-2 p-2 rounded-xl bg-emerald-50/90 border border-emerald-200 text-[11px] leading-tight space-y-1">
-                    <div className="text-emerald-900 font-bold flex items-center gap-1">
-                      <span className="text-emerald-600">출발:</span>
-                      <span className="font-mono text-[10.5px]">이동식 USB ({'{드라이브}:\\'}NPKI·GPKI)</span>
-                    </div>
-                    <div className="text-blue-900 font-bold flex items-center gap-1">
-                      <span className="text-blue-600">도착:</span>
-                      <span className="font-mono text-[10.5px]">정부 표준 C:\GPKI 및 금융 AppData</span>
-                    </div>
+                  <div className="mt-2 px-2.5 py-1.5 rounded-xl bg-emerald-50/90 border border-emerald-200 text-[11px] font-bold text-emerald-900">
+                    USB 메모리 ➔ 내 컴퓨터 표준 폴더
                   </div>
 
                   <p className="text-xs text-slate-600 font-medium leading-relaxed mt-2">
-                    USB 메모리의 인증서를 내 컴퓨터의 올바른 정규 표준 보관함(행정공무원: C:\GPKI, 금융: AppData)으로 안전하게 가져옵니다.
+                    USB의 인증서를 내 컴퓨터 공식 위치에 자동 등록합니다.
                   </p>
                 </div>
               </div>
@@ -277,7 +265,7 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
               <div className="pt-4 mt-4 border-t border-emerald-100/80 flex items-center justify-between text-xs font-bold text-emerald-600">
                 <span className="flex items-center gap-1 text-[11px]">
                   <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>가이드 모션 실행</span>
+                  <span>단계별 안내</span>
                 </span>
                 <span className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg group-hover:bg-emerald-700 transition-colors shadow-2xs">
                   시작 ➔
@@ -298,55 +286,59 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
 
                 <div>
                   <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-200/80 text-slate-700 font-extrabold text-[11px] mb-1.5">
-                    <span>전체 대시보드</span>
+                    <span>전체 화면</span>
                   </div>
                   <h3 className="text-base font-black text-slate-900 group-hover:text-slate-700 transition-colors flex items-center gap-1.5">
-                    <span>메인 화면 직접 진입</span>
+                    <span>전체 화면으로 이동</span>
                     <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
                   </h3>
 
-                  <div className="mt-2 p-2 rounded-xl bg-slate-100 border border-slate-200 text-[11px] text-slate-600 font-medium leading-tight">
-                    <span>모든 드라이브 인증서 목록, 상세 정보, 만료일 점검 및 안전 격리 휴지통 직접 관리</span>
+                  <div className="mt-2 px-2.5 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-[11px] text-slate-700 font-bold">
+                    목록 조회 · 만료 정리 · 휴지통 관리
                   </div>
 
                   <p className="text-xs text-slate-600 font-medium leading-relaxed mt-2">
-                    가이드 없이 전체 인증서 목록 조회, 정리 및 고급 설정 대시보드로 바로 이동합니다.
+                    가이드 없이 전체 인증서 관리 화면으로 바로 이동합니다.
                   </p>
                 </div>
               </div>
 
               <div className="pt-4 mt-4 border-t border-slate-200/80 flex items-center justify-between text-xs font-bold text-slate-600">
-                <span className="text-[11px] text-slate-400">자율 직접 관리</span>
+                <span className="text-[11px] text-slate-400">직접 관리</span>
                 <span className="px-2.5 py-1 bg-slate-800 text-white rounded-lg group-hover:bg-slate-900 transition-colors shadow-2xs">
-                  진입하기
+                  열기
                 </span>
               </div>
             </button>
           </div>
 
-          {/* Dedicated Route Flow Guide Inspector based on Recently Selected Mode */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 text-white border border-slate-700/80 shadow-md space-y-3.5">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700/60 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-ping" />
-                <h4 className="text-sm font-black text-white flex items-center gap-2">
-                  <span>⚡ 최근 선택 복사 모드 경로 가이드</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                    activeTabMode === 'pc_to_usb'
-                      ? 'bg-blue-500/20 text-blue-300 border border-blue-400/30'
-                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
-                  }`}>
-                    {activeTabMode === 'pc_to_usb' ? 'PC ➔ USB 백업 모드' : 'USB ➔ PC 가져오기 모드'}
-                  </span>
-                </h4>
-              </div>
+          {/* Collapsible Standard Route Guide Inspector */}
+          <div className="rounded-2xl bg-slate-900 text-white border border-slate-700/80 shadow-md overflow-hidden">
+            <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setShowRouteDetails(prev => !prev)}
+                className="flex items-center gap-2 text-left cursor-pointer hover:opacity-90"
+              >
+                {showRouteDetails ? (
+                  <ChevronDown className="w-4 h-4 text-blue-400 shrink-0" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-blue-400 shrink-0" />
+                )}
+                <span className="text-xs sm:text-sm font-bold text-white">
+                  저장 위치 미리보기 ({activeTabMode === 'pc_to_usb' ? 'PC ➔ USB' : 'USB ➔ PC'})
+                </span>
+                <span className="text-[11px] text-slate-400 hidden sm:inline">
+                  {showRouteDetails ? '접기' : '표준 폴더 경로 보기'}
+                </span>
+              </button>
 
-              {/* Mode switch toggle buttons */}
               <div className="flex items-center bg-slate-950/80 p-0.5 rounded-xl border border-slate-700">
                 <button
                   type="button"
                   onClick={() => {
                     setActiveTabMode('pc_to_usb');
+                    setShowRouteDetails(true);
                     try { localStorage.setItem('kcert_recent_workflow_mode', 'pc_to_usb'); } catch {}
                   }}
                   className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -355,12 +347,13 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  💻 PC ➔ USB 경로
+                  PC ➔ USB
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setActiveTabMode('usb_to_pc');
+                    setShowRouteDetails(true);
                     try { localStorage.setItem('kcert_recent_workflow_mode', 'usb_to_pc'); } catch {}
                   }}
                   className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -369,139 +362,90 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  💾 USB ➔ PC 경로
+                  USB ➔ PC
                 </button>
               </div>
             </div>
 
-            {/* Route Visual Cards with Direct & Friendly Situational Messages */}
-            {activeTabMode === 'pc_to_usb' ? (
-              <div className="space-y-3">
-                <div className="p-2.5 rounded-xl bg-blue-900/40 border border-blue-400/40 text-xs text-blue-100 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-blue-300 shrink-0" />
-                  <span className="font-bold">지금 연결된 USB 메모리로 내 컴퓨터의 유효한 인증서를 안전하게 옮깁니다.</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-11 gap-2.5 items-center text-xs">
-                  {/* Source (5 cols) */}
-                  <div className="md:col-span-5 p-3 rounded-xl bg-slate-800/90 border border-blue-500/40 space-y-1.5">
-                    <div className="flex items-center justify-between text-blue-300 font-bold">
-                      <span className="flex items-center gap-1.5">
-                        <Monitor className="w-3.5 h-3.5 text-blue-400" />
-                        <span>출발지: 내 컴퓨터 (PC 로컬 보관함)</span>
-                      </span>
-                      <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 rounded text-blue-200 font-mono">로컬 C:\</span>
+            {showRouteDetails && (
+              <div className="px-4 pb-4 pt-2 border-t border-slate-800 space-y-3">
+                {activeTabMode === 'pc_to_usb' ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-11 gap-2.5 items-center text-xs">
+                      <div className="md:col-span-5 p-3 rounded-xl bg-slate-800/90 border border-blue-500/40 space-y-1">
+                        <div className="text-blue-300 font-bold flex items-center gap-1.5">
+                          <Monitor className="w-3.5 h-3.5" />
+                          <span>출발: 내 컴퓨터 (C:)</span>
+                        </div>
+                        <div className="font-mono text-[11px] text-slate-300 space-y-0.5">
+                          <p>• 은행·공동(NPKI): AppData\LocalLow\NPKI</p>
+                          <p>• 공무원(GPKI): C:\GPKI\Certificate\class2</p>
+                          <p>• 교육(EPKI): AppData\LocalLow\EPKI</p>
+                        </div>
+                      </div>
+                      <div className="md:col-span-1 flex flex-col items-center justify-center">
+                        <span className="text-blue-300 font-black text-sm">➔</span>
+                      </div>
+                      <div className="md:col-span-5 p-3 rounded-xl bg-slate-800/90 border border-emerald-500/40 space-y-1">
+                        <div className="text-emerald-300 font-bold flex items-center gap-1.5">
+                          <Usb className="w-3.5 h-3.5" />
+                          <span>도착: USB 메모리</span>
+                        </div>
+                        <div className="font-mono text-[11px] text-slate-300 space-y-0.5">
+                          <p>• 저장 폴더: {'{USB}:\\'}(NPKI · GPKI · EPKI)</p>
+                          <p>• 인증서 + 개인키 함께 복사</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="font-mono text-[11px] text-slate-300 space-y-0.5 pl-1 border-l-2 border-blue-500/50">
-                      <p>• <strong>금융·공동 (NPKI)</strong>: C:\Users\{'{사용자}'}\AppData\LocalLow\NPKI</p>
-                      <p>• <strong className="text-blue-300">행정공무원 (GPKI)</strong>: C:\GPKI\Certificate\class2 (정부 공식 위치)</p>
-                      <p>• <strong>교육전자서명 (EPKI)</strong>: C:\Users\{'{사용자}'}\AppData\LocalLow\EPKI</p>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleSelect('pc_to_usb')}
+                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-xs cursor-pointer"
+                      >
+                        USB로 복사 시작 ➔
+                      </button>
                     </div>
-                  </div>
-
-                  {/* Arrow & Engine (1 col) */}
-                  <div className="md:col-span-1 flex flex-col items-center justify-center py-1">
-                    <div className="w-8 h-8 rounded-full bg-blue-600/30 border border-blue-400/50 flex items-center justify-center text-blue-300 font-black text-sm">
-                      ➔
+                  </>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-11 gap-2.5 items-center text-xs">
+                      <div className="md:col-span-5 p-3 rounded-xl bg-slate-800/90 border border-emerald-500/40 space-y-1">
+                        <div className="text-emerald-300 font-bold flex items-center gap-1.5">
+                          <Usb className="w-3.5 h-3.5" />
+                          <span>출발: USB 메모리</span>
+                        </div>
+                        <div className="font-mono text-[11px] text-slate-300 space-y-0.5">
+                          <p>• 표준 폴더: {'{USB}:\\'}(GPKI · NPKI · EPKI)</p>
+                          <p>• 은행·행정 인증서 자동 분류</p>
+                        </div>
+                      </div>
+                      <div className="md:col-span-1 flex flex-col items-center justify-center">
+                        <span className="text-emerald-300 font-black text-sm">➔</span>
+                      </div>
+                      <div className="md:col-span-5 p-3 rounded-xl bg-slate-800/90 border border-blue-500/40 space-y-1">
+                        <div className="text-blue-300 font-bold flex items-center gap-1.5">
+                          <Monitor className="w-3.5 h-3.5" />
+                          <span>도착: 내 컴퓨터 (C:)</span>
+                        </div>
+                        <div className="font-mono text-[11px] text-slate-300 space-y-0.5">
+                          <p>• 공무원(GPKI): C:\GPKI\Certificate\class2</p>
+                          <p>• 은행·공동(NPKI): AppData\LocalLow\NPKI</p>
+                          <p>• 교육(EPKI): AppData\LocalLow\EPKI</p>
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-[9px] text-slate-400 font-mono mt-0.5">SHA-256</span>
-                  </div>
-
-                  {/* Destination (5 cols) */}
-                  <div className="md:col-span-5 p-3 rounded-xl bg-slate-800/90 border border-emerald-500/40 space-y-1.5">
-                    <div className="flex items-center justify-between text-emerald-300 font-bold">
-                      <span className="flex items-center gap-1.5">
-                        <Usb className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>도착지: 지금 연결된 이동식 USB 메모리</span>
-                      </span>
-                      <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/20 rounded text-emerald-200 font-mono">이동식 디스크</span>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleSelect('usb_to_pc')}
+                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-xs cursor-pointer"
+                      >
+                        내 컴퓨터로 가져오기 ➔
+                      </button>
                     </div>
-                    <div className="font-mono text-[11px] text-slate-300 space-y-0.5 pl-1 border-l-2 border-emerald-500/50">
-                      <p>• <strong>USB 표준 보관 폴더</strong>: {'{USB드라이브}:\\'}(NPKI | GPKI | EPKI)</p>
-                      <p>• <strong>타 PC 즉시 연동</strong>: 타 컴퓨터 연결 시 [이동식 디스크]에서 바로 인식</p>
-                      <p>• <strong>무결성 키페어</strong>: signCert.der + signPri.key 100% 동봉 복사</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tip box */}
-                <div className="p-2.5 rounded-xl bg-blue-950/60 border border-blue-500/30 text-[11px] text-blue-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <Info className="w-4 h-4 text-blue-400 shrink-0" />
-                    <span>내 컴퓨터 내 만료되지 않은 유효한 인증서만 선별하여, 지금 연결된 USB 메모리로 안전하게 백업합니다.</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleSelect('pc_to_usb')}
-                    className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-lg font-bold text-xs shrink-0 transition-colors cursor-pointer shadow-xs"
-                  >
-                    지금 연결된 USB로 인증서 옮기기 ➔
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="p-2.5 rounded-xl bg-emerald-900/40 border border-emerald-400/40 text-xs text-emerald-100 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-emerald-300 shrink-0" />
-                  <span className="font-bold">USB에 있는 인증서를 내 컴퓨터(PC)의 공식 표준 보관함으로 안전하게 불러옵니다.</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-11 gap-2.5 items-center text-xs">
-                  {/* Source (5 cols) */}
-                  <div className="md:col-span-5 p-3 rounded-xl bg-slate-800/90 border border-emerald-500/40 space-y-1.5">
-                    <div className="flex items-center justify-between text-emerald-300 font-bold">
-                      <span className="flex items-center gap-1.5">
-                        <Usb className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>출발지: 지금 연결된 이동식 USB 메모리</span>
-                      </span>
-                      <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/20 rounded text-emerald-200 font-mono">이동식 디스크</span>
-                    </div>
-                    <div className="font-mono text-[11px] text-slate-300 space-y-0.5 pl-1 border-l-2 border-emerald-500/50">
-                      <p>• <strong>USB 원본 위치</strong>: {'{USB드라이브}:\\'}(GPKI | NPKI | EPKI) 보관 폴더</p>
-                      <p>• <strong>행정공무원 원본</strong>: {'{USB드라이브}:\\'}GPKI\Certificate\class2</p>
-                      <p>• <strong>금융·은행 원본</strong>: {'{USB드라이브}:\\'}NPKI\yessign (등 공인기관)</p>
-                    </div>
-                  </div>
-
-                  {/* Arrow & Engine (1 col) */}
-                  <div className="md:col-span-1 flex flex-col items-center justify-center py-1">
-                    <div className="w-8 h-8 rounded-full bg-emerald-600/30 border border-emerald-400/50 flex items-center justify-center text-emerald-300 font-black text-sm">
-                      ➔
-                    </div>
-                    <span className="text-[9px] text-slate-400 font-mono mt-0.5">정규 분류</span>
-                  </div>
-
-                  {/* Destination (5 cols) */}
-                  <div className="md:col-span-5 p-3 rounded-xl bg-slate-800/90 border border-blue-500/40 space-y-1.5">
-                    <div className="flex items-center justify-between text-blue-300 font-bold">
-                      <span className="flex items-center gap-1.5">
-                        <Monitor className="w-3.5 h-3.5 text-blue-400" />
-                        <span>도착지: 내 컴퓨터 공식 표준 보관함 (PC)</span>
-                      </span>
-                      <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 rounded text-blue-200 font-mono">정부/금융 공식</span>
-                    </div>
-                    <div className="font-mono text-[11px] text-slate-300 space-y-0.5 pl-1 border-l-2 border-blue-500/50">
-                      <p>• <strong className="text-emerald-300 font-bold">행정공무원 (GPKI)</strong>: C:\GPKI\Certificate\class2 (정부 공식 표준 안착)</p>
-                      <p>• <strong className="text-blue-300">금융·은행용 (NPKI)</strong>: C:\Users\{'{사용자}'}\AppData\LocalLow\NPKI</p>
-                      <p>• <strong className="text-purple-300">교육전자서명 (EPKI)</strong>: C:\Users\{'{사용자}'}\AppData\LocalLow\EPKI</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tip box */}
-                <div className="p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-[11px] text-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>행정공무원(GPKI)은 정부 공식 폴더(C:\GPKI)로, 금융인증서는 AppData로 정확히 자동 분류되어 복사 후 바로 사용하실 수 있습니다.</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleSelect('usb_to_pc')}
-                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-lg font-bold text-xs shrink-0 transition-colors cursor-pointer shadow-xs"
-                  >
-                    USB 인증서를 내 컴퓨터로 불러오기 ➔
-                  </button>
-                </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -534,7 +478,7 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                   <span className="text-slate-300">|</span>
                   <button
                     type="button"
-                    onClick={() => onSelectWorkflow('pc_to_usb')}
+                    onClick={() => handleSelect('pc_to_usb')}
                     className="text-xs text-blue-600 hover:text-blue-800 font-bold hover:underline cursor-pointer flex items-center gap-1"
                   >
                     <span>이 인증서들로 USB 복사 시작</span>
@@ -670,7 +614,7 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                           <span className="truncate block" title={cert.issuer || cert.issuerName}>{cert.issuer || cert.issuerName}</span>
                         </td>
                         <td style={{ width: `${colWidths.notAfter}px` }} className="w-[120px] py-2 px-3 text-center font-mono text-[11px] text-slate-600">
-                          <span className="truncate block">{cert.expiryDate || (cert.notAfter ? new Date(cert.notAfter).toISOString().slice(0, 10) : '-')}</span>
+                          <span className="truncate block">{cert.validTo || cert.expiryDate || (cert.notAfter ? new Date(cert.notAfter).toISOString().slice(0, 10) : '-')}</span>
                         </td>
                         <td style={{ width: `${colWidths.status}px` }} className="w-[90px] py-2 px-3 text-center">
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
@@ -689,7 +633,7 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 text-slate-600">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>모든 복사 작업은 **SHA-256 바이트 무결성 대조**가 자동 수행됩니다.</span>
+              <span>복사 후 파일 손상 여부를 자동 검사합니다 (SHA-256).</span>
             </div>
 
             <div className="flex items-center gap-3">
@@ -701,7 +645,7 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
                     onChange={(e) => onToggleDontShowAgain(e.target.checked)}
                     className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
                   />
-                  <span>시작 시 이 안내창 다시 보지 않기</span>
+                  <span>다시 보지 않기</span>
                 </label>
               )}
               <button

@@ -71,7 +71,7 @@ export const DesktopAppModal: React.FC<DesktopAppModalProps> = ({ isOpen, onClos
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                웹 브라우저 없이 Windows 네이티브 창으로 단독 구동되는 고성능 데스크톱 에디션
+                웹 브라우저 없이 Windows에서 단독 실행되는 데스크톱 버전
               </p>
             </div>
           </div>
@@ -129,12 +129,11 @@ export const DesktopAppModal: React.FC<DesktopAppModalProps> = ({ isOpen, onClos
         <div className="p-6 overflow-y-auto space-y-6 flex-1 text-sm text-slate-700">
           {activeTab === 'EDITIONS' && (
             <div className="space-y-4 animate-fadeIn">
-              <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start gap-2.5">
-                <ShieldCheck className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
-                <div className="leading-relaxed">
-                  <strong>망분리 PC 및 보안 업무 환경에 완벽 대응:</strong> 외부 인터넷 연결 없이 
-                  Windows NPKI/GPKI 경로를 100% 로컬 파일시스템 수준에서 직접 안전하게 관리합니다.
-                </div>
+              <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>
+                  <strong>오프라인 망분리 지원:</strong> 인터넷 없이 내 컴퓨터 폴더에서 바로 실행됩니다.
+                </span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
@@ -151,7 +150,7 @@ export const DesktopAppModal: React.FC<DesktopAppModalProps> = ({ isOpen, onClos
                       <span>풀버전 데스크톱</span>
                     </h4>
                     <p className="text-[11px] text-slate-500 leading-relaxed mb-3">
-                      .NET 10 / .NET 8 런타임이 내장된 독립 단일 실행 파일. 사전 설치 없이 즉시 실행됩니다.
+                      추가 설치 없이 바로 실행되는 단일 실행 파일입니다.
                     </p>
                     <div className="bg-slate-50 p-2 rounded border border-slate-200 text-[11px] font-mono text-slate-700 break-all mb-3">
                       KCertManager.exe
@@ -182,7 +181,7 @@ export const DesktopAppModal: React.FC<DesktopAppModalProps> = ({ isOpen, onClos
                       <span>라이트 에디션</span>
                     </h4>
                     <p className="text-[11px] text-slate-500 leading-relaxed mb-3">
-                      극소형 크기로 네트워크 전송 및 메신저 공유에 최적화된 프레임워크 종속형.
+                      용량이 작아 메신저 공유와 빠른 전송에 좋습니다.
                     </p>
                     <div className="bg-slate-50 p-2 rounded border border-slate-200 text-[11px] font-mono text-slate-700 break-all mb-3">
                       KCertManager-Lite.exe
@@ -212,7 +211,7 @@ export const DesktopAppModal: React.FC<DesktopAppModalProps> = ({ isOpen, onClos
                       <span>정식 인스톨러</span>
                     </h4>
                     <p className="text-[11px] text-slate-500 leading-relaxed mb-3">
-                      시작 메뉴 및 바탕화면 바로가기 등록, 찌꺼기 없는 100% 완전 삭제 언인스톨러 지원.
+                      바탕화면 바로가기 등록 및 깔끔한 제거를 지원합니다.
                     </p>
                     <div className="bg-slate-50 p-2 rounded border border-slate-200 text-[11px] font-mono text-slate-700 break-all mb-3">
                       kcert-manager-v{APP_VERSION}-setup.exe
@@ -298,33 +297,30 @@ export const DesktopAppModal: React.FC<DesktopAppModalProps> = ({ isOpen, onClos
               <div className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-blue-200 transition-colors">
                 <div className="flex items-center gap-2 mb-1">
                   <Zap className="w-4 h-4 text-amber-500" />
-                  <h4 className="font-bold text-slate-900 text-xs">Windows WMI 실시간 핫플러그 (HardwareGuard)</h4>
+                  <h4 className="font-bold text-slate-900 text-xs">USB 실시간 자동 감지 (WMI 핫플러그)</h4>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  USB 메모리를 PC 본체에 꽂는 즉시 600ms 디바운스 필터를 거쳐 윈도우 볼륨 변경 이벤트를 실시간 포착하고, 
-                  인증서 보관 여부를 백그라운드에서 즉각 분석합니다.
+                  USB를 꽂는 즉시 연결을 감지해 저장된 인증서를 바로 찾아줍니다.
                 </p>
               </div>
 
               <div className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-blue-200 transition-colors">
                 <div className="flex items-center gap-2 mb-1">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <h4 className="font-bold text-slate-900 text-xs">브라우저 제약 없는 순수 파일시스템 트랜잭션</h4>
+                  <h4 className="font-bold text-slate-900 text-xs">브라우저 제한 없는 폴더 직접 복사</h4>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  웹 브라우저의 다운로드 확인창이나 임시 디렉토리 이동 없이, C:\Users\...\AppData\LocalLow\NPKI 
-                  실제 폴더와 USB 디렉토리 간에 직접 원자적(Atomic) 양방향 복사를 수행합니다.
+                  내 컴퓨터 NPKI 폴더와 USB 간 파일을 중간 확인 창 없이 직접 복사합니다.
                 </p>
               </div>
 
               <div className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-blue-200 transition-colors">
                 <div className="flex items-center gap-2 mb-1">
                   <FileCode className="w-4 h-4 text-blue-600" />
-                  <h4 className="font-bold text-slate-900 text-xs">순수 C# X.509 파서 & 5대 발급기관 역해석</h4>
+                  <h4 className="font-bold text-slate-900 text-xs">자체 인증서 읽기 엔진 (KCert.Core)</h4>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  금융결제원(yessign), 코스콤(SignKorea), 한국정보인증(SignGate), 한국전자인증(CrossCert), 한국무역정보통신(TradeSign) 
-                  및 행정전자서명(GPKI), 교육전자서명(EPKI)의 OID를 자체 코어(`KCert.Core.dll`)로 완벽 역해석합니다.
+                  금융·은행(NPKI)과 공무원·교육(GPKI·EPKI) 인증서 정보를 정확하게 읽어옵니다.
                 </p>
               </div>
             </div>

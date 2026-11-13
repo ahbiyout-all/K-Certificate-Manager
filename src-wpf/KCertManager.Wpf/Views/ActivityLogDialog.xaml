@@ -28,8 +28,8 @@
                 </Border>
 
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="실시간 작업 및 보안 감사 로그" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <TextBlock Text="인증서 스캔, 백업, 금고 패키징, 삭제/복원 등 모든 활동이 디스크에 암호화 보존 및 기록됩니다." FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                    <TextBlock Text="작업 기록 및 보안 감사 로그" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <TextBlock Text="인증서 찾기, 복사, 삭제·복원 등 주요 작업 기록을 확인합니다." FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">

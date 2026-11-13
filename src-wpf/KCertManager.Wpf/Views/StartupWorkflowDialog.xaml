@@ -24,15 +24,15 @@
                     <Border Background="#1E3A8A" CornerRadius="6" Padding="8,4" Margin="0,0,8,0">
                         <TextBlock Text="🚀 K-WORKFLOW" FontSize="11" FontWeight="Bold" Foreground="#60A5FA"/>
                     </Border>
-                    <TextBlock Text="시작 작업 선택 및 가이드 모션" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                    <TextBlock Text="시작 작업 선택" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                 </StackPanel>
-                <TextBlock Text="진행하실 작업을 선택하시면 순서에 따라 단계별 포커스 가이드 모션이 실행됩니다." FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                <TextBlock Text="원하는 작업을 누르면 순서대로 안내합니다." FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
             </StackPanel>
 
-            <Separator Grid.Row="1" Background="{DynamicResource BorderBrush}" Margin="0,0,0,20"/>
+            <Separator Grid.Row="1" Background="{DynamicResource BorderBrush}" Margin="0,0,0,16"/>
 
             <!-- 3 Main Workflow Selection Cards -->
-            <Grid Grid.Row="2" Margin="0,0,0,20">
+            <Grid Grid.Row="2" Margin="0,0,0,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="16"/>
@@ -55,11 +55,11 @@
                             <TextBlock Text="💻 ➔ 💾" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
 
-                        <TextBlock Grid.Row="1" Text="PC ➔ USB 복사하기" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
-                        <TextBlock Grid.Row="2" Text="내 컴퓨터의 금융(AppData) 및 행정·공무원(정부 표준 C:\GPKI) 보관함 인증서를 이동식 USB 메모리로 안전하게 복사/백업합니다." FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        <TextBlock Grid.Row="1" Text="PC ➔ USB 복사" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                        <TextBlock Grid.Row="2" Text="내 PC 인증서를 USB 메모리에 안전하게 복사합니다." FontSize="12.5" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
 
                         <Border Grid.Row="3" Background="#0F172A" CornerRadius="6" Padding="8,6" Margin="0,12,0,0">
-                            <TextBlock Text="⚡ 3단계 가이드 모션 실행" FontSize="11" FontWeight="SemiBold" Foreground="#60A5FA" HorizontalAlignment="Center"/>
+                            <TextBlock Text="⚡ 3단계 안내 복사" FontSize="11" FontWeight="SemiBold" Foreground="#60A5FA" HorizontalAlignment="Center"/>
                         </Border>
                     </Grid>
                 </Border>
@@ -79,10 +79,10 @@
                         </Border>
 
                         <TextBlock Grid.Row="1" Text="USB ➔ PC 가져오기" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
-                        <TextBlock Grid.Row="2" Text="USB에 저장된 인증서를 내 컴퓨터의 올바른 정규 표준 보관함(행정공무원: C:\GPKI, 금융: AppData)으로 원클릭 안전 가져오기합니다." FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        <TextBlock Grid.Row="2" Text="USB 인증서를 내 PC 표준 폴더로 바로 가져옵니다." FontSize="12.5" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
 
                         <Border Grid.Row="3" Background="#0F172A" CornerRadius="6" Padding="8,6" Margin="0,12,0,0">
-                            <TextBlock Text="📥 원클릭 가져오기 마법사" FontSize="11" FontWeight="SemiBold" Foreground="#34D399" HorizontalAlignment="Center"/>
+                            <TextBlock Text="📥 바로 가져오기" FontSize="11" FontWeight="SemiBold" Foreground="#34D399" HorizontalAlignment="Center"/>
                         </Border>
                     </Grid>
                 </Border>
@@ -101,27 +101,35 @@
                             <TextBlock Text="🖥️" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
 
-                        <TextBlock Grid.Row="1" Text="메인 대시보드 진입" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
-                        <TextBlock Grid.Row="2" Text="전체 인증서 목록, 만료일 현황, 연결 드라이브 탐색 및 관리 메인 화면으로 바로 이동합니다." FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        <TextBlock Grid.Row="1" Text="전체 인증서 보기" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                        <TextBlock Grid.Row="2" Text="인증서 목록, 만료일, 드라이브 현황을 한눈에 봅니다." FontSize="12.5" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
 
                         <Border Grid.Row="3" Background="#0F172A" CornerRadius="6" Padding="8,6" Margin="0,12,0,0">
-                            <TextBlock Text="📊 대시보드 직접 진입" FontSize="11" FontWeight="SemiBold" Foreground="#A78BFA" HorizontalAlignment="Center"/>
+                            <TextBlock Text="📊 메인 화면 이동" FontSize="11" FontWeight="SemiBold" Foreground="#A78BFA" HorizontalAlignment="Center"/>
                         </Border>
                     </Grid>
                 </Border>
             </Grid>
 
-            <!-- Bottom Actions -->
-            <Grid Grid.Row="3">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+            <!-- Bottom Actions & Collapsible Route Guide -->
+            <StackPanel Grid.Row="3">
+                <Expander Header="표준 저장 폴더 안내 보기" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11.5" Margin="0,0,0,10">
+                    <Border Background="{DynamicResource BgCardBrush}" CornerRadius="6" Padding="10,8" Margin="0,4,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                        <TextBlock Text="• 은행·공동 인증서 (NPKI): AppData\LocalLow\NPKI  |  • 공무원 인증서 (GPKI): C:\GPKI\Certificate\class2" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                    </Border>
+                </Expander>
 
-                <CheckBox x:Name="AlwaysShowCheckBox" IsChecked="True" Content="시작할 때 항상 이 작업 선택 창 표시" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                <Button Grid.Column="1" Click="Close_Click" Style="{StaticResource SecondaryButton}" Padding="20,8" Content="닫기"/>
-            </Grid>
+                    <CheckBox x:Name="AlwaysShowCheckBox" IsChecked="True" Content="시작할 때 항상 이 창 표시" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+
+                    <Button Grid.Column="1" Click="Close_Click" Style="{StaticResource SecondaryButton}" Padding="20,8" Content="닫기"/>
+                </Grid>
+            </StackPanel>
         </Grid>
     </Border>
 </Window>

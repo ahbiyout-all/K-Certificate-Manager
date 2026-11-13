@@ -29,7 +29,7 @@
 
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="환경 설정 (Preferences)" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <TextBlock Text="복사 성공 알림음(SuccessChime), 테마 스타일, 인터페이스 모드 및 시작 옵션 설정" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                    <TextBlock Text="알림음, 테마, 화면 모드 및 시작 옵션 설정" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -40,11 +40,11 @@
                 <!-- Group 1: 성공 알림음 (SuccessChime) & 볼륨 슬라이더 -->
                 <Border Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="16" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,0,14">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                             <TextBlock Text="🔔" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="복사 성공 알림음 (SuccessChime)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="복사 완료 알림음" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Text="인증서 복사 또는 백업이 완료되었을 때 청각적 피드백을 제공합니다." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,12"/>
+                        <TextBlock Text="인증서 복사가 끝나면 소리로 알려줍니다." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,12"/>
 
                         <!-- Toggle Enable -->
                         <Grid Margin="0,0,0,14">
@@ -53,8 +53,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="단계별 사운드 피드백 (시작음 / 완료음 / 오류음)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                <TextBlock Text="인증서 복사 및 백업 작업 착수(시작음), 성공 완료(완료음), 오류/차단(오류음) 단계별 음향을 지원합니다." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Text="알림음 사용" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="복사 완료 및 오류 발생 시 알림음을 재생합니다." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>
                             <CheckBox x:Name="ChkSoundEnabled" Grid.Column="1" VerticalAlignment="Center"
                                       Checked="ChkSoundEnabled_Changed" Unchecked="ChkSoundEnabled_Changed"/>
@@ -68,7 +68,7 @@
                                 <ColumnDefinition Width="45"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBlock Text="마스터 볼륨:" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="알림음 크기:" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource TextPrimaryBrush}"/>
 
                             <Slider x:Name="SliderSoundVolume" Grid.Column="1" Minimum="0" Maximum="100" SmallChange="5" LargeChange="10"
                                     VerticalAlignment="Center" ValueChanged="SliderSoundVolume_ValueChanged"/>
@@ -84,8 +84,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="헤더 상단 사운드 가로 소리조절바 표시 (기본: 비활성)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                <TextBlock Text="체크 시 상단 헤더 메뉴에 실시간 사운드 조절 슬라이더 바를 표시합니다." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Text="상단 알림음 조절바 표시" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="화면 위쪽 메뉴에 볼륨 조절바를 표시합니다." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>
                             <CheckBox x:Name="ChkShowHeaderSoundBar" Grid.Column="1" VerticalAlignment="Center"
                                       IsChecked="{Binding ShowHeaderSoundBar, Mode=TwoWay}"
@@ -95,19 +95,19 @@
                         <!-- Phase Test Buttons -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <TextBlock Text="음향 미리듣기:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <Button x:Name="BtnTestStartSound" Click="BtnTestStartSound_Click" Style="{StaticResource SecondaryButton}" Padding="8,3" Margin="0,0,6,0" ToolTip="시작음 테스트 재생 (작업 착수 알림)">
+                            <Button x:Name="BtnTestStartSound" Click="BtnTestStartSound_Click" Style="{StaticResource SecondaryButton}" Padding="8,3" Margin="0,0,6,0" ToolTip="시작음 미리듣기">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="🚀" Margin="0,0,4,0" FontSize="10" VerticalAlignment="Center"/>
                                     <TextBlock Text="시작음" FontSize="11" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
-                            <Button x:Name="BtnTestSound" Click="BtnTestSound_Click" Style="{StaticResource SecondaryButton}" Padding="8,3" Margin="0,0,6,0" ToolTip="완료음 테스트 재생 (성공 완료 알림)">
+                            <Button x:Name="BtnTestSound" Click="BtnTestSound_Click" Style="{StaticResource SecondaryButton}" Padding="8,3" Margin="0,0,6,0" ToolTip="완료음 미리듣기">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="🎉" Margin="0,0,4,0" FontSize="10" VerticalAlignment="Center"/>
                                     <TextBlock Text="완료음" FontSize="11" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
-                            <Button x:Name="BtnTestErrorSound" Click="BtnTestErrorSound_Click" Style="{StaticResource SecondaryButton}" Padding="8,3" ToolTip="오류음 테스트 재생 (실패/차단 알림)">
+                            <Button x:Name="BtnTestErrorSound" Click="BtnTestErrorSound_Click" Style="{StaticResource SecondaryButton}" Padding="8,3" ToolTip="오류음 미리듣기">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="⚠️" Margin="0,0,4,0" FontSize="10" VerticalAlignment="Center"/>
                                     <TextBlock Text="오류음" FontSize="11" VerticalAlignment="Center"/>
@@ -122,7 +122,7 @@
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="🎨" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="화면 테마 스타일 (Theme)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="화면 테마" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
 
                         <WrapPanel Orientation="Horizontal">
@@ -139,11 +139,11 @@
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="🖥️" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="화면 인터페이스 모드 (UI Mode)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="화면 모드" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
 
-                        <RadioButton x:Name="RbModeSimple" Content="초보자용 간편 모드 (핵심 원클릭 복사와 목록에 집중)" Margin="0,0,0,8" GroupName="DialogModeGroup" Checked="RbMode_Checked"/>
-                        <RadioButton x:Name="RbModeAdvanced" Content="전문가용 상세 모드 (드라이브 상세 규격, 진단 및 모든 고급 도구 표시)" Margin="0,0,0,0" GroupName="DialogModeGroup" Checked="RbMode_Checked"/>
+                        <RadioButton x:Name="RbModeSimple" Content="간편 모드 (복사·목록 중심의 쉬운 화면)" Margin="0,0,0,8" GroupName="DialogModeGroup" Checked="RbMode_Checked"/>
+                        <RadioButton x:Name="RbModeAdvanced" Content="상세 모드 (드라이브·부가 도구 모두 표시)" Margin="0,0,0,0" GroupName="DialogModeGroup" Checked="RbMode_Checked"/>
                     </StackPanel>
                 </Border>
 
@@ -152,17 +152,21 @@
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                             <TextBlock Text="🔍" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="인증서 탐색 및 GPKI(행정전자서명) 경로 최적화" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="공무원 인증서 (GPKI) 탐색 범위" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
                         
                         <CheckBox x:Name="ChkExcludeLocalLowGpkiScan"
                                   IsChecked="{Binding ExcludeLocalLowGpkiScan, Mode=TwoWay}"
                                   Checked="ChkExcludeLocalLowGpkiScan_Changed" Unchecked="ChkExcludeLocalLowGpkiScan_Changed"
                                   FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4">
-                            <TextBlock Text="AppData\LocalLow\GPKI 경로 탐색 제외 (실무 미사용 경로 차단, 권장)"/>
+                            <TextBlock Text="실무 미사용 폴더 제외 (AppData\LocalLow\GPKI, 권장)"/>
                         </CheckBox>
-                        <TextBlock Text="공무원 행정전자서명(GPKI)의 정부 공식 표준 경로는 [C:\GPKI\Certificate\class2]입니다. 온-나라, 새올 등 행정망에서 사용되지 않는 AppData\LocalLow\GPKI 폴더를 탐색에서 배제합니다. (해제 시 해당 경로도 탐색하며 '⚠️ 실무 미사용 경로' 안내 경고가 표시됩니다)"
-                                   FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="20,0,0,0"/>
+                        <TextBlock Text="공식 폴더(C:\GPKI) 외에 쓰이지 않는 임시 폴더는 건너뜁니다."
+                                   FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="20,0,0,4"/>
+                        <Expander Header="자세히 보기" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="20,2,0,0">
+                            <TextBlock Text="온-나라·새올 등 행정망은 C:\GPKI\Certificate\class2 경로만 사용합니다. 체크를 해제하면 AppData\LocalLow\GPKI 경로도 함께 검색하며 경고 배지가 표시됩니다."
+                                       FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                        </Expander>
                     </StackPanel>
                 </Border>
 
@@ -171,16 +175,16 @@
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                             <TextBlock Text="📂" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="USB 탐색기 자동 열기 옵션 (Auto-Open USB Folder)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="USB 폴더 자동 열기" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
 
                         <CheckBox x:Name="ChkAutoOpenUsbFolderOnComplete"
                                   IsChecked="{Binding AutoOpenUsbFolderOnComplete, Mode=TwoWay}"
                                   Checked="ChkAutoOpenUsbFolderOnComplete_Changed" Unchecked="ChkAutoOpenUsbFolderOnComplete_Changed"
                                   FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4">
-                            <TextBlock Text="인증서 복사 성공 시 대상 USB 폴더를 탐색기로 자동 열기"/>
+                            <TextBlock Text="복사 완료 시 USB 폴더 자동 열기"/>
                         </CheckBox>
-                        <TextBlock Text="인증서 복사 또는 백업 작업이 성공적으로 완료되면 대상 USB 드라이브 폴더를 윈도우 시스템 파일 탐색기(explorer.exe)로 자동으로 열어줍니다."
+                        <TextBlock Text="복사가 끝나면 탐색기로 USB 폴더를 바로 엽니다."
                                    FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="20,0,0,0"/>
                     </StackPanel>
                 </Border>
@@ -190,12 +194,12 @@
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                             <TextBlock Text="🚀" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="시작 가이드 옵션" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="시작 옵션" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
 
                         <!-- 'Don't show startup workflow again' CheckBox bound with Mode=TwoWay -->
                         <CheckBox x:Name="ChkDontShowStartupWorkflowAgain"
-                                  Content="앱 시작 시 작업 선택(시작 가이드) 창을 다시 표시하지 않음 (Don't show again)"
+                                  Content="시작할 때 작업 선택 창 다시 보지 않기"
                                   IsChecked="{Binding DontShowStartupWorkflowAgain, Mode=TwoWay}"
                                   FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>

@@ -202,7 +202,7 @@ export const Header: React.FC<HeaderProps> = ({
         ref={headerScrollRef}
         onWheel={handleHeaderWheel}
         className="flex-1 flex items-center justify-end overflow-x-auto min-w-0 ml-3 py-1 scrollbar-none"
-        title="마우스 휠을 굴려 상단 메뉴 도구를 좌우로 스크롤할 수 있습니다"
+        title="휠로 메뉴를 좌우 스크롤"
       >
         <div className="flex items-center gap-1.5 shrink-0">
           {/* Theme Switcher Dropdown Box */}
@@ -220,7 +220,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onChange={(e) => onThemeChange(e.target.value as AppTheme)}
                 className="wpf-native bg-transparent text-xs font-semibold focus:outline-none cursor-pointer pr-1"
                 style={{ color: 'var(--wpf-text-primary)' }}
-                title="원하는 화면 테마 스타일을 선택하세요."
+                title="화면 테마 선택"
               >
                 {THEME_OPTIONS.map((opt) => (
                   <option key={opt.id} value={opt.id}>
@@ -249,7 +249,7 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'hover:bg-[var(--wpf-bg-hover)]'
                 }`}
                 style={appViewMode !== 'simple' ? { color: 'var(--wpf-text-secondary)' } : undefined}
-                title="초보자용 간편 모드: 핵심 복사 기능과 목록에 집중합니다."
+                title="복사·목록 위주의 기본 화면"
               >
                 간편 모드
               </button>
@@ -262,7 +262,7 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'hover:bg-[var(--wpf-bg-hover)]'
                 }`}
                 style={appViewMode !== 'advanced' ? { color: 'var(--wpf-text-secondary)' } : undefined}
-                title="전문가용 상세 모드: 드라이브 상세 정보 및 부가 도구를 모두 표시합니다."
+                title="드라이브 상세 정보와 전체 도구 표시"
               >
                 상세 모드
               </button>
@@ -325,7 +325,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={onOpenSettings}
               className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
-              title="환경 설정 창 열기 (알림음, 테마, UI 모드, 시작 가이드)"
+              title="알림음·테마·시작 옵션 설정"
             >
               <Settings className="w-3.5 h-3.5" style={{ color: 'var(--wpf-text-secondary)' }} />
               <span className="font-semibold">환경 설정</span>
@@ -338,7 +338,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={onOpenStartupWorkflow}
               className="wpf-btn-primary wpf-native px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
-              title="시작 작업 선택 창 및 순서별 가이드 모션을 실행합니다."
+              title="작업 선택 가이드 열기"
             >
               <Rocket className="w-3.5 h-3.5" />
               <span>시작 가이드</span>
@@ -351,7 +351,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onRefresh}
             disabled={isScanning}
             className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
-            title={lastScanTime ? `인증서 보관함 및 드라이브 새로고침 (마지막 스캔: ${lastScanTime})` : '새로고침'}
+            title={lastScanTime ? `목록 새로고침 (${lastScanTime})` : '새로고침'}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} style={{ color: 'var(--wpf-accent-text)' }} />
             <span>{isScanning ? '스캔 중...' : '새로고침'}</span>
@@ -363,7 +363,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={onOpenTrash}
               className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
-              title="안전 격리 휴지통 및 복원된 항목 암호화 보호 보관소"
+              title="삭제·복원 인증서 보관함"
             >
               <Trash2 className="w-3.5 h-3.5 text-[#F43F5E]" />
               <span className="font-semibold tabular-nums" style={{ color: '#F43F5E' }}>
@@ -427,7 +427,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={onCheckUpdates}
                   disabled={isCheckingUpdates}
                   className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 relative disabled:opacity-50"
-                  title="GitHub 최신 릴리스 및 버전 수동 확인"
+                  title="새 버전 확인"
                 >
                   <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--wpf-badge-expiring-text)' }} />
                   <span>{isCheckingUpdates ? '확인 중...' : '업데이트 확인'}</span>

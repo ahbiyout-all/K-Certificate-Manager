@@ -31,9 +31,9 @@
             <StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                     <TextBlock Text="💻" FontSize="18" Margin="0,0,8,0"/>
-                    <TextBlock Text="내 컴퓨터(PC) ➔ USB 메모리 / 디스크 인증서 복사하기" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <TextBlock Text="내 컴퓨터(PC) ➔ USB 인증서 복사" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                 </StackPanel>
-                <TextBlock Text="컴퓨터(로컬 보관함)에 저장된 공인인증서를 선택하여 연결된 이동식 USB 메모리 또는 로컬 디스크로 안전하게 복사/백업합니다." FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                <TextBlock Text="내 PC 인증서를 연결된 USB 메모리 또는 다른 디스크로 안전하게 복사합니다." FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
             </StackPanel>
         </Border>
 
@@ -85,8 +85,8 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="💡" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="이동식 USB 메모리가 연결되지 않아 기본 로컬 디스크(C:\)가 선택되었습니다." FontWeight="Bold" Foreground="#FDE68A" FontSize="11.5"/>
-                    <TextBlock Text="인증서를 USB로 복사하시려면 본체에 USB 메모리를 꽂으신 후 우측 [🔄 드라이브 갱신]을 눌러주세요." Foreground="#FEF3C7" FontSize="10.5" Margin="0,2,0,0"/>
+                    <TextBlock Text="연결된 USB가 없어 내 컴퓨터(C:\)가 기본 선택되었습니다." FontWeight="Bold" Foreground="#FDE68A" FontSize="11.5"/>
+                    <TextBlock Text="USB를 꽂은 뒤 우측 [🔄 드라이브 갱신]을 눌러주세요." Foreground="#FEF3C7" FontSize="10.5" Margin="0,2,0,0"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -110,10 +110,10 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="복사할 인증서를 체크(선택)해 주세요:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                                <TextBlock Text="복사할 인증서를 체크하세요:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,14,0"/>
                                 <CheckBox IsChecked="{Binding IsSmartDeduplicated, Mode=TwoWay}" VerticalAlignment="Center" Cursor="Hand" Margin="0,0,10,0">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="⚡ 동일 인증서 자동 묶기 (정규 표준 위치 우선)" FontSize="11" FontWeight="SemiBold" Foreground="#38BDF8"/>
+                                        <TextBlock Text="⚡ 같은 인증서 묶어보기 (표준 경로 우선)" FontSize="11" FontWeight="SemiBold" Foreground="#38BDF8"/>
                                     </StackPanel>
                                 </CheckBox>
                             </StackPanel>
@@ -255,8 +255,8 @@
                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="📂" FontSize="44" HorizontalAlignment="Center" Margin="0,0,0,14"/>
-                    <TextBlock Text="컴퓨터에 보관된 공인인증서가 감지되지 않았습니다" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                    <TextBlock Text="컴퓨터의 표준 보관함(AppData\LocalLow\NPKI, C:\NPKI 등)에 인증서가 존재하는지 확인해 주세요." FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,18"/>
+                    <TextBlock Text="내 PC에 저장된 인증서가 없습니다" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                    <TextBlock Text="표준 폴더(AppData\LocalLow\NPKI, C:\NPKI 등)를 확인해 주세요." FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,18"/>
                 </StackPanel>
             </Border>
         </Grid>
@@ -264,10 +264,10 @@
         <!-- 4. Conflict Strategy Options -->
         <Border Grid.Row="4" Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="12,8" Margin="0,0,0,12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="동일 인증서 감지 시:" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,14,0"/>
-                <RadioButton Content="⚡ 스마트 덮어쓰기 (최신 파일 자동 갱신)" IsChecked="True" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,16,0" Cursor="Hand"
+                <TextBlock Text="같은 인증서가 이미 있을 때:" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                <RadioButton Content="⚡ 덮어쓰기 (최신 파일 갱신)" IsChecked="True" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,16,0" Cursor="Hand"
                              Checked="RbOverwrite_Checked"/>
-                <RadioButton Content="📁 날짜 백업본 보존" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,16,0" Cursor="Hand"
+                <RadioButton Content="📁 기존 파일 따로 보관" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,16,0" Cursor="Hand"
                              Checked="RbRename_Checked"/>
                 <RadioButton Content="⏭️ 건너뛰기" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" VerticalAlignment="Center" Cursor="Hand"
                              Checked="RbSkip_Checked"/>

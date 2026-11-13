@@ -49,7 +49,7 @@ import { StartupWorkflowModal, WorkflowType } from './components/StartupWorkflow
 import { GuidedWorkflowOverlay } from './components/GuidedWorkflowOverlay';
 import { SettingsModal } from './components/SettingsModal';
 import { OperationCompleteModal, OperationCompleteData } from './components/OperationCompleteModal';
-import { checkForAppUpdates, UpdateInfo } from './utils/updateChecker';
+import { checkForAppUpdates, getEffectiveCurrentVersion, UpdateInfo } from './utils/updateChecker';
 import { playSuccessChime } from './utils/audioFeedback';
 import { 
   UsbDetectedCert, 
@@ -119,6 +119,10 @@ export default function App() {
     }
     return INITIAL_CERTIFICATES;
   });
+  const certificatesRef = useRef<CertificateItem[]>(certificates);
+  useEffect(() => {
+    certificatesRef.current = certificates;
+  }, [certificates]);
   const [searchPaths, setSearchPaths] = useState<SearchPath[]>(INITIAL_SEARCH_PATHS);
   const [availableDrives, setAvailableDrives] = useState<DiskDrive[]>(INITIAL_DRIVES);
   const [selectedIds, setSelectedIds] = useState<string[]>(() => certificates.map(c => c.id));
@@ -186,22 +190,22 @@ export default function App() {
 
     if (type === 'pc_to_usb') {
       // 시작 가이드 pc-> usb 복사 시작 시 기본 C: 인증서 중 유효한 인증서만 수집 (만료 항목 제외)
-      const pcCerts = certificates.filter(c => isPcCertificate(c) && c.status !== 'expired');
+      const pcCerts = certificates.filter(c => isPcCertificate(c) && !isCertificateExpired(c));
       const pcCertIds = pcCerts.map(c => c.id);
       if (pcCertIds.length > 0) {
         setSelectedIds(pcCertIds);
         setExplicitBackupCerts(pcCerts);
-        showToast(`💻 [PC ➔ USB 복사하기] 컴퓨터 기본 C: 보관함의 유효한 인증서 ${pcCertIds.length}개가 자동 선택되었습니다.`);
+        showToast(`💻 내 컴퓨터 인증서 ${pcCertIds.length}건을 선택했습니다.`);
       } else {
-        showToast('💻 [PC ➔ USB 복사하기] 유효한 C: 인증서 복사 마법사 창이 실행되었습니다.');
+        showToast('💻 내 컴퓨터 ➔ USB 복사 창을 열었습니다.');
       }
       // USB ➔ PC 가져오기와 동일한 창(모달) 형식으로 PC ➔ USB 백업 마법사 창 직접 실행
       handleOpenGeneralBackupModal(undefined, pcCerts.length > 0 ? pcCerts : undefined);
     } else if (type === 'usb_to_pc') {
-      showToast('💾 [USB ➔ PC 가져오기] 연결된 USB 메모리의 인증서를 컴퓨터로 복사하는 창이 실행되었습니다.');
+      showToast('💾 USB ➔ 내 컴퓨터 복사 창을 열었습니다.');
       setIsUsbToPcModalOpen(true);
     } else if (type === 'dashboard') {
-      showToast('🏠 전체 인증서 관리 대시보드로 이동했습니다.');
+      showToast('🏠 전체 인증서 목록으로 이동했습니다.');
     }
   };
   const [activityLogs, setActivityLogs] = useState<AppLogItem[]>(() => getStoredActivityLogs());
@@ -439,21 +443,26 @@ export default function App() {
 
   // Check for app updates on startup -> then open Startup Task Selection Modal
   useEffect(() => {
+    const shouldOpenStartup = () => {
+      try {
+        return localStorage.getItem('kcert_dont_show_startup_modal') !== 'true';
+      } catch {
+        return true;
+      }
+    };
+
     checkForAppUpdates()
       .then(info => {
         setUpdateInfo(info);
         if (info.hasUpdate) {
-          showToast(`🚀 새 버전 v${info.latestVersion} 감지됨! 업데이트 안내 창이 자동 실행되었습니다.`);
+          showToast(`🚀 새 버전 v${info.latestVersion} 업데이트가 있습니다.`);
           setIsUpdateModalOpen(true);
-        } else {
-          // If no update, open Startup Workflow Selection Modal (if not suppressed)
-          if (localStorage.getItem('kcert_dont_show_startup_modal') !== 'true') {
-            setIsStartupWorkflowOpen(true);
-          }
+        } else if (shouldOpenStartup()) {
+          setIsStartupWorkflowOpen(true);
         }
       })
       .catch(() => {
-        if (localStorage.getItem('kcert_dont_show_startup_modal') !== 'true') {
+        if (shouldOpenStartup()) {
           setIsStartupWorkflowOpen(true);
         }
       });
@@ -461,15 +470,15 @@ export default function App() {
 
   const handleManualCheckUpdates = async () => {
     setIsCheckingUpdates(true);
-    showToast('🔍 GitHub 최신 릴리스 및 버전 수동 확인 중...');
+    showToast('🔍 최신 버전을 확인하는 중...');
     try {
       const info = await checkForAppUpdates();
       setUpdateInfo(info);
       playSuccessChime();
       if (info.hasUpdate) {
-        showToast(`🚀 새 버전 v${info.latestVersion} 감지됨! 업데이트 모달에서 확인하세요.`);
+        showToast(`🚀 새 버전 v${info.latestVersion} 업데이트가 있습니다.`);
       } else {
-        showToast(`✅ 현재 설치된 v${info.currentVersion} 버전이 최신 버전입니다.`);
+        showToast(`✅ 현재 최신 버전(v${info.currentVersion})입니다.`);
       }
       setIsUpdateModalOpen(true);
     } catch {
@@ -479,30 +488,39 @@ export default function App() {
     }
   };
 
-  // Toggle search path
+  // Toggle search path (preserves user-imported USB/custom certificates alongside standard roots)
   const handleTogglePath = (id: string) => {
-    setSearchPaths(prev => {
-      const updated = prev.map(p => (p.id === id ? { ...p, enabled: !p.enabled } : p));
-      
-      const enabledTypes = updated.filter(p => p.enabled).map(p => p.type);
-      const isUsbEnabled = updated.some(p => p.type === 'removable_usb' && p.enabled);
-      
-      setCertificates(() => {
-        const trashCertIds = new Set(trashItems.map(t => t.cert.id));
-        return INITIAL_CERTIFICATES.filter(cert => {
-          if (trashCertIds.has(cert.id)) return false;
-          const isUsb = isUsbCertificate(cert);
-          if (isUsb && !isUsbEnabled) return false;
-          if (cert.category === 'GPKI_GOV' && !enabledTypes.includes('default_gpki')) return false;
-          if (cert.category === 'EPKI_EDU' && !enabledTypes.includes('default_epki')) return false;
-          if (cert.category === 'NPKI_BANK' && !enabledTypes.includes('default_npki') && !isUsb) return false;
-          if (cert.category === 'NPKI_CORP' && !enabledTypes.includes('default_npki') && !isUsb) return false;
-          return true;
-        });
-      });
+    const updatedPaths = searchPaths.map(p => (p.id === id ? { ...p, enabled: !p.enabled } : p));
+    setSearchPaths(updatedPaths);
 
-      return updated;
-    });
+    const enabledTypes = updatedPaths.filter(p => p.enabled).map(p => p.type);
+    const isUsbEnabled = updatedPaths.some(p => p.type === 'removable_usb' && p.enabled);
+    const trashCertIds = new Set(trashItems.map(t => t.cert.id));
+    const initialIdSet = new Set(INITIAL_CERTIFICATES.map(c => c.id));
+
+    const shouldKeepCert = (cert: CertificateItem) => {
+      if (trashCertIds.has(cert.id)) return false;
+      const isUsb = isUsbCertificate(cert);
+      if (isUsb && !isUsbEnabled) return false;
+      if (cert.category === 'GPKI_GOV' && !enabledTypes.includes('default_gpki')) return false;
+      if (cert.category === 'EPKI_EDU' && !enabledTypes.includes('default_epki')) return false;
+      if (cert.category === 'NPKI_BANK' && !enabledTypes.includes('default_npki') && !isUsb) return false;
+      if (cert.category === 'NPKI_CORP' && !enabledTypes.includes('default_npki') && !isUsb) return false;
+      return true;
+    };
+
+    const customImported = certificatesRef.current.filter(
+      c => !initialIdSet.has(c.id) && !trashCertIds.has(c.id) && (!isUsbCertificate(c) || isUsbEnabled)
+    );
+    const filteredInitial = INITIAL_CERTIFICATES.filter(shouldKeepCert);
+    const seenIds = new Set(customImported.map(c => c.id));
+    const nextCertificates = [
+      ...customImported,
+      ...filteredInitial.filter(c => !seenIds.has(c.id)),
+    ];
+
+    certificatesRef.current = nextCertificates;
+    setCertificates(nextCertificates);
   };
 
   // Add custom path
@@ -541,60 +559,62 @@ export default function App() {
     showToast(`${newCerts.length}개의 인증서를 로드하여 목록에 추가했습니다.`);
   };
 
+  const handleRefreshRef = useRef<(customMessage?: string, integrityVerified?: boolean, checksumText?: string) => Promise<void>>(async () => {});
+
   // Global F5 shortcut for in-app refresh
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F5') {
         e.preventDefault();
-        handleRefresh();
+        handleRefreshRef.current();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [certificates.length]);
+  }, []);
 
   // Refresh scan simulation (allows custom toast message and integrity verified badge after copy operations)
   const handleRefresh = async (customMessage?: string, integrityVerified?: boolean, checksumText?: string) => {
     setIsScanning(true);
 
-    // 1. Recalculate validity and remaining days against current time
+    // 1. Recalculate validity and remaining days against current time synchronously from latest ref
     const nowMs = Date.now();
-    setCertificates(prevCerts => {
-      return prevCerts.map(cert => {
-        try {
-          // 인증서 만료일 당일 23:59:59까지 유효성 보장 (타임존 오차 및 당일 만료 오류 방지)
-          const dateStr = cert.validTo.includes('T') ? cert.validTo : `${cert.validTo}T23:59:59`;
-          const expiryMs = new Date(dateStr).getTime();
-          if (!isNaN(expiryMs)) {
-            const diffMs = expiryMs - nowMs;
-            const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-            const status: 'valid' | 'expiring' | 'expired' =
-              diffMs < 0 ? 'expired' : days <= 30 ? 'expiring' : 'valid';
-            return {
-              ...cert,
-              daysRemaining: days,
-              status,
-            };
-          }
-        } catch {
-          // ignore
+    const nextCertificates = certificatesRef.current.map(cert => {
+      try {
+        // 인증서 만료일 당일 23:59:59까지 유효성 보장 (타임존 오차 및 당일 만료 오류 방지)
+        const dateStr = cert.validTo.includes('T') ? cert.validTo : `${cert.validTo}T23:59:59`;
+        const expiryMs = new Date(dateStr).getTime();
+        if (!isNaN(expiryMs)) {
+          const diffMs = expiryMs - nowMs;
+          const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+          const status: 'valid' | 'expiring' | 'expired' =
+            diffMs < 0 ? 'expired' : days <= 30 ? 'expiring' : 'valid';
+          return {
+            ...cert,
+            daysRemaining: days,
+            status,
+          };
         }
-        return cert;
-      });
+      } catch {
+        // ignore
+      }
+      return cert;
     });
+    certificatesRef.current = nextCertificates;
+    setCertificates(nextCertificates);
 
     // 2. Refresh search paths countFound to match active certificates
     setSearchPaths(prevPaths => {
       return prevPaths.map(p => {
         let count = p.countFound;
         if (p.type === 'default_gpki') {
-          count = certificates.filter(c => c.category === 'GPKI_GOV').length;
+          count = nextCertificates.filter(c => c.category === 'GPKI_GOV').length;
         } else if (p.type === 'default_epki') {
-          count = certificates.filter(c => c.category === 'EPKI_EDU').length;
+          count = nextCertificates.filter(c => c.category === 'EPKI_EDU').length;
         } else if (p.type === 'default_npki') {
-          count = certificates.filter(c => (c.category === 'NPKI_BANK' || c.category === 'NPKI_CORP') && isPcCertificate(c)).length;
+          count = nextCertificates.filter(c => (c.category === 'NPKI_BANK' || c.category === 'NPKI_CORP') && isPcCertificate(c)).length;
         } else if (p.type === 'removable_usb') {
-          count = certificates.filter(c => isUsbCertificate(c)).length;
+          count = nextCertificates.filter(c => isUsbCertificate(c)).length;
         }
         return { ...p, countFound: count, exists: true };
       });
@@ -612,17 +632,17 @@ export default function App() {
     // 5. User notification (with Integrity Check badge if copied)
     if (integrityVerified) {
       showToast(
-        customMessage || `⚡ 인증서 복사 및 새로고침 완료 (총 ${certificates.length}건)`,
+        customMessage || `⚡ 인증서 복사 및 새로고침 완료 (총 ${nextCertificates.length}건)`,
         undefined,
         undefined,
         {
           type: 'success',
           hasIntegrityBadge: true,
-          checksumText: checksumText || 'SHA-256 체크섬 무결성 일치'
+          checksumText: checksumText || 'SHA-256 파일 손상 검사 통과'
         }
       );
     } else {
-      showToast(customMessage || `⚡ 인증서 보관함 및 드라이브 새로고침 완료 (총 ${certificates.length}건 / 정상 동기화)`);
+      showToast(customMessage || `⚡ 목록 새로고침 완료 (${nextCertificates.length}건)`);
     }
 
     // 6. Activity log
@@ -630,12 +650,13 @@ export default function App() {
       category: 'SCAN',
       level: 'SUCCESS',
       action: '인증서 보관함 및 드라이브 새로고침',
-      details: `기본 보관함(NPKI/GPKI/EPKI) 및 연결 장치 재스캔 완료 (총 ${certificates.length}개 감지, 유효기간 재계산)`,
+      details: `기본 보관함(NPKI/GPKI/EPKI) 및 연결 장치 재스캔 완료 (총 ${nextCertificates.length}개 감지, 유효기간 재계산)`,
       source: 'C:\\Users\\Admin\\AppData\\LocalLow',
-      count: certificates.length
+      count: nextCertificates.length
     });
     setActivityLogs(prev => [newLog, ...prev]);
   };
+  handleRefreshRef.current = handleRefresh;
 
   // Selection handlers
   const handleToggleSelect = (id: string) => {
@@ -834,8 +855,8 @@ export default function App() {
       vaultArchiveLocation: `%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault\\Archives\\${item.cert.id}_encrypted_vault.zip.dat`,
       compressedSizeBytes: item.cert.files ? Math.round(((item.cert.files.certSize || 2048) + (item.cert.files.keySize || 1024)) * 0.72) : 2845,
       integrityBeforeAfter: {
-        beforeStatus: '🔒 격리 보관소 파티션 SHA-256 무결성 검증 통과 (해시 손상 없음)',
-        afterStatus: '⚡ 원본 경로 복원 완료 - signCert.der/signPri.key 개인키 Pair 검증 정상',
+        beforeStatus: '🔒 암호화 보관함 파일 손상 검사 통과 (SHA-256)',
+        afterStatus: '⚡ 원래 위치 복구 완료 (개인키 정상)',
         sha256: item.cert.files?.sha256 || 'SHA-256 VERIFIED'
       }
     }));
@@ -871,8 +892,8 @@ export default function App() {
 
     // Popup Completion Message Window for Undo Restore
     setOperationCompleteData({
-      title: '🎉 휴지통 인증서 삭제 취소(Undo) 복원 완료',
-      subtitle: `휴지통으로 이동되었던 ${restoredCerts.length}건의 인증서가 원본 보관 디렉터리로 즉시 복구되었습니다.`,
+      title: '🎉 삭제 취소 복원 완료',
+      subtitle: `삭제했던 인증서 ${restoredCerts.length}건을 원래 위치로 되돌렸습니다.`,
       operationType: 'RESTORE',
       count: restoredCerts.length,
       certNames: restoredCerts.map(c => c.name),
@@ -909,10 +930,10 @@ export default function App() {
       zipContainerName: `${item.cert.id}_encrypted_vault.zip.dat`,
       encryptedZipPath: `%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault\\Archives\\${item.cert.id}_encrypted_vault.zip.dat`,
       vaultArchiveLocation: `%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault\\Archives\\${item.cert.id}_encrypted_vault.zip.dat`,
-      compressedSizeBytes: item.cert.files?.fileSize ? Math.round(item.cert.files.fileSize * 0.72) : 2845,
+      compressedSizeBytes: item.cert.files ? Math.round(((item.cert.files.certSize || 2048) + (item.cert.files.keySize || 1024)) * 0.72) : 2845,
       integrityBeforeAfter: {
-        beforeStatus: '🔒 격리 보관소 파티션 SHA-256 무결성 검증 통과 (100% 보존)',
-        afterStatus: '⚡ 원본 경로 복원 완료 - 인증서/개인키 Pair 서명 검증 정상 동기화',
+        beforeStatus: '🔒 암호화 보관함 파일 손상 검사 통과 (SHA-256)',
+        afterStatus: '⚡ 원래 위치 복구 완료 (개인키 정상)',
         sha256: item.cert.files?.sha256 || 'SHA-256 VERIFIED'
       }
     }));
@@ -948,8 +969,8 @@ export default function App() {
 
     // Popup Completion Message Window for Trash Restore
     setOperationCompleteData({
-      title: '🎉 휴지통 인증서 원본 경로 복원 완료',
-      subtitle: `격리 보관 휴지통에 보관 중이던 ${certsToRestore.length}건의 인증서가 원래 저장 디렉터리로 성공적으로 복구되었습니다.`,
+      title: '🎉 휴지통 인증서 복원 완료',
+      subtitle: `선택한 인증서 ${certsToRestore.length}건을 원래 저장 폴더로 복원했습니다.`,
       operationType: 'RESTORE',
       count: certsToRestore.length,
       certNames: certsToRestore.map(c => c.name),
@@ -984,10 +1005,10 @@ export default function App() {
       zipContainerName: `${item.cert.id}_encrypted_vault.zip.dat`,
       encryptedZipPath: `%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault\\Archives\\${item.cert.id}_encrypted_vault.zip.dat`,
       vaultArchiveLocation: `%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault\\Archives\\${item.cert.id}_encrypted_vault.zip.dat`,
-      compressedSizeBytes: item.cert.files?.fileSize ? Math.round(item.cert.files.fileSize * 0.72) : 2845,
+      compressedSizeBytes: item.cert.files ? Math.round(((item.cert.files.certSize || 2048) + (item.cert.files.keySize || 1024)) * 0.72) : 2845,
       integrityBeforeAfter: {
-        beforeStatus: '🔒 격리 보관소 파티션 SHA-256 무결성 검증 통과 (100% 보존)',
-        afterStatus: '⚡ 원본 경로 복원 완료 - 인증서/개인키 Pair 서명 검증 정상 동기화',
+        beforeStatus: '🔒 암호화 보관함 파일 손상 검사 통과 (SHA-256)',
+        afterStatus: '⚡ 원래 위치 복구 완료 (개인키 정상)',
         sha256: item.cert.files?.sha256 || 'SHA-256 VERIFIED'
       }
     }));
@@ -1024,8 +1045,8 @@ export default function App() {
 
     // Popup Completion Message Window for Trash Restore All
     setOperationCompleteData({
-      title: '🎉 휴지통 인증서 전체 일괄 복원 완료',
-      subtitle: `격리 보관 휴지통의 모든 인증서(${count}건)가 원래 저장 디렉터리로 완벽하게 일괄 복구되었습니다.`,
+      title: '🎉 휴지통 인증서 전체 복원 완료',
+      subtitle: `휴지통의 모든 인증서(${count}건)를 원래 저장 폴더로 일괄 복원했습니다.`,
       operationType: 'RESTORE',
       count: count,
       certNames: certsToRestore.map(c => c.name),
@@ -1055,10 +1076,12 @@ export default function App() {
 
   const handleRestoreToUsbFromVault = (item: RestoredTrashItem) => {
     // 1. Check for connected removable USB drive
-    const removableDrive = availableDrives.find(d => d.type === 'removable' || d.busType === 'USB' || d.isUsb);
+    const removableDrive = availableDrives.find(
+      d => d.type === 'removable' || d.busType === 'USB' || d.deviceKind === 'fast_usb' || d.deviceKind === 'external_ssd'
+    );
 
     if (!removableDrive) {
-      showToast('⚠️ 연결된 이동식 USB 메모리를 찾을 수 없습니다. 특수 보관소의 제한 복구 기능은 부가 파일 오염을 방지하기 위해 이동식 USB 매체로만 복원할 수 있습니다. USB 메모리를 컴퓨터에 연결하신 후 다시 시도해 주세요.');
+      showToast('⚠️ 연결된 USB가 없습니다. USB를 꽂은 뒤 다시 시도해 주세요.');
       return;
     }
 
@@ -1086,9 +1109,9 @@ export default function App() {
     const newLog = logActivity({
       category: 'RESTORE',
       level: 'SUCCESS',
-      action: '특수 보관소 ➔ USB 제한 복구 완료',
-      details: `보안 보관소 [${item.cert.name}] ➔ 이동식 USB (${removableDrive.letter}) ${certSubFolder} 경로로 제한 복구 성공 (SHA-256 서명 무결성 검증 100% 통과)`,
-      source: '보호 항목 암호화 저장소 (%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault)',
+      action: '암호화 보관함 ➔ USB 복원 완료',
+      details: `보관함 [${item.cert.name}] ➔ USB (${removableDrive.letter}) ${certSubFolder} 경로로 복원 및 손상 검사(SHA-256) 통과`,
+      source: '암호화 보관함 (%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault)',
       target: targetUsbPath,
       count: 1
     });
@@ -1097,8 +1120,8 @@ export default function App() {
     // Play completion sound & show Operation Complete modal
     playSuccessChime();
     setOperationCompleteData({
-      title: '특수 보관소 ➔ USB 제한 복구 완료!',
-      subtitle: `특수 보호 보관소에 암호화 보관 중이던 [${item.cert.name}] 인증서가 이동식 USB 메모리(${removableDrive.letter} ${removableDrive.name})의 표준 인증서 경로로 제한 복구되었습니다.`,
+      title: '보관함 ➔ USB 복원 완료',
+      subtitle: `[${item.cert.name}] 인증서를 USB(${removableDrive.letter} ${removableDrive.name}) 표준 폴더로 복원했습니다.`,
       operationType: 'USB_RESTORE',
       count: 1,
       certNames: [item.cert.name],
@@ -1196,10 +1219,11 @@ export default function App() {
   const handleBackupSuccess = (record: BackupHistoryItem) => {
     setBackupHistory(prev => [record, ...prev]);
 
-    // Find copied certificates to highlight with row flash animation and sound
-    const copiedIds = certificates
-      .filter(c => record.certNames.includes(c.name) || selectedIds.includes(c.id))
-      .map(c => c.id);
+    // Find copied certificates by exact certIds first (fallback to certNames if absent)
+    const copiedCertObjects = record.certIds && record.certIds.length > 0
+      ? certificates.filter(c => record.certIds!.includes(c.id))
+      : certificates.filter(c => record.certNames.includes(c.name));
+    const copiedIds = copiedCertObjects.map(c => c.id);
     triggerCopiedHighlight(copiedIds.length > 0 ? copiedIds : selectedIds);
 
     // 대상 드라이브 보관 상태 즉시 업데이트
@@ -1220,8 +1244,8 @@ export default function App() {
       level: 'SUCCESS',
       action: '이동식 디스크(USB) 백업 완료',
       details: `${record.targetDisk}로 ${record.certificatesCount}건 복사 완료 (${record.certNames.join(', ')}) / 무결성 검증 통과`,
-      source: 'C:\\Users\\Admin\\AppData\\LocalLow',
-      target: `${record.targetDisk}\\${record.targetPath}`,
+      source: copiedCertObjects[0]?.sourceLocation || 'C:\\Users\\Admin\\AppData\\LocalLow',
+      target: record.targetPath,
       count: record.certificatesCount
     });
     setActivityLogs(prev => [newLog, ...prev]);
@@ -1233,22 +1257,17 @@ export default function App() {
       'SHA-256 해시 일치'
     );
 
-    // 전용 작업 완료 안내 팝업창(모달) 오픈
-    const copiedCertObjects = certificates.filter(
-      c => record.certNames.includes(c.name) || selectedIds.includes(c.id)
-    );
-
     setOperationCompleteData({
-      title: '인증서 복사 및 USB 백업 완료!',
-      subtitle: `선택하신 인증서 ${record.certificatesCount}개가 대상 디스크(${record.targetDisk})에 안전하게 복사되었으며, SHA-256 무결성 검증을 통과했습니다.`,
+      title: 'USB 복사 완료',
+      subtitle: `인증서 ${record.certificatesCount}건을 ${record.targetDisk}에 복사했습니다.`,
       operationType: 'PC_TO_USB',
       count: record.certificatesCount,
       certNames: record.certNames,
       targetDiskName: record.targetDisk,
-      targetPath: `${record.targetDisk}\\${record.targetPath}`,
+      targetPath: record.targetPath,
       sourcePath: copiedCertObjects[0]?.sourceLocation || 'C:\\Users\\...\\AppData\\LocalLow\\NPKI',
       timestamp: record.timestamp,
-      checksum: record.checksum || 'SHA-256 무결성 검증 통과',
+      checksum: record.checksum || 'SHA-256 파일 손상 검사 완료',
       certificates: copiedCertObjects.length > 0
         ? copiedCertObjects.map(c => ({
             name: c.name,
@@ -1308,17 +1327,17 @@ export default function App() {
     });
     setActivityLogs(prev => [newLog, ...prev]);
 
-    // 복사작업 성공 후 새로고침 자동으로 진행 및 토스트 알림에 [무결성 확인 완료] 배지 표시
+    // 복사작업 성공 후 새로고침 자동으로 진행 및 토스트 알림에 [파일 손상 없음] 배지 표시
     handleRefresh(
-      summaryMessage ? `⚡ ${summaryMessage}` : `⚡ USB ➔ PC 복사가 완료되어 인증서 목록을 새로고침했습니다 (${importedCerts.length}건 등록).`,
+      summaryMessage ? `⚡ ${summaryMessage}` : `⚡ USB ➔ PC 복사 완료 (${importedCerts.length}건)`,
       true,
-      'SHA-256 해시 일치'
+      'SHA-256 일치'
     );
 
     // 전용 작업 완료 안내 팝업창(모달) 오픈
     setOperationCompleteData({
-      title: '인증서 컴퓨터(PC) 가져오기 완료!',
-      subtitle: `USB 메모리의 인증서 ${importedCerts.length}개가 ${resolvedTargetDrive}의 공인 보관함으로 안전하게 복사되었습니다.`,
+      title: '내 컴퓨터 복사 완료',
+      subtitle: `USB 인증서 ${importedCerts.length}건을 ${resolvedTargetDrive}에 복사했습니다.`,
       operationType: 'USB_TO_PC',
       count: importedCerts.length,
       certNames: importedCerts.map(c => c.name),
@@ -1326,7 +1345,7 @@ export default function App() {
       targetPath: resolvedTargetPath,
       sourcePath: '이동식 USB 매체 (NPKI/GPKI)',
       timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      checksum: 'SHA-256 무결성 검증 통과',
+      checksum: 'SHA-256 파일 손상 검사 완료',
       certificates: importedCerts.map(c => ({
         name: c.name,
         issuer: c.issuer,
@@ -1444,7 +1463,7 @@ export default function App() {
               {toastData.hasIntegrityBadge && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[#065F46] text-[#A7F3D0] border border-[#34D399] text-[11px] font-bold">
                   <ShieldCheck className="w-3.5 h-3.5 text-[#34D399] shrink-0" />
-                  <span>무결성 확인 완료 ({toastData.checksumText || 'SHA-256'})</span>
+                  <span>파일 손상 없음 ({toastData.checksumText || 'SHA-256'})</span>
                 </span>
               )}
             </div>
@@ -1627,7 +1646,7 @@ export default function App() {
                 className="text-[11px] hidden sm:inline"
                 style={{ color: 'var(--wpf-text-secondary)' }}
               >
-                (항목 더블클릭 시 상세 규격 및 지문 조회)
+                (더블클릭: 상세 보기)
               </span>
             </div>
 
@@ -1638,7 +1657,7 @@ export default function App() {
                   onClick={() => setActiveNavTab('copy')}
                   className="wpf-btn-primary wpf-native px-3 py-1.5 text-xs cursor-pointer whitespace-nowrap"
                 >
-                  인증서 목록으로 돌아가기
+                  인증서 목록으로
                 </button>
               )}
 
@@ -1649,7 +1668,7 @@ export default function App() {
                   className="px-3 py-1.5 bg-[#D97706] hover:bg-[#B45309] text-white rounded-[6px] text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>삭제 취소(되돌리기)</span>
+                  <span>삭제 취소</span>
                 </button>
               )}
 
@@ -1659,7 +1678,7 @@ export default function App() {
                 className={`wpf-native px-3 py-1.5 text-xs flex items-center gap-1.5 rounded-[6px] cursor-pointer whitespace-nowrap ${
                   isDetailSidebarVisible ? 'wpf-btn-primary' : 'wpf-btn-secondary'
                 }`}
-                title="인증서의 모든 규격, 정책 OID, 일련번호, 지문을 확인하는 상세 사이드바를 열거나 닫습니다."
+                title="인증서 상세 정보 열기/닫기"
               >
                 <PanelRight className="w-3.5 h-3.5" />
                 <span>상세 사이드바</span>
@@ -1682,7 +1701,7 @@ export default function App() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: 'var(--wpf-accent-text)' }}>
                   <FolderSearch className="w-4 h-4" />
-                  <span>탐색 경로 관리</span>
+                  <span>찾는 위치 설정</span>
                 </span>
                 <button
                   type="button"
@@ -1858,7 +1877,9 @@ export default function App() {
         }}
       >
         <div className="flex items-center gap-2 shrink-0">
-          <span className="font-bold tabular-nums" style={{ color: 'var(--wpf-accent-text)' }}>v{APP_VERSION}</span>
+          <span className="font-bold tabular-nums" style={{ color: 'var(--wpf-accent-text)' }}>
+            v{updateInfo?.currentVersion || getEffectiveCurrentVersion()}
+          </span>
           <span
             className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[4px]"
             style={{
@@ -2050,7 +2071,7 @@ export default function App() {
         selectedCerts={certsForRenewalModal}
       />
 
-      {/* GitHub Releases Auto Update Modal */}
+      {/* Auto Self-Update Modal */}
       <UpdateModal
         isOpen={isUpdateModalOpen}
         onClose={() => {
@@ -2061,6 +2082,28 @@ export default function App() {
         }}
         updateInfo={updateInfo}
         onRecheck={handleManualCheckUpdates}
+        onUpdateInstalled={(newVersion, sha256) => {
+          setUpdateInfo(prev =>
+            prev
+              ? {
+                  ...prev,
+                  hasUpdate: false,
+                  currentVersion: newVersion,
+                  latestVersion: newVersion,
+                }
+              : prev
+          );
+          playSuccessChime();
+          showToast(`🚀 v${newVersion} 자동 다운로드 및 설치 완료!`);
+          const newLog = logActivity({
+            category: 'SYSTEM',
+            level: 'SUCCESS',
+            action: `자동 업데이트 설치 완료 (v${newVersion})`,
+            details: `앱 내 패키지 다운로드 · 파일 손상 검사(${sha256.slice(0, 16)}...) · 설치 완료`,
+            count: 1,
+          });
+          setActivityLogs(prev => [newLog, ...prev]);
+        }}
         isChecking={isCheckingUpdates}
       />
 
@@ -2071,18 +2114,21 @@ export default function App() {
         onSelectWorkflow={handleSelectWorkflow}
         dontShowAgain={dontShowStartupAgain}
         onToggleDontShowAgain={handleToggleDontShowStartupAgain}
-        validPcCerts={certificates.filter(c => isPcCertificate(c) && c.status !== 'expired')}
+        validPcCerts={certificates.filter(c => isPcCertificate(c) && !isCertificateExpired(c))}
         recentMode={activeWorkflow}
       />
 
       {/* Guided Step-by-Step Workflow Motion Overlay */}
       {(() => {
         const guidedSelectedCerts = certificates.filter(c => selectedIds.includes(c.id));
-        const guidedTargetDrive = availableDrives.find(d => d.type === 'removable' || d.busType === 'USB') || availableDrives[0];
+        const guidedTargetDrive =
+          (selectedDriveId ? availableDrives.find(d => d.id === selectedDriveId) : undefined) ||
+          availableDrives.find(d => d.type === 'removable' || d.busType === 'USB') ||
+          availableDrives[0];
         const guidedIsSelfCopy = activeWorkflow === 'pc_to_usb' && guidedTargetDrive && guidedSelectedCerts.length > 0 && guidedSelectedCerts.every(c => isSameDriveSelfCopy(c, guidedTargetDrive));
         
         const guidedPathErrorNotice = guidedIsSelfCopy
-          ? `선택한 ${guidedSelectedCerts.length}개 인증서가 모두 이미 ${guidedTargetDrive.letter} (${guidedTargetDrive.name}) 드라이브의 동일 위치에 보관 중입니다. 동일 위치 자가 복사는 제한되므로 다른 드라이브(C:, D:, 타 USB)를 선택해 주세요.`
+          ? `선택한 ${guidedSelectedCerts.length}개 인증서가 이미 ${guidedTargetDrive.letter} (${guidedTargetDrive.name}) 드라이브에 있어 같은 위치로 복사할 수 없습니다. 다른 드라이브를 선택해 주세요.`
           : null;
 
         const guidedDuplicateCount = guidedTargetDrive && guidedSelectedCerts.length > 0
@@ -2090,7 +2136,7 @@ export default function App() {
           : 0;
 
         const guidedDuplicateNotice = guidedDuplicateCount > 0
-          ? `대상 드라이브(${guidedTargetDrive.letter})에 이미 보관 중인 동일 인증서 ${guidedDuplicateCount}건이 감지되었습니다. [덮어쓰기], [건너뛰기], [기존 백업 보존] 중 선택하여 진행하세요.`
+          ? `대상 드라이브(${guidedTargetDrive.letter})에 같은 인증서 ${guidedDuplicateCount}건이 이미 있습니다. 덮어쓰기 또는 건너뛰기를 선택해 주세요.`
           : null;
 
         return (

@@ -108,7 +108,7 @@ namespace KCertManager.Wpf.Views
                 TxtSha256.Text = "파일 없음";
             }
 
-            TxtIntegrity.Text = _cert.IsPairIntegrityValid ? "인증서-개인키 쌍 정합성 일치 (무결성 통과)" : _cert.IntegrityMessage;
+            TxtIntegrity.Text = _cert.IsPairIntegrityValid ? "인증서·개인키 파일 정상 일치" : _cert.IntegrityMessage;
         }
 
         private void BtnOpenExplorer_Click(object sender, RoutedEventArgs e)

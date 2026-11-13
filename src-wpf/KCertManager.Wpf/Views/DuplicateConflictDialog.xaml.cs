@@ -35,7 +35,7 @@ namespace KCertManager.Wpf.Views
             }
 
             TxtConflictCountBadge.Text = $"{_conflicts.Count}건 감지됨";
-            TxtHeaderDesc.Text = $"대상 드라이브 [{_targetDrive?.DisplayName ?? "선택된 드라이브"}]에 원본과 동일한 인증서 폴더가 이미 존재합니다.";
+            TxtHeaderDesc.Text = $"[{_targetDrive?.DisplayName ?? "선택한 드라이브"}]에 같은 인증서가 이미 있습니다.";
             TxtTargetDriveSummary.Text = $"대상 디스크: {_targetDrive?.Name ?? ""} ({_targetDrive?.VolumeLabel ?? "이동식 디스크"})";
 
             RenderConflictCards();

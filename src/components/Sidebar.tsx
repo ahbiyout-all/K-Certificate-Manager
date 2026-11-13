@@ -110,7 +110,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             categoryFilter === 'GPKI' ? 'wpf-nav-radio-active' : ''
           }`}
         >
-          <span className="truncate">GPKI (행정전자서명)</span>
+          <span className="truncate">공무원 인증서 (GPKI)</span>
           <span
             className="tabular-nums shrink-0 ml-2"
             style={{
@@ -129,7 +129,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             categoryFilter === 'EPKI' ? 'wpf-nav-radio-active' : ''
           }`}
         >
-          <span className="truncate">EPKI (교육기관서명)</span>
+          <span className="truncate">교육기관 인증서 (EPKI)</span>
           <span
             className="tabular-nums shrink-0 ml-2"
             style={{
@@ -148,7 +148,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             categoryFilter === 'NPKI' ? 'wpf-nav-radio-active' : ''
           }`}
         >
-          <span className="truncate">NPKI (금융/공동)</span>
+          <span className="truncate">은행·공동 인증서 (NPKI)</span>
           <span
             className="tabular-nums shrink-0 ml-2"
             style={{
@@ -194,7 +194,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             style={{ color: categoryFilter === 'NON_STANDARD' ? '#FFFFFF' : '#D97706' }}
           >
             <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">비표준 위치 인증서</span>
+            <span className="truncate">다른 폴더 인증서</span>
           </span>
           <span
             className="font-bold tabular-nums shrink-0 ml-2"
@@ -211,7 +211,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className="text-[11px] font-bold px-2 pb-1.5"
           style={{ color: 'var(--wpf-text-muted)' }}
         >
-          저장 매체 구분 (USB / PC)
+          저장 위치
         </div>
 
         {/* 컴퓨터 (로컬 보관함) */}
@@ -224,7 +224,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <span className="flex items-center gap-1.5 truncate">
             <Laptop className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">컴퓨터 (로컬 보관함)</span>
+            <span className="truncate">내 컴퓨터</span>
           </span>
           <span
             className="font-semibold tabular-nums shrink-0 ml-2"
@@ -246,7 +246,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <span className="flex items-center gap-1.5 truncate">
             <HardDrive className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">USB (이동식 저장소)</span>
+            <span className="truncate">USB 메모리</span>
           </span>
           <span
             className="font-bold tabular-nums shrink-0 ml-2"
@@ -356,14 +356,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex items-center gap-1.5 mb-1">
             <ShieldCheck className="w-3.5 h-3.5 text-[#10B981] shrink-0" />
             <span className="text-[11px] font-bold text-[#10B981]">
-              로컬 샌드박스 격리
+              오프라인 로컬 보호
             </span>
           </div>
           <p
             className="text-[10px] leading-snug"
             style={{ color: 'var(--wpf-text-secondary)' }}
           >
-            인터넷 전송 없음 · 100% 로컬 암호화
+            외부 전송 없이 내 기기에서만 처리
           </p>
         </div>
 

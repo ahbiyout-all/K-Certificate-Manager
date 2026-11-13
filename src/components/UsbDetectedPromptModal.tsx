@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   HardDrive, 
   ArrowDownLeft, 
@@ -8,7 +8,9 @@ import {
   CheckCircle2, 
   Sparkles,
   Info,
-  Laptop
+  Laptop,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { DiskDrive } from '../types';
 import { UsbDetectedCert } from '../utils/usbToPcService';
@@ -28,6 +30,8 @@ export const UsbDetectedPromptModal: React.FC<UsbDetectedPromptModalProps> = ({
   detectedCerts,
   onOpenUsbToPcModal,
 }) => {
+  const [showTips, setShowTips] = useState(false);
+
   if (!isOpen || !drive || detectedCerts.length === 0) return null;
 
   const handleStartCopy = () => {
@@ -47,14 +51,14 @@ export const UsbDetectedPromptModal: React.FC<UsbDetectedPromptModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-white">
-                  인증서 포함 USB 드라이브 감지
+                  USB 인증서 감지
                 </h3>
                 <span className="text-[10px] px-2 py-0.5 bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 rounded-full font-bold">
                   자동 인식
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                {drive.letter} ({drive.name})에 보관된 인증서가 발견되었습니다.
+                {drive.letter} ({drive.name})
               </p>
             </div>
           </div>
@@ -72,14 +76,13 @@ export const UsbDetectedPromptModal: React.FC<UsbDetectedPromptModalProps> = ({
         {/* Modal Body */}
         <div className="p-6 space-y-4">
           {/* Main Action Callout Banner */}
-          <div className="p-4 bg-blue-50/80 rounded-xl border border-blue-200 text-slate-800 space-y-2">
+          <div className="p-3.5 bg-blue-50/80 rounded-xl border border-blue-200 text-slate-800 space-y-1">
             <div className="flex items-center gap-2 text-blue-900 font-bold text-sm">
               <ArrowDownLeft className="w-4 h-4 text-blue-600" />
-              <span>'컴퓨터로 인증서 복사' 작업 안내</span>
+              <span>USB 인증서 {detectedCerts.length}건 발견</span>
             </div>
-            <p className="text-xs text-blue-950 leading-relaxed">
-              연결된 USB 내에 <strong className="text-blue-700 font-bold">{detectedCerts.length}건</strong>의 공인/행정 인증서가 존재합니다. 
-              <strong> '컴퓨터로 인증서 복사'</strong>를 진행하면 PC 로컬(AppData\LocalLow)에 등록되어 USB 없이도 인터넷뱅킹 및 정부24를 바로 이용할 수 있습니다.
+            <p className="text-xs text-blue-950">
+              내 컴퓨터로 복사하면 USB를 빼도 은행·정부 사이트에서 바로 사용할 수 있습니다.
             </p>
           </div>
 
@@ -127,17 +130,26 @@ export const UsbDetectedPromptModal: React.FC<UsbDetectedPromptModalProps> = ({
             </div>
           </div>
 
-          {/* Guidance Info Box */}
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1">
-            <div className="font-semibold text-slate-800 flex items-center gap-1">
-              <Laptop className="w-3.5 h-3.5 text-slate-600" />
-              <span>작업 후 이용 안내:</span>
-            </div>
-            <ul className="list-disc list-inside space-y-0.5 text-slate-600 pl-0.5">
-              <li>인터넷뱅킹 / 홈택스 로그인 시 <strong>[하드디스크]</strong>를 선택하면 즉시 인식됩니다.</li>
-              <li>정부24 / K-에듀파인 / 온-나라에서 <strong>[공무원/교육 인증서]</strong>로 즉시 서명 가능합니다.</li>
-              <li>USB의 원본 인증서 파일은 삭제되지 않고 안전하게 유지됩니다.</li>
-            </ul>
+          {/* Collapsible Usage Tips */}
+          <div className="bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowTips(prev => !prev)}
+              className="w-full px-3 py-2 flex items-center justify-between font-semibold text-slate-800 hover:bg-slate-100/70 transition-colors cursor-pointer"
+            >
+              <span className="flex items-center gap-1.5">
+                <Laptop className="w-3.5 h-3.5 text-slate-600" />
+                <span>복사 후 이용 안내</span>
+              </span>
+              {showTips ? <ChevronDown className="w-3.5 h-3.5 text-slate-500" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-500" />}
+            </button>
+            {showTips && (
+              <ul className="list-disc list-inside space-y-0.5 text-slate-600 px-3 pb-2.5 pt-1 border-t border-slate-200/70">
+                <li>은행·홈택스 로그인 시 <strong>[하드디스크]</strong> 선택 시 바로 인식됩니다.</li>
+                <li>정부24·교육 사이트에서도 추가 설정 없이 사용 가능합니다.</li>
+                <li>USB 원본 파일은 삭제되지 않고 그대로 남습니다.</li>
+              </ul>
+            )}
           </div>
 
           {/* Footer Actions */}
@@ -147,7 +159,7 @@ export const UsbDetectedPromptModal: React.FC<UsbDetectedPromptModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
             >
-              나중에 하기
+              나중에
             </button>
 
             <button
@@ -156,7 +168,7 @@ export const UsbDetectedPromptModal: React.FC<UsbDetectedPromptModalProps> = ({
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md shadow-emerald-600/20 transition-all cursor-pointer hover:scale-[1.02]"
             >
               <ArrowDownLeft className="w-4 h-4" />
-              <span>'컴퓨터로 인증서 복사' 작업 열기</span>
+              <span>내 컴퓨터로 복사 열기</span>
             </button>
           </div>
         </div>

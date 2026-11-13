@@ -139,10 +139,10 @@ export const GuidedWorkflowOverlay: React.FC<GuidedWorkflowOverlayProps> = ({
                 <span className={`px-2 py-0.5 rounded-md font-black text-[11px] ${
                   isPcToUsb ? 'bg-blue-600 text-white' : 'bg-emerald-600 text-white'
                 }`}>
-                  {isPcToUsb ? 'PC ➔ USB 가이드 모션' : 'USB ➔ PC 가이드 모션'}
+                  {isPcToUsb ? 'PC ➔ USB 가이드' : 'USB ➔ PC 가이드'}
                 </span>
                 <span className="text-xs font-bold text-slate-300">
-                  [{currentStep}/3 단계]
+                  {currentStep}/3 단계
                 </span>
               </div>
             </div>
@@ -168,7 +168,7 @@ export const GuidedWorkflowOverlay: React.FC<GuidedWorkflowOverlayProps> = ({
                 type="button"
                 onClick={onCloseWorkflow}
                 className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors ml-2 cursor-pointer"
-                title="가이드 모션 종료"
+                title="가이드 닫기"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -187,25 +187,25 @@ export const GuidedWorkflowOverlay: React.FC<GuidedWorkflowOverlayProps> = ({
               <div>
                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
                   {isPcToUsb ? (
-                    currentStep === 1 ? '1단계: 컴퓨터 저장 인증서 선택' :
-                    currentStep === 2 ? '2단계: 백업 대상 USB 지정' :
-                    '3단계: SHA-256 무결성 안전 복사 완료'
+                    currentStep === 1 ? '1단계: 복사할 인증서 선택' :
+                    currentStep === 2 ? '2단계: 대상 USB 드라이브 선택' :
+                    '3단계: 복사 및 검사 완료'
                   ) : (
-                    currentStep === 1 ? '1단계: 연결된 USB 매체 감지' :
-                    currentStep === 2 ? '2단계: USB 내 인증서 선택' :
-                    '3단계: PC(AppData) 보관함 복사 완료'
+                    currentStep === 1 ? '1단계: 연결된 USB 확인' :
+                    currentStep === 2 ? '2단계: 가져올 인증서 선택' :
+                    '3단계: 내 컴퓨터 등록 완료'
                   )}
                 </h4>
 
                 <p className="text-xs text-slate-300 font-normal leading-relaxed mt-0.5">
                   {isPcToUsb ? (
-                    currentStep === 1 ? `목록에서 복사할 인증서를 클릭하세요 (현재 ${selectedCertCount}개 선택됨).` :
-                    currentStep === 2 ? `인증서를 저장할 이동식 USB 드라이브를 지정하세요 (연결된 USB ${availableUsbCount}개).` :
-                    '체크섬 비교를 거쳐 복사본의 무결성이 확인되었습니다.'
+                    currentStep === 1 ? `목록에서 인증서를 선택하세요 (${selectedCertCount}건 선택됨).` :
+                    currentStep === 2 ? `저장할 USB를 고르세요 (연결됨 ${availableUsbCount}개).` :
+                    '파일 손상 여부 검사까지 모두 완료했습니다.'
                   ) : (
-                    currentStep === 1 ? `PC에 연결된 USB 메모리를 자동으로 인식하고 있습니다 (${availableUsbCount}개 감지됨).` :
-                    currentStep === 2 ? 'USB 내부의 인증서를 선택하여 PC로 가져오기를 실행하세요.' :
-                    '로컬 PC의 AppData\\LocalLow\\NPKI 보관함으로 안전하게 등록되었습니다.'
+                    currentStep === 1 ? `연결된 USB를 확인하고 있습니다 (${availableUsbCount}개 감지).` :
+                    currentStep === 2 ? 'USB 안의 인증서를 골라 가져오기를 실행하세요.' :
+                    '내 컴퓨터 표준 폴더에 바로 쓸 수 있게 등록했습니다.'
                   )}
                 </p>
 

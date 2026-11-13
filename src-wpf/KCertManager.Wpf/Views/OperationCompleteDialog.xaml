@@ -38,10 +38,10 @@
                         <Border Background="#047857" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
                             <TextBlock Text="작업 완료 (SUCCESS)" FontSize="10.5" FontWeight="ExtraBold" Foreground="#A7F3D0"/>
                         </Border>
-                        <TextBlock Text="🛡️ SHA-256 데이터 무결성 검증 통과" FontSize="11" FontWeight="SemiBold" Foreground="#6EE7B7" VerticalAlignment="Center"/>
+                        <TextBlock Text="🛡️ 파일 손상 없음 확인 (SHA-256)" FontSize="11" FontWeight="SemiBold" Foreground="#6EE7B7" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <TextBlock x:Name="TxtTitle" Text="인증서 복사 및 백업 작업 완료!" FontSize="16" FontWeight="Bold" Foreground="White"/>
-                    <TextBlock x:Name="TxtSubtitle" Text="선택하신 인증서가 대상 디스크에 안전하게 복사되었으며, 파일 손상 없이 저장되었습니다." FontSize="11" Foreground="#D1FAE5" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="TxtTitle" Text="인증서 복사 완료!" FontSize="16" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock x:Name="TxtSubtitle" Text="선택한 인증서를 안전하게 복사했습니다." FontSize="11" Foreground="#D1FAE5" Margin="0,2,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
 
                 <!-- Close Button -->
@@ -81,8 +81,8 @@
                     <!-- Metric 2: Integrity -->
                     <Border Grid.Column="1" Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,6,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                         <StackPanel>
-                            <TextBlock Text="데이터 무결성" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                            <TextBlock Text="SHA-256 100% 일치" FontSize="12" FontWeight="Bold" Foreground="#60A5FA" Margin="0,5,0,0"/>
+                            <TextBlock Text="파일 검사" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBlock Text="손상 없음 (SHA-256)" FontSize="12" FontWeight="Bold" Foreground="#60A5FA" Margin="0,5,0,0"/>
                         </StackPanel>
                     </Border>
 
@@ -106,7 +106,7 @@
 
                         <!-- Source -->
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="출발지 (Source)" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBlock Text="원본 위치" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             <TextBlock x:Name="TxtSourcePath" Text="C:\Users\...\AppData\LocalLow\NPKI" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
 
@@ -115,8 +115,8 @@
 
                         <!-- Destination -->
                         <StackPanel Grid.Column="2">
-                            <TextBlock Text="도착지 (Destination)" FontSize="10" FontWeight="Bold" Foreground="#34D399"/>
-                            <TextBlock x:Name="TxtTargetPath" Text="E:\NPKI (이동식 USB)" FontSize="11" FontWeight="Bold" Foreground="#6EE7B7" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="저장 위치" FontSize="10" FontWeight="Bold" Foreground="#34D399"/>
+                            <TextBlock x:Name="TxtTargetPath" Text="E:\NPKI (USB 메모리)" FontSize="11" FontWeight="Bold" Foreground="#6EE7B7" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -136,7 +136,7 @@
                         <TextBlock Text="🔑 복사 완료된 인증서 목록" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         <TextBlock x:Name="TxtCertCountBadge" Text=" (0개)" FontSize="11.5" FontWeight="Bold" Foreground="#34D399"/>
                     </StackPanel>
-                    <TextBlock Text="signCert.der + signPri.key 페어 검증" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right"/>
+                    <TextBlock Text="인증서·개인키 (signCert·signPri) 확인" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right"/>
                 </Grid>
 
                 <ListBox x:Name="ListCertificates" Grid.Row="1"
@@ -206,17 +206,17 @@
             </Grid>
         </Border>
 
-        <!-- 4. Practical Usage Next Steps Guide Tip -->
-        <Border Grid.Row="3" Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="12,10" Margin="0,0,0,14" BorderBrush="#1D4ED8" BorderThickness="1">
-            <StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                    <TextBlock Text="💡" FontSize="12" Margin="0,0,6,0"/>
-                    <TextBlock Text="작업 완료 후 활용 가이드" FontSize="11.5" FontWeight="Bold" Foreground="#93C5FD"/>
-                </StackPanel>
-                <TextBlock x:Name="TxtGuideTip" 
-                           Text="• USB 메모리를 타 PC에 연결하여 은행 및 공공기관 로그인 시 [이동식 디스크]를 선택하시면 즉시 사용하실 수 있습니다.&#x0a;• 분리 전 윈도우 우측 하단의 '하드웨어 안전하게 제거'를 누르시면 파일 손상을 예방할 수 있습니다."
-                           FontSize="10.8" Foreground="{DynamicResource TextSecondaryBrush}" LineHeight="17" TextWrapping="Wrap"/>
-            </StackPanel>
+        <!-- 4. Practical Usage Next Steps Guide Tip (Collapsed by Default) -->
+        <Border Grid.Row="3" Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="10,8" Margin="0,0,0,14" BorderBrush="#1D4ED8" BorderThickness="1">
+            <Expander x:Name="ExpanderGuideTip" IsExpanded="False" Foreground="#93C5FD" FontSize="11.5" FontWeight="Bold" Cursor="Hand">
+                <Expander.Header>
+                    <TextBlock Text="💡 복사 후 사용 안내 보기" FontSize="11.5" FontWeight="Bold" Foreground="#93C5FD"/>
+                </Expander.Header>
+                <TextBlock x:Name="TxtGuideTip"
+                           Margin="0,8,0,2"
+                           Text="• 다른 PC에서 USB를 꽂은 뒤 [이동식 디스크]를 선택해 로그인하세요.&#x0a;• 분리 전 작업 표시줄의 '하드웨어 안전하게 제거'를 눌러 주세요."
+                           FontSize="10.8" FontWeight="Normal" Foreground="{DynamicResource TextSecondaryBrush}" LineHeight="17" TextWrapping="Wrap"/>
+            </Expander>
         </Border>
 
         <!-- 5. Bottom Action Buttons -->

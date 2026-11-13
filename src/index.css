@@ -364,95 +364,248 @@ button:active:not(:disabled) {
 /* ==========================================================================
    MODAL & SUB-PANEL THEME ADAPTATION (Preserves contrast in all legacy modals)
    Scoped away from .wpf-native elements so main shell stays 100% variable-driven
+   Uses exact [class~="..."] or trailing-slash [class*=".../"] to avoid matching -500 buttons
    ========================================================================== */
 
-[data-theme="dark"] .bg-white:not(.wpf-native),
-[data-theme="pastel-black"] .bg-white:not(.wpf-native) {
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  [class~="from-blue-50"],
+  [class*="from-blue-50/"],
+  [class*="from-blue-100"],
+  [class~="from-emerald-50"],
+  [class*="from-emerald-50/"],
+  [class*="from-emerald-100"],
+  [class~="from-slate-50"],
+  [class*="from-slate-50/"],
+  [class~="from-slate-100"],
+  [class*="from-slate-100/"]
+):not(.wpf-native) {
+  background-image: none !important;
+  background-color: #1A1F2C !important;
+  color: #F8FAFC !important;
+}
+
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .bg-white,
+  [class*="bg-white/"]
+):not(.wpf-native) {
   background-color: #1A1F2C !important;
   border-color: #2D3546 !important;
   color: #F8FAFC !important;
 }
 
-[data-theme="dark"] .bg-slate-50:not(.wpf-native),
-[data-theme="dark"] .bg-slate-100:not(.wpf-native),
-[data-theme="pastel-black"] .bg-slate-50:not(.wpf-native),
-[data-theme="pastel-black"] .bg-slate-100:not(.wpf-native) {
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .bg-slate-50,
+  [class*="bg-slate-50/"],
+  .bg-slate-100,
+  [class*="bg-slate-100/"],
+  .bg-gray-50,
+  .bg-gray-100
+):not(.wpf-native) {
   background-color: #0F1219 !important;
   color: #F8FAFC !important;
 }
 
-[data-theme="dark"] .text-slate-900:not(.wpf-native),
-[data-theme="dark"] .text-slate-800:not(.wpf-native),
-[data-theme="dark"] .text-slate-700:not(.wpf-native),
-[data-theme="dark"] .text-slate-950:not(.wpf-native),
-[data-theme="pastel-black"] .text-slate-900:not(.wpf-native),
-[data-theme="pastel-black"] .text-slate-800:not(.wpf-native),
-[data-theme="pastel-black"] .text-slate-700:not(.wpf-native),
-[data-theme="pastel-black"] .text-slate-950:not(.wpf-native) {
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .bg-slate-200,
+  [class*="bg-slate-200/"]
+):not(.wpf-native) {
+  background-color: #262E3F !important;
+  color: #E2E8F0 !important;
+}
+
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .text-slate-900,
+  .text-slate-800,
+  .text-slate-700,
+  .text-slate-950
+):not(.wpf-native) {
   color: #F8FAFC !important;
 }
 
-[data-theme="dark"] .text-slate-600:not(.wpf-native),
-[data-theme="dark"] .text-slate-500:not(.wpf-native),
-[data-theme="pastel-black"] .text-slate-600:not(.wpf-native),
-[data-theme="pastel-black"] .text-slate-500:not(.wpf-native) {
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .text-slate-600,
+  .text-slate-500
+):not(.wpf-native) {
   color: #CBD5E1 !important;
 }
 
-[data-theme="dark"] .border-slate-200:not(.wpf-native),
-[data-theme="dark"] .border-slate-100:not(.wpf-native),
-[data-theme="pastel-black"] .border-slate-200:not(.wpf-native),
-[data-theme="pastel-black"] .border-slate-100:not(.wpf-native) {
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .border-slate-300,
+  .border-slate-200,
+  [class*="border-slate-200/"],
+  .border-slate-100,
+  .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+  .divide-slate-100 > :not([hidden]) ~ :not([hidden])
+):not(.wpf-native) {
   border-color: #2D3546 !important;
 }
 
-[data-theme="dark"] input:not(.wpf-native):not([type="checkbox"]),
-[data-theme="dark"] select:not(.wpf-native),
-[data-theme="dark"] textarea:not(.wpf-native),
-[data-theme="pastel-black"] input:not(.wpf-native):not([type="checkbox"]),
-[data-theme="pastel-black"] select:not(.wpf-native),
-[data-theme="pastel-black"] textarea:not(.wpf-native) {
+:is([data-theme="dark"], [data-theme="pastel-black"]) input:not(.wpf-native):not([type="checkbox"]),
+:is([data-theme="dark"], [data-theme="pastel-black"]) select:not(.wpf-native),
+:is([data-theme="dark"], [data-theme="pastel-black"]) textarea:not(.wpf-native) {
   background-color: #0F1219 !important;
-  border-color: #2D3546 !important;
+  border-color: #334155 !important;
   color: #F8FAFC !important;
 }
 
-[data-theme="dark"] .bg-blue-50:not(.wpf-native),
-[data-theme="pastel-black"] .bg-blue-50:not(.wpf-native) {
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .bg-blue-50,
+  [class*="bg-blue-50/"],
+  .bg-blue-100,
+  [class*="bg-blue-100/"]
+):not(.wpf-native) {
   background-color: rgba(37, 99, 235, 0.22) !important;
   color: #BFDBFE !important;
   border-color: rgba(59, 130, 246, 0.45) !important;
 }
-[data-theme="dark"] .bg-emerald-50:not(.wpf-native),
-[data-theme="pastel-black"] .bg-emerald-50:not(.wpf-native) {
+
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .bg-sky-50,
+  [class*="bg-sky-50/"],
+  .bg-sky-100,
+  [class*="bg-sky-100/"]
+):not(.wpf-native) {
+  background-color: rgba(14, 165, 233, 0.22) !important;
+  color: #BAE6FD !important;
+  border-color: rgba(56, 189, 248, 0.45) !important;
+}
+
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .bg-indigo-50,
+  [class*="bg-indigo-50/"],
+  .bg-indigo-100,
+  [class*="bg-indigo-100/"]
+):not(.wpf-native) {
+  background-color: rgba(99, 102, 241, 0.22) !important;
+  color: #C7D2FE !important;
+  border-color: rgba(129, 140, 248, 0.45) !important;
+}
+
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .bg-emerald-50,
+  [class*="bg-emerald-50/"],
+  .bg-emerald-100,
+  [class*="bg-emerald-100/"]
+):not(.wpf-native) {
   background-color: rgba(16, 185, 129, 0.22) !important;
   color: #A7F3D0 !important;
   border-color: rgba(16, 185, 129, 0.45) !important;
 }
-[data-theme="dark"] .bg-amber-50:not(.wpf-native),
-[data-theme="pastel-black"] .bg-amber-50:not(.wpf-native) {
+
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .bg-amber-50,
+  [class*="bg-amber-50/"],
+  .bg-amber-100,
+  [class*="bg-amber-100/"]
+):not(.wpf-native) {
   background-color: rgba(245, 158, 11, 0.22) !important;
   color: #FDE68A !important;
   border-color: rgba(245, 158, 11, 0.45) !important;
 }
-[data-theme="dark"] .bg-rose-50:not(.wpf-native),
-[data-theme="pastel-black"] .bg-rose-50:not(.wpf-native) {
+
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .bg-orange-50,
+  [class*="bg-orange-50/"],
+  .bg-orange-100,
+  [class*="bg-orange-100/"]
+):not(.wpf-native) {
+  background-color: rgba(249, 115, 22, 0.22) !important;
+  color: #FED7AA !important;
+  border-color: rgba(251, 146, 60, 0.45) !important;
+}
+
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .bg-rose-50,
+  [class*="bg-rose-50/"],
+  .bg-rose-100,
+  [class*="bg-rose-100/"]
+):not(.wpf-native) {
   background-color: rgba(244, 63, 94, 0.22) !important;
   color: #FECDD3 !important;
   border-color: rgba(244, 63, 94, 0.45) !important;
 }
 
-[data-theme="dark"] .text-blue-900:not(.wpf-native), [data-theme="dark"] .text-blue-800:not(.wpf-native), [data-theme="dark"] .text-blue-700:not(.wpf-native) {
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .bg-purple-50,
+  [class*="bg-purple-50/"],
+  .bg-purple-100,
+  [class*="bg-purple-100/"]
+):not(.wpf-native) {
+  background-color: rgba(168, 85, 247, 0.22) !important;
+  color: #E9D5FF !important;
+  border-color: rgba(192, 132, 252, 0.45) !important;
+}
+
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .text-blue-950,
+  .text-blue-900,
+  .text-blue-800,
+  .text-blue-700
+):not(.wpf-native) {
   color: #BFDBFE !important;
 }
-[data-theme="dark"] .text-emerald-900:not(.wpf-native), [data-theme="dark"] .text-emerald-800:not(.wpf-native), [data-theme="dark"] .text-emerald-700:not(.wpf-native) {
+
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .text-sky-950,
+  .text-sky-900,
+  .text-sky-800,
+  .text-sky-700
+):not(.wpf-native) {
+  color: #BAE6FD !important;
+}
+
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .text-indigo-950,
+  .text-indigo-900,
+  .text-indigo-800,
+  .text-indigo-700
+):not(.wpf-native) {
+  color: #C7D2FE !important;
+}
+
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .text-emerald-950,
+  .text-emerald-900,
+  .text-emerald-800,
+  .text-emerald-700
+):not(.wpf-native) {
   color: #A7F3D0 !important;
 }
-[data-theme="dark"] .text-amber-900:not(.wpf-native), [data-theme="dark"] .text-amber-800:not(.wpf-native), [data-theme="dark"] .text-amber-700:not(.wpf-native) {
+
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .text-amber-950,
+  .text-amber-900,
+  .text-amber-800,
+  .text-amber-700
+):not(.wpf-native) {
   color: #FDE68A !important;
 }
-[data-theme="dark"] .text-rose-900:not(.wpf-native), [data-theme="dark"] .text-rose-800:not(.wpf-native), [data-theme="dark"] .text-rose-700:not(.wpf-native) {
+
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .text-orange-950,
+  .text-orange-900,
+  .text-orange-800,
+  .text-orange-700
+):not(.wpf-native) {
+  color: #FED7AA !important;
+}
+
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .text-rose-950,
+  .text-rose-900,
+  .text-rose-800,
+  .text-rose-700
+):not(.wpf-native) {
   color: #FECDD3 !important;
+}
+
+:is([data-theme="dark"], [data-theme="pastel-black"]) :is(
+  .text-purple-950,
+  .text-purple-900,
+  .text-purple-800,
+  .text-purple-700
+):not(.wpf-native) {
+  color: #E9D5FF !important;
 }
 
 /* Explicit Light/Beige/Gray Select Option Readability */
@@ -461,3 +614,4 @@ button:active:not(:disabled) {
   background-color: #1A1F2C;
   color: #F8FAFC;
 }
+

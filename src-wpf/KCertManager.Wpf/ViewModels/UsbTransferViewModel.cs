@@ -146,7 +146,7 @@ namespace KCertManager.Wpf.ViewModels
                 if (!HasUsbDrives)
                 {
                     SelectedSourceDrive = null;
-                    StatusMessage = "연결된 USB 이동식 드라이브가 없습니다. USB 메모리를 PC에 연결한 후 [🔄 드라이브 갱신]을 눌러주세요.";
+                    StatusMessage = "연결된 USB가 없습니다. USB를 꽂은 뒤 [🔄 새로고침]을 눌러주세요.";
                     FoundUsbCertificates.Clear();
                     (ScanDriveCommand as RelayCommand)?.RaiseCanExecuteChanged();
                     (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
@@ -281,11 +281,11 @@ namespace KCertManager.Wpf.ViewModels
                         FoundUsbCertificates = new ObservableCollection<CertificateItem>(validCerts);
                         if (FoundUsbCertificates.Count == 0)
                         {
-                            StatusMessage = $"{driveRoot} 드라이브에 복사 가능한 인증서(NPKI, GPKI, EPKI)가 없습니다.";
+                            StatusMessage = $"{driveRoot}에서 인증서(NPKI·GPKI·EPKI)를 찾지 못했습니다.";
                         }
                         else
                         {
-                            StatusMessage = $"{driveRoot} 드라이브에서 총 {FoundUsbCertificates.Count}건의 인증서가 감지되었습니다. '내 PC로 가져오기 시작'을 클릭하세요.";
+                            StatusMessage = $"{driveRoot}에서 인증서 {FoundUsbCertificates.Count}건을 찾았습니다. [가져오기 시작]을 눌러주세요.";
                         }
                         (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
                     }));
@@ -365,8 +365,8 @@ namespace KCertManager.Wpf.ViewModels
             {
                 try { System.Media.SystemSounds.Hand.Play(); } catch { }
                 MessageBox.Show(
-                    $"[자가 복사 금지 / 복사 경로 오류]\n\n선택한 모든 인증서가 이미 대상 컴퓨터 로컬 저장소({selectedDriveShort} AppData\\LocalLow 또는 {selectedDriveShort}\\GPKI)의 동일한 위치에 보관 중인 원본입니다.\n\n동일한 위치로는 자가 복사를 수행할 수 없으니, 다른 인증서나 목적지 드라이브를 선택해 주세요.",
-                    "복사 경로 오류 - 자가 복사 차단 안내",
+                    $"선택한 인증서가 이미 내 컴퓨터({selectedDriveShort})의 같은 폴더에 있습니다.\n\n다른 인증서나 저장 위치를 선택해 주세요.",
+                    "같은 위치 복사 불가",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;
@@ -466,21 +466,21 @@ namespace KCertManager.Wpf.ViewModels
                 string epkiDisplayPath = Path.Combine(localLowTargetRoot, "EPKI");
                 string npkiDisplayPath = Path.Combine(localLowTargetRoot, "NPKI");
 
-                string destCategoryName = isAnyGpki ? "GPKI (행정전자서명)" : (isAnyEpki ? "EPKI (교육전자서명)" : "NPKI (금융/공동인증서)");
+                string destCategoryName = isAnyGpki ? "공무원 인증서 (GPKI)" : (isAnyEpki ? "교육기관 인증서 (EPKI)" : "은행·공동 인증서 (NPKI)");
                 string destLocationText = isAnyGpki
-                    ? $"정부 표준 공식 보관함({gpkiDisplayPath})"
-                    : (isAnyEpki ? $"교육부 표준 보관함({epkiDisplayPath})" : $"금융 표준 보관함({npkiDisplayPath})");
+                    ? $"표준 폴더({gpkiDisplayPath})"
+                    : (isAnyEpki ? $"표준 폴더({epkiDisplayPath})" : $"표준 폴더({npkiDisplayPath})");
 
-                string subtitle = $"선택하신 인증서 {success}개가 내 컴퓨터({selectedDriveShort})의 {destCategoryName} {destLocationText}으로 성공적으로 복사되었습니다.";
+                string subtitle = $"내 컴퓨터({selectedDriveShort})의 {destCategoryName} {destLocationText}에 인증서 {success}개를 가져왔습니다.";
 
                 string guideTip = isAnyGpki
-                    ? $"• 공무원/행정 전자서명(GPKI) 표준 폴더({gpkiDisplayPath})에 정상 안착되었습니다.\n• 행정안전부 온-나라, 정부24, 시도/새올 행정시스템에서 즉시 로그인하실 수 있습니다.\n• 메인 화면의 인증서 목록이 자동으로 새로고침되었습니다."
+                    ? $"• 표준 폴더({gpkiDisplayPath})에 저장되었습니다.\n• 정부24·온-나라 등 행정 사이트에서 바로 로그인할 수 있습니다."
                     : (isAnyEpki
-                        ? $"• 교육부/나이스 전자서명(EPKI) 표준 폴더({epkiDisplayPath})에 정상 안착되었습니다.\n• 나이스(NEIS), K-에듀파인 등 교육 포털에서 즉시 로그인하실 수 있습니다.\n• 메인 화면의 인증서 목록이 자동으로 새로고침되었습니다."
-                        : $"• 내 컴퓨터({selectedDriveShort}) 보관함({npkiDisplayPath})에 정상 안착되었습니다.\n• 웹 브라우저나 금융 프로그램에서 [하드디스크]를 선택하시면 바로 로그인하실 수 있습니다.\n• 메인 화면의 인증서 목록이 자동으로 새로고침되었습니다.");
+                        ? $"• 표준 폴더({epkiDisplayPath})에 저장되었습니다.\n• 나이스(NEIS)·K-에듀파인에서 바로 로그인할 수 있습니다."
+                        : $"• 내 컴퓨터({selectedDriveShort}) 표준 폴더({npkiDisplayPath})에 저장되었습니다.\n• 은행·공공 사이트에서 [하드디스크]를 선택해 바로 로그인하세요.");
 
                 UserFriendlyMessageHelper.ShowOperationComplete(
-                    "인증서 PC 가져오기 완료!",
+                    "내 컴퓨터로 가져오기 완료!",
                     subtitle,
                     success,
                     sourcePath,
@@ -491,9 +491,9 @@ namespace KCertManager.Wpf.ViewModels
             else
             {
                 UserFriendlyMessageHelper.ShowWarning(
-                    $"인증서 {selected.Count}개 중 {success}개 성공, {selected.Count - success}개 실패하였습니다.\n\n인증서 목록이 자동으로 새로고침되었습니다.",
-                    "인증서 가져오기 결과 안내",
-                    $"• PC 로컬 저장소({selectedDriveShort} AppData\\LocalLow 또는 {selectedDriveShort}\\GPKI)의 쓰기 권한을 확인해 주세요.\n• 관리자 권한으로 프로그램을 실행해 보세요.");
+                    $"인증서 {selected.Count}개 중 {success}개 성공, {selected.Count - success}개 실패했습니다.",
+                    "가져오기 결과 안내",
+                    $"• PC 저장 폴더({selectedDriveShort})에 쓰기 권한이 있는지 확인하세요.\n• 필요하면 관리자 권한으로 프로그램을 다시 실행하세요.");
             }
         }
     }

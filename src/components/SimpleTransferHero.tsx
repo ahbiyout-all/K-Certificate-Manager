@@ -113,7 +113,7 @@ export const SimpleTransferHero: React.FC<SimpleTransferHeroProps> = ({
             onStartBackup();
           }}
           className="wpf-btn-success wpf-native px-3.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-          title="전체 인증서를 선택된 대상 드라이브로 즉시 원클릭 일괄 복사합니다."
+          title="모든 인증서를 선택 드라이브로 바로 복사"
         >
           <Zap className="w-3.5 h-3.5" />
           <span>원클릭 전체 복사</span>
@@ -123,7 +123,7 @@ export const SimpleTransferHero: React.FC<SimpleTransferHeroProps> = ({
           type="button"
           onClick={onOpenUsbToPcModal}
           className="wpf-btn-secondary wpf-native px-3.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-          title="USB에 있는 인증서를 PC로 안전하게 복사해 넣습니다."
+          title="USB 인증서를 내 컴퓨터로 복사"
         >
           <Download className="w-3.5 h-3.5 text-[#10B981]" />
           <span className="font-semibold text-[#10B981]">USB ➔ PC 넣기</span>

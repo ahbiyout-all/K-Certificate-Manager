@@ -184,8 +184,8 @@
                                 <ColumnDefinition Width="130"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="키 쌍 무결성 검증" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
-                            <TextBlock Grid.Column="1" x:Name="TxtIntegrity" Text="인증서-개인키 쌍 정합성 일치 (무결성 통과)" Foreground="#34D399" FontWeight="SemiBold" FontSize="12"/>
+                            <TextBlock Text="파일 손상 검사" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                            <TextBlock Grid.Column="1" x:Name="TxtIntegrity" Text="인증서·개인키 파일 정상 일치" Foreground="#34D399" FontWeight="SemiBold" FontSize="12"/>
                         </Grid>
                     </StackPanel>
                 </Border>

@@ -59,48 +59,48 @@ export const CopyErrorAlertModal: React.FC<CopyErrorAlertModalProps> = ({
     switch (category) {
       case 'WRITE_PROTECTED':
         return {
-          badge: '쓰기 금지 (Write-Protected)',
+          badge: '쓰기 금지',
           badgeColor: 'bg-rose-100 text-rose-800 border-rose-300',
           headerBg: 'from-rose-600 via-rose-700 to-rose-900',
           icon: <Lock className="w-6 h-6 text-white" />,
-          title: 'USB 드라이브 쓰기 금지(Lock) 보호 감지',
-          sub: 'USB 메모리가 물리적 스위치 또는 보안 정책에 의해 잠겨 있어 인증서를 저장할 수 없습니다.',
+          title: 'USB 쓰기 금지 감지',
+          sub: '잠금 스위치나 보안 정책으로 저장이 차단되었습니다.',
         };
       case 'PERMISSION_DENIED':
         return {
-          badge: '접근 권한 거부 (Permission Denied)',
+          badge: '권한 부족',
           badgeColor: 'bg-amber-100 text-amber-900 border-amber-300',
           headerBg: 'from-amber-600 via-amber-700 to-red-800',
           icon: <ShieldAlert className="w-6 h-6 text-white" />,
-          title: '드라이브/폴더 파일 쓰기 권한 부족',
-          sub: '브라우저 보안 샌드박스 또는 시스템 권한으로 인해 해당 폴더에 파일 생성이 차단되었습니다.',
+          title: '폴더 쓰기 권한 없음',
+          sub: '브라우저 또는 시스템 권한으로 파일 생성이 차단되었습니다.',
         };
       case 'DISK_FULL':
         return {
-          badge: '저장 공간 부족 (Disk Full)',
+          badge: '용량 부족',
           badgeColor: 'bg-orange-100 text-orange-900 border-orange-300',
           headerBg: 'from-orange-600 via-amber-700 to-rose-800',
           icon: <HardDrive className="w-6 h-6 text-white" />,
-          title: '대상 디스크 저장 공간 부족',
-          sub: '대상 드라이브의 남은 용량이 부족하여 인증서 파일(signCert.der / signPri.key)을 기록하지 못했습니다.',
+          title: '저장 공간 부족',
+          sub: '대상 드라이브의 남은 용량이 부족합니다.',
         };
       case 'DISCONNECTED':
         return {
-          badge: '장치 통신 단절 (I/O Error)',
+          badge: '연결 끊김',
           badgeColor: 'bg-rose-100 text-rose-900 border-rose-300',
           headerBg: 'from-red-600 via-rose-700 to-slate-900',
           icon: <AlertOctagon className="w-6 h-6 text-white" />,
-          title: 'USB 메모리 연결 해제 및 I/O 장치 오류',
-          sub: '인증서 복사 작업 도중 USB 메모리 통신이 일시적으로 끊겼거나 하드웨어 접촉 불량이 발생했습니다.',
+          title: 'USB 연결이 끊어짐',
+          sub: '복사 중 USB 연결이 해제되었거나 접촉이 불안정합니다.',
         };
       default:
         return {
-          badge: '쓰기 오류 (Write Error)',
+          badge: '쓰기 오류',
           badgeColor: 'bg-rose-100 text-rose-900 border-rose-300',
           headerBg: 'from-rose-700 via-red-800 to-slate-900',
           icon: <AlertOctagon className="w-6 h-6 text-white" />,
-          title: errorInfo.title || '인증서 복사 중 드라이브 쓰기 오류 발생',
-          sub: errorInfo.summary || '인증서 파일을 대상 드라이브에 저장하는 도중 오류가 발생하여 복사가 중단되었습니다.',
+          title: errorInfo.title || '인증서 복사 오류',
+          sub: errorInfo.summary || '파일 저장 중 오류가 발생해 복사가 중단되었습니다.',
         };
     }
   };
@@ -210,7 +210,7 @@ export const CopyErrorAlertModal: React.FC<CopyErrorAlertModalProps> = ({
             <div className="flex items-center justify-between">
               <h4 className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-2">
                 <Wrench className="w-4 h-4 text-blue-600" />
-                <span>권장 해결 조치 방법 (아래 항목을 확인 후 다시 시도하세요):</span>
+                <span>해결 방법</span>
               </h4>
             </div>
 
@@ -292,7 +292,7 @@ export const CopyErrorAlertModal: React.FC<CopyErrorAlertModalProps> = ({
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
           <div className="text-[11px] text-slate-500 flex items-center gap-1.5 self-start sm:self-auto">
             <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
-            <span>원인을 해결한 후 아래 [다시 시도]를 누르시면 이어서 복사됩니다.</span>
+            <span>해결 후 [다시 시도]를 눌러주세요.</span>
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">

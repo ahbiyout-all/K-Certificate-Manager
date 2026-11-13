@@ -27,8 +27,8 @@
                 </Border>
 
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="백업 이력 및 SHA-256 무결성 검증" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <TextBlock Text="USB 및 외장 드라이브로 복사된 인증서의 전송 상태와 원본 대비 해시 일치 여부를 추적합니다." FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                    <TextBlock Text="백업 이력 및 파일 손상 검사" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <TextBlock Text="USB 등으로 복사한 내역과 파일 손상 검사(SHA-256) 결과를 확인합니다." FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                 </StackPanel>
 
                 <Button Grid.Column="2" Content="🧹 이력 지우기" Style="{StaticResource SecondaryButton}" Click="BtnClearHistory_Click" VerticalAlignment="Center"/>

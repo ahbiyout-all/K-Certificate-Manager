@@ -415,7 +415,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
               />
               <input
                 type="text"
-                placeholder="인증서 명칭(CN), 발급기관, 경로, 일련번호 검색..."
+                placeholder="인증서 이름, 발급기관, 경로 검색..."
                 value={searchQuery}
                 onChange={(e) => onSearchQueryChange(e.target.value)}
                 className="wpf-native w-full h-8 pl-8 pr-7 rounded-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
@@ -590,10 +590,10 @@ export const CertificateList: React.FC<CertificateListProps> = ({
             <div className="py-16 text-center px-4">
               <FileKey className="w-11 h-11 mx-auto mb-3 opacity-50" style={{ color: 'var(--wpf-text-muted)' }} />
               <h3 className="text-sm font-bold" style={{ color: 'var(--wpf-text-primary)' }}>
-                조건에 일치하는 인증서가 없습니다.
+                표시할 인증서가 없습니다.
               </h3>
               <p className="text-xs mt-1" style={{ color: 'var(--wpf-text-secondary)' }}>
-                좌측 카테고리 필터를 변경하거나 검색어를 초기화해 주세요.
+                분류나 검색어를 변경해 보세요.
               </p>
             </div>
           ) : viewMode === 'grid' ? (
@@ -730,7 +730,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                           <span aria-hidden="true">·</span>
                           <span className="inline-flex items-center gap-1 font-medium text-[#10B981]">
                             <KeyRound className="w-3 h-3 shrink-0" />
-                            <span>비밀키 보유</span>
+                            <span>개인키 보유</span>
                           </span>
                           {isNonStandard && (
                             <>
@@ -816,7 +816,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                         type="button"
                         onClick={() => onQuickBackupSingle(cert)}
                         className="wpf-btn-primary wpf-native flex-1 px-3 py-1.5 text-[11.5px] inline-flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
-                        title="이 인증서만 복사 대상 디스크를 지정하여 복사합니다."
+                        title="이 인증서 복사"
                       >
                         <Save className="w-3.5 h-3.5" />
                         <span>복사</span>
@@ -826,7 +826,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                         type="button"
                         onClick={() => onOpenDetailModal(cert)}
                         className="wpf-btn-secondary wpf-native flex-1 px-3 py-1.5 text-[11.5px] inline-flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
-                        title="인증서 전문 규격 팝업 보기"
+                        title="자세한 정보 보기"
                       >
                         <Search className="w-3.5 h-3.5" />
                         <span>상세</span>
@@ -1020,7 +1020,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                     {renderColResizer('status')}
                   </th>
 
-                  {/* 9. 비밀키 */}
+                  {/* 9. 개인키 */}
                   <th
                     style={{
                       width: `${colWidths.privateKey}px`,
@@ -1028,7 +1028,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                     }}
                     className={`${thPadding} text-center font-semibold relative`}
                   >
-                    비밀키
+                    개인키
                     {renderColResizer('privateKey')}
                   </th>
 

@@ -41,7 +41,7 @@ namespace KCertManager.Wpf.Views
 
         public MediumTarget CurrentTarget { get; private set; } = MediumTarget.Desktop;
         public List<CertificateItem> SelectedCertificates { get; private set; } = new();
-        public string SelectedMediumName { get; private set; } = "컴퓨터(PC) 로컬";
+        public string SelectedMediumName { get; private set; } = "내 컴퓨터(PC)";
 
         public ExpiredCleanupDialog(List<CertificateItem> expiredCertificates)
         {
@@ -101,24 +101,24 @@ namespace KCertManager.Wpf.Views
                 if (target == MediumTarget.Desktop)
                 {
                     currentList = _desktopExpired;
-                    SelectedMediumName = "컴퓨터(PC) 로컬";
-                    if (TxtSafetyNotice != null) TxtSafetyNotice.Text = "🛡️ [실수 방지 보호 활성화] 데스크탑(PC) 로컬의 만료 인증서만 정리 대상으로 지정되었습니다. 연결된 USB 드라이브의 모든 인증서는 안전하게 보호됩니다.";
+                    SelectedMediumName = "내 컴퓨터(PC)";
+                    if (TxtSafetyNotice != null) TxtSafetyNotice.Text = "🛡️ 내 컴퓨터(PC)의 만료 인증서만 정리합니다. USB 인증서는 유지됩니다.";
                     if (BorderAlert != null) BorderAlert.BorderBrush = DesktopAlertBorder;
                     if (TxtSafetyNotice != null) TxtSafetyNotice.Foreground = (Brush)Application.Current.FindResource("AccentTextBrush") ?? DesktopAlertText;
                 }
                 else if (target == MediumTarget.Usb)
                 {
                     currentList = _usbExpired;
-                    SelectedMediumName = "USB 이동식";
-                    if (TxtSafetyNotice != null) TxtSafetyNotice.Text = "🛡️ [실수 방지 보호 활성화] USB 이동식 드라이브의 만료 인증서만 정리 대상으로 지정되었습니다. 컴퓨터(PC) 로컬의 모든 인증서는 안전하게 보호됩니다.";
+                    SelectedMediumName = "USB 메모리";
+                    if (TxtSafetyNotice != null) TxtSafetyNotice.Text = "🛡️ USB 메모리의 만료 인증서만 정리합니다. PC 인증서는 유지됩니다.";
                     if (BorderAlert != null) BorderAlert.BorderBrush = UsbAlertBorder;
                     if (TxtSafetyNotice != null) TxtSafetyNotice.Foreground = isDark ? UsbAlertText : new SolidColorBrush(Color.FromRgb(0x04, 0x78, 0x57));
                 }
                 else
                 {
                     currentList = _allExpired;
-                    SelectedMediumName = "전체 매체(PC + USB)";
-                    if (TxtSafetyNotice != null) TxtSafetyNotice.Text = "⚠️ [주의] 컴퓨터(PC) 및 USB 이동식 디스크 모두의 만료 인증서가 일괄 정리됩니다. 특정 매체만 정리하려면 상단 카드를 선택해 주세요.";
+                    SelectedMediumName = "PC · USB 모두";
+                    if (TxtSafetyNotice != null) TxtSafetyNotice.Text = "⚠️ PC와 USB의 만료 인증서를 모두 정리합니다. 한쪽만 정리하려면 위 카드를 선택하세요.";
                     if (BorderAlert != null) BorderAlert.BorderBrush = AllAlertBorder;
                     if (TxtSafetyNotice != null) TxtSafetyNotice.Foreground = isDark ? AllAlertText : new SolidColorBrush(Color.FromRgb(0xB4, 0x53, 0x09));
                 }

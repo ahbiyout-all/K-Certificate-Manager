@@ -244,13 +244,13 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                <span>인증서 안전 영구 삭제 및 정리</span>
+                <span>인증서 정리 및 삭제</span>
                 <span className="text-[11px] font-semibold px-2 py-0.5 bg-rose-100 text-rose-700 rounded-full">
-                  로컬 파일 영구 제거
+                  휴지통 이동
                 </span>
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                불필요한 만료 인증서 및 공용 PC에 남아있는 타인의 인증서를 안전하게 정리합니다.
+                만료된 인증서나 공용 PC의 타인 인증서를 안전하게 정리합니다.
               </p>
             </div>
           </div>
@@ -319,10 +319,10 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-800 flex items-center gap-1.5">
                   <HardDrive className="w-4 h-4 text-blue-600" />
-                  <span>정리 대상 저장 매체 선택:</span>
+                  <span>정리할 저장 위치:</span>
                 </span>
                 <span className="text-[11px] text-slate-500">
-                  컴퓨터 또는 USB 드라이브를 구분하여 개별/일괄 정리할 수 있습니다.
+                  컴퓨터·USB를 구분해 안전하게 정리합니다.
                 </span>
               </div>
 
@@ -386,7 +386,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
                 <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
                   <span>
-                    <strong>실수 방지 보호 활성화:</strong> [컴퓨터(PC) 로컬]의 인증서만 대상입니다. <strong>연결된 USB 드라이브의 인증서는 절대 삭제되지 않고 안전하게 보존</strong>됩니다.
+                    <strong>USB 보호됨:</strong> 내 컴퓨터 인증서만 정리하며 USB 파일은 건드리지 않습니다.
                   </span>
                 </div>
               )}
@@ -394,7 +394,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
                 <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-900 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>
-                    <strong>실수 방지 보호 활성화:</strong> [USB 이동식]의 인증서만 대상입니다. <strong>컴퓨터(PC) 로컬의 모든 인증서는 절대 삭제되지 않고 안전하게 보존</strong>됩니다.
+                    <strong>PC 보호됨:</strong> USB 인증서만 정리하며 내 컴퓨터 파일은 건드리지 않습니다.
                   </span>
                 </div>
               )}
@@ -402,7 +402,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
                 <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                   <span>
-                    <strong>전체 매체 선택됨:</strong> 컴퓨터(PC) 및 USB의 인증서가 모두 포함됩니다. 실수 방지를 원하시면 위의 [컴퓨터만] 또는 [USB만]을 선택해 주세요.
+                    <strong>전체 대상:</strong> 컴퓨터·USB가 모두 포함됩니다. 한쪽만 정리하려면 위 버튼을 누르세요.
                   </span>
                 </div>
               )}
@@ -411,35 +411,29 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
 
           {/* Tab Description & Context */}
           {activeTab === 'EXPIRED' && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 flex items-start gap-3">
-              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div className="leading-relaxed">
-                <span className="font-bold">유효기간이 만료된 구형 인증서 정리</span>
-                <p className="text-amber-800 mt-0.5">
-                  만료된 인증서는 전자금융거래 및 공문서 서명이 불가능합니다. 상단에서 <strong>[컴퓨터만]</strong> 또는 <strong>[USB 이동식만]</strong>을 선택하여 원하는 매체의 만료 인증서만 안전하게 분리 정리할 수 있습니다.
-                </p>
-              </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 flex items-center gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                <strong>만료된 인증서:</strong> 서명·금융에 쓸 수 없는 구형 인증서를 매체별로 정리합니다.
+              </span>
             </div>
           )}
 
           {activeTab === 'OTHER_USERS' && (
             <div className="space-y-3">
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 text-xs text-blue-950 flex items-start gap-3">
-                <UserCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                <div className="leading-relaxed">
-                  <span className="font-bold">내 인증서 보존 및 타인 인증서 정리</span>
-                  <p className="text-blue-800 mt-0.5">
-                    공용 PC 또는 USB에 남아있는 <strong>다른 사용자의 인증서만 선별하여 정리</strong>합니다.
-                  </p>
-                </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-950 flex items-center gap-2.5">
+                <UserCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>
+                  <strong>타인 인증서 정리:</strong> 선택한 내 이름의 인증서는 제외하고 나머지만 정리합니다.
+                </span>
               </div>
 
               {/* Selector for "My User Name" */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
                 <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                  <span>보존할 [내 인증서 / 본인 이름] 선택</span>
+                  <span>남길 내 이름 선택</span>
                   <span className="text-[11px] font-normal text-slate-500">
-                    * 이 사용자의 인증서는 절대 삭제되지 않습니다
+                    * 선택한 사용자 인증서는 유지됨
                   </span>
                 </label>
                 <select
@@ -458,14 +452,11 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
           )}
 
           {activeTab === 'SINGLE' && singleCert && (
-            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3.5 text-xs text-rose-900 flex items-start gap-3">
-              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <div className="leading-relaxed">
-                <span className="font-bold">선택한 인증서 1건 영구 삭제</span>
-                <p className="text-rose-800 mt-0.5">
-                  아래 인증서 파일 및 개인키 파일이 디스크에서 완전히 삭제됩니다. 삭제 전 백업 여부를 반드시 확인하세요.
-                </p>
-              </div>
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-xs text-rose-900 flex items-center gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>
+                <strong>인증서 1건 삭제:</strong> 선택한 인증서를 휴지통으로 옮깁니다.
+              </span>
             </div>
           )}
 
@@ -473,7 +464,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
           <div className="border border-slate-200 rounded-xl overflow-hidden">
             <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between text-xs">
               <span className="font-bold text-slate-700">
-                삭제 대상 인증서 목록 ({currentTargetCerts.length}개 중 {checkedIds.length}개 선택됨)
+                삭제 대상 인증서 목록 ({currentTargetCerts.length}개 중 {effectiveCheckedIds.length}개 선택됨)
               </span>
 
               {currentTargetCerts.length > 1 && (
@@ -526,7 +517,9 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
                       <input
                         type="checkbox"
                         checked={isChecked}
-                        onChange={() => {}} // handled by row click
+                        onChange={() => toggleCheck(cert.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label={`${cert.name} 선택`}
                         className="mt-1 w-4 h-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
                       />
 
@@ -537,7 +530,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
                           <span className="text-[11px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200">
                             {cert.category === 'GPKI_GOV' ? '공무원 GPKI' : cert.category === 'EPKI_EDU' ? '교육 EPKI' : '금융 NPKI'}
                           </span>
-                          {cert.status === 'expired' && (
+                          {isCertificateExpired(cert) && (
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-100 text-rose-700 font-bold">
                               만료됨 ({cert.validTo})
                             </span>
@@ -576,10 +569,10 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-600 space-y-2">
               <div className="flex items-center gap-2 font-bold text-slate-800">
                 <ShieldAlert className="w-4 h-4 text-rose-600" />
-                <span>삭제 및 임시 보관 안내</span>
+                <span>휴지통 안전 보관 안내</span>
               </div>
               <p className="leading-relaxed">
-                인증서 공개키(`signCert.der`) 및 비밀키(`signPri.key`)가 활성 목록에서 삭제 처리됩니다. 실수로 삭제한 경우라도 <strong className="text-slate-800">[인증서 휴지통]</strong> 및 알림의 <strong className="text-slate-800">[실행 취소(Undo)]</strong> 버튼을 통해 언제든지 원래 위치로 안전하게 복원할 수 있습니다.
+                삭제해도 <strong className="text-slate-800">[인증서 휴지통]</strong>과 <strong className="text-slate-800">[실행 취소]</strong>로 언제든 원래 위치로 복원할 수 있습니다.
               </p>
 
               <label className="flex items-center gap-2 pt-1.5 border-t border-slate-200 cursor-pointer select-none">
@@ -590,9 +583,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
                   className="w-4 h-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
                 />
                 <span className="font-semibold text-slate-800">
-                  위 내용을 확인하였으며, [
-                  {storageFilter === 'LOCAL' ? '컴퓨터(PC) 로컬' : storageFilter === 'REMOVABLE' ? 'USB 이동식' : '전체 매체'}
-                  ]에서 선택한 {effectiveCheckedIds.length}건의 인증서를 안전 휴지통으로 이동(정리)하는 것에 동의합니다.
+                  선택한 {effectiveCheckedIds.length}건을 휴지통으로 이동하는 데 동의합니다.
                 </span>
               </label>
             </div>

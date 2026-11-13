@@ -32,7 +32,7 @@
                 </Border>
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="K-Certificate Manager (K-인증서 매니저)" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <TextBlock Text="C# WPF MVVM Desktop Edition v2.0.0 · .NET 10.0 / .NET 8.0 · 한국어 / English 2종 라이선스" FontSize="11.5" Foreground="{DynamicResource AccentTextBrush}"/>
+                    <TextBlock Text="Desktop Edition v2.0.0 · .NET 10.0 / .NET 8.0 · 한·영 라이선스" FontSize="11.5" Foreground="{DynamicResource AccentTextBrush}"/>
                 </StackPanel>
             </StackPanel>
 
@@ -144,7 +144,7 @@
 
         <!-- Bottom Close Button -->
         <Grid Grid.Row="3" Margin="0,14,0,0">
-            <TextBlock Text="라이선스 정의: 한국어(LICENSE_KR.txt) 및 영어(LICENSE_EN.txt) 2종 지원" FontSize="11" Foreground="#64748B" VerticalAlignment="Center"/>
+            <TextBlock Text="한국어 · English 2종 라이선스 지원" FontSize="11" Foreground="#64748B" VerticalAlignment="Center"/>
             <Button Click="Close_Click" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Right" Content="확인 (Close)"/>
         </Grid>
     </Grid>

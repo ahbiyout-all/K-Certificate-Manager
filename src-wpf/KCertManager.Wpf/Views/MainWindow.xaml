@@ -75,7 +75,7 @@
                               VerticalAlignment="Stretch"
                               PreviewMouseWheel="HeaderScrollViewer_PreviewMouseWheel"
                               Margin="10,0,4,0"
-                              ToolTip="마우스 휠 또는 하단 가로 스크롤바를 드래그하여 상단 메뉴 도구를 좌우로 이동할 수 있습니다.">
+                              ToolTip="휠 또는 아래 스크롤바로 상단 도구를 이동하세요.">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,4,0,2">
                         <!-- Theme Switcher Dropdown (ComboBox) -->
                         <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="4,2" Margin="0,0,10,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
@@ -83,7 +83,7 @@
                                 <TextBlock Text="🎨" FontSize="11" VerticalAlignment="Center" Margin="3,0,4,0"/>
                                 <ComboBox SelectedValue="{Binding CurrentTheme, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                           SelectedValuePath="Tag" Width="98" Height="26" VerticalContentAlignment="Center"
-                                          ToolTip="원하는 화면 테마 스타일을 선택하세요.">
+                                          ToolTip="화면 테마 선택">
                                     <ComboBoxItem Content="다크 테마" Tag="dark"/>
                                     <ComboBoxItem Content="회색 테마" Tag="gray"/>
                                     <ComboBoxItem Content="화이트 테마" Tag="white"/>
@@ -96,38 +96,38 @@
                         <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0">
                             <StackPanel Orientation="Horizontal">
                                 <RadioButton GroupName="UIModeGroup" Content="간편 모드" IsChecked="{Binding IsSimpleMode, Mode=TwoWay}"
-                                             Style="{StaticResource ModeToggleRadio}" ToolTip="초보자용 간편 모드: 핵심 복사 기능과 목록에 집중합니다."/>
+                                             Style="{StaticResource ModeToggleRadio}" ToolTip="복사와 목록 중심의 쉬운 화면"/>
                                 <RadioButton GroupName="UIModeGroup" Content="상세 모드" IsChecked="{Binding IsAdvancedUIMode, Mode=TwoWay}"
-                                             Style="{StaticResource ModeToggleRadio}" ToolTip="전문가용 상세 모드: 드라이브 상세 정보 및 부가 도구를 모두 표시합니다."/>
+                                             Style="{StaticResource ModeToggleRadio}" ToolTip="드라이브 상세 정보와 전체 도구 표시"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Horizontal Sound Volume Slider Bar & Mute Toggle (Conditional visibility via ShowHeaderSoundBar) -->
-                        <Border Visibility="{Binding ShowHeaderSoundBar, Converter={StaticResource BoolToVis}}" Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="6,2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0" ToolTip="복사 성공 알림음(SuccessChime) 실시간 볼륨 조절 및 음소거 토글">
+                        <Border Visibility="{Binding ShowHeaderSoundBar, Converter={StaticResource BoolToVis}}" Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="6,2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0" ToolTip="알림음 볼륨 조절 및 음소거">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button Command="{Binding ToggleSoundCommand}" Style="{StaticResource SecondaryButton}" Padding="4,2" Margin="0,0,4,0" ToolTip="성공 알림음 켜기/끄기 토글">
+                                <Button Command="{Binding ToggleSoundCommand}" Style="{StaticResource SecondaryButton}" Padding="4,2" Margin="0,0,4,0" ToolTip="알림음 켜기/끄기">
                                     <TextBlock Text="{Binding SoundIcon}" FontSize="12" VerticalAlignment="Center"/>
                                 </Button>
                                 <TextBlock Text="알림음:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
                                 <Slider Minimum="0" Maximum="100" Value="{Binding SoundVolume, Mode=TwoWay}" Width="70" VerticalAlignment="Center"
-                                        SmallChange="5" LargeChange="10" ToolTip="성공 알림음 볼륨 가로 슬라이더 바"/>
+                                        SmallChange="5" LargeChange="10" ToolTip="알림음 볼륨 조절"/>
                                 <TextBlock Text="{Binding SoundVolumeText}" Width="32" TextAlignment="Right" FontSize="11" FontWeight="Bold"
                                            Foreground="{DynamicResource AccentTextBrush}" VerticalAlignment="Center" Margin="2,0,4,0"/>
-                                <Button Command="{Binding TestSoundCommand}" Style="{StaticResource SecondaryButton}" Padding="4,2" ToolTip="성공 알림음 테스트 재생 (미리듣기)">
+                                <Button Command="{Binding TestSoundCommand}" Style="{StaticResource SecondaryButton}" Padding="4,2" ToolTip="알림음 미리듣기">
                                     <TextBlock Text="▶" FontSize="9" VerticalAlignment="Center"/>
                                 </Button>
                             </StackPanel>
                         </Border>
 
                         <!-- Prominent Settings Button -->
-                        <Button Click="OpenSettings_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" ToolTip="환경 설정 창 열기 (알림음, 테마, UI 모드, 시작 가이드)">
+                        <Button Click="OpenSettings_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" ToolTip="알림음, 테마, 화면 모드 설정">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="⚙️" Margin="0,0,4,0"/>
                                 <TextBlock Text="환경 설정" FontWeight="SemiBold"/>
                             </StackPanel>
                         </Button>
 
-                        <Button Command="{Binding ShowStartupWorkflowCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,6,0" ToolTip="시작 작업 선택 창 및 순서별 가이드 모션을 다시 실행합니다.">
+                        <Button Command="{Binding ShowStartupWorkflowCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,6,0" ToolTip="시작 작업 선택 창 다시 열기">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="🚀" Margin="0,0,4,0"/>
                                 <TextBlock Text="시작 가이드" FontWeight="SemiBold"/>
@@ -142,7 +142,7 @@
                         </Button>
 
                         <Button Click="OpenTrash_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"
-                                ToolTip="안전 격리 휴지통 및 복원된 항목 암호화 보호 보관소 (Windows DPAPI / AES-256)">
+                                ToolTip="삭제한 인증서 임시 보관함 (암호화 보호 · AES-256)">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="🗑️" Margin="0,0,4,0"/>
                                 <TextBlock Text="{Binding TrashCount, StringFormat='{}휴지통 ({0})'}" Foreground="#FDA4AF"/>
@@ -154,7 +154,7 @@
                             <Button Click="OpenSearchLocations_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="📁" Margin="0,0,4,0"/>
-                                    <TextBlock Text="탐색 경로"/>
+                                    <TextBlock Text="찾는 위치"/>
                                 </StackPanel>
                             </Button>
 
@@ -179,7 +179,7 @@
                                 </StackPanel>
                             </Button>
 
-                            <Button Command="{Binding CheckUpdatesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" ToolTip="GitHub 최신 릴리스 및 버전 수동 확인">
+                            <Button Command="{Binding CheckUpdatesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" ToolTip="새 버전 업데이트 확인">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="✨" Margin="0,0,4,0"/>
                                     <TextBlock Text="업데이트 확인"/>
@@ -263,9 +263,9 @@
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                                     <Ellipse Width="8" Height="8" Fill="#10B981" Margin="0,0,6,0"/>
-                                    <TextBlock Text="로컬 샌드박스 격리" FontSize="11" FontWeight="Bold" Foreground="#10B981"/>
+                                    <TextBlock Text="오프라인 로컬 보호" FontSize="11" FontWeight="Bold" Foreground="#10B981"/>
                                 </StackPanel>
-                                <TextBlock Text="인터넷 전송 없음 · 100% 로컬 암호화" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Text="인터넷 연결 없음 · 내 PC 안전 암호화" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>
                         </Border>
 
@@ -277,7 +277,7 @@
 
                     <!-- Filter Navigation List -->
                     <StackPanel DockPanel.Dock="Top">
-                        <TextBlock Text="인증서 카테고리" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" Margin="8,0,0,8"/>
+                        <TextBlock Text="인증서 종류" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" Margin="8,0,0,8"/>
 
                         <RadioButton GroupName="Filters" IsChecked="True" Click="Filter_Click" Tag="ALL"
                                      Style="{StaticResource SidebarNavRadio}">
@@ -290,7 +290,7 @@
                         <RadioButton GroupName="Filters" Click="Filter_Click" Tag="GPKI"
                                      Style="{StaticResource SidebarNavRadio}">
                             <Grid Width="210">
-                                <TextBlock Text="GPKI (행정전자서명)" VerticalAlignment="Center"/>
+                                <TextBlock Text="공무원 인증서 (GPKI)" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding GpkiCount}" HorizontalAlignment="Right" Foreground="{DynamicResource AccentTextBrush}"/>
                             </Grid>
                         </RadioButton>
@@ -298,7 +298,7 @@
                         <RadioButton GroupName="Filters" Click="Filter_Click" Tag="EPKI"
                                      Style="{StaticResource SidebarNavRadio}">
                             <Grid Width="210">
-                                <TextBlock Text="EPKI (교육기관서명)" VerticalAlignment="Center"/>
+                                <TextBlock Text="교육기관 인증서 (EPKI)" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding EpkiCount}" HorizontalAlignment="Right" Foreground="{DynamicResource AccentTextBrush}"/>
                             </Grid>
                         </RadioButton>
@@ -306,7 +306,7 @@
                         <RadioButton GroupName="Filters" Click="Filter_Click" Tag="NPKI"
                                      Style="{StaticResource SidebarNavRadio}">
                             <Grid Width="210">
-                                <TextBlock Text="NPKI (금융/공동)" VerticalAlignment="Center"/>
+                                <TextBlock Text="은행·공동 인증서 (NPKI)" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding NpkiCount}" HorizontalAlignment="Right" Foreground="{DynamicResource AccentTextBrush}"/>
                             </Grid>
                         </RadioButton>
@@ -324,21 +324,21 @@
                             <Grid Width="210">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="⚠️ " FontSize="12"/>
-                                    <TextBlock Text="비표준 위치 인증서" VerticalAlignment="Center" Foreground="#D97706"/>
+                                    <TextBlock Text="다른 폴더 인증서" VerticalAlignment="Center" Foreground="#D97706"/>
                                 </StackPanel>
                                 <TextBlock Text="{Binding CustomPathCount}" HorizontalAlignment="Right" Foreground="#D97706" FontWeight="Bold"/>
                             </Grid>
                         </RadioButton>
 
                         <Separator Background="{DynamicResource BorderBrush}" Margin="4,10,4,10"/>
-                        <TextBlock Text="저장 매체 구분 (USB / PC)" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" Margin="8,0,0,8"/>
+                        <TextBlock Text="저장 위치" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" Margin="8,0,0,8"/>
 
                         <RadioButton GroupName="Filters" Click="Filter_Click" Tag="PC"
                                      Style="{StaticResource SidebarNavRadio}">
                             <Grid Width="210">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="💻 " FontSize="12"/>
-                                    <TextBlock Text="컴퓨터 (로컬 보관함)" VerticalAlignment="Center"/>
+                                    <TextBlock Text="내 컴퓨터" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <TextBlock Text="{Binding ComputerCount}" HorizontalAlignment="Right" Foreground="{DynamicResource AccentTextBrush}" FontWeight="SemiBold"/>
                             </Grid>
@@ -349,7 +349,7 @@
                             <Grid Width="210">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="💾 " FontSize="12"/>
-                                    <TextBlock Text="USB (이동식 저장소)" VerticalAlignment="Center"/>
+                                    <TextBlock Text="USB 메모리" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <TextBlock Text="{Binding UsbCount}" HorizontalAlignment="Right" Foreground="#059669" FontWeight="Bold"/>
                             </Grid>
@@ -389,7 +389,7 @@
                         <Border Background="{DynamicResource BgCardBrush}" CornerRadius="12" Padding="10,4" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0">
                             <TextBlock Text="{Binding FilteredCertificates.Count, StringFormat='{}표시 중: {0}개'}" FontSize="12" Foreground="#60A5FA"/>
                         </Border>
-                        <TextBlock Text="(항목 더블클릭 시 상세 규격 및 지문 조회)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="(더블클릭: 상세 보기)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>
 
                     <!-- Quick Tools -->
@@ -398,12 +398,12 @@
                                 Background="#D97706" Foreground="White" FontWeight="Bold" Padding="12,6" Margin="0,0,8,0" Cursor="Hand">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="↩️" Margin="0,0,4,0"/>
-                                <TextBlock Text="삭제 취소(되돌리기)"/>
+                                <TextBlock Text="삭제 취소"/>
                             </StackPanel>
                         </Button>
 
                         <Button Command="{Binding ToggleCertificateDetailSidebarCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
-                                ToolTip="인증서의 모든 규격, 정책 OID, 일련번호, 지문을 가로/세로 스크롤로 확인하는 사이드바를 열거나 닫습니다.">
+                                ToolTip="선택한 인증서 상세 패널 열기/닫기">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="📑" Margin="0,0,4,0"/>
                                 <TextBlock Text="상세 사이드바"/>
@@ -468,13 +468,13 @@
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button Command="{Binding BackupAllCommand}" Style="{StaticResource SuccessButton}" Padding="12,6" Margin="0,0,8,0" ToolTip="전체 인증서를 선택된 대상 드라이브로 즉시 원클릭 일괄 복사합니다.">
+                            <Button Command="{Binding BackupAllCommand}" Style="{StaticResource SuccessButton}" Padding="12,6" Margin="0,0,8,0" ToolTip="모든 인증서를 대상 드라이브에 바로 복사">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="⚡" Margin="0,0,5,0"/>
                                     <TextBlock Text="원클릭 전체 복사" FontWeight="Bold"/>
                                 </StackPanel>
                             </Button>
-                            <Button Click="OpenUsbTransfer_Click" Style="{StaticResource SecondaryButton}" Padding="12,6" ToolTip="USB에 있는 인증서를 PC로 안전하게 복사해 넣습니다.">
+                            <Button Click="OpenUsbTransfer_Click" Style="{StaticResource SecondaryButton}" Padding="12,6" ToolTip="USB 인증서를 내 PC로 가져오기">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="📥" Margin="0,0,5,0"/>
                                     <TextBlock Text="USB ➔ PC 넣기" Foreground="#10B981" FontWeight="SemiBold"/>
@@ -758,7 +758,7 @@
                                       Sorting="CertDataGrid_Sorting">
                             <DataGrid.ContextMenu>
                                 <ContextMenu Background="{DynamicResource BgCardBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource BorderBrush}">
-                                    <MenuItem Header="💾 대상 디스크 선택 및 복사... (Target Drive Picker)" Click="ContextMenuCopy_Click" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <MenuItem Header="💾 복사할 대상 선택..." Click="ContextMenuCopy_Click" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     <Separator Background="{DynamicResource BorderBrush}"/>
                                     <MenuItem Header="🔍 인증서 상세 정보" Click="ContextMenuDetail_Click" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     <MenuItem Header="📋 전체 경로 클립보드 복사" Click="ContextMenuCopyPath_Click" Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -979,8 +979,8 @@
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                                <Button Content="💾 복사" Style="{StaticResource PrimaryButton}" Padding="7,2" Margin="0,0,5,0" Click="BtnRowCopy_Click" ToolTip="이 인증서의 복사 대상 디스크(USB · 로컬 디스크) 선택 팝업을 열고 복사합니다."/>
-                                                <Button Content="🔍 상세" Style="{StaticResource SecondaryButton}" Padding="7,2" Click="BtnRowDetail_Click" ToolTip="인증서 세부 정보를 확인합니다."/>
+                                                <Button Content="💾 복사" Style="{StaticResource PrimaryButton}" Padding="7,2" Margin="0,0,5,0" Click="BtnRowCopy_Click" ToolTip="이 인증서를 USB나 다른 폴더로 복사"/>
+                                                <Button Content="🔍 상세" Style="{StaticResource SecondaryButton}" Padding="7,2" Click="BtnRowDetail_Click" ToolTip="상세 정보 보기"/>
                                             </StackPanel>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
@@ -992,7 +992,7 @@
                     <!-- Column 1: Resizable Splitter between Table and Detail Sidebar (가로 구분 사이드바) -->
                     <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Center" VerticalAlignment="Stretch"
                                   Background="Transparent" Cursor="SizeWE" Margin="1,0"
-                                  ToolTip="드래그하여 테이블과 상세 정보 사이드바의 너비를 조절할 수 있습니다."
+                                  ToolTip="드래그해 너비 조절"
                                   Visibility="{Binding IsCertificateDetailSidebarVisible, Converter={StaticResource BoolToVis}}">
                         <GridSplitter.Template>
                             <ControlTemplate TargetType="GridSplitter">
@@ -1162,7 +1162,7 @@
                                                 <!-- Key status -->
                                                 <TextBlock Text="개인키(signPri.key) 상태:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                                 <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                                    <TextBlock Text="🔑 개인키 보유 완료 (정상 페어 무결성 통과)" FontSize="11.5" FontWeight="SemiBold" Foreground="#10B981"/>
+                                                    <TextBlock Text="🔑 개인키 정상 보유 (사용 가능)" FontSize="11.5" FontWeight="SemiBold" Foreground="#10B981"/>
                                                 </StackPanel>
                                             </StackPanel>
                                         </Border>
@@ -1228,7 +1228,7 @@
                                     <StackPanel Visibility="{Binding SelectedCertificate, Converter={StaticResource NullToVis}}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,60,0,0">
                                         <TextBlock Text="🔍" FontSize="36" HorizontalAlignment="Center" Margin="0,0,0,12"/>
                                         <TextBlock Text="인증서를 선택하세요" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                                        <TextBlock Text="목록에서 인증서를 클릭하시면&#x0a;모든 상세 규격, 정책 OID, 일련번호가&#x0a;가로/세로 스크롤로 실시간 표시됩니다."
+                                        <TextBlock Text="목록에서 인증서를 클릭하면&#x0a;상세 정보가 여기에 표시됩니다."
                                                    FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Grid>
@@ -1258,7 +1258,7 @@
 
                             <Button Click="SelectAll_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Content="전체 선택"/>
                             <Button Click="DeselectAll_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Content="선택 해제"/>
-                            <Button Command="{Binding DeleteSelectedCommand}" Style="{StaticResource SecondaryButton}" Foreground="#E11D48" Margin="0,0,8,0" Content="선택 항목 일괄 삭제"/>
+                            <Button Command="{Binding DeleteSelectedCommand}" Style="{StaticResource SecondaryButton}" Foreground="#E11D48" Margin="0,0,8,0" Content="선택 삭제"/>
                             <Button Command="{Binding UndoDeleteCommand}" Style="{StaticResource SecondaryButton}" Foreground="#059669" Margin="0,0,8,0" Content="↩ 삭제 취소" Visibility="{Binding CanUndo, Converter={StaticResource BoolToVis}}"/>
                             <Button Command="{Binding CleanExpiredCommand}" Style="{StaticResource SecondaryButton}" Foreground="#D97706" Margin="0,0,8,0" Content="🧹 만료 정리"/>
                         </StackPanel>
@@ -1266,15 +1266,15 @@
                         <!-- Main Backup execution buttons (Supports Disk->Disk, USB->USB, Disk->USB, USB->Disk) -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                             <Button Click="BackupSelected_Click" Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"
-                                    ToolTip="복사 목적지 디스크(USB 메모리 또는 로컬 디스크)를 지정하는 팝업창을 띄우고 선택한 인증서를 복사합니다.">
+                                    ToolTip="선택한 인증서를 복사할 드라이브 지정">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="💾" Margin="0,0,6,0"/>
-                                    <TextBlock Text="선택 인증서 복사 / 백업"/>
+                                    <TextBlock Text="선택 복사 / 백업"/>
                                 </StackPanel>
                             </Button>
 
                             <Button Click="BackupAll_Click" Style="{StaticResource SuccessButton}"
-                                    ToolTip="복사 목적지 디스크(USB 메모리 또는 로컬 디스크)를 지정하는 팝업창을 띄우고 전체 인증서를 일괄 복사합니다.">
+                                    ToolTip="전체 인증서를 복사할 드라이브 지정">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="⚡" Margin="0,0,6,0"/>
                                     <TextBlock Text="전체 일괄 복사 / 백업"/>
@@ -1367,7 +1367,7 @@
                             Background="#065F46" BorderBrush="#34D399" BorderThickness="1" CornerRadius="6" Padding="8,4" Margin="0,0,12,0" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="🛡️" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="무결성 확인 완료 (SHA-256)" FontSize="11" FontWeight="Bold" Foreground="#A7F3D0" VerticalAlignment="Center"/>
+                            <TextBlock Text="파일 손상 없음 (SHA-256)" FontSize="11" FontWeight="Bold" Foreground="#A7F3D0" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
 

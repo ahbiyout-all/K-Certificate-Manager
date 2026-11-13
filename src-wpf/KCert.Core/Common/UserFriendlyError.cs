@@ -69,10 +69,10 @@ namespace KCert.Core.Common
             {
                 return new UserErrorMessage
                 {
-                    Title = "파일 접근 권한 확인 필요",
-                    Summary = "지정된 폴더나 인증서 파일에 접근할 권한이 부족합니다.",
-                    ActionTip = "• K-인증서 매니저 아이콘을 마우스 우클릭한 후 '관리자 권한으로 실행'해 보세요.\n" +
-                                "• 대상 드라이브(USB) 또는 폴더의 읽기/쓰기 권한 및 '읽기 전용' 속성을 확인해 주세요.",
+                    Title = "접근 권한 필요",
+                    Summary = "폴더나 파일에 접근할 권한이 부족합니다.",
+                    ActionTip = "• 앱을 '관리자 권한으로 실행'해 보세요.\n" +
+                                "• 대상 폴더·USB의 '읽기 전용' 속성을 해제해 주세요.",
                     TechnicalDetail = $"{exType}: {rawMsg}"
                 };
             }
@@ -85,11 +85,10 @@ namespace KCert.Core.Common
             {
                 return new UserErrorMessage
                 {
-                    Title = "USB 저장 장치 연결 확인 필요",
-                    Summary = "선택한 USB 드라이브에 접근할 수 없거나 연결이 해제되었습니다.",
-                    ActionTip = "• USB 메모리가 컴퓨터 본체 단자에 올바르게 꽂혀 있는지 확인해 주세요.\n" +
-                                "• 윈도우 탐색기에서 해당 USB 드라이브가 정상적으로 열리는지 확인해 보세요.\n" +
-                                "• USB를 뺐다가 다시 연결한 후 2~3초 뒤에 다시 시도해 주세요.",
+                    Title = "USB 연결 확인",
+                    Summary = "USB 드라이브에 접근할 수 없거나 연결이 끊겼습니다.",
+                    ActionTip = "• USB를 뺐다 다시 꽂은 뒤 2~3초 후 다시 시도하세요.\n" +
+                                "• 탐색기에서 해당 USB가 열리는지 확인해 주세요.",
                     TechnicalDetail = $"{exType}: {rawMsg}"
                 };
             }
@@ -101,10 +100,10 @@ namespace KCert.Core.Common
             {
                 return new UserErrorMessage
                 {
-                    Title = "인증서 파일 위치 확인 필요",
-                    Summary = "해당 인증서 파일 또는 저장 대상 폴더를 찾을 수 없습니다.",
-                    ActionTip = "• 인증서가 다른 폴더로 이동되었거나 이미 삭제되었는지 확인해 보세요.\n" +
-                                "• 상단 메뉴의 '새로고침'을 눌러 최신 인증서 목록으로 갱신해 주세요.",
+                    Title = "인증서 파일 없음",
+                    Summary = "인증서 파일 또는 폴더를 찾을 수 없습니다.",
+                    ActionTip = "• 파일이 이동·삭제되었는지 확인해 주세요.\n" +
+                                "• 상단 [새로고침]을 눌러 목록을 갱신하세요.",
                     TechnicalDetail = $"{exType}: {rawMsg}"
                 };
             }
@@ -117,10 +116,10 @@ namespace KCert.Core.Common
             {
                 return new UserErrorMessage
                 {
-                    Title = "저장 공간 부족 또는 쓰기 금지 상태",
-                    Summary = "USB 드라이브가 쓰기 금지(Lock) 상태이거나 남은 저장 공간이 부족합니다.",
-                    ActionTip = "• USB 메모리 측면에 'Lock(잠금)' 스위치가 있다면 잠금을 해제해 주세요.\n" +
-                                "• USB의 불필요한 파일을 정리하여 여유 용량을 확보한 후 다시 시도해 주세요.",
+                    Title = "쓰기 금지 또는 공간 부족",
+                    Summary = "USB가 쓰기 금지(잠금) 상태이거나 여유 공간이 부족합니다.",
+                    ActionTip = "• USB 측면 잠금(Lock) 스위치를 해제해 주세요.\n" +
+                                "• 불필요한 파일을 정리해 빈 공간을 확보하세요.",
                     TechnicalDetail = $"{exType}: {rawMsg}"
                 };
             }
@@ -132,10 +131,10 @@ namespace KCert.Core.Common
             {
                 return new UserErrorMessage
                 {
-                    Title = "인증서 파일 사용 중 안내",
-                    Summary = "다른 프로그램(인터넷 뱅킹, 공공기관 사이트, 보안 프로그램 등)에서 이 인증서 파일을 사용하고 있습니다.",
-                    ActionTip = "• 실행 중인 웹 브라우저(Edge, Chrome 등) 및 금융/보안 프로그램을 닫아주세요.\n" +
-                                "• 열려 있는 윈도우 탐색기 창을 닫은 후 다시 시도해 주세요.",
+                    Title = "인증서 사용 중",
+                    Summary = "은행·보안 프로그램이나 브라우저가 이 파일을 사용 중입니다.",
+                    ActionTip = "• 브라우저와 보안 프로그램을 닫고 다시 시도하세요.\n" +
+                                "• 해당 폴더가 열린 탐색기 창도 닫아 주세요.",
                     TechnicalDetail = $"{exType}: {rawMsg}"
                 };
             }
@@ -147,9 +146,9 @@ namespace KCert.Core.Common
             {
                 return new UserErrorMessage
                 {
-                    Title = "폴더 경로 길이 초과 안내",
-                    Summary = "인증서가 저장된 폴더 경로가 Windows 허용 길이(260자)를 초과했습니다.",
-                    ActionTip = "• 인증서가 담긴 상위 폴더 경로를 짧은 이름으로 변경하거나 표준 NPKI 폴더 위치로 이동해 주세요.",
+                    Title = "폴더 경로 너무 김",
+                    Summary = "폴더 경로가 Windows 최대 길이(260자)를 넘었습니다.",
+                    ActionTip = "• 상위 폴더 이름을 짧게 줄이거나 표준 폴더로 옮기세요.",
                     TechnicalDetail = $"{exType}: {rawMsg}"
                 };
             }
@@ -163,10 +162,9 @@ namespace KCert.Core.Common
             {
                 return new UserErrorMessage
                 {
-                    Title = "인증서 파일 형식 오류",
-                    Summary = "인증서 파일(signCert.der 또는 signPri.key)의 구조가 손상되었거나 유효하지 않습니다.",
-                    ActionTip = "• 원본 인증서 파일이 정상적으로 복사되었는지 확인해 주세요.\n" +
-                                "• 발급기관(금융결제원, 코스콤, 한국전자인증 등) 포털에서 인증서를 재발급받으시길 권장합니다.",
+                    Title = "인증서 파일 손상",
+                    Summary = "인증서 파일(signCert·signPri)이 손상되었거나 형식이 올바르지 않습니다.",
+                    ActionTip = "• 다른 백업본이 있다면 교체하거나 발급기관에서 재발급받으세요.",
                     TechnicalDetail = $"{exType}: {rawMsg}"
                 };
             }
@@ -177,8 +175,8 @@ namespace KCert.Core.Common
             {
                 return new UserErrorMessage
                 {
-                    Title = "클립보드 복사 일시적 지연",
-                    Summary = "다른 프로그램에서 클립보드를 일시적으로 잠그고 있어 복사하지 못했습니다.",
+                    Title = "클립보드 복사 실패",
+                    Summary = "다른 프로그램이 클립보드를 사용 중이라 복사하지 못했습니다.",
                     ActionTip = "• 1~2초 후 다시 복사 버튼을 눌러주세요.",
                     TechnicalDetail = $"{exType}: {rawMsg}"
                 };
@@ -191,9 +189,9 @@ namespace KCert.Core.Common
             {
                 return new UserErrorMessage
                 {
-                    Title = "프로그램 실행 오류",
-                    Summary = "윈도우 탐색기 또는 웹 브라우저를 실행하지 못했습니다.",
-                    ActionTip = "• 윈도우 설정에서 '기본 웹 브라우저(Edge/Chrome 등)'가 정상 지정되어 있는지 확인해 주세요.",
+                    Title = "실행 오류",
+                    Summary = "탐색기나 웹 브라우저를 열지 못했습니다.",
+                    ActionTip = "• Windows 설정에서 기본 브라우저 지정을 확인하세요.",
                     TechnicalDetail = $"{exType}: {rawMsg}"
                 };
             }
@@ -201,10 +199,9 @@ namespace KCert.Core.Common
             // 10. 기본 일반 예외
             return new UserErrorMessage
             {
-                Title = "작업 처리 중 오류 발생",
-                Summary = "예기치 않은 시스템 문제가 발생하여 요청을 완료하지 못했습니다.",
-                ActionTip = "• 잠시 후 다시 시도해 보시거나, 프로그램 재실행 또는 컴퓨터 재부팅 후 확인해 주세요.\n" +
-                            "• 문제가 지속될 경우 백업 이력 및 활동 로그를 확인해 주세요.",
+                Title = "작업 오류",
+                Summary = "예기치 않은 오류로 작업을 완료하지 못했습니다.",
+                ActionTip = "• 잠시 후 다시 시도하거나 앱을 재실행해 보세요.",
                 TechnicalDetail = $"{exType}: {rawMsg}"
             };
         }

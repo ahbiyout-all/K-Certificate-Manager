@@ -253,12 +253,12 @@ namespace KCertManager.Wpf.Services
                     IssuerName = !string.IsNullOrEmpty(r.IssuerName) ? r.IssuerName : "알 수 없음",
                     Category = cat,
                     NotAfter = r.NotAfter != default ? r.NotAfter : DateTime.Now.AddYears(1),
-                    DeleteReason = !string.IsNullOrEmpty(r.DeleteReason) ? r.DeleteReason : "사용자 선택 복구 및 특수 보관소 암호화 압축 보관",
-                    IntegrityBefore = !string.IsNullOrEmpty(r.IntegrityBefore) ? r.IntegrityBefore : "격리 보관소 파티션 SHA-256 해시 검증 통과 (100% 무결성)",
-                    IntegrityAfter = !string.IsNullOrEmpty(r.IntegrityAfter) ? r.IntegrityAfter : "원래 위치 복원 후 signCert.der/signPri.key 암호화 ZIP 보관 완료",
-                    StatusBadge = "🔒 AES-256 Encrypted ZIP 보관 완료",
+                    DeleteReason = !string.IsNullOrEmpty(r.DeleteReason) ? r.DeleteReason : "사용자 선택 복원 (암호화 보관)",
+                    IntegrityBefore = !string.IsNullOrEmpty(r.IntegrityBefore) ? r.IntegrityBefore : "암호화 보관함 파일 손상 검사 통과 (SHA-256)",
+                    IntegrityAfter = !string.IsNullOrEmpty(r.IntegrityAfter) ? r.IntegrityAfter : "원래 위치 복원 및 암호화 사본 저장 완료",
+                    StatusBadge = "🔒 암호화 압축 보관 완료",
                     IsZipEncrypted = true,
-                    EncryptionLevel = !string.IsNullOrEmpty(r.EncryptionLevel) ? r.EncryptionLevel : "AES-256-GCM + ZIP 압축 + DPAPI 이중 암호화",
+                    EncryptionLevel = !string.IsNullOrEmpty(r.EncryptionLevel) ? r.EncryptionLevel : "Windows 사용자 암호화(DPAPI) + AES-256",
                     CompressedSizeBytes = r.CompressedSizeBytes
                 });
             }

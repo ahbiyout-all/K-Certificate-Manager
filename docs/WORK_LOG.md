@@ -17,6 +17,94 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 183] 심층 전수 감사 3차(Self-Reflection & Deep Audit Pass 3) 및 테마 대비·상태 동기화·WPF C:\ 자가 복사 버그·문구 일관성 수정 (v2.0.0)
+- **작업 일시**: 2026-11-13 08:40 KST
+- **요청 사항**:
+  - `**자아성찰(Self-Reflection & Deep Audit)** 과 **오류 수정**`
+- **전수 감사 3차 발견 및 수정 내역**:
+  1. **Web 다크/파스텔 블랙 테마 모달 가독성 결함 해결 (`src/index.css`)**:
+     - 기존 `[data-theme="dark"]` 및 `[data-theme="pastel-black"]` 오버라이드가 `.bg-slate-50`, `.bg-white/*`, `.bg-slate-100/*`, `.from-*-50` 그라데이션, `.border-slate-300`, `.divide-slate-*`, 파스텔 `50`/`50/*`/`100` 배지 배경 및 `-700`~`-950` 진한 글자 클래스를 누락해 모달 내부가 흰 배경/어두운 글씨로 깨지던 문제 수정.
+     - 정확한 토큰 매칭(`[class~="..."]`)과 투명도 suffix(`[class*=".../"]`) 선택자를 적용해 버튼(`bg-blue-500` 등) 스타일은 보존하면서 모달 배경·테두리·텍스트 대비 완전 복구.
+  2. **Web 비동기 상태 stale closure · 사용자 취소 재시도 · 경로 토글 누락 수정 (`src/App.tsx`, `src/utils/usbToPcService.ts`, `src/components/BackupModal.tsx`, `src/components/StartupWorkflowModal.tsx`)**:
+     - `usbToPcService.ts`: 파일 선택기 사용자 취소(`AbortError`)를 일시적 오류로 오분류해 3회 재시도하던 버그를 수정(`isTransient: false`, 즉시 중단).
+     - `App.tsx`: `certificatesRef` 및 `handleRefreshRef`를 도입해 `handleRefresh` 및 `F5` 단축키 실행 시 항상 최신 인증서 상태 기준으로 유효 건수·토스트·로그를 계산하도록 수정; `handleTogglePath`에서 `setSearchPaths` 업데이터 내부 `setCertificates` 사이드이펙트 제거 및 USB/사용자 추가 인증서 보존; `GuidedWorkflowOverlay`가 선택한 `selectedDriveId`를 최우선 타겟으로 사용하도록 개선.
+     - `BackupModal.tsx`: 실제 USB 폴더 선택 취소(`AbortError`) 시 `[안내]` 수준 로그로 기록.
+     - `StartupWorkflowModal.tsx`: Step 1 카드 클릭 시 `handleSelect('pc_to_usb')`를 경유하도록 수정해 모달 종료 및 상태 정리 일관성 확보.
+  3. **WPF `C:\` 드라이브 자가 복사 판별 버그 수정 (`src-wpf/KCertManager.Wpf/Views/TargetDrivePickerDialog.xaml.cs`)**:
+     - `CertificateBackupService.BackupCertificateToDrive`와 동일한 실제 저장 경로(`ResolveEffectiveDestinationRoot` — NPKI/EPKI는 `%USERPROFILE%\AppData\LocalLow`, GPKI는 `C:\`) 기준으로 자가 복사 여부를 판별하도록 수정하여, PC(`C:\Users\...\AppData\LocalLow\NPKI`)에 있는 인증서를 `C:`로 재복사할 수 있던 자가 복사 차단 누락 해결.
+  4. **Web & WPF 쉬운 표현(Plain Korean) 최종 일관성 정렬**:
+     - Web(`App.tsx`, `UpdateModal.tsx`, `OperationCompleteModal.tsx`, `TrashModal.tsx`, `CertificateDetailSidebar.tsx`, `CertificateList.tsx`)과 WPF(`CertificateBackupService.cs`, `MainViewModel.cs`, `MainWindow.xaml`, `CertificateDetailDialog.xaml/.cs`, `TrashDialog.xaml/.cs`, `UpdateNotificationDialog.xaml.cs`, `DuplicateConflictDialog.xaml.cs`, `OperationCompleteDialog.xaml.cs`) 전반의 잔여 전문 용어(`비밀키`→`개인키`, `출발지`/`도착지`→`원본 위치`/`저장 위치`, `무결성`/`보관소 자가진단`/`탐색 경로` 등)를 쉬운 일상 표현+용어 병기 기준으로 통일.
+- **검증 결과**:
+  - Web SPA `compile_applet` 및 `lint_applet` 동시 검증 통과, 개발 서버 재기동 및 unsafe `window.(alert|confirm|open)` 미사용 확인.
+  - WPF 전체 19개 XAML XML 파싱 및 수정 C# 파일 8개 구문 밸런스·이벤트 핸들러 정적 검증 통과 (Linux 컨테이너 환경상 `dotnet` SDK 미설치로 정적 검증 수행).
+
+---
+
+### 📝 [작업 차수 182] Web 콘솔 및 C# WPF 데스크톱 전역 UI 문구 간결화 · 쉬운 표현 우선 원칙 적용 (v2.0.0)
+- **작업 일시**: 2026-11-13 08:15 KST
+- **요청 사항**:
+  - `앱 내용중에 긴 설명을 짧은 설명으로 바꾸어서 사용자 인식률을 높여 주세요.` (쉬운 일상 표현 우선 + 필요시 용어 병기)
+- **설계 기준**:
+  - **1줄 핵심 안내 + 직관 키워드**: 모든 모달·다이얼로그·토스트·사이드바·에러 안내를 한눈에 읽히는 짧은 문장으로 단축.
+  - **쉬운 일상 표현 우선 + 전문 용어 병기**: `공무원 인증서 (GPKI)`, `교육기관 인증서 (EPKI)`, `은행·공동 인증서 (NPKI)`, `다른 폴더 인증서`, `저장 위치`, `내 컴퓨터`, `USB 메모리`, `오프라인 로컬 보호`, `파일 손상 검사 (SHA-256)`, `암호화 보호 (AES-256 · DPAPI)`, `쓰기 금지 (Read-Only)` 등으로 통일.
+  - **부가 정보 접기 처리**: 경로 구조, 복사 후 사용 안내, FAQ, 세부 탐색 범위 설명을 기본 접힘 토글(`더보기` / WPF `Expander`)로 이동해 첫 화면 인지 부담 최소화.
+- **구현 내역**:
+  1. **Web 관리 콘솔 (`src/`) 26개 컴포넌트·유틸 개편**:
+     - `StartupWorkflowModal.tsx`, `UsbDetectedPromptModal.tsx`, `SecurityGuideModal.tsx`, `OperationCompleteModal.tsx`, `UsbToPcModal.tsx`, `RenewalGuidanceModal.tsx`: 장문의 경로/사용법/FAQ 설명을 접이식 토글(기본 접힘)로 정리하고 핵심 1줄 요약만 기본 노출.
+     - `Header.tsx`, `Sidebar.tsx`, `SimpleTransferHero.tsx`, `GuidedWorkflowOverlay.tsx`, `UsbDetectedBanner.tsx`, `SettingsModal.tsx`, `TrashModal.tsx`, `CopyErrorAlertModal.tsx`, `CoreSpecModal.tsx`, `BackupModal.tsx`, `CertificateCleanupModal.tsx`, `SearchLocationsPanel.tsx`, `TargetDrivePickerModal.tsx`, `UpdateModal.tsx`, `DesktopAppModal.tsx`, `LicenseModal.tsx`, `CertificateList.tsx`, `ConnectedDrivesBar.tsx`, `userFriendlyError.ts`, `App.tsx`: 중복 선택지(`덮어쓰기`·`건너뛰기`·`기존 파일 따로 보관`), 에러 해결 가이드, 툴팁, 토스트 메시지를 직관적 1줄 문구로 전면 통일.
+  2. **Windows C# WPF 데스크톱 (`src-wpf/`) 뷰·뷰모델·에러 엔진 개편**:
+     - 핵심 XAML(`MainWindow.xaml`, `StartupWorkflowDialog.xaml`, `SettingsDialog.xaml`, `SecurityGuideDialog.xaml`, `PcToUsbTransferDialog.xaml`, `UsbTransferDialog.xaml`) 및 보조 다이얼로그(`OperationCompleteDialog.xaml`, `DuplicateConflictDialog.xaml`, `ExpiredCleanupDialog.xaml`, `TrashDialog.xaml`, `UpdateNotificationDialog.xaml`, `AboutDialog.xaml`, `RenewalGuidanceDialog.xaml`, `SearchLocationsDialog.xaml`, `TargetDrivePickerDialog.xaml`, `BackupHistoryDialog.xaml`, `ActivityLogDialog.xaml`) 문구 간결화 및 `Expander`(기본 접힘) 적용.
+     - 코드비하인드/뷰모델/코어(`ExpiredCleanupDialog.xaml.cs`, `PcToUsbTransferViewModel.cs`, `UsbTransferViewModel.cs`, `MainViewModel.cs`, `KCert.Core/Common/UserFriendlyError.cs`)의 동적 안내·에러 메시지를 Web 콘솔과 동일한 1~2줄 쉬운 한국어 기준으로 동기화.
+- **검증 결과**:
+  - `src-wpf/KCertManager.Wpf/` 하위 19개 전체 XAML XML 구문 파싱 100% 통과.
+  - Web SPA `compile_applet` 및 `lint_applet` 동시 검증 및 개발 서버 재기동 완료.
+
+---
+
+### 📝 [작업 차수 181] 업데이트 창 확인 시 GitHub 이동 없는 자동 다운로드 및 무인 셀프 설치 구현 (WPF + Web)
+- **작업 일시**: 2026-11-12 23:58 KST
+- **요청 사항**:
+  - `사용자가 앱 시작 시에 자동으로 뜨는 업데이트 창에서 확인을 누르면 깃허브에 가지 않고 자동으로 다운받아서 셀프설치가 되도록 해주세요.`
+- **구현 내역**:
+  1. **Windows C# WPF 자동 다운로드·무인 셀프 설치 엔진 (`src-wpf/KCertManager.Wpf/Services/UpdateCheckerService.cs`)**:
+     - Tier 1(`/releases/latest`) 및 Tier 2(`/releases`) 에셋 파싱 로직을 통합(`PopulateFromReleaseElement`)하여 설치 파일(`kcert-manager-v*-setup.exe`)을 최우선으로 자동 식별하고 파일명(`AssetName`)·용량(`AssetSizeBytes`) 확보.
+     - `DownloadAndInstallAsync` 신설: 외부 웹 브라우저를 열지 않고 `HttpClient` 스트리밍(`HttpCompletionOption.ResponseHeadersRead`)으로 `%TEMP%\KCertManager_AutoUpdate\v{ver}\`에 실시간 진행률(`IProgress<UpdateInstallProgress>`)과 함께 직접 다운로드.
+     - PE 실행 파일(`MZ` 매직 바이트) 및 ZIP(`PK`) 바이너리 무결성 사전 검증 수행.
+     - 분리 실행 PowerShell 업데이터 스크립트(`apply_self_update.ps1`, UTF-8 BOM)를 숨김 실행하여 현재 프로세스 종료 대기 → Inno Setup `/SILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS` 자동 설치(필요 시 UAC 승격) → 설치된 `KCertManager.exe` 자동 재실행 및 임시 폴더 정리까지 원스톱 처리.
+  2. **WPF 업데이트 알림 다이얼로그 UI/UX 개편 (`UpdateNotificationDialog.xaml`, `UpdateNotificationDialog.xaml.cs`, `MainViewModel.cs`)**:
+     - 기존 `[지금 업데이트 (다운로드)]` 및 `[GitHub 저장소 보기]` 브라우저 이동 버튼을 제거하고 **`[확인 (자동 다운로드 및 셀프 설치)]`** 버튼 및 실시간 진행률 바(`ProgressBar`), 단계별 안내, 인라인 오류 배너 적용.
+     - `MainViewModel.CheckForAppUpdatesAsync` 폴백(`MessageBox`)에서도 브라우저 연결 대신 직접 `DownloadAndInstallAsync`를 호출하도록 일치화.
+  3. **웹 관리 콘솔 인앱 셀프 업데이트 (`src/utils/updateChecker.ts`, `src/components/UpdateModal.tsx`, `src/App.tsx`)**:
+     - 외부 GitHub 링크 CTA를 제거하고 **`[확인 (자동 다운로드 및 셀프 설치)]`** 버튼으로 대체.
+     - `runInAppSelfUpdate`를 구현해 브라우저 이동 없이 3단계(1. 패키지 스트림 다운로드 및 로컬 Blob 저장 → 2. WebCrypto SHA-256 무결성 검증 → 3. Cache Storage 갱신 및 `kcert_web_installed_version` 반영) 진행률과 SHA-256 해시를 모달 내에 실시간 표시하고 하단 버전 상태바(`v{version}`) 및 시스템 로그에 즉시 반영.
+
+---
+
+### 📝 [작업 차수 180] 심층 전수 감사 2차(Self-Reflection & Deep Audit Pass 2) 및 런타임·모달·경로·접근성 결함 일괄 수정 (v2.0.0)
+- **작업 일시**: 2026-11-12 23:55 KST
+- **요청 사항**:
+  - `**자아성찰(Self-Reflection & Deep Audit)** 과 **오류 수정**`
+- **전수 감사 2차 발견 및 수정 내역**:
+  1. **백업 모달(`src/components/BackupModal.tsx`) 폴링 초기화·Null 참조·만료일 누락·건수 불일치 수정**:
+     - `wasOpenRef`를 도입해 모달이 열려 있는 동안 8초 간격 백그라운드 드라이브 폴링 시 사용자가 수동 선택한 `selectedDriveId`가 기본 드라이브로 덮어써지던 문제 해결.
+     - 미연결 상태에서 `!targetDrive`일 때 오류 시뮬레이터 버튼(`쓰기금지`, `권한거부`, `공간부족`) 클릭 시 발생하던 `TypeError` 방지 (`disabled={!targetDrive}` 및 가드 적용).
+     - 존재하지 않는 `cert.expiryDate` 대신 `cert.validTo || '-'`를 렌더링하도록 수정해 만료일 공백 문제 해결.
+     - 하드코딩된 `_backup_20260909` 보관 태그를 동적 날짜(`YYYYMMDD`)로 개선하고, `onBackupSuccess` 전달 시 `isSameDriveSelfCopy` 항목을 제외해 실제 복사 건수·`certNames`·`certIds`·`checksum` 일치화.
+  2. **USB ➔ PC 모달(`src/components/UsbToPcModal.tsx`) Stale Closure 및 상태 초기화 수정**:
+     - `selectedUsbDriveRef`를 통해 `subscribeUsbDriveChanges` 콜백 내부에서 항상 최신 선택 USB 드라이브 문자를 참조하도록 수정하고, 모달 재오픈 시 `showCelebration(false)` 초기화.
+  3. **시작 가이드·인증서 정리 모달(`src/components/StartupWorkflowModal.tsx`, `src/components/CertificateCleanupModal.tsx`) 데이터/접근성 수정**:
+     - `StartupWorkflowModal` 유효 인증서 표의 만료일 컬럼에 `cert.validTo`를 최우선 조회하도록 개선.
+     - `CertificateCleanupModal` 헤더 선택 건수를 필터링된 `effectiveCheckedIds.length`와 일치시키고, 만료 배지를 `isCertificateExpired(cert)` 기준으로 통일하며, 체크박스 Spacebar 키보드 토글(`onChange` + `stopPropagation`) 지원.
+  4. **iframe 제약 위반(`alert`/`confirm`/`window.open`) 제거 및 클립보드·저장소 예외 방어 (`RenewalGuidanceModal.tsx`, `EditInstitutionModal.tsx`, `OperationCompleteModal.tsx`, `protectedVaultStorage.ts`)**:
+     - `RenewalGuidanceModal` 및 `EditInstitutionModal`의 `alert()`, `confirm()`, `window.open()` 호출을 전면 제거하고 인라인 2단계 초기화 확인 UI, 인라인 전체 포털 링크 펼침 패널, `<a target="_blank" rel="noopener noreferrer">` 선언적 링크로 대체.
+     - `OperationCompleteModal`의 로컬/USB 대상 판별 정밀화(`C:`/`D:`/로컬 디스크 구분) 및 클립보드·`localStorage` 접근 예외 처리.
+     - `protectedVaultStorage.ts`의 `getVaultSecurityDiagnostics` 내 `localStorage.getItem`을 `try/catch`로 보호.
+  5. **메인 워크플로우·백업 경로 중복 및 복구 크기 계산 수정 (`src/App.tsx`, `src/types.ts`)**:
+     - `BackupHistoryItem`에 선택적 `certIds?: string[]` 및 `retryAttemptsUsed?: number` 추가, `handleBackupSuccess`에서 `targetPath` 드라이브 문자 이중 결합(`${targetDisk}\${targetPath}`) 제거 및 `certIds` 우선 매칭 적용.
+     - `handleSelectWorkflow`/`StartupWorkflowModal` 만료 판정을 `!isCertificateExpired(c)`로 통일, 휴지통 복구 ZIP 크기 계산을 `files.certSize + files.keySize` 기반으로 교정, `handleRestoreToUsbFromVault` USB 판별 타입 정합화(`fast_usb`/`external_ssd` 포함) 및 초기 `localStorage` 안전 가드 적용.
+
+---
+
 ### 📝 [작업 차수 179] 전수 자아성찰(Self-Reflection & Deep Audit) 및 UI·반응형·테마 대비·상태 동기화 결함 일괄 수정 (v2.0.0)
 - **작업 일시**: 2026-11-12 23:40 KST
 - **요청 사항**:

@@ -34,15 +34,14 @@ export const UsbDetectedBanner: React.FC<UsbDetectedBannerProps> = ({
           <div className="space-y-0.5">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-sm sm:text-base text-white">
-                인증서가 들어 있는 USB 감지됨 ({usbLetters})
+                USB 인증서 감지 ({usbLetters})
               </span>
               <span className="px-2 py-0.5 bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 rounded-full text-[11px] font-bold">
-                {detectedCerts.length}건 보관 중
+                {detectedCerts.length}건
               </span>
             </div>
             <p className="text-xs text-slate-200 leading-relaxed">
-              연결된 이동식 디스크에서 인증서가 확인되었습니다. PC 로컬 보관함(AppData\LocalLow)에 등록하려면 
-              <strong className="text-emerald-300 font-bold ml-1">'컴퓨터로 인증서 복사'</strong>를 진행하세요.
+              내 컴퓨터로 복사하면 USB 없이 바로 사용할 수 있습니다.
             </p>
 
             {/* Quick Chips of cert names */}
@@ -73,7 +72,7 @@ export const UsbDetectedBanner: React.FC<UsbDetectedBannerProps> = ({
             className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all cursor-pointer hover:scale-102"
           >
             <ArrowDownLeft className="w-4 h-4" />
-            <span>'컴퓨터로 인증서 복사' 작업 열기</span>
+            <span>내 컴퓨터로 복사</span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-900" />
           </button>
 
