@@ -13,9 +13,10 @@ import {
   Layout,
   Bell,
   Check,
-  HardDrive,
   FolderSearch,
-  FolderOpen
+  FolderOpen,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import {
   getSoundSettings,
@@ -55,6 +56,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [isPlayingTest, setIsPlayingTest] = useState(false);
   const [justSavedNotification, setJustSavedNotification] = useState(false);
   const volumeDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 접이식 환경 설정 섹션 오픈/접힘 상태 (기본값: 사운드 피드백만 펼침, 나머지는 접힘)
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    sound: true,        // 복사/백업 사운드 피드백 (기본 펼침)
+    startup: false,     // 시작 가이드 (기본 접힘)
+    gpki: false,        // GPKI 최적화 (기본 접힘)
+    usbExplorer: false, // USB 탐색기 자동 열기 (기본 접힘)
+    display: false,     // 디스플레이 & 테마 (기본 접힘)
+  });
+
+  const toggleSection = (key: string) => {
+    setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleExpandAll = () => {
+    setOpenSections({ sound: true, startup: true, gpki: true, usbExplorer: true, display: true });
+  };
+
+  const handleCollapseAll = () => {
+    setOpenSections({ sound: false, startup: false, gpki: false, usbExplorer: false, display: false });
+  };
 
   // Sync state when modal opens or custom event fires
   useEffect(() => {
@@ -102,10 +124,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const [testingPhase, setTestingPhase] = useState<SoundPhase | null>(null);
-
-  const handleTestChime = () => {
-    handleTestPhase('complete');
-  };
 
   const handleTestPhase = (phase: SoundPhase) => {
     setTestingPhase(phase);
@@ -231,397 +249,557 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Content Body */}
-        <div className="p-6 space-y-6 overflow-y-auto text-xs sm:text-sm text-slate-700 flex-1">
+        <div className="p-6 space-y-4 overflow-y-auto text-xs sm:text-sm text-slate-700 flex-1">
           
-          {/* SECTION 1: 단계별 사운드 피드백 (시작음 / 완료음 / 오류음) 설정 */}
-          <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+          {/* Master Section Toggle Controls (전체 펼치기 / 전체 접기) */}
+          <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200/90 rounded-xl text-xs text-slate-600">
+            <div className="font-bold text-slate-800 flex items-center gap-1.5">
+              <Sliders className="w-4 h-4 text-blue-600" />
+              <span>관리자 설정 메뉴 그룹 (접이식 5개 항목)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleExpandAll}
+                className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-lg border border-slate-200 shadow-2xs transition-colors cursor-pointer"
+              >
+                전체 펼치기 ↕️
+              </button>
+              <button
+                type="button"
+                onClick={handleCollapseAll}
+                className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-lg border border-slate-200 shadow-2xs transition-colors cursor-pointer"
+              >
+                전체 접기 📁
+              </button>
+            </div>
+          </div>
+
+          {/* SECTION 1: 단계별 사운드 피드백 (시작음 / 완료음 / 오류음) 설정 (접이식) */}
+          <div className="bg-slate-50 border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
+            <button
+              type="button"
+              onClick={() => toggleSection('sound')}
+              className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100/60 transition-colors cursor-pointer bg-slate-100/40 select-none"
+            >
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-lg bg-indigo-100 text-indigo-700">
                   <Bell className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900 text-sm">
-                    인증서 복사 및 USB 백업 사운드 피드백
+                  <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <span>인증서 복사 및 USB 백업 사운드 피드백</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      soundSettings.enabled ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
+                    }`}>
+                      {soundSettings.enabled ? `ON (${soundSettings.volume}%)` : 'OFF (음소거)'}
+                    </span>
                   </h4>
-                  <p className="text-xs text-slate-500">
-                    작업 단계별(시작음, 완료음, 오류음) 음향 효과로 진행 상황을 명확히 전달합니다.
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    작업 단계별(시작음, 완료음, 오류음) 음향 효과 및 마스터 볼륨 설정
                   </p>
                 </div>
               </div>
 
-              {/* Master Toggle Switch */}
-              <label className="relative inline-flex items-center cursor-pointer select-none shrink-0 ml-3">
-                <input
-                  type="checkbox"
-                  checked={soundSettings.enabled}
-                  onChange={(e) => handleToggleSound(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-12 h-6.5 bg-slate-300 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2.5px] after:start-[3px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 shadow-inner"></div>
-                <span className={`ml-2.5 text-xs font-bold ${soundSettings.enabled ? 'text-blue-600' : 'text-slate-400'}`}>
-                  {soundSettings.enabled ? 'ON' : 'OFF'}
-                </span>
-              </label>
-            </div>
-
-            {/* Master Volume Control Area */}
-            <div className={`space-y-3 transition-opacity ${soundSettings.enabled ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {getVolumeIcon()}
-                  <span className="font-bold text-slate-800 text-xs sm:text-sm">마스터 볼륨 크기</span>
-                  <span className="text-[11px] text-slate-400">
-                    ({soundSettings.enabled ? `${soundSettings.volume}%` : '음소거'})
-                  </span>
-                </div>
-                
-                {/* General Preview Button */}
-                <button
-                  type="button"
-                  onClick={() => handleTestPhase('complete')}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:border-blue-400 hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95 ${
-                    testingPhase === 'complete' ? 'ring-2 ring-blue-500 bg-blue-50 text-blue-700 scale-95' : ''
-                  }`}
-                  title="현재 설정된 볼륨으로 완료음(SuccessChime) 1회 재생"
-                >
-                  <Play className={`w-3.5 h-3.5 ${testingPhase === 'complete' ? 'text-blue-600 animate-spin' : 'text-blue-600'}`} />
-                  <span>대표음 미리듣기</span>
-                </button>
+              <div className="flex items-center gap-2">
+                {openSections.sound ? (
+                  <ChevronDown className="w-5 h-5 text-slate-600" />
+                ) : (
+                  <ChevronRight className="w-5 h-5 text-slate-400" />
+                )}
               </div>
+            </button>
 
-              {/* Range Slider */}
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-3">
-                  <span className="text-[11px] font-semibold text-slate-400 w-7">0%</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="1"
-                    value={soundSettings.volume}
-                    disabled={!soundSettings.enabled}
-                    onChange={(e) => handleVolumeChange(Number(e.target.value))}
-                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 disabled:cursor-not-allowed"
-                  />
-                  <span className="text-[11px] font-semibold text-slate-600 w-10 text-right">
-                    {soundSettings.volume}%
-                  </span>
-                </div>
-
-                {/* Preset Volume Buttons */}
-                <div className="flex items-center justify-between pt-1">
-                  <div className="text-[11px] text-slate-400">빠른 볼륨 프리셋:</div>
-                  <div className="flex items-center gap-1.5">
-                    {[
-                      { label: '음소거', vol: 0 },
-                      { label: '조용히 (25%)', vol: 25 },
-                      { label: '보통 (50%)', vol: 50 },
-                      { label: '크게 (80%)', vol: 80 },
-                      { label: '최대 (100%)', vol: 100 },
-                    ].map((preset) => (
-                      <button
-                        key={preset.vol}
-                        type="button"
-                        onClick={() => {
-                          handleVolumeChange(preset.vol);
-                          if (preset.vol > 0) playTestSound('complete', preset.vol);
-                        }}
-                        className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer border ${
-                          soundSettings.volume === preset.vol
-                            ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-2xs'
-                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
-                        }`}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Header Sound Volume Slider Bar Visibility Toggle */}
-                <div className="pt-2">
-                  <label className="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors select-none">
+            {openSections.sound && (
+              <div className="p-5 border-t border-slate-200 space-y-4 bg-white animate-fadeIn">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <span className="font-bold text-slate-800 text-xs">사운드 피드백 마스터 스위치</span>
+                  <label className="relative inline-flex items-center cursor-pointer select-none">
                     <input
                       type="checkbox"
-                      checked={!!soundSettings.showHeaderSoundBar}
-                      onChange={(e) => handleToggleShowHeaderSoundBar(e.target.checked)}
-                      className="w-4 h-4 mt-0.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                      checked={soundSettings.enabled}
+                      onChange={(e) => handleToggleSound(e.target.checked)}
+                      className="sr-only peer"
                     />
-                    <div>
-                      <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                        <span>헤더 상단 사운드 가로 소리조절바 표시</span>
-                        <span className="px-1.5 py-0.2 bg-slate-100 text-slate-600 text-[10px] font-medium rounded">기본: 비활성</span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        상단 헤더 메뉴에 실시간 볼륨 조절 슬라이더 바를 표시합니다. (체크 해제 시 상단 헤더 소리조절바가 숨겨집니다)
-                      </p>
-                    </div>
+                    <div className="w-12 h-6.5 bg-slate-300 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2.5px] after:start-[3px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 shadow-inner"></div>
+                    <span className={`ml-2.5 text-xs font-bold ${soundSettings.enabled ? 'text-blue-600' : 'text-slate-400'}`}>
+                      {soundSettings.enabled ? 'ON' : 'OFF'}
+                    </span>
                   </label>
                 </div>
-              </div>
 
-              {/* 3-Stage Phased Sound Effect Controls */}
-              <div className="pt-3 border-t border-slate-200/80 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                    단계별 음향 효과 개별 제어 및 미리듣기
-                  </span>
-                  <span className="text-[11px] text-slate-400">각 단계별 클릭 시 실시간 시연</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Phase 1: Completion Sound (완료음) */}
-                  <div className={`p-3.5 rounded-xl border transition-all ${
-                    soundSettings.playOnComplete ? 'bg-white border-emerald-300 shadow-2xs' : 'bg-slate-100/60 border-slate-200 opacity-60'
-                  }`}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="font-bold text-xs text-emerald-950 flex items-center gap-1.5">
-                        <span className="text-base">🎉</span>
-                        <span>완료음 (Completion Chime)</span>
+                {/* Master Volume Control Area */}
+                <div className={`space-y-3 transition-opacity ${soundSettings.enabled ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {getVolumeIcon()}
+                      <span className="font-bold text-slate-800 text-xs sm:text-sm">마스터 볼륨 크기</span>
+                      <span className="text-[11px] text-slate-400">
+                        ({soundSettings.enabled ? `${soundSettings.volume}%` : '음소거'})
                       </span>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={soundSettings.playOnComplete}
-                          onChange={(e) => handleTogglePhase('playOnComplete', e.target.checked)}
-                          className="sr-only peer"
-                        />
-                        <div className="w-8 h-4.5 bg-slate-300 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-600"></div>
-                      </label>
                     </div>
-                    <p className="text-[11px] text-slate-600 mb-2.5">
-                      복사·백업 성공 시 청명한 3음 하모닉 상승 차임 (Eb5➔G5➔C6)
-                    </p>
+                    
+                    {/* General Preview Button */}
                     <button
                       type="button"
                       onClick={() => handleTestPhase('complete')}
-                      className={`w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                        testingPhase === 'complete' ? 'ring-2 ring-emerald-500 bg-emerald-100' : ''
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:border-blue-400 hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95 ${
+                        testingPhase === 'complete' ? 'ring-2 ring-blue-500 bg-blue-50 text-blue-700 scale-95' : ''
                       }`}
+                      title="현재 설정된 볼륨으로 완료음(SuccessChime) 1회 재생"
                     >
-                      <Play className={`w-3.5 h-3.5 ${testingPhase === 'complete' ? 'animate-spin' : ''}`} />
-                      <span>완료음 실시간 미리듣기 🔊</span>
+                      <Play className={`w-3.5 h-3.5 ${testingPhase === 'complete' ? 'text-blue-600 animate-spin' : 'text-blue-600'}`} />
+                      <span>대표음 미리듣기</span>
                     </button>
                   </div>
 
-                  {/* Phase 2: Error Sound (오류음) */}
-                  <div className={`p-3.5 rounded-xl border transition-all ${
-                    soundSettings.playOnError ? 'bg-white border-amber-300 shadow-2xs' : 'bg-slate-100/60 border-slate-200 opacity-60'
-                  }`}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="font-bold text-xs text-amber-950 flex items-center gap-1.5">
-                        <span className="text-base">⚠️</span>
-                        <span>오류음 (Error Caution)</span>
+                  {/* Range Slider */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] font-semibold text-slate-400 w-7">0%</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={soundSettings.volume}
+                        disabled={!soundSettings.enabled}
+                        onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 disabled:cursor-not-allowed"
+                      />
+                      <span className="text-[11px] font-semibold text-slate-600 w-10 text-right">
+                        {soundSettings.volume}%
                       </span>
-                      <label className="relative inline-flex items-center cursor-pointer">
+                    </div>
+
+                    {/* Preset Volume Buttons */}
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="text-[11px] text-slate-400">빠른 볼륨 프리셋:</div>
+                      <div className="flex items-center gap-1.5">
+                        {[
+                          { label: '음소거', vol: 0 },
+                          { label: '조용히 (25%)', vol: 25 },
+                          { label: '보통 (50%)', vol: 50 },
+                          { label: '크게 (80%)', vol: 80 },
+                          { label: '최대 (100%)', vol: 100 },
+                        ].map((preset) => (
+                          <button
+                            key={preset.vol}
+                            type="button"
+                            onClick={() => {
+                              handleVolumeChange(preset.vol);
+                              if (preset.vol > 0) playTestSound('complete', preset.vol);
+                            }}
+                            className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer border ${
+                              soundSettings.volume === preset.vol
+                                ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-2xs'
+                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Header Sound Volume Slider Bar Visibility Toggle */}
+                    <div className="pt-2">
+                      <label className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors select-none">
                         <input
                           type="checkbox"
-                          checked={soundSettings.playOnError}
-                          onChange={(e) => handleTogglePhase('playOnError', e.target.checked)}
-                          className="sr-only peer"
+                          checked={!!soundSettings.showHeaderSoundBar}
+                          onChange={(e) => handleToggleShowHeaderSoundBar(e.target.checked)}
+                          className="w-4 h-4 mt-0.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
                         />
-                        <div className="w-8 h-4.5 bg-slate-300 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-amber-600"></div>
+                        <div>
+                          <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                            <span>헤더 상단 사운드 가로 소리조절바 표시</span>
+                            <span className="px-1.5 py-0.2 bg-slate-200 text-slate-700 text-[10px] font-medium rounded">기본: 비활성</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            상단 헤더 메뉴에 실시간 볼륨 조절 슬라이더 바를 표시합니다. (체크 해제 시 상단 헤더 소리조절바가 숨겨집니다)
+                          </p>
+                        </div>
                       </label>
                     </div>
-                    <p className="text-[11px] text-slate-600 mb-2.5">
-                      쓰기 실패·권한 거부 등 오류 시 주의 2음 하강 톤 (F4➔Db4)
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => handleTestPhase('error')}
-                      className={`w-full py-2 px-3 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                        testingPhase === 'error' ? 'ring-2 ring-amber-500 bg-amber-100' : ''
-                      }`}
-                    >
-                      <Play className={`w-3.5 h-3.5 ${testingPhase === 'error' ? 'animate-spin' : ''}`} />
-                      <span>오류음 실시간 미리듣기 ⚠️</span>
-                    </button>
                   </div>
-                </div>
 
-                <div className="p-2 bg-slate-100 rounded-lg text-[11px] text-slate-500 flex items-center gap-1.5">
-                  <span className="font-bold text-slate-700">✓ 복사 시작음:</span>
-                  <span>불필요한 소음 방지를 위해 복사 시작음은 기본 제거되었습니다.</span>
-                </div>
-              </div>
-            </div>
+                  {/* 3-Stage Phased Sound Effect Controls */}
+                  <div className="pt-3 border-t border-slate-100 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                        단계별 음향 효과 개별 제어 및 미리듣기
+                      </span>
+                      <span className="text-[11px] text-slate-400">각 단계별 클릭 시 실시간 시연</span>
+                    </div>
 
-            {/* Reassuring note */}
-            <div className="p-2.5 bg-indigo-50/60 rounded-xl border border-indigo-100 text-[11px] text-indigo-900 flex items-start gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0 mt-0.5" />
-              <span>
-                브라우저 내 Web Audio API를 활용하므로 외부 오디오 파일 다운로드나 네트워크 지연 없이 즉각적이고 청명한 음질로 재생됩니다. 설정은 브라우저에 안전하게 자동 저장됩니다.
-              </span>
-            </div>
-          </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Phase 1: Completion Sound (완료음) */}
+                      <div className={`p-3.5 rounded-xl border transition-all ${
+                        soundSettings.playOnComplete ? 'bg-white border-emerald-300 shadow-2xs' : 'bg-slate-100/60 border-slate-200 opacity-60'
+                      }`}>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="font-bold text-xs text-emerald-950 flex items-center gap-1.5">
+                            <span className="text-base">🎉</span>
+                            <span>완료음 (Completion Chime)</span>
+                          </span>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={soundSettings.playOnComplete}
+                              onChange={(e) => handleTogglePhase('playOnComplete', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-8 h-4.5 bg-slate-300 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-600"></div>
+                          </label>
+                        </div>
+                        <p className="text-[11px] text-slate-600 mb-2.5">
+                          복사·백업 성공 시 청명한 3음 하모닉 상승 차임 (Eb5➔G5➔C6)
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => handleTestPhase('complete')}
+                          className={`w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                            testingPhase === 'complete' ? 'ring-2 ring-emerald-500 bg-emerald-100' : ''
+                          }`}
+                        >
+                          <Play className={`w-3.5 h-3.5 ${testingPhase === 'complete' ? 'animate-spin' : ''}`} />
+                          <span>완료음 실시간 미리듣기 🔊</span>
+                        </button>
+                      </div>
 
-          {/* SECTION 2: 시작 화면 및 안내 가이드 설정 */}
-          <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-3">
-            <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              시작 가이드 및 안내 설정
-            </h4>
-
-            {onToggleDontShowStartupAgain && (
-              <label className="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors">
-                <input
-                  type="checkbox"
-                  checked={!dontShowStartupAgain}
-                  onChange={(e) => onToggleDontShowStartupAgain(!e.target.checked)}
-                  className="w-4 h-4 mt-0.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
-                />
-                <div>
-                  <div className="font-bold text-slate-800 text-xs">
-                    앱 실행 시 작업 선택창 (PC ➔ USB / USB ➔ PC) 자동으로 띄우기
-                  </div>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    체크를 해제하면 시작 시 팝업 없이 바로 메인 인증서 관리 대시보드로 진입합니다. (상단 헤더의 [시작 가이드] 버튼을 통해 언제든 다시 열 수 있습니다.)
-                  </p>
-                </div>
-              </label>
-            )}
-          </div>
-
-          {/* SECTION 3: 인증서 탐색 및 GPKI 경로 최적화 */}
-          <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-3">
-            <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-              <FolderSearch className="w-4 h-4 text-blue-600" />
-              인증서 탐색 및 GPKI(행정전자서명) 경로 최적화
-            </h4>
-
-            <label className="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors">
-              <input
-                type="checkbox"
-                checked={excludeLocalLowGpki}
-                onChange={(e) => handleToggleExcludeLocalLowGpki(e.target.checked)}
-                className="w-4 h-4 mt-0.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
-              />
-              <div>
-                <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                  <span>AppData\LocalLow\GPKI 경로 탐색 제외</span>
-                  <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">권장</span>
-                </div>
-                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                  공무원 행정전자서명(GPKI)의 정부 공식 표준 경로는 <strong className="text-slate-700">C:\GPKI\Certificate\class2</strong>입니다. 온-나라, 새올 등 행정망에서 사용되지 않는 비권장 폴더(<code className="font-mono text-slate-600 bg-slate-100 px-1 rounded">AppData\LocalLow\GPKI</code>)를 탐색 대상에서 배제합니다. (체크 해제 시 탐색을 수행하되 &apos;⚠️ 실무 미사용 경로&apos; 안내 경고가 표시됩니다)
-                </p>
-              </div>
-            </label>
-          </div>
-
-          {/* SECTION 4: USB 탐색기 자동 열기 옵션 */}
-          <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-3">
-            <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-              <FolderOpen className="w-4 h-4 text-emerald-600" />
-              USB 탐색기 자동 열기 옵션 (Auto-Open USB Folder)
-            </h4>
-
-            <label className="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors">
-              <input
-                type="checkbox"
-                checked={autoOpenUsbFolder}
-                onChange={(e) => handleToggleAutoOpenUsbFolder(e.target.checked)}
-                className="w-4 h-4 mt-0.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
-              />
-              <div>
-                <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                  <span>인증서 복사 성공 시 대상 USB 폴더를 탐색기로 자동 열기</span>
-                  <span className="px-1.5 py-0.2 bg-blue-100 text-blue-800 text-[10px] font-bold rounded">편의 옵션</span>
-                </div>
-                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                  인증서 복사 또는 USB 백업 작업이 성공적으로 완료되면, 대상 USB 드라이브 폴더를 윈도우 시스템 파일 탐색기(explorer.exe)로 자동으로 열어줍니다.
-                </p>
-              </div>
-            </label>
-          </div>
-
-          {/* SECTION 5: 디스플레이 및 테마 */}
-          <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-4">
-            <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-              <Palette className="w-4 h-4 text-purple-600" />
-              디스플레이 및 테마
-            </h4>
-
-            {/* View Mode Toggle */}
-            {onToggleAppViewMode && (
-              <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200">
-                <div className="flex items-center gap-2.5">
-                  <Layout className="w-4 h-4 text-blue-600" />
-                  <div>
-                    <div className="font-bold text-slate-800 text-xs">기본 화면 표시 모드</div>
-                    <div className="text-[11px] text-slate-500">
-                      {appViewMode === 'simple' ? '간편 모드 (주요 기능 위주 직관적 구성)' : '전문가 상세 모드 (고급 드라이브 세부정보 & 도구 표시)'}
+                      {/* Phase 2: Error Sound (오류음) */}
+                      <div className={`p-3.5 rounded-xl border transition-all ${
+                        soundSettings.playOnError ? 'bg-white border-amber-300 shadow-2xs' : 'bg-slate-100/60 border-slate-200 opacity-60'
+                      }`}>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="font-bold text-xs text-amber-950 flex items-center gap-1.5">
+                            <span className="text-base">⚠️</span>
+                            <span>오류음 (Error Caution)</span>
+                          </span>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={soundSettings.playOnError}
+                              onChange={(e) => handleTogglePhase('playOnError', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-8 h-4.5 bg-slate-300 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-amber-600"></div>
+                          </label>
+                        </div>
+                        <p className="text-[11px] text-slate-600 mb-2.5">
+                          쓰기 실패·권한 거부 등 오류 시 주의 2음 하강 톤 (F4➔Db4)
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => handleTestPhase('error')}
+                          className={`w-full py-2 px-3 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                            testingPhase === 'error' ? 'ring-2 ring-amber-500 bg-amber-100' : ''
+                          }`}
+                        >
+                          <Play className={`w-3.5 h-3.5 ${testingPhase === 'error' ? 'animate-spin' : ''}`} />
+                          <span>오류음 실시간 미리듣기 ⚠️</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-
-                <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-                  <button
-                    type="button"
-                    onClick={() => onToggleAppViewMode('simple')}
-                    className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                      appViewMode === 'simple'
-                        ? 'bg-blue-600 text-white shadow-2xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    간편 모드
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onToggleAppViewMode('advanced')}
-                    className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                      appViewMode === 'advanced'
-                        ? 'bg-blue-600 text-white shadow-2xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    전문가 모드
-                  </button>
-                </div>
               </div>
             )}
+          </div>
 
-            {/* Themes Grid */}
-            {onThemeChange && (
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700 block">
-                  테마 스타일 (4종)
+          {/* SECTION 2: 시작 화면 및 안내 가이드 설정 (접이식) */}
+          <div className="bg-slate-50 border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
+            <button
+              type="button"
+              onClick={() => toggleSection('startup')}
+              className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100/60 transition-colors cursor-pointer bg-slate-100/40 select-none"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-amber-100 text-amber-700">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <span>시작 가이드 및 안내 설정</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      !dontShowStartupAgain ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-slate-200 text-slate-700'
+                    }`}>
+                      {!dontShowStartupAgain ? '시작 팝업 자동 실행' : '메인 직접 진입'}
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    앱 시작 시 작업 선택 마법사(PC ➔ USB / USB ➔ PC) 노출 설정
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {openSections.startup ? (
+                  <ChevronDown className="w-5 h-5 text-slate-600" />
+                ) : (
+                  <ChevronRight className="w-5 h-5 text-slate-400" />
+                )}
+              </div>
+            </button>
+
+            {openSections.startup && (
+              <div className="p-5 border-t border-slate-200 bg-white animate-fadeIn">
+                {onToggleDontShowStartupAgain && (
+                  <label className="flex items-start gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={!dontShowStartupAgain}
+                      onChange={(e) => onToggleDontShowStartupAgain(!e.target.checked)}
+                      className="w-4 h-4 mt-0.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                    />
+                    <div>
+                      <div className="font-bold text-slate-800 text-xs">
+                        앱 실행 시 작업 선택창 (PC ➔ USB / USB ➔ PC) 자동으로 띄우기
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                        체크를 해제하면 시작 시 팝업 없이 바로 메인 인증서 관리 대시보드로 진입합니다. (상단 헤더의 [시작 가이드] 버튼을 통해 언제든 다시 열 수 있습니다.)
+                      </p>
+                    </div>
+                  </label>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* SECTION 3: 인증서 탐색 및 GPKI 경로 최적화 (접이식) */}
+          <div className="bg-slate-50 border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
+            <button
+              type="button"
+              onClick={() => toggleSection('gpki')}
+              className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100/60 transition-colors cursor-pointer bg-slate-100/40 select-none"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-blue-100 text-blue-700">
+                  <FolderSearch className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <span>인증서 탐색 및 GPKI(행정전자서명) 경로 최적화</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      excludeLocalLowGpki ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'
+                    }`}>
+                      {excludeLocalLowGpki ? 'GPKI 최적화 (LocalLow 제외)' : '전체 탐색'}
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    행정안전부 공식 C:\GPKI\Certificate\class2 우선 탐색 설정
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {openSections.gpki ? (
+                  <ChevronDown className="w-5 h-5 text-slate-600" />
+                ) : (
+                  <ChevronRight className="w-5 h-5 text-slate-400" />
+                )}
+              </div>
+            </button>
+
+            {openSections.gpki && (
+              <div className="p-5 border-t border-slate-200 bg-white animate-fadeIn">
+                <label className="flex items-start gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={excludeLocalLowGpki}
+                    onChange={(e) => handleToggleExcludeLocalLowGpki(e.target.checked)}
+                    className="w-4 h-4 mt-0.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <div>
+                    <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                      <span>AppData\LocalLow\GPKI 경로 탐색 제외</span>
+                      <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">권장</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                      공무원 행정전자서명(GPKI)의 정부 공식 표준 경로는 <strong className="text-slate-700">C:\GPKI\Certificate\class2</strong>입니다. 온-나라, 새올 등 행정망에서 사용되지 않는 비권장 폴더(<code className="font-mono text-slate-600 bg-slate-100 px-1 rounded">AppData\LocalLow\GPKI</code>)를 탐색 대상에서 배제합니다.
+                    </p>
+                  </div>
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {THEME_OPTIONS.map((opt) => {
-                    const isSelected =
-                      theme === opt.id ||
-                      (theme === 'pastel-black' && opt.id === 'dark') ||
-                      (theme === 'pastel-gray' && opt.id === 'gray') ||
-                      (theme === 'pastel-white' && opt.id === 'white') ||
-                      (theme === 'pastel-beige' && opt.id === 'beige');
+              </div>
+            )}
+          </div>
 
-                    return (
+          {/* SECTION 4: USB 탐색기 자동 열기 옵션 (접이식) */}
+          <div className="bg-slate-50 border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
+            <button
+              type="button"
+              onClick={() => toggleSection('usbExplorer')}
+              className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100/60 transition-colors cursor-pointer bg-slate-100/40 select-none"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-emerald-100 text-emerald-700">
+                  <FolderOpen className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <span>USB 탐색기 자동 열기 옵션 (Auto-Open USB Folder)</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      autoOpenUsbFolder ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-slate-200 text-slate-700'
+                    }`}>
+                      {autoOpenUsbFolder ? '자동 열기 ON' : '자동 열기 OFF'}
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    인증서 복사 성공 시 대상 USB 폴더를 윈도우 탐색기로 즉시 노출
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {openSections.usbExplorer ? (
+                  <ChevronDown className="w-5 h-5 text-slate-600" />
+                ) : (
+                  <ChevronRight className="w-5 h-5 text-slate-400" />
+                )}
+              </div>
+            </button>
+
+            {openSections.usbExplorer && (
+              <div className="p-5 border-t border-slate-200 bg-white animate-fadeIn">
+                <label className="flex items-start gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={autoOpenUsbFolder}
+                    onChange={(e) => handleToggleAutoOpenUsbFolder(e.target.checked)}
+                    className="w-4 h-4 mt-0.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <div>
+                    <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                      <span>인증서 복사 성공 시 대상 USB 폴더를 탐색기로 자동 열기</span>
+                      <span className="px-1.5 py-0.2 bg-blue-100 text-blue-800 text-[10px] font-bold rounded">편의 옵션</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                      인증서 복사 또는 USB 백업 작업이 성공적으로 완료되면, 대상 USB 드라이브 폴더를 윈도우 시스템 파일 탐색기(explorer.exe)로 자동으로 열어줍니다.
+                    </p>
+                  </div>
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* SECTION 5: 디스플레이 및 테마 (접이식) */}
+          <div className="bg-slate-50 border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
+            <button
+              type="button"
+              onClick={() => toggleSection('display')}
+              className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100/60 transition-colors cursor-pointer bg-slate-100/40 select-none"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-purple-100 text-purple-700">
+                  <Palette className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <span>디스플레이 및 테마</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                      {appViewMode === 'simple' ? '간편 모드' : '전문가 모드'} · {theme}
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    간편/전문가 모드 선택 및 4종 파스텔 테마 색상 설정
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {openSections.display ? (
+                  <ChevronDown className="w-5 h-5 text-slate-600" />
+                ) : (
+                  <ChevronRight className="w-5 h-5 text-slate-400" />
+                )}
+              </div>
+            </button>
+
+            {openSections.display && (
+              <div className="p-5 border-t border-slate-200 space-y-4 bg-white animate-fadeIn">
+                {/* View Mode Toggle */}
+                {onToggleAppViewMode && (
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="flex items-center gap-2.5">
+                      <Layout className="w-4 h-4 text-blue-600" />
+                      <div>
+                        <div className="font-bold text-slate-800 text-xs">기본 화면 표시 모드</div>
+                        <div className="text-[11px] text-slate-500">
+                          {appViewMode === 'simple' ? '간편 모드 (주요 기능 위주 직관적 구성)' : '전문가 상세 모드 (고급 드라이브 세부정보 & 도구 표시)'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center bg-slate-200/70 p-0.5 rounded-lg border border-slate-300">
                       <button
-                        key={opt.id}
                         type="button"
-                        onClick={() => onThemeChange(opt.id)}
-                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1.5 ${
-                          isSelected
-                            ? 'border-blue-500 bg-blue-50/80 ring-2 ring-blue-500/20 font-bold shadow-xs'
-                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-700'
+                        onClick={() => onToggleAppViewMode('simple')}
+                        className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                          appViewMode === 'simple'
+                            ? 'bg-blue-600 text-white shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        <div className="flex items-center justify-between w-full">
-                          <div
-                            className="w-4 h-4 rounded-full border shadow-2xs shrink-0"
-                            style={{ backgroundColor: opt.swatchPrimary, borderColor: opt.swatchBorder }}
-                          />
-                          {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
-                        </div>
-                        <span className="text-xs font-bold">{opt.name}</span>
-                        <span className="text-[10px] text-slate-400 truncate">{opt.description}</span>
+                        간편 모드
                       </button>
-                    );
-                  })}
-                </div>
+                      <button
+                        type="button"
+                        onClick={() => onToggleAppViewMode('advanced')}
+                        className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                          appViewMode === 'advanced'
+                            ? 'bg-blue-600 text-white shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        전문가 모드
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Themes Grid */}
+                {onThemeChange && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-700 block">
+                      테마 스타일 (4종)
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {THEME_OPTIONS.map((opt) => {
+                        const isSelected =
+                          theme === opt.id ||
+                          (theme === 'pastel-black' && opt.id === 'dark') ||
+                          (theme === 'pastel-gray' && opt.id === 'gray') ||
+                          (theme === 'pastel-white' && opt.id === 'white') ||
+                          (theme === 'pastel-beige' && opt.id === 'beige');
+
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => onThemeChange(opt.id)}
+                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1.5 ${
+                              isSelected
+                                ? 'border-blue-500 bg-blue-50/80 ring-2 ring-blue-500/20 font-bold shadow-xs'
+                                : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-700'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between w-full">
+                              <div
+                                className="w-4 h-4 rounded-full border shadow-2xs shrink-0"
+                                style={{ backgroundColor: opt.swatchPrimary, borderColor: opt.swatchBorder }}
+                              />
+                              {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
+                            </div>
+                            <span className="text-xs font-bold">{opt.name}</span>
+                            <span className="text-[10px] text-slate-400 truncate">{opt.description}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

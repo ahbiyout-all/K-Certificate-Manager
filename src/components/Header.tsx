@@ -1,9 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ShieldCheck, HardDrive, RefreshCw, FileKey, Menu, Trash2, Tag, ArrowDownLeft, FileText, Scale, Cpu, Usb, Activity, Palette, Check, Monitor, Globe, Sparkles, Sliders, Settings, Volume2, VolumeX, Volume1, Play } from 'lucide-react';
+import {
+  Menu,
+  Volume1,
+  VolumeX,
+  Play,
+  Settings,
+  Rocket,
+  RefreshCw,
+  Trash2,
+  FolderSearch,
+  History,
+  FileText,
+  ShieldCheck,
+  Sparkles,
+  Info,
+  Palette
+} from 'lucide-react';
 import { AppTheme } from '../types';
 import { THEME_OPTIONS } from '../data/themes';
 import { BRANDING_ASSETS } from '../data/brandingAssets';
-import { APP_VERSION } from '../version';
 import {
   getSoundSettings,
   saveSoundSettings,
@@ -30,6 +45,9 @@ interface HeaderProps {
   onOpenCoreSpec?: () => void;
   onOpenRenewalGuidance?: () => void;
   onCheckUpdates?: () => void;
+  onOpenPaths?: () => void;
+  onOpenHistory?: () => void;
+  activeNavTab?: 'copy' | 'history' | 'paths' | 'security';
   isCheckingUpdates?: boolean;
   hasUpdateBadge?: boolean;
   logCount?: number;
@@ -43,37 +61,28 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  totalCount,
-  validCount,
-  removableCount,
   isScanning,
-  theme = 'pastel-white',
+  theme = 'dark',
   onThemeChange,
   onRefresh,
   onOpenSecurityGuide,
-  onOpenUsbToPc,
-  onOpenDesktopApp,
-  onOpenUsbDiagnostic,
   onOpenTrash,
   onOpenActivityLogs,
   onOpenLicense,
-  onOpenCoreSpec,
-  onOpenRenewalGuidance,
   onCheckUpdates,
+  onOpenPaths,
+  onOpenHistory,
+  activeNavTab = 'copy',
   isCheckingUpdates = false,
   hasUpdateBadge = false,
-  logCount = 0,
   trashCount = 0,
-  lastScanTime = '오늘 14:02',
+  lastScanTime,
   onToggleMobileMenu,
   appViewMode = 'simple',
   onToggleAppViewMode,
   onOpenStartupWorkflow,
   onOpenSettings,
 }) => {
-  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
-  const themeMenuRef = useRef<HTMLDivElement>(null);
-
   const [soundSettings, setSoundSettings] = useState<SoundSettings>(getSoundSettings);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const volumeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -130,86 +139,91 @@ export const Header: React.FC<HeaderProps> = ({
     setTimeout(() => setIsPlayingPreview(false), 500);
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target as Node)) {
-        setIsThemeMenuOpen(false);
-      }
-    };
-    if (isThemeMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isThemeMenuOpen]);
-
-  const currentThemeOption = THEME_OPTIONS.find(t => t.id === theme) || THEME_OPTIONS[0];
+  const normalizedTheme =
+    theme === 'pastel-black' ? 'dark' :
+    theme === 'pastel-gray' ? 'gray' :
+    theme === 'pastel-white' || theme === 'classic' ? 'white' :
+    theme === 'pastel-beige' ? 'beige' :
+    theme;
 
   return (
-    <header id="app-header" className="h-14 bg-white border-b border-slate-200 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20 shadow-xs transition-colors">
-      {/* Left: Title & Tag */}
-      <div className="flex items-center space-x-2">
+    <header
+      id="app-header"
+      className="wpf-native h-16 px-3 sm:px-4 flex items-center justify-between sticky top-0 z-30 shrink-0 select-none"
+      style={{
+        backgroundColor: 'var(--wpf-bg-card)',
+        borderBottom: '1px solid var(--wpf-border)',
+        color: 'var(--wpf-text-primary)',
+      }}
+    >
+      {/* Left: Brand Logo & Title (Matches WPF Grid.Column="0") */}
+      <div className="flex items-center gap-2.5 shrink-0">
         {onToggleMobileMenu && (
           <button
             type="button"
             onClick={onToggleMobileMenu}
-            className="md:hidden p-1.5 text-slate-600 hover:text-slate-900 rounded-md hover:bg-slate-100 cursor-pointer"
-            aria-label="메뉴 열기"
+            className="wpf-native lg:hidden p-1.5 rounded-[6px] cursor-pointer transition-colors"
+            style={{
+              backgroundColor: 'var(--wpf-bg-dark)',
+              border: '1px solid var(--wpf-border)',
+              color: 'var(--wpf-text-primary)',
+            }}
+            aria-label="카테고리 메뉴 열기"
           >
-            <Menu className="w-4.5 h-4.5" />
+            <Menu className="w-4 h-4" />
           </button>
         )}
 
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg overflow-hidden shadow-2xs border border-slate-200/90 bg-slate-50 flex items-center justify-center shrink-0">
-            <img 
-              src={BRANDING_ASSETS.appIcon} 
-              alt="K-인증서 매니저 로고" 
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-              onError={(e) => {
-                const target = e.currentTarget;
-                if (target.src !== BRANDING_ASSETS.rawAppIcon) {
-                  target.src = BRANDING_ASSETS.rawAppIcon;
-                }
-              }}
-            />
-          </div>
-          <h1 className="text-sm sm:text-base font-bold text-slate-800 tracking-tight leading-tight hidden xs:block">
-            인증서 일괄 관리
-          </h1>
+        <div className="w-9 h-9 rounded-[8px] overflow-hidden shrink-0 flex items-center justify-center">
+          <img
+            src={BRANDING_ASSETS.appIcon}
+            alt="K-인증서 매니저 로고"
+            className="w-8.5 h-8.5 object-contain rounded-[6px]"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (target.src !== BRANDING_ASSETS.rawAppIcon) {
+                target.src = BRANDING_ASSETS.rawAppIcon;
+              }
+            }}
+          />
         </div>
+
+        <h1
+          className="text-[15px] font-bold tracking-tight whitespace-nowrap"
+          style={{ color: 'var(--wpf-text-primary)' }}
+        >
+          K-인증서 매니저
+        </h1>
       </div>
 
-      {/* Right: Actions */}
+      {/* Right Scrollable Header Action Bar (Matches WPF Grid.Column="1" HeaderScrollViewer) */}
       <div
         ref={headerScrollRef}
         onWheel={handleHeaderWheel}
-        className="flex-1 flex items-center justify-end overflow-x-auto min-w-0 ml-2 sm:ml-4 py-1 select-none scrollbar-none"
+        className="flex-1 flex items-center justify-end overflow-x-auto min-w-0 ml-3 py-1 scrollbar-none"
+        title="마우스 휠을 굴려 상단 메뉴 도구를 좌우로 스크롤할 수 있습니다"
       >
-        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
-          <span className="text-[10px] text-slate-500 hidden xl:inline shrink-0">
-            스캔: <span className="font-bold text-slate-700">{lastScanTime}</span>
-          </span>
-
-          {/* Theme Select */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Theme Switcher Dropdown Box */}
           {onThemeChange && (
-            <div className="flex items-center bg-slate-100/90 px-2 py-1 rounded-lg border border-slate-200/90 gap-1 shadow-2xs">
-              <Palette className="w-3 h-3 text-blue-600 shrink-0" />
+            <div
+              className="wpf-native flex items-center gap-1.5 px-2 py-1 rounded-[6px] shrink-0"
+              style={{
+                backgroundColor: 'var(--wpf-bg-dark)',
+                border: '1px solid var(--wpf-border)',
+              }}
+            >
+              <Palette className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--wpf-accent-text)' }} />
               <select
-                value={
-                  theme === 'pastel-black' ? 'dark' :
-                  theme === 'pastel-gray' ? 'gray' :
-                  theme === 'pastel-white' ? 'white' :
-                  theme === 'pastel-beige' ? 'beige' :
-                  theme
-                }
+                value={normalizedTheme}
                 onChange={(e) => onThemeChange(e.target.value as AppTheme)}
-                className="bg-transparent text-[10px] font-bold text-slate-800 focus:outline-none cursor-pointer"
+                className="wpf-native bg-transparent text-xs font-semibold focus:outline-none cursor-pointer pr-1"
+                style={{ color: 'var(--wpf-text-primary)' }}
+                title="원하는 화면 테마 스타일을 선택하세요."
               >
                 {THEME_OPTIONS.map((opt) => (
-                  <option key={opt.id} value={opt.id} className="bg-white text-slate-900 font-medium">
+                  <option key={opt.id} value={opt.id}>
                     {opt.name}
                   </option>
                 ))}
@@ -217,92 +231,222 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
 
-          {/* Mode Toggle */}
+          {/* Mode Switch: [간편 모드] vs [상세 모드] (Matches WPF ModeToggleRadio) */}
           {onToggleAppViewMode && (
-            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/90 shadow-2xs">
+            <div
+              className="wpf-native flex items-center p-0.5 rounded-[6px] shrink-0"
+              style={{
+                backgroundColor: 'var(--wpf-bg-dark)',
+                border: '1px solid var(--wpf-border)',
+              }}
+            >
               <button
                 type="button"
                 onClick={() => onToggleAppViewMode('simple')}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                  appViewMode === 'simple' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600'
+                className={`wpf-native px-2.5 py-1 rounded-[4px] text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                  appViewMode === 'simple'
+                    ? 'bg-[#2563EB] text-white'
+                    : 'hover:bg-[var(--wpf-bg-hover)]'
                 }`}
+                style={appViewMode !== 'simple' ? { color: 'var(--wpf-text-secondary)' } : undefined}
+                title="초보자용 간편 모드: 핵심 복사 기능과 목록에 집중합니다."
               >
-                간편
+                간편 모드
               </button>
               <button
                 type="button"
                 onClick={() => onToggleAppViewMode('advanced')}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                  appViewMode === 'advanced' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600'
+                className={`wpf-native px-2.5 py-1 rounded-[4px] text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                  appViewMode === 'advanced'
+                    ? 'bg-[#2563EB] text-white'
+                    : 'hover:bg-[var(--wpf-bg-hover)]'
                 }`}
+                style={appViewMode !== 'advanced' ? { color: 'var(--wpf-text-secondary)' } : undefined}
+                title="전문가용 상세 모드: 드라이브 상세 정보 및 부가 도구를 모두 표시합니다."
               >
-                상세
+                상세 모드
               </button>
             </div>
           )}
 
-          {/* Compact Sound Widget */}
+          {/* Sound Volume Bar (Matches WPF ShowHeaderSoundBar) */}
           {soundSettings.showHeaderSoundBar && (
-            <div className="flex items-center bg-slate-100/95 px-1.5 py-1 rounded-lg border border-slate-200/90 gap-1.5 shadow-2xs">
-              <button onClick={handleToggleSound} className="cursor-pointer">
+            <div
+              className="wpf-native flex items-center gap-1.5 px-2 py-1 rounded-[6px] shrink-0"
+              style={{
+                backgroundColor: 'var(--wpf-bg-dark)',
+                border: '1px solid var(--wpf-border)',
+              }}
+              title="복사 성공 알림음 볼륨 조절 및 음소거 토글"
+            >
+              <button
+                type="button"
+                onClick={handleToggleSound}
+                className="wpf-btn-secondary wpf-native px-1.5 py-0.5 cursor-pointer"
+                title="성공 알림음 켜기/끄기"
+              >
                 {soundSettings.enabled && soundSettings.volume > 0 ? (
-                  <Volume1 className="w-3 h-3 text-blue-600" />
+                  <Volume1 className="w-3.5 h-3.5" style={{ color: 'var(--wpf-accent-text)' }} />
                 ) : (
-                  <VolumeX className="w-3 h-3 text-rose-500" />
+                  <VolumeX className="w-3.5 h-3.5 text-[#F43F5E]" />
                 )}
               </button>
+              <span className="text-[11px] hidden xl:inline whitespace-nowrap" style={{ color: 'var(--wpf-text-secondary)' }}>
+                알림음:
+              </span>
               <input
                 type="range"
                 min="0"
                 max="100"
                 value={soundSettings.enabled ? soundSettings.volume : 0}
                 onChange={handleVolumeChange}
-                className="w-12 sm:w-16 h-1 bg-slate-300 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"
+                className="wpf-native w-14 h-1 rounded cursor-pointer accent-[#2563EB]"
               />
-              <button onClick={handlePreviewChime} className="cursor-pointer disabled:opacity-50">
-                <Play className={`w-2.5 h-2.5 ${isPlayingPreview ? 'text-blue-600' : 'text-slate-400'}`} />
+              <span
+                className="text-[11px] font-bold w-8 text-right tabular-nums hidden xl:inline"
+                style={{ color: 'var(--wpf-accent-text)' }}
+              >
+                {soundSettings.enabled ? soundSettings.volume : 0}%
+              </span>
+              <button
+                type="button"
+                onClick={handlePreviewChime}
+                className="wpf-btn-secondary wpf-native px-1.5 py-0.5 cursor-pointer"
+                title="성공 알림음 미리듣기"
+              >
+                <Play className={`w-3 h-3 ${isPlayingPreview ? 'text-[#2563EB]' : ''}`} />
               </button>
             </div>
           )}
 
+          {/* Settings */}
           {onOpenSettings && (
             <button
+              type="button"
               onClick={onOpenSettings}
-              className="p-1.5 bg-slate-100 hover:bg-blue-50 text-slate-700 border border-slate-200/90 rounded-lg shadow-2xs cursor-pointer"
-              title="설정"
+              className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+              title="환경 설정 창 열기 (알림음, 테마, UI 모드, 시작 가이드)"
             >
-              <Settings className="w-3.5 h-3.5" />
+              <Settings className="w-3.5 h-3.5" style={{ color: 'var(--wpf-text-secondary)' }} />
+              <span className="font-semibold">환경 설정</span>
             </button>
           )}
 
+          {/* Startup Guide (Primary Blue Button) */}
           {onOpenStartupWorkflow && (
             <button
+              type="button"
               onClick={onOpenStartupWorkflow}
-              className="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-[10px] font-bold shadow-xs cursor-pointer border border-blue-500"
+              className="wpf-btn-primary wpf-native px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+              title="시작 작업 선택 창 및 순서별 가이드 모션을 실행합니다."
             >
-              가이드
+              <Rocket className="w-3.5 h-3.5" />
+              <span>시작 가이드</span>
             </button>
           )}
 
-          {onOpenTrash && (
-            <button
-              onClick={onOpenTrash}
-              className="px-2.5 py-1 bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-200/90 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer shadow-2xs transition-colors"
-              title="안전 격리 휴지통 및 복원된 항목 암호화 보호 보관소(DPAPI / AES-256)"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-              <span>휴지통{trashCount > 0 ? ` (${trashCount})` : ''}</span>
-            </button>
-          )}
-
+          {/* Refresh */}
           <button
+            type="button"
             onClick={onRefresh}
             disabled={isScanning}
-            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50 shadow-2xs"
+            className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+            title={lastScanTime ? `인증서 보관함 및 드라이브 새로고침 (마지막 스캔: ${lastScanTime})` : '새로고침'}
           >
-            <RefreshCw className={`w-3 h-3 ${isScanning ? 'animate-spin' : ''}`} />
-            <span>{isScanning ? '...' : '새로고침'}</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} style={{ color: 'var(--wpf-accent-text)' }} />
+            <span>{isScanning ? '스캔 중...' : '새로고침'}</span>
           </button>
+
+          {/* Trash */}
+          {onOpenTrash && (
+            <button
+              type="button"
+              onClick={onOpenTrash}
+              className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+              title="안전 격리 휴지통 및 복원된 항목 암호화 보호 보관소"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-[#F43F5E]" />
+              <span className="font-semibold tabular-nums" style={{ color: '#F43F5E' }}>
+                휴지통 ({trashCount})
+              </span>
+            </button>
+          )}
+
+          {/* Advanced Mode Only Quick Tools (Matches WPF MainWindow.xaml lines 153-195) */}
+          {appViewMode === 'advanced' && (
+            <>
+              {onOpenPaths && (
+                <button
+                  type="button"
+                  onClick={onOpenPaths}
+                  className={`wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 rounded-[6px] cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
+                    activeNavTab === 'paths' ? 'wpf-btn-primary' : 'wpf-btn-secondary'
+                  }`}
+                >
+                  <FolderSearch className="w-3.5 h-3.5" />
+                  <span>탐색 경로</span>
+                </button>
+              )}
+
+              {onOpenHistory && (
+                <button
+                  type="button"
+                  onClick={onOpenHistory}
+                  className={`wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 rounded-[6px] cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
+                    activeNavTab === 'history' ? 'wpf-btn-primary' : 'wpf-btn-secondary'
+                  }`}
+                >
+                  <History className="w-3.5 h-3.5" />
+                  <span>백업 이력</span>
+                </button>
+              )}
+
+              {onOpenActivityLogs && (
+                <button
+                  type="button"
+                  onClick={onOpenActivityLogs}
+                  className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>작업 로그</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={onOpenSecurityGuide}
+                className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
+                <span>보안 수칙</span>
+              </button>
+
+              {onCheckUpdates && (
+                <button
+                  type="button"
+                  onClick={onCheckUpdates}
+                  disabled={isCheckingUpdates}
+                  className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 relative disabled:opacity-50"
+                  title="GitHub 최신 릴리스 및 버전 수동 확인"
+                >
+                  <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--wpf-badge-expiring-text)' }} />
+                  <span>{isCheckingUpdates ? '확인 중...' : '업데이트 확인'}</span>
+                  {hasUpdateBadge && <span className="w-2 h-2 rounded-full bg-[#F43F5E]" />}
+                </button>
+              )}
+
+              {onOpenLicense && (
+                <button
+                  type="button"
+                  onClick={onOpenLicense}
+                  className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                  <span>정보</span>
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
     </header>

@@ -36,6 +36,7 @@ import { playStartSound, playCompletionSound, playErrorSound } from '../utils/au
 import { SuccessCelebration } from './SuccessCelebration';
 import { getDriveBadgeStyle } from '../utils/driveBadgeUtils';
 import { CopyErrorAlertModal, CopyErrorContext } from './CopyErrorAlertModal';
+import { isPcCertificate } from '../utils/driveFilter';
 
 interface UsbToPcModalProps {
   isOpen: boolean;
@@ -88,6 +89,19 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
     }
     return fixed;
   }, [availableDrives]);
+
+  const cleanTargetPcDrive = useMemo(() => {
+    const clean = (targetPcDrive || 'C:').replace(/[^a-zA-Z]/g, '').toUpperCase();
+    return (clean || 'C') + ':';
+  }, [targetPcDrive]);
+
+  const selectedTargetDriveObj = useMemo(
+    () =>
+      pcLocalTargetDrives.find(
+        d => d.letter.replace(/[^a-zA-Z]/g, '').toUpperCase() + ':' === cleanTargetPcDrive
+      ) || pcLocalTargetDrives[0],
+    [pcLocalTargetDrives, cleanTargetPcDrive]
+  );
   
   // Processing & Progress
   const [isProcessing, setIsProcessing] = useState(false);
@@ -334,7 +348,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
       // Trigger success callback to add to main certificates list
       onImportSuccess(
         res.importedCerts,
-        `${certsToCopy.length}명의 인증서가 내 컴퓨터(C:\\Users\\${targetUsername}\\AppData\\LocalLow)로 안전하게 복사되었습니다.`
+        `${certsToCopy.length}명의 인증서가 내 컴퓨터(${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow)로 안전하게 복사되었습니다.`
       );
     } catch (err: any) {
       playErrorSound();
@@ -434,7 +448,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                   </span>
                 </h4>
                 <p className="text-xs sm:text-sm text-emerald-800 mt-1 max-w-lg mx-auto">
-                  선택하신 {importResult.importedCount + importResult.updatedCount}명의 인증서가 로컬 하드디스크(C:) 표준 폴더에 성공적으로 안착되었습니다.
+                  선택하신 {importResult.importedCount + importResult.updatedCount}명의 인증서가 로컬 하드디스크({cleanTargetPcDrive}) 표준 폴더에 성공적으로 안착되었습니다.
                 </p>
                 <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
                   <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full border border-emerald-300 text-xs font-mono text-emerald-900">
@@ -545,10 +559,10 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                       도착지 (Target)
                     </span>
                     <span className="text-sm font-bold text-slate-900">
-                      내 컴퓨터 로컬 (C: 하드디스크)
+                      내 컴퓨터 로컬 ({cleanTargetPcDrive} {selectedTargetDriveObj?.name ? `· ${selectedTargetDriveObj.name}` : '하드디스크'})
                     </span>
                     <span className="text-[11px] text-slate-500 block">
-                      C:\Users\{targetUsername}\AppData\LocalLow
+                      {cleanTargetPcDrive}\Users\{targetUsername}\AppData\LocalLow
                     </span>
                   </div>
                 </div>
@@ -925,9 +939,14 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                       <tbody className="divide-y divide-slate-200 text-slate-800">
                         {detectedCerts.map((cert, index) => {
                           const isSelected = selectedCertIds.includes(cert.id);
-                          const isAlreadyInPc = existingCertificates.some(
-                            c => c.serialNumber === cert.serialNumber || (c.name === cert.name && c.category === cert.category)
-                          );
+                          const isAlreadyInPc = existingCertificates.some(c => {
+                            if (!isPcCertificate(c)) return false;
+                            const locUpper = (c.sourceLocation || '').trim().toUpperCase();
+                            const drvUpper = (c.sourceDrive || '').trim().toUpperCase();
+                            const onTargetDrive = locUpper.startsWith(cleanTargetPcDrive) || drvUpper.includes(cleanTargetPcDrive);
+                            if (!onTargetDrive) return false;
+                            return c.serialNumber === cert.serialNumber || (c.name === cert.name && c.category === cert.category);
+                          });
 
                           return (
                             <tr
@@ -1004,9 +1023,59 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
 
               {/* Step 4: PC Configuration & Duplicate File Strategy */}
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-                <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                <div className="text-xs font-bold text-slate-800 flex items-center justify-between flex-wrap gap-1.5">
                   <span>3. 컴퓨터(PC) 저장소 및 동일 파일 중복 해결 옵션</span>
-                  <span className="text-[11px] text-blue-600 font-normal">C:\Users\{targetUsername}\AppData\LocalLow</span>
+                  <span className="text-[11px] text-blue-600 font-normal font-mono">
+                    {cleanTargetPcDrive}\Users\{targetUsername}\AppData\LocalLow
+                  </span>
+                </div>
+
+                {/* 도착 PC 디스크 지정 (Target Drive Selector) */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                    도착 PC 디스크 지정 (저장 대상 로컬 드라이브):
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {pcLocalTargetDrives.map(drive => {
+                      const driveLetterClean = drive.letter.replace(/[^a-zA-Z]/g, '').toUpperCase() + ':';
+                      const isTargetSelected = cleanTargetPcDrive === driveLetterClean;
+                      const driveBadge = getDriveBadgeStyle(drive);
+                      return (
+                        <button
+                          key={drive.id}
+                          type="button"
+                          onClick={() => setTargetPcDrive(driveLetterClean)}
+                          className={`p-2.5 rounded-xl border-2 text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                            isTargetSelected
+                              ? 'border-blue-600 bg-blue-50/90 text-blue-950 shadow-xs ring-2 ring-blue-500/20'
+                              : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                              isTargetSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'
+                            }`}>
+                              <Laptop className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className={driveBadge.letterBadgeClass}>{driveLetterClean}</span>
+                                <span className="text-xs font-extrabold truncate">{drive.name}</span>
+                              </div>
+                              <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                                여유: {drive.freeSpace} · {drive.fileSystem || 'NTFS'}
+                              </div>
+                            </div>
+                          </div>
+                          {isTargetSelected && (
+                            <span className="px-1.5 py-0.5 bg-blue-600 text-white rounded text-[10px] font-bold shrink-0">
+                              도착지
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
@@ -1086,9 +1155,9 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                   </div>
                 </div>
 
-                <div className="text-[11px] text-slate-600 font-mono bg-white p-2 rounded-lg border border-slate-200/80 flex items-center justify-between">
+                <div className="text-[11px] text-slate-600 font-mono bg-white p-2 rounded-lg border border-slate-200/80 flex items-center justify-between flex-wrap gap-1">
                   <span>
-                    최종 복사 경로: <strong className="text-blue-700">C:\Users\{targetUsername}\AppData\LocalLow\(NPKI | GPKI)\...</strong>
+                    최종 복사 경로: <strong className="text-blue-700">{cleanTargetPcDrive}\Users\{targetUsername}\AppData\LocalLow\(NPKI | EPKI) · {cleanTargetPcDrive}\GPKI</strong>
                   </span>
                   <span className="text-[10px] text-slate-600">
                     선택 처리방침: <strong className="text-indigo-700">{
@@ -1108,7 +1177,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                       <Loader2 className="w-4 h-4 animate-spin" />
                       컴퓨터(PC)로 복사 진행 중 ({progress}%)
                     </span>
-                    <span className="text-slate-400 font-semibold">로컬 C: 드라이브</span>
+                    <span className="text-slate-400 font-semibold">로컬 {cleanTargetPcDrive} 드라이브</span>
                   </div>
                   <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
                     <div
@@ -1164,16 +1233,16 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                     onClick={() => {
                       setCopyErrorModalInfo({
                         title: '컴퓨터 로컬 보관함 쓰기 권한 거부 (Permission Denied)',
-                        summary: `내 컴퓨터 C:\\Users\\${targetUsername}\\AppData\\LocalLow\\NPKI 폴더에 대한 파일 생성 및 쓰기 권한이 거부되었습니다.`,
+                        summary: `내 컴퓨터 ${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow\\NPKI 폴더에 대한 파일 생성 및 쓰기 권한이 거부되었습니다.`,
                         category: 'PERMISSION_DENIED',
                         solutions: [
                           '브라우저에서 [파일 시스템 권한] 허용 여부를 확인해 주세요.',
                           'Windows 관리자 계정으로 로그인되어 있는지 확인해 주세요.',
                           '사내 PC 보안 정책 또는 백신 프로그램(V3, 알약 등)의 실시간 감시가 AppData 쓰기를 차단하는지 확인해 주세요.',
-                          `C:\\Users\\${targetUsername}\\AppData\\LocalLow 폴더가 [읽기 전용]으로 잠겨 있지 않은지 확인해 주세요.`,
+                          `${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow 폴더가 [읽기 전용]으로 잠겨 있지 않은지 확인해 주세요.`,
                         ],
-                        driveLetter: 'C:\\',
-                        driveName: '내 컴퓨터 (로컬 C: 드라이브)',
+                        driveLetter: `${cleanTargetPcDrive}\\`,
+                        driveName: `내 컴퓨터 (로컬 ${cleanTargetPcDrive} 드라이브)`,
                         direction: 'USB_TO_PC',
                         failedCount: selectedCertIds.length,
                         certNames: selectedCerts.map(c => c.name),

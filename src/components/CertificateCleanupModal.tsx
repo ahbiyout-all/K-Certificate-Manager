@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { CertificateItem } from '../types';
 import { isCertificateExpired } from '../utils/certParser';
+import { isUsbCertificate } from '../utils/driveFilter';
 
 export type CleanupModalMode = 'EXPIRED' | 'OTHER_USERS' | 'SELECTED' | 'SINGLE';
 export type StorageMediumFilter = 'ALL' | 'LOCAL' | 'REMOVABLE';
@@ -48,11 +49,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
 
   // Helper to determine if a cert is on removable USB
-  const isUsbCert = (cert: CertificateItem): boolean => {
-    const loc = (cert.sourceLocation || '').toUpperCase();
-    const drv = (cert.sourceDrive || '').toUpperCase();
-    return drv.includes('이동식') || drv.includes('USB') || loc.startsWith('E:') || loc.startsWith('F:') || loc.startsWith('G:') || loc.startsWith('H:');
-  };
+  const isUsbCert = (cert: CertificateItem): boolean => isUsbCertificate(cert);
 
   const getDriveBadge = (cert: CertificateItem) => {
     const isUsb = isUsbCert(cert);

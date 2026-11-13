@@ -1,147 +1,184 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  CertificateItem, 
+import {
+  CertificateItem,
   CertCategory,
   DiskDrive
 } from '../types';
 import { isNonStandardCertPath, isRareLocalLowGpkiPath } from '../utils/certPathUtils';
 import { isCertificateExpired } from '../utils/certParser';
-import { filterPhysicalDrivesOnly } from '../utils/driveFilter';
+import { isUsbCertificate as isUsbCertHelper } from '../utils/driveFilter';
 import { getDriveColorInfo } from '../utils/driveColors';
 import { getAccurateIssuerInfo } from '../utils/issuerUtils';
-import { 
-  Search, 
-  Copy, 
-  Eye, 
-  HardDrive, 
+import {
+  Search,
+  Copy,
+  HardDrive,
   Laptop,
-  Building2, 
-  User, 
-  Briefcase, 
-  Calendar, 
-  Check,
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
-  XCircle,
   FileKey,
   Trash2,
-  Lock,
-  ArrowUpDown,
-  CalendarX,
-  Users,
+  AlertTriangle,
   RotateCcw,
   ArrowDownLeft,
-  FileText,
-  Sparkles,
-  ChevronRight,
-  Cpu,
-  LayoutGrid,
   SlidersHorizontal,
   Zap,
-  Monitor,
-  RefreshCw,
-  ExternalLink
+  KeyRound,
+  Save,
+  Sparkles,
+  Check,
+  X,
+  LayoutGrid,
+  Table as TableIcon,
+  ArrowUpDown
 } from 'lucide-react';
+import { SidebarCategoryFilter, SidebarSourceFilter } from './Sidebar';
+
+export function filterCertificatesByCriteria(
+  certificates: CertificateItem[],
+  categoryFilter: SidebarCategoryFilter,
+  sourceFilter: SidebarSourceFilter,
+  searchQuery = ''
+): CertificateItem[] {
+  return certificates.filter(cert => {
+    if (categoryFilter === 'GPKI' && cert.category !== 'GPKI_GOV') return false;
+    if (categoryFilter === 'EPKI' && cert.category !== 'EPKI_EDU') return false;
+    if (categoryFilter === 'NPKI' && cert.category !== 'NPKI_BANK' && cert.category !== 'NPKI_CORP') return false;
+    if (categoryFilter === 'EXPIRED' && !isCertificateExpired(cert)) return false;
+    if (categoryFilter === 'NON_STANDARD' && !cert.isCustomPath && !isNonStandardCertPath(cert.sourceLocation)) return false;
+
+    const isUsb = isUsbCertHelper(cert);
+    if (sourceFilter === 'LOCAL' && isUsb) return false;
+    if (sourceFilter === 'REMOVABLE' && !isUsb) return false;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchName = cert.name.toLowerCase().includes(q);
+      const matchIssuer = cert.issuer.toLowerCase().includes(q);
+      const matchCa = (cert.caSignatureName || '').toLowerCase().includes(q);
+      const matchDept = (cert.departmentOrOrg || '').toLowerCase().includes(q);
+      const matchPolicy = cert.policy.toLowerCase().includes(q);
+      const matchSerial = cert.serialNumber.toLowerCase().includes(q);
+      const matchPath = cert.sourceLocation.toLowerCase().includes(q);
+      const matchLocationType = isUsb ? 'usb 이동식' : '컴퓨터 pc 로컬';
+      return (
+        matchName ||
+        matchIssuer ||
+        matchCa ||
+        matchDept ||
+        matchPolicy ||
+        matchSerial ||
+        matchPath ||
+        matchLocationType.includes(q)
+      );
+    }
+
+    return true;
+  });
+}
 
 interface CertificateListProps {
   certificates: CertificateItem[];
   selectedIds: string[];
   recentlyCopiedIds?: string[];
+  inspectedCertId?: string | null;
   availableDrives?: DiskDrive[];
+  categoryFilter: SidebarCategoryFilter;
+  sourceFilter: SidebarSourceFilter;
+  searchQuery: string;
+  onSearchQueryChange: (q: string) => void;
+  onResetFilters?: () => void;
+  onInspectCert?: (cert: CertificateItem) => void;
   onToggleSelect: (id: string) => void;
   onSelectAll: () => void;
   onSelectFilteredIds?: (ids: string[]) => void;
   onClearSelection: () => void;
-  onSelectCategory?: (category: 'ALL' | 'GOV' | 'BANK' | 'CORP') => void;
   onOpenBackupModal: () => void;
-  onSelectTargetDriveAndBackup?: (driveId: string) => void;
+  onBackupAll?: () => void;
   onOpenDetailModal: (cert: CertificateItem) => void;
   onQuickBackupSingle: (cert: CertificateItem) => void;
   onOpenCleanupModal: (mode: 'EXPIRED' | 'OTHER_USERS' | 'SELECTED') => void;
   onRequestDeleteSingle: (cert: CertificateItem) => void;
-  onDeleteCustomCert?: (id: string) => void;
-  onOpenTrash?: () => void;
-  trashCount?: number;
+  onUndoDelete?: () => void;
+  canUndo?: boolean;
   onOpenUsbToPc?: (driveLetter?: string) => void;
-  onOpenDesktopApp?: () => void;
-  onOpenUsbDiagnostic?: () => void;
-  onOpenActivityLogs?: () => void;
-  logCount?: number;
-  onRefresh?: () => void;
-  isScanning?: boolean;
-  onOpenRenewalGuidance?: (targets?: CertificateItem[]) => void;
+  onNotifyCopy?: (msg: string) => void;
 }
 
 export const CertificateList: React.FC<CertificateListProps> = ({
   certificates,
   selectedIds,
   recentlyCopiedIds = [],
-  availableDrives = [],
+  inspectedCertId = null,
+  categoryFilter,
+  sourceFilter,
+  searchQuery,
+  onSearchQueryChange,
+  onResetFilters,
+  onInspectCert,
   onToggleSelect,
   onSelectAll,
   onSelectFilteredIds,
   onClearSelection,
   onOpenBackupModal,
-  onSelectTargetDriveAndBackup,
+  onBackupAll,
   onOpenDetailModal,
   onQuickBackupSingle,
   onOpenCleanupModal,
   onRequestDeleteSingle,
-  onDeleteCustomCert,
-  onOpenTrash,
-  trashCount = 0,
+  onUndoDelete,
+  canUndo = false,
   onOpenUsbToPc,
-  onOpenDesktopApp,
-  onOpenUsbDiagnostic,
-  onOpenActivityLogs,
-  logCount = 0,
-  onRefresh,
-  isScanning = false,
-  onOpenRenewalGuidance,
+  onNotifyCopy,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'VALID' | 'EXPIRING' | 'EXPIRED' | 'GOV' | 'BANK' | 'CORP' | 'NON_STANDARD'>('ALL');
-  const [sourceFilter, setSourceFilter] = useState<'ALL' | 'LOCAL' | 'REMOVABLE'>('ALL');
-  const [onlyDrivesWithCerts, setOnlyDrivesWithCerts] = useState<boolean>(false);
-  
-  // Column widths state for resizable columns with vertical separator lines
   const DEFAULT_COL_WIDTHS = useMemo(() => ({
-    index: 52,
-    select: 46,
-    storage: 130,
-    category: 320,
-    name: 210,
-    issuer: 210,
-    notAfter: 130,
-    status: 120,
-    actions: 175,
+    index: 46,
+    select: 44,
+    category: 112,
+    storage: 132,
+    nameAndPath: 340,
+    issuer: 195,
+    notAfter: 108,
+    status: 102,
+    privateKey: 74,
+    actions: 174,
   }), []);
 
   const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
     try {
-      const saved = localStorage.getItem("kcert_col_widths_v1");
+      const saved = localStorage.getItem('kcert_wpf_col_widths_v2');
       if (saved) {
         return { ...DEFAULT_COL_WIDTHS, ...JSON.parse(saved) };
       }
-    } catch (e) {
-      // ignore
-    }
+    } catch {}
     return DEFAULT_COL_WIDTHS;
   });
 
-  // Table padding density state: "compact" | "normal" | "spacious"
-  const [paddingDensity, setPaddingDensity] = useState<"compact" | "normal" | "spacious">(() => {
+  const [paddingDensity, setPaddingDensity] = useState<'compact' | 'normal' | 'spacious'>(() => {
     try {
-      const saved = localStorage.getItem("kcert_col_padding_density");
-      if (saved === "compact" || saved === "normal" || saved === "spacious") return saved;
-    } catch (e) {
-      // ignore
-    }
-    return "normal";
+      const saved = localStorage.getItem('kcert_col_padding_density');
+      if (saved === 'compact' || saved === 'normal' || saved === 'spacious') return saved;
+    } catch {}
+    return 'normal';
   });
 
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
+    try {
+      const saved = localStorage.getItem('kcert_cert_list_view_mode');
+      if (saved === 'grid' || saved === 'table') return saved;
+    } catch {}
+    return 'grid';
+  });
+
+  const handleSetViewMode = (mode: 'grid' | 'table') => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('kcert_cert_list_view_mode', mode);
+    } catch {}
+  };
+
   const [resizingCol, setResizingCol] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'category' | 'storage' | 'name' | 'issuer' | 'notAfter' | 'status'>('notAfter');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [copiedPathId, setCopiedPathId] = useState<string | null>(null);
 
   const handleStartResize = (colKey: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -152,83 +189,49 @@ export const CertificateList: React.FC<CertificateListProps> = ({
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - startX;
-      // '인증서 명칭 및 경로', '상태' 컬럼의 너비를 최소 30px까지 자유자재로 줄일 수 있도록 완화
-      const minW = (colKey === "category" || colKey === "status")
-        ? 30 
-        : (colKey === "index" || colKey === "select" ? 28 : 36);
+      const minW = colKey === 'index' || colKey === 'select' ? 32 : 45;
       const newWidth = Math.max(minW, startWidth + deltaX);
       setColWidths(prev => ({ ...prev, [colKey]: newWidth }));
     };
 
     const onMouseUp = () => {
       setResizingCol(null);
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
       setColWidths(current => {
         try {
-          localStorage.setItem("kcert_col_widths_v1", JSON.stringify(current));
-        } catch (err) {}
+          localStorage.setItem('kcert_wpf_col_widths_v2', JSON.stringify(current));
+        } catch {}
         return current;
       });
     };
 
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
   };
 
   const handleResetColWidths = () => {
     setColWidths(DEFAULT_COL_WIDTHS);
-    setPaddingDensity("normal");
+    setPaddingDensity('normal');
     try {
-      localStorage.removeItem("kcert_col_widths_v1");
-      localStorage.setItem("kcert_col_padding_density", "normal");
-    } catch (err) {}
+      localStorage.removeItem('kcert_wpf_col_widths_v2');
+      localStorage.setItem('kcert_col_padding_density', 'normal');
+    } catch {}
   };
 
-  const handleSetPaddingDensity = (density: "compact" | "normal" | "spacious") => {
+  const handleSetPaddingDensity = (density: 'compact' | 'normal' | 'spacious') => {
     setPaddingDensity(density);
     try {
-      localStorage.setItem("kcert_col_padding_density", density);
-    } catch (err) {}
+      localStorage.setItem('kcert_col_padding_density', density);
+    } catch {}
   };
 
   const totalTableWidth = useMemo(() => {
-    return Object.values(colWidths).reduce((acc: number, w: number) => acc + (typeof w === 'number' ? w : 100), 0);
+    return (Object.values(colWidths) as unknown[]).reduce<number>(
+      (acc, w) => acc + (typeof w === 'number' ? w : 100),
+      0
+    );
   }, [colWidths]);
-
-  // Sorting state for certificate box list
-  const [sortBy, setSortBy] = useState<'storage' | 'category' | 'name' | 'issuer' | 'notAfter' | 'status'>('notAfter');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-
-  // USB 드라이브 현황 표시 모드: 'basic'(기본 표시) | 'advanced'(고급 표시)
-  const [driveDisplayMode, setDriveDisplayMode] = useState<'basic' | 'advanced'>(() => {
-    try {
-      const saved = localStorage.getItem('kcert_drive_display_mode');
-      if (saved === 'basic' || saved === 'advanced') return saved;
-    } catch (e) {
-      // ignore
-    }
-    return 'basic'; // 기본 표시로 직관적 시작, 고급 표시로 1클릭 전환 가능
-  });
-
-  const [copiedVsnId, setCopiedVsnId] = useState<string | null>(null);
-
-  const handleCopyVsn = (driveId: string, vsn: string) => {
-    try {
-      navigator.clipboard.writeText(vsn);
-      setCopiedVsnId(driveId);
-      setTimeout(() => setCopiedVsnId(null), 1500);
-    } catch (e) {
-      // fallback
-    }
-  };
-
-  // Helper function to check if cert is on removable USB
-  const isUsbCertificate = (cert: CertificateItem): boolean => {
-    const loc = (cert.sourceLocation || '').toUpperCase();
-    const drv = (cert.sourceDrive || '').toUpperCase();
-    return drv.includes('이동식') || drv.includes('USB') || loc.startsWith('E:') || loc.startsWith('F:') || loc.startsWith('G:') || loc.startsWith('H:');
-  };
 
   const getDriveLetter = (cert: CertificateItem): string => {
     if (cert.sourceLocation && cert.sourceLocation.length >= 2 && cert.sourceLocation[1] === ':') {
@@ -240,156 +243,42 @@ export const CertificateList: React.FC<CertificateListProps> = ({
     return 'C:';
   };
 
-  // Connected drives analysis for backup targets (실제 물리적 디스크 및 USB만 표시, 가상디스크/클라우드/시디롬 제외)
-  const backupDrives = useMemo(() => {
-    const physicalOnly = filterPhysicalDrivesOnly(availableDrives);
-    return physicalOnly.filter(d => !d.letter.toUpperCase().startsWith('C:'));
-  }, [availableDrives]);
-
-  const backupDrivesWithStats = useMemo(() => {
-    const list = backupDrives.map(drive => {
-      const letterClean = drive.letter.replace(':', '').toUpperCase();
-      const certsInDrive = certificates.filter(c => {
-        const loc = (c.sourceLocation || '').toUpperCase();
-        const drv = (c.sourceDrive || '').toUpperCase();
-        return loc.startsWith(letterClean + ':') || drv.startsWith(letterClean + ':');
-      });
-
-      // 장치 종류별 명칭 및 버튼 문구 결정
-      let kindLabel = drive.deviceKindLabel;
-      let buttonText = '⚡ 이 USB로 백업';
-      let badgeBg = 'bg-amber-500/20 text-amber-300 border-amber-400/30';
-
-      if (drive.deviceKind === 'external_ssd' || drive.name.toLowerCase().includes('ssd')) {
-        kindLabel = '외장 SSD';
-        buttonText = '⚡ 이 외장 SSD로 백업';
-        badgeBg = 'bg-purple-500/25 text-purple-300 border-purple-400/30';
-      } else if (drive.deviceKind === 'fast_usb' || drive.name.toLowerCase().includes('3.0') || drive.name.toLowerCase().includes('3.1') || drive.name.toLowerCase().includes('ultra') || drive.name.toLowerCase().includes('extreme')) {
-        kindLabel = '고속 USB 메모리';
-        buttonText = '⚡ 이 고속 USB로 백업';
-        badgeBg = 'bg-cyan-500/25 text-cyan-300 border-cyan-400/30';
-      } else if (drive.deviceKind === 'internal_fixed' || drive.type === 'fixed') {
-        kindLabel = '내장 디스크';
-        buttonText = '⚡ 이 내장 디스크로 백업';
-        badgeBg = 'bg-slate-700 text-slate-300 border-slate-600';
-      } else {
-        kindLabel = '이동식 USB 메모리';
-        buttonText = '⚡ 이 USB로 백업';
-        badgeBg = 'bg-amber-500/20 text-amber-300 border-amber-400/30';
-      }
-
-      return {
-        ...drive,
-        certCount: certsInDrive.length,
-        certs: certsInDrive,
-        isEmpty: certsInDrive.length === 0,
-        kindLabel,
-        buttonText,
-        badgeBg,
-      };
-    });
-
-    // Priority Sort: Drives containing certificates FIRST (descending by certCount)
-    list.sort((a, b) => {
-      if (b.certCount !== a.certCount) {
-        return b.certCount - a.certCount;
-      }
-      return a.letter.localeCompare(b.letter);
-    });
-
-    return list;
-  }, [backupDrives, certificates]);
-
-  const drivesWithCertsCount = useMemo(() => {
-    return backupDrivesWithStats.filter(d => d.certCount > 0).length;
-  }, [backupDrivesWithStats]);
-
-  const sortedBackupDrivesWithStats = useMemo(() => {
-    if (onlyDrivesWithCerts) {
-      return backupDrivesWithStats.filter(d => d.certCount > 0);
+  const getCategoryShortBadge = (cat: CertCategory) => {
+    switch (cat) {
+      case 'GPKI_GOV': return 'GPKI 행정';
+      case 'EPKI_EDU': return 'EPKI 교육';
+      case 'NPKI_CORP': return 'NPKI 법인';
+      case 'NPKI_BANK': return 'NPKI 금융';
+      default: return '미분류';
     }
-    return backupDrivesWithStats;
-  }, [backupDrivesWithStats, onlyDrivesWithCerts]);
+  };
 
-  const emptyBackupDrives = useMemo(() => {
-    return backupDrivesWithStats.filter(d => d.isEmpty);
-  }, [backupDrivesWithStats]);
+  const filteredCerts = useMemo(
+    () => filterCertificatesByCriteria(certificates, categoryFilter, sourceFilter, searchQuery),
+    [certificates, categoryFilter, sourceFilter, searchQuery]
+  );
 
-  // Filtered certificates
-  const filteredCerts = useMemo(() => {
-    return certificates.filter(cert => {
-      // Category & Status filter
-      if (categoryFilter === 'VALID' && cert.status !== 'valid') {
-        return false;
-      }
-      if (categoryFilter === 'EXPIRED' && !isCertificateExpired(cert)) {
-        return false;
-      }
-      if (categoryFilter === 'EXPIRING' && cert.status !== 'expiring') {
-        return false;
-      }
-      if (categoryFilter === 'GOV' && cert.category !== 'GPKI_GOV' && cert.category !== 'EPKI_EDU') {
-        return false;
-      }
-      if (categoryFilter === 'BANK' && cert.category !== 'NPKI_BANK') {
-        return false;
-      }
-      if (categoryFilter === 'CORP' && cert.category !== 'NPKI_CORP') {
-        return false;
-      }
-      if (categoryFilter === 'NON_STANDARD' && !cert.isCustomPath && !isNonStandardCertPath(cert.sourceLocation)) {
-        return false;
-      }
-
-      // Source filter
-      const isUsb = isUsbCertificate(cert);
-      if (sourceFilter === 'LOCAL' && isUsb) {
-        return false;
-      }
-      if (sourceFilter === 'REMOVABLE' && !isUsb) {
-        return false;
-      }
-
-      // Search query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchName = cert.name.toLowerCase().includes(q);
-        const matchIssuer = cert.issuer.toLowerCase().includes(q);
-        const matchCa = (cert.caSignatureName || '').toLowerCase().includes(q);
-        const matchDept = (cert.departmentOrOrg || '').toLowerCase().includes(q);
-        const matchPolicy = cert.policy.toLowerCase().includes(q);
-        const matchSerial = cert.serialNumber.toLowerCase().includes(q);
-        const matchPath = cert.sourceLocation.toLowerCase().includes(q);
-        const matchLocationType = isUsb ? 'usb 이동식' : '컴퓨터 pc 로컬';
-        return matchName || matchIssuer || matchCa || matchDept || matchPolicy || matchSerial || matchPath || matchLocationType.includes(q);
-      }
-
-      return true;
-    });
-  }, [certificates, categoryFilter, sourceFilter, searchQuery]);
-
-  // Sorted & Filtered certificates
   const sortedFilteredCerts = useMemo(() => {
     const list = [...filteredCerts];
     list.sort((a, b) => {
-      let valA: any = '';
-      let valB: any = '';
+      let valA: string | number = '';
+      let valB: string | number = '';
 
-      if (sortBy === 'storage') {
-        valA = isUsbCertificate(a) ? 'USB' : 'PC';
-        valB = isUsbCertificate(b) ? 'USB' : 'PC';
-      } else if (sortBy === 'category') {
-        valA = getCategoryLabel(a);
-        valB = getCategoryLabel(b);
+      if (sortBy === 'category') {
+        valA = getCategoryShortBadge(a.category);
+        valB = getCategoryShortBadge(b.category);
+      } else if (sortBy === 'storage') {
+        valA = isUsbCertHelper(a) ? 'USB' : 'PC';
+        valB = isUsbCertHelper(b) ? 'USB' : 'PC';
       } else if (sortBy === 'name') {
-        valA = a.subjectCn || a.name;
-        valB = b.subjectCn || b.name;
+        valA = a.name;
+        valB = b.name;
       } else if (sortBy === 'issuer') {
         valA = a.issuer;
         valB = b.issuer;
       } else if (sortBy === 'notAfter') {
-        valA = new Date(a.notAfter).getTime();
-        valB = new Date(b.notAfter).getTime();
+        valA = new Date(a.validTo).getTime() || 0;
+        valB = new Date(b.validTo).getTime() || 0;
       } else if (sortBy === 'status') {
         valA = a.status;
         valB = b.status;
@@ -402,22 +291,20 @@ export const CertificateList: React.FC<CertificateListProps> = ({
     return list;
   }, [filteredCerts, sortBy, sortOrder]);
 
-  const allFilteredSelected = sortedFilteredCerts.length > 0 && sortedFilteredCerts.every(c => selectedIds.includes(c.id));
+  const allFilteredSelected =
+    sortedFilteredCerts.length > 0 && sortedFilteredCerts.every(c => selectedIds.includes(c.id));
 
   const handleToggleSelectAllFiltered = () => {
     if (allFilteredSelected) {
       onClearSelection();
+    } else if (onSelectFilteredIds) {
+      onSelectFilteredIds(sortedFilteredCerts.map(c => c.id));
     } else {
-      const ids = sortedFilteredCerts.map(c => c.id);
-      if (onSelectFilteredIds) {
-        onSelectFilteredIds(ids);
-      } else {
-        onSelectAll();
-      }
+      onSelectAll();
     }
   };
 
-  const handleSort = (field: 'storage' | 'category' | 'name' | 'issuer' | 'notAfter' | 'status') => {
+  const handleSort = (field: typeof sortBy) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -426,1302 +313,1023 @@ export const CertificateList: React.FC<CertificateListProps> = ({
     }
   };
 
-  // Category & status counts
-  const validCount = certificates.filter(c => c.status === 'valid').length;
-  const expiredCount = certificates.filter(isCertificateExpired).length;
-  const expiringSoonCount = certificates.filter(c => c.status === 'expiring').length;
-  const govCount = certificates.filter(c => c.category === 'GPKI_GOV' || c.category === 'EPKI_EDU').length;
-  const bankCount = certificates.filter(c => c.category === 'NPKI_BANK').length;
-  const corpCount = certificates.filter(c => c.category === 'NPKI_CORP').length;
-  const nonStandardCount = certificates.filter(c => c.isCustomPath || isNonStandardCertPath(c.sourceLocation)).length;
-  const localPcCount = certificates.filter(c => !isUsbCertificate(c)).length;
-  const usbCount = certificates.filter(c => isUsbCertificate(c)).length;
-  
-  // Distinct users count
-  const distinctUsers = useMemo(() => {
-    return Array.from(new Set(certificates.map(c => c.name)));
-  }, [certificates]);
-
-  const getCategoryLabel = (cert: CertificateItem | CertCategory) => {
-    if (typeof cert !== 'string') {
-      const isUnnamed = cert.name.includes('미지정') || cert.name.includes('미식별');
-      if (cert.isSystemCa) {
-        return cert.category === 'EPKI_EDU' ? '교육부 시스템 CA (EPKI)' : '행정전자서명 시스템 CA (GPKI)';
-      }
-      if (cert.isInstitutional) {
-        return cert.category === 'EPKI_EDU' ? '교육기관용/관인 (EPKI)' : '행정기관용/관인 (GPKI)';
-      }
-      if (isUnnamed) {
-        switch (cert.category) {
-          case 'GPKI_GOV':
-            return 'GPKI (명칭 미지정)';
-          case 'EPKI_EDU':
-            return 'EPKI (명칭 미지정)';
-          case 'NPKI_CORP':
-            return '법인 NPKI (명칭 미지정)';
-          case 'NPKI_BANK':
-            return 'NPKI (명칭 미지정)';
-          case 'UNKNOWN':
-          default:
-            return '미분류 / 명칭 미지정';
-        }
-      }
-      switch (cert.category) {
-        case 'GPKI_GOV':
-          return '공무원인증서 (GPKI)';
-        case 'EPKI_EDU':
-          return '교육행정 (EPKI)';
-        case 'NPKI_CORP':
-          return '법인/기업 (NPKI)';
-        case 'NPKI_BANK':
-          return '금융인증서 (NPKI)';
-        case 'UNKNOWN':
-        default:
-          return '미분류 / 명칭 미지정';
-      }
-    }
-    switch (cert) {
-      case 'GPKI_GOV':
-        return '공무원인증서 (GPKI)';
-      case 'EPKI_EDU':
-        return '교육행정 (EPKI)';
-      case 'NPKI_CORP':
-        return '법인/기업 (NPKI)';
-      case 'NPKI_BANK':
-        return '금융인증서 (NPKI)';
-      case 'UNKNOWN':
-      default:
-        return '미분류 / 명칭 미지정';
-    }
-  };
-
-  // Column divider resizer grip with vertical separator line
   const renderColResizer = (colKey: string) => (
     <div
       onMouseDown={(e) => handleStartResize(colKey, e)}
-      className={`absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize z-30 select-none flex items-center justify-center transition-colors group/resizer ${
-        resizingCol === colKey ? "bg-blue-500/30" : "hover:bg-blue-500/20"
+      className={`absolute right-0 top-0 bottom-0 w-2 cursor-col-resize z-30 select-none flex items-center justify-center transition-colors ${
+        resizingCol === colKey ? 'bg-[#3B82F6]/30' : 'hover:bg-[#3B82F6]/20'
       }`}
-      title="좌우 드래그: 컬럼 너비 및 여백 조절"
+      title="좌우 드래그: 컬럼 너비 조절"
     >
-      <div className={`w-[2px] h-full transition-colors ${
-        resizingCol === colKey ? "bg-blue-600 shadow-sm" : "bg-slate-300 dark:bg-slate-600 group-hover/resizer:bg-blue-500"
-      }`} />
+      <div
+        className="w-[1px] h-full"
+        style={{ backgroundColor: resizingCol === colKey ? '#3B82F6' : 'var(--wpf-border)' }}
+      />
     </div>
   );
 
-  const thPadding = paddingDensity === "compact"
-    ? "px-1.5 py-2 text-[10px]"
-    : paddingDensity === "spacious"
-      ? "px-3 py-3 text-xs sm:text-sm"
-      : "px-2 py-2.5 text-xs";
+  const thPadding =
+    paddingDensity === 'compact'
+      ? 'px-2 py-1.5 text-[11px]'
+      : paddingDensity === 'spacious'
+      ? 'px-3.5 py-2.5 text-xs'
+      : 'px-2.5 py-2 text-xs';
+
+  const cellPadding =
+    paddingDensity === 'compact'
+      ? 'px-2 py-1.5'
+      : paddingDensity === 'spacious'
+      ? 'px-3.5 py-3'
+      : 'px-2.5 py-2';
 
   const getStatusBadge = (cert: CertificateItem) => {
-    const isNarrow = (colWidths.status ?? 120) < 70;
     if (isCertificateExpired(cert)) {
       return (
-        <span className={`bg-rose-100 text-rose-800 rounded-md text-[10px] font-bold inline-flex items-center gap-1 border border-rose-200 shadow-2xs ${isNarrow ? 'px-1 py-0.5' : 'px-2 py-0.5'}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span>
-          {!isNarrow && <span>만료</span>}
+        <span
+          className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-[11px] font-bold border whitespace-nowrap"
+          style={{
+            backgroundColor: 'var(--wpf-badge-expired-bg)',
+            borderColor: 'var(--wpf-badge-expired-border)',
+            color: 'var(--wpf-badge-expired-text)',
+          }}
+        >
+          만료됨
         </span>
       );
     }
     if (cert.status === 'expiring') {
       return (
-        <span className={`bg-amber-100 text-amber-800 rounded-md text-[10px] font-bold inline-flex items-center gap-1 border border-amber-200 shadow-2xs ${isNarrow ? 'px-1 py-0.5' : 'px-2 py-0.5'}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
-          {!isNarrow && <span>D-{cert.daysRemaining}</span>}
+        <span
+          className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-[11px] font-bold border whitespace-nowrap tabular-nums"
+          style={{
+            backgroundColor: 'var(--wpf-badge-expiring-bg)',
+            borderColor: 'var(--wpf-badge-expiring-border)',
+            color: 'var(--wpf-badge-expiring-text)',
+          }}
+        >
+          만료임박 D-{cert.daysRemaining}
         </span>
       );
     }
     return (
-      <span className={`bg-emerald-100 text-emerald-800 rounded-md text-[10px] font-bold inline-flex items-center gap-1 border border-emerald-200 shadow-2xs ${isNarrow ? 'px-1 py-0.5' : 'px-2 py-0.5'}`}>
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-        {!isNarrow && <span>유효</span>}
+      <span
+        className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-[11px] font-bold border whitespace-nowrap"
+        style={{
+          backgroundColor: 'var(--wpf-badge-valid-bg)',
+          borderColor: 'var(--wpf-badge-valid-border)',
+          color: 'var(--wpf-badge-valid-text)',
+        }}
+      >
+        유효
       </span>
     );
   };
 
-  return (
-    <div className="space-y-4">
-      {/* Connected Drives Bar is managed centrally in App.tsx (SimpleTransferHero / ConnectedDrivesBar) */}
-      {false && backupDrivesWithStats.length > 0 && (
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-xl p-3.5 sm:p-4 text-white shadow-sm border border-indigo-900/60 space-y-3.5">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            {/* Left: Title, Badges, and Mode Subtext */}
-            <div className="flex items-start gap-2.5 min-w-0">
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border shadow-xs transition-colors ${
-                driveDisplayMode === 'basic'
-                  ? 'bg-blue-600/20 border-blue-400/40 text-blue-400'
-                  : 'bg-indigo-600/20 border-indigo-400/40 text-indigo-400'
-              }`}>
-                {driveDisplayMode === 'basic' ? <LayoutGrid className="w-5 h-5" /> : <HardDrive className="w-5 h-5" />}
-              </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-bold text-white flex items-center gap-1.5">
-                    연결된 백업 드라이브 현황
-                    <span className="text-xs text-slate-300 font-normal">
-                      ({backupDrivesWithStats.length}개 인식)
-                    </span>
-                  </span>
-                  
-                  {driveDisplayMode === 'basic' ? (
-                    <span className="text-[10px] px-2 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-400/30 rounded-full font-bold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
-                      <span>기본 표시 모드</span>
-                    </span>
-                  ) : (
-                    <span className="text-[10px] px-2 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 rounded-full font-bold flex items-center gap-1">
-                      <SlidersHorizontal className="w-2.5 h-2.5" />
-                      <span>고급 표시 모드 (VSN·WMI)</span>
-                    </span>
-                  )}
+  const hasActiveFilter = categoryFilter !== 'ALL' || sourceFilter !== 'ALL' || searchQuery.trim().length > 0;
 
-                  <span className="text-[10px] px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded-full font-bold flex items-center gap-1">
-                    <Sparkles className="w-2.5 h-2.5" />
-                    <span>인증서 보유 우선 정렬</span>
-                  </span>
-                </div>
-                
-                <p className="text-[11px] text-slate-300 mt-0.5">
-                  {driveDisplayMode === 'basic'
-                    ? '💡 기본 모드: 용량 현황과 원클릭 핵심 버튼(컴퓨터로 복사 · 백업)을 직관적으로 확인합니다.'
-                    : '💡 고급 모드: 하드웨어 고유 VSN 시리얼 번호, 파일시스템, WMI 정밀 진단 및 듀얼 복사 기능을 제공합니다.'}
-                </p>
-              </div>
+  return (
+    <div className="flex flex-col flex-1 min-h-0 gap-3.5">
+      {/* Main WPF DataGrid Card Container */}
+      <div
+        className="wpf-card wpf-native flex-1 min-h-0 flex flex-col overflow-hidden"
+        style={{
+          backgroundColor: 'var(--wpf-bg-card)',
+          border: '1px solid var(--wpf-border)',
+          borderRadius: '8px',
+        }}
+      >
+        {/* Compact Grid Toolbar (Search + Active Filter + Column Density Controls) */}
+        <div
+          className="px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0"
+          style={{
+            backgroundColor: 'var(--wpf-bg-dark)',
+            borderBottom: '1px solid var(--wpf-border)',
+          }}
+        >
+          {/* Left: Search Box & Filter Reset */}
+          <div className="flex items-center gap-2 flex-1 min-w-[220px] max-w-md">
+            <div className="relative flex-1">
+              <Search
+                className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ color: 'var(--wpf-text-muted)' }}
+              />
+              <input
+                type="text"
+                placeholder="인증서 명칭(CN), 발급기관, 경로, 일련번호 검색..."
+                value={searchQuery}
+                onChange={(e) => onSearchQueryChange(e.target.value)}
+                className="wpf-native w-full h-8 pl-8 pr-7 rounded-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
+                style={{
+                  backgroundColor: 'var(--wpf-bg-card)',
+                  border: '1px solid var(--wpf-border)',
+                  color: 'var(--wpf-text-primary)',
+                }}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => onSearchQueryChange('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer opacity-70 hover:opacity-100"
+                  style={{ color: 'var(--wpf-text-muted)' }}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
-            {/* Right: Display Mode Toggle & Filter Actions */}
-            <div className="flex flex-wrap items-center gap-2 self-start lg:self-center shrink-0">
-              {/* [기본 표시] vs [고급 표시] Toggle Segment */}
-              <div className="inline-flex p-0.5 bg-slate-950/90 rounded-lg border border-slate-700/80 shadow-inner">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDriveDisplayMode('basic');
-                    try { localStorage.setItem('kcert_drive_display_mode', 'basic'); } catch (e) {}
-                  }}
-                  className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    driveDisplayMode === 'basic'
-                      ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400/50'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                  title="일반 사용자를 위해 용량 게이지와 원클릭 핵심 액션을 간결하게 표시합니다"
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  <span>기본 표시</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDriveDisplayMode('advanced');
-                    try { localStorage.setItem('kcert_drive_display_mode', 'advanced'); } catch (e) {}
-                  }}
-                  className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    driveDisplayMode === 'advanced'
-                      ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-400/50'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                  title="하드웨어 VSN 식별자, 파일시스템, WMI 정밀 정보 및 다중 액션을 표시합니다"
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                  <span>고급 표시</span>
-                  <span className="text-[10px] px-1 py-0.2 bg-indigo-950 text-indigo-200 border border-indigo-500/40 rounded font-mono">
-                    상세
-                  </span>
-                </button>
-              </div>
-
-              {/* Filter: Drives with Certs */}
-              {drivesWithCertsCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setOnlyDrivesWithCerts(!onlyDrivesWithCerts)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    onlyDrivesWithCerts
-                      ? 'bg-amber-500 text-slate-950 font-extrabold shadow-xs'
-                      : 'bg-slate-800 text-amber-300 hover:bg-slate-700 border border-amber-400/30'
-                  }`}
-                  title="인증서가 포함된 드라이브만 추려 봅니다"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  <span>인증서 보유만 ({drivesWithCertsCount})</span>
-                </button>
-              )}
-
-              {/* Advanced Mode: WMI Diagnostic Button */}
-              {driveDisplayMode === 'advanced' && onOpenUsbDiagnostic && (
-                <button
-                  type="button"
-                  onClick={onOpenUsbDiagnostic}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 bg-indigo-600/80 hover:bg-indigo-600 text-white shadow-xs border border-indigo-500/50"
-                  title="USB 장치 식별자(Volume Serial Number) 및 Windows WMI 진단창 열기"
-                >
-                  <Cpu className="w-3.5 h-3.5" />
-                  <span>WMI 진단</span>
-                </button>
-              )}
-
-              {/* Removable Only Filter Button */}
+            {hasActiveFilter && onResetFilters && (
               <button
                 type="button"
-                onClick={() => setSourceFilter(sourceFilter === 'REMOVABLE' ? 'ALL' : 'REMOVABLE')}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  sourceFilter === 'REMOVABLE'
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
-                }`}
-                title="목록에서 이동식 USB 매체에 보관된 인증서만 필터링합니다"
+                onClick={onResetFilters}
+                className="wpf-btn-secondary wpf-native px-2 py-1 text-[11px] font-semibold cursor-pointer whitespace-nowrap"
               >
-                <HardDrive className="w-3.5 h-3.5" />
-                <span>USB 필터 ({usbCount})</span>
+                필터 초기화
+              </button>
+            )}
+          </div>
+
+          {/* Right: Selection Summary, Sort, View Toggle & Column Controls */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {viewMode === 'grid' && sortedFilteredCerts.length > 0 && (
+              <label
+                className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-[4px] cursor-pointer select-none whitespace-nowrap"
+                style={{
+                  backgroundColor: 'var(--wpf-bg-card)',
+                  border: '1px solid var(--wpf-border)',
+                  color: 'var(--wpf-text-secondary)',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={allFilteredSelected}
+                  onChange={handleToggleSelectAllFiltered}
+                  className="wpf-native w-3.5 h-3.5 accent-[#2563EB] cursor-pointer"
+                />
+                <span>전체 선택</span>
+              </label>
+            )}
+
+            <span
+              className="text-xs font-semibold tabular-nums px-2 py-1 rounded-[4px] whitespace-nowrap"
+              style={{
+                backgroundColor: 'var(--wpf-bg-card)',
+                border: '1px solid var(--wpf-border)',
+                color: 'var(--wpf-accent-text)',
+              }}
+            >
+              선택: {selectedIds.length} / {sortedFilteredCerts.length}건
+            </span>
+
+            {viewMode === 'grid' && (
+              <div
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded-[6px]"
+                style={{
+                  backgroundColor: 'var(--wpf-bg-card)',
+                  border: '1px solid var(--wpf-border)',
+                }}
+              >
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  aria-label="정렬 기준"
+                  className="wpf-native text-[11px] font-semibold bg-transparent focus:outline-none cursor-pointer pr-1"
+                  style={{ color: 'var(--wpf-text-primary)' }}
+                >
+                  <option value="notAfter">만료일자순</option>
+                  <option value="name">이름순</option>
+                  <option value="category">구분순</option>
+                  <option value="storage">저장위치순</option>
+                  <option value="issuer">발급기관순</option>
+                  <option value="status">상태순</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))}
+                  className="p-1 rounded-[4px] cursor-pointer hover:opacity-80"
+                  style={{ color: 'var(--wpf-accent-text)' }}
+                  title={sortOrder === 'asc' ? '오름차순 (클릭하여 내림차순 전환)' : '내림차순 (클릭하여 오름차순 전환)'}
+                >
+                  <ArrowUpDown className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
+            {viewMode === 'table' && (
+              <div
+                className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded-[6px]"
+                style={{
+                  backgroundColor: 'var(--wpf-bg-card)',
+                  border: '1px solid var(--wpf-border)',
+                }}
+              >
+                <SlidersHorizontal className="w-3 h-3 mr-0.5" style={{ color: 'var(--wpf-accent-text)' }} />
+                {(['compact', 'normal', 'spacious'] as const).map(mode => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => handleSetPaddingDensity(mode)}
+                    className={`px-1.5 py-0.5 rounded-[4px] text-[10.5px] font-semibold cursor-pointer transition-colors whitespace-nowrap ${
+                      paddingDensity === mode ? 'bg-[#2563EB] text-white' : ''
+                    }`}
+                    style={paddingDensity !== mode ? { color: 'var(--wpf-text-secondary)' } : undefined}
+                  >
+                    {mode === 'compact' ? '좁게' : mode === 'normal' ? '보통' : '넓게'}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleResetColWidths}
+                  className="px-1.5 py-0.5 text-[10.5px] font-semibold cursor-pointer hover:underline ml-0.5"
+                  style={{ color: 'var(--wpf-text-muted)' }}
+                  title="컬럼 너비 초기화"
+                >
+                  ↺
+                </button>
+              </div>
+            )}
+
+            {/* Responsive Card Grid vs Table Switcher */}
+            <div
+              className="flex items-center gap-1 p-0.5 rounded-[6px]"
+              style={{
+                backgroundColor: 'var(--wpf-bg-card)',
+                border: '1px solid var(--wpf-border)',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => handleSetViewMode('grid')}
+                className={`px-2 py-1 rounded-[4px] text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
+                  viewMode === 'grid' ? 'bg-[#2563EB] text-white' : ''
+                }`}
+                style={viewMode !== 'grid' ? { color: 'var(--wpf-text-secondary)' } : undefined}
+                title="반응형 카드 그리드 보기 (CSS Grid auto-fill)"
+              >
+                <LayoutGrid className="w-3 h-3" />
+                <span>카드</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSetViewMode('table')}
+                className={`px-2 py-1 rounded-[4px] text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
+                  viewMode === 'table' ? 'bg-[#2563EB] text-white' : ''
+                }`}
+                style={viewMode !== 'table' ? { color: 'var(--wpf-text-secondary)' } : undefined}
+                title="상세 표(DataGrid) 보기"
+              >
+                <TableIcon className="w-3 h-3" />
+                <span>표</span>
               </button>
             </div>
           </div>
+        </div>
 
-          {/* Drives Grid: Rendered based on driveDisplayMode */}
-          {driveDisplayMode === 'basic' ? (
-            /* ======================================================== */
-            /* [기본 표시 (Basic View)]: 깔끔한 용량 게이지 & 원클릭 버튼 */
-            /* ======================================================== */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
-              {sortedBackupDrivesWithStats.map(drive => {
-                const hasCerts = drive.certCount > 0;
-                const freePercent = drive.freePercentage ?? 80;
-                const usedPercent = Math.max(5, Math.min(100, 100 - freePercent));
-
-                return (
-                  <div
-                    key={drive.id}
-                    className={`p-3.5 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
-                      hasCerts
-                        ? 'bg-slate-800/90 border-amber-400/60 ring-1 ring-amber-400/20 shadow-md hover:border-amber-400'
-                        : drive.isEmpty
-                        ? 'bg-slate-800/80 border-slate-700/80 hover:border-slate-600 shadow-xs'
-                        : 'bg-slate-800/80 border-slate-700/80 hover:border-slate-600 shadow-xs'
-                    }`}
-                  >
-                    <div>
-                      {/* Top: Drive Letter & Device Name & Status Badge */}
-                      <div className="flex items-start justify-between gap-1.5">
-                        <div className="flex items-center gap-2 min-w-0">
-                          {(() => {
-                            const dColor = getDriveColorInfo(drive.letter);
-                            return (
-                              <span
-                                className="text-xs font-mono font-extrabold px-2 py-0.5 rounded-md border shrink-0 shadow-2xs"
-                                style={{
-                                  backgroundColor: dColor.bgHex,
-                                  borderColor: dColor.borderHex,
-                                  color: '#FFFFFF',
-                                }}
-                              >
-                                {drive.letter}
-                              </span>
-                            );
-                          })()}
-                          <span className="text-xs font-bold text-white truncate" title={drive.name}>
-                            {drive.name.split('(')[0].trim()}
-                          </span>
-                        </div>
-
-                        {hasCerts ? (
-                          <span className="text-[10px] px-2 py-0.5 font-bold rounded-full border bg-amber-400/20 text-amber-300 border-amber-400/40 shrink-0 flex items-center gap-1">
-                            <Sparkles className="w-2.5 h-2.5" />
-                            <span>인증서 {drive.certCount}건</span>
-                          </span>
-                        ) : (
-                          <span className="text-[10px] px-1.5 py-0.5 font-medium rounded-full border bg-slate-700/60 text-slate-300 border-slate-600/60 shrink-0">
-                            {drive.isEmpty ? '빈 드라이브' : '인증서 없음'}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Middle: Visual Storage Gauge Bar */}
-                      <div className="mt-3 space-y-1.5">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-slate-400">저장 공간</span>
-                          <span className="text-slate-200 font-medium">
-                            여유 <strong className="text-white">{drive.freeSpace}</strong>
-                            {drive.totalSpace && <span className="text-slate-400"> / {drive.totalSpace}</span>}
-                          </span>
-                        </div>
-
-                        {/* Progress Bar */}
-                        <div className="w-full h-2 bg-slate-700/80 rounded-full overflow-hidden p-0.5 flex">
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              hasCerts ? 'bg-gradient-to-r from-amber-500 to-emerald-400' : 'bg-gradient-to-r from-blue-500 to-cyan-400'
-                            }`}
-                            style={{ width: `${usedPercent}%` }}
-                            title={`사용률 약 ${usedPercent}%`}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bottom: Clear, Single Primary Action Button */}
-                    <div className="pt-2 border-t border-slate-700/60">
-                      {hasCerts ? (
-                        <button
-                          type="button"
-                          onClick={() => onOpenUsbToPc && onOpenUsbToPc(drive.letter.replace(':', ''))}
-                          className="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-                          title={`${drive.letter} 드라이브의 인증서를 내 컴퓨터(AppData\\LocalLow)로 복사합니다`}
-                        >
-                          <ArrowDownLeft className="w-3.5 h-3.5" />
-                          <span>컴퓨터로 복사 ({drive.certCount}건)</span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (onSelectTargetDriveAndBackup) {
-                              onSelectTargetDriveAndBackup(drive.id);
-                            } else {
-                              onOpenBackupModal();
-                            }
-                          }}
-                          className={`w-full py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                            drive.isEmpty
-                              ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-xs'
-                              : 'bg-slate-700 hover:bg-slate-600 text-slate-200'
-                          }`}
-                          title={`${drive.letter} 드라이브로 선택한 인증서를 백업합니다`}
-                        >
-                          <Zap className="w-3.5 h-3.5 text-amber-300" />
-                          <span>이 드라이브로 백업</span>
-                          <ChevronRight className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+        {/* Scrollable Certificate Content (Responsive Auto-Fill Card Grid or WPF DataGrid) */}
+        <div className="flex-1 overflow-auto min-h-[280px] max-h-[600px] lg:max-h-none">
+          {sortedFilteredCerts.length === 0 ? (
+            <div className="py-16 text-center px-4">
+              <FileKey className="w-11 h-11 mx-auto mb-3 opacity-50" style={{ color: 'var(--wpf-text-muted)' }} />
+              <h3 className="text-sm font-bold" style={{ color: 'var(--wpf-text-primary)' }}>
+                조건에 일치하는 인증서가 없습니다.
+              </h3>
+              <p className="text-xs mt-1" style={{ color: 'var(--wpf-text-secondary)' }}>
+                좌측 카테고리 필터를 변경하거나 검색어를 초기화해 주세요.
+              </p>
             </div>
-          ) : (
-            /* ======================================================== */
-            /* [고급 표시 (Advanced View)]: VSN 식별자, WMI, 듀얼 액션 */
-            /* ======================================================== */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
-              {sortedBackupDrivesWithStats.map(drive => {
-                const hasCerts = drive.certCount > 0;
-                const isCopied = copiedVsnId === drive.id;
+          ) : viewMode === 'grid' ? (
+            <div
+              className="cert-grid-autofill p-4"
+              style={{
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))',
+              }}
+            >
+              {sortedFilteredCerts.map((cert, index) => {
+                const isSelected = selectedIds.includes(cert.id);
+                const isInspected = inspectedCertId === cert.id;
+                const isRecentlyCopied = recentlyCopiedIds.includes(cert.id);
+                const isUsb = isUsbCertHelper(cert);
+                const driveLetter = getDriveLetter(cert);
+                const dColor = getDriveColorInfo(driveLetter);
+                const isRareGpki = isRareLocalLowGpkiPath(cert.sourceLocation);
+                const isNonStandard = isRareGpki || cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation);
+                const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);
+
+                const cardBg = isRecentlyCopied
+                  ? 'var(--wpf-copied-row)'
+                  : isInspected
+                  ? 'var(--wpf-selected-row)'
+                  : 'var(--wpf-bg-dark)';
+
+                const cardText = isInspected
+                  ? 'var(--wpf-selected-row-text)'
+                  : isRecentlyCopied
+                  ? 'var(--wpf-copied-row-text)'
+                  : 'var(--wpf-text-primary)';
+
+                const cardSecondary = isInspected
+                  ? 'var(--wpf-selected-row-secondary)'
+                  : isRecentlyCopied
+                  ? 'var(--wpf-copied-row-secondary)'
+                  : 'var(--wpf-text-secondary)';
+
+                const cardBorder = isInspected
+                  ? '#3B82F6'
+                  : isSelected
+                  ? 'var(--wpf-accent-blue)'
+                  : 'var(--wpf-border)';
 
                 return (
-                  <div
-                    key={drive.id}
-                    className={`p-3 rounded-xl border transition-all flex flex-col justify-between gap-2.5 ${
-                      hasCerts
-                        ? 'bg-gradient-to-b from-slate-800 to-indigo-950/90 border-amber-400 ring-1 ring-amber-400/20 shadow-md'
-                        : drive.isEmpty
-                        ? 'bg-slate-800/90 border-slate-700 hover:border-slate-600 shadow-xs'
-                        : 'bg-slate-800/90 border-slate-700 hover:border-emerald-500/50 shadow-xs'
+                  <article
+                    key={cert.id}
+                    onClick={() => onInspectCert?.(cert)}
+                    onDoubleClick={() => onOpenDetailModal(cert)}
+                    className={`wpf-native rounded-[8px] p-4 flex flex-col justify-between gap-3 cursor-pointer transition-colors ${
+                      isRecentlyCopied ? 'animate-copied-row' : ''
                     }`}
+                    style={{
+                      backgroundColor: cardBg,
+                      color: cardText,
+                      border: `1px solid ${cardBorder}`,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isInspected && !isRecentlyCopied) {
+                        e.currentTarget.style.backgroundColor = 'var(--wpf-bg-hover)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isInspected && !isRecentlyCopied) {
+                        e.currentTarget.style.backgroundColor = cardBg;
+                      }
+                    }}
                   >
-                    <div>
-                      {/* Top Row: Letter, Name, Kind Badge */}
-                      <div className="flex items-start justify-between gap-1">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          {(() => {
-                            const dColor = getDriveColorInfo(drive.letter);
-                            return (
-                              <span
-                                className="text-xs font-mono font-extrabold px-1.5 py-0.5 rounded border shrink-0 shadow-2xs"
-                                style={{
-                                  backgroundColor: dColor.bgHex,
-                                  borderColor: dColor.borderHex,
-                                  color: '#FFFFFF',
-                                }}
-                              >
-                                {drive.letter}
-                              </span>
-                            );
-                          })()}
-                          <span className="text-xs font-bold text-white truncate" title={drive.name}>
-                            {drive.name.split('(')[0].trim()}
+                    {/* Card Top Strip: Checkbox + Index + Drive Tag + Status */}
+                    <div className="flex flex-col gap-2.5 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div
+                          className="flex items-center gap-2 min-w-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => onToggleSelect(cert.id)}
+                            aria-label={`${cert.name} 선택`}
+                            className="wpf-native w-4 h-4 accent-[#2563EB] cursor-pointer shrink-0"
+                          />
+                          <span
+                            className="font-mono text-[11px] font-bold tabular-nums shrink-0"
+                            style={{ color: cardSecondary }}
+                          >
+                            #{String(index + 1).padStart(2, '0')}
                           </span>
-                        </div>
-
-                        <span className={`text-[10px] px-1.5 py-0.5 font-bold rounded border shrink-0 ${
-                          hasCerts ? 'bg-amber-400/20 text-amber-300 border-amber-400/40' : drive.badgeBg
-                        }`}>
-                          {hasCerts ? '인증서 보관' : drive.kindLabel}
-                        </span>
-                      </div>
-
-                      {/* Middle: Specs & Certificate Status */}
-                      <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-300">
-                        <span>여유: <strong className="text-white">{drive.freeSpace}</strong></span>
-                        <span className="text-[10px]">
-                          {hasCerts ? (
-                            <span className="font-extrabold text-amber-300 flex items-center gap-0.5">
-                              <Sparkles className="w-2.5 h-2.5 inline" /> 인증서 {drive.certCount}건 (추천)
+                          <div
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[11px] font-bold border shrink-0 whitespace-nowrap"
+                            style={{
+                              backgroundColor: dColor.bgHex,
+                              borderColor: dColor.borderHex,
+                              color: '#FFFFFF',
+                            }}
+                            title={`보관 위치: ${isUsb ? '이동식 USB' : '컴퓨터 로컬 디스크'} (${driveLetter})`}
+                          >
+                            {isUsb ? (
+                              <HardDrive className="w-3 h-3 shrink-0" />
+                            ) : (
+                              <Laptop className="w-3 h-3 shrink-0" />
+                            )}
+                            <span>{isUsb ? 'USB' : 'PC'}</span>
+                            <span className="font-mono text-[10px] font-extrabold">
+                              {dColor.letter}
                             </span>
-                          ) : drive.isEmpty ? (
-                            <span className="text-slate-400 font-medium">빈 드라이브</span>
-                          ) : (
-                            <span className="text-slate-400">인증서 없음</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {isRecentlyCopied && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-[4px] bg-[#10B981] text-white whitespace-nowrap">
+                              <Sparkles className="w-2.5 h-2.5" />
+                              <span>복사됨</span>
+                            </span>
                           )}
-                        </span>
+                          {getStatusBadge(cert)}
+                        </div>
                       </div>
 
-                      {/* Advanced Specs: FileSystem & BusType */}
-                      <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-400">
-                        <div className="flex items-center gap-1">
-                          <span className="px-1.5 py-0.2 bg-slate-900/80 rounded border border-slate-700/80 font-mono text-slate-300">
-                            {drive.fileSystem || 'FAT32'}
+                      {/* Primary Title & Unboxed Typographic Metadata */}
+                      <div className="min-w-0">
+                        <h3
+                          className="font-bold text-[14px] leading-snug truncate"
+                          title={cert.name}
+                        >
+                          {cert.name}
+                        </h3>
+                        <div
+                          className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11.5px]"
+                          style={{ color: cardSecondary }}
+                        >
+                          <span className="font-semibold">{getCategoryShortBadge(cert.category)}</span>
+                          <span aria-hidden="true">·</span>
+                          <span className="inline-flex items-center gap-1 font-medium text-[#10B981]">
+                            <KeyRound className="w-3 h-3 shrink-0" />
+                            <span>비밀키 보유</span>
                           </span>
-                          <span className="px-1.5 py-0.2 bg-slate-900/80 rounded border border-slate-700/80 text-slate-300">
-                            {drive.busType || 'USB'}
+                          {isNonStandard && (
+                            <>
+                              <span aria-hidden="true">·</span>
+                              <span
+                                className="inline-flex items-center gap-0.5 font-semibold"
+                                style={{ color: 'var(--wpf-badge-expiring-text)' }}
+                                title={isRareGpki ? '실무 미사용 GPKI 예외 경로' : '일반 인증서 창 미인식 비표준 위치'}
+                              >
+                                <AlertTriangle className="w-3 h-3 shrink-0" />
+                                <span>{isRareGpki ? '비권장 경로' : '비표준 위치'}</span>
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Structured Info Rows (Hairline Divider, Zero Nested Cards) */}
+                      <div
+                        className="pt-2.5 space-y-1.5 text-xs"
+                        style={{ borderTop: '1px solid var(--wpf-border)' }}
+                      >
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-[11px] shrink-0" style={{ color: cardSecondary }}>
+                            발급기관
+                          </span>
+                          <span
+                            className="font-semibold truncate text-right"
+                            title={`${issuerInfo.officialOrgName}${cert.caSignatureName ? ` (${cert.caSignatureName})` : ''}`}
+                          >
+                            {issuerInfo.officialOrgName}
                           </span>
                         </div>
 
-                        {drive.wmiStatus && (
-                          <span className="text-emerald-400 font-medium flex items-center gap-0.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                            WMI {drive.wmiStatus}
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-[11px] shrink-0" style={{ color: cardSecondary }}>
+                            만료일자
                           </span>
-                        )}
-                      </div>
+                          <span className="font-mono font-semibold tabular-nums">
+                            {cert.validTo}
+                          </span>
+                        </div>
 
-                      {/* Volume Serial Number (VSN) Pill with 1-Click Copy */}
-                      {drive.volumeSerialNumber && (
-                        <div className="mt-1.5 pt-1.5 border-t border-slate-700/50 flex items-center justify-between text-[10px] text-indigo-300/90 font-mono">
-                          <span className="text-slate-400">VSN:</span>
+                        <div className="flex items-center justify-between gap-1.5 min-w-0 pt-0.5">
+                          <span
+                            className="text-[10.5px] font-mono truncate flex-1"
+                            style={{ color: cardSecondary }}
+                            title={cert.sourceLocation}
+                          >
+                            {cert.sourceLocation}
+                          </span>
                           <button
                             type="button"
-                            onClick={() => handleCopyVsn(drive.id, drive.volumeSerialNumber!)}
-                            className="bg-indigo-950/90 hover:bg-indigo-900/90 px-1.5 py-0.5 rounded border border-indigo-800/60 font-semibold text-indigo-200 transition-colors flex items-center gap-1 cursor-pointer"
-                            title="볼륨 시리얼 번호(VSN) 클립보드 복사"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              try {
+                                navigator.clipboard.writeText(cert.sourceLocation);
+                                setCopiedPathId(cert.id);
+                                onNotifyCopy?.(`📋 경로가 클립보드에 복사되었습니다: ${cert.sourceLocation}`);
+                                setTimeout(() => setCopiedPathId(null), 1500);
+                              } catch {}
+                            }}
+                            className="p-1 rounded-[4px] shrink-0 cursor-pointer hover:opacity-80"
+                            title="경로 복사"
                           >
-                            <span>{drive.volumeSerialNumber}</span>
-                            {isCopied ? (
-                              <Check className="w-2.5 h-2.5 text-emerald-400" />
+                            {copiedPathId === cert.id ? (
+                              <Check className="w-3.5 h-3.5 text-[#10B981]" />
                             ) : (
-                              <Copy className="w-2.5 h-2.5 text-indigo-400 opacity-70" />
+                              <Copy className="w-3.5 h-3.5" style={{ color: isInspected ? cardText : 'var(--wpf-accent-text)' }} />
                             )}
                           </button>
                         </div>
-                      )}
+                      </div>
                     </div>
 
-                    {/* Actions Row: Dual Actions for Advanced Mode */}
-                    <div className="flex items-center gap-1.5 pt-1 border-t border-slate-700/60">
-                      {hasCerts ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => onOpenUsbToPc && onOpenUsbToPc(drive.letter.replace(':', ''))}
-                            className="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shadow-xs"
-                            title={`${drive.letter} 드라이브의 인증서를 내 컴퓨터로 복사합니다`}
-                          >
-                            <ArrowDownLeft className="w-3.5 h-3.5" />
-                            <span>컴퓨터로 복사 ({drive.certCount})</span>
-                          </button>
+                    {/* Card Footer Actions */}
+                    <div
+                      className="pt-2.5 flex items-center justify-between gap-2"
+                      style={{ borderTop: '1px solid var(--wpf-border)' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => onQuickBackupSingle(cert)}
+                        className="wpf-btn-primary wpf-native flex-1 px-3 py-1.5 text-[11.5px] inline-flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
+                        title="이 인증서만 복사 대상 디스크를 지정하여 복사합니다."
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>복사</span>
+                      </button>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (onSelectTargetDriveAndBackup) {
-                                onSelectTargetDriveAndBackup(drive.id);
-                              } else {
-                                onOpenBackupModal();
-                              }
-                            }}
-                            className="py-1.5 px-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-0.5 cursor-pointer"
-                            title={`${drive.letter} (${drive.kindLabel}) 드라이브로 백업`}
-                          >
-                            <span>백업</span>
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (onSelectTargetDriveAndBackup) {
-                              onSelectTargetDriveAndBackup(drive.id);
-                            } else {
-                              onOpenBackupModal();
-                            }
-                          }}
-                          className={`w-full py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                            drive.isEmpty
-                              ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-xs'
-                              : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs'
-                          }`}
-                          title={`${drive.letter} (${drive.kindLabel}) 드라이브로 선택한 인증서를 복사합니다`}
-                        >
-                          <span>{drive.buttonText}</span>
-                          <ChevronRight className="w-3 h-3" />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => onOpenDetailModal(cert)}
+                        className="wpf-btn-secondary wpf-native flex-1 px-3 py-1.5 text-[11.5px] inline-flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
+                        title="인증서 전문 규격 팝업 보기"
+                      >
+                        <Search className="w-3.5 h-3.5" />
+                        <span>상세</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => onRequestDeleteSingle(cert)}
+                        className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-[#F43F5E] inline-flex items-center justify-center cursor-pointer shrink-0"
+                        title="휴지통으로 안전 삭제"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                  </div>
+                  </article>
                 );
               })}
             </div>
-          )}
-        </div>
-      )}
-
-
-
-      {/* Compact Search and Filter Bar */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden sticky top-0 z-10">
-        <div className="p-2 sm:p-3 space-y-2">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2">
-            {/* Search */}
-            <div className="relative flex-1 max-w-md group">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-              <input
-                type="text"
-                placeholder="인증서 명칭, 발급자, 용도 검색..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white outline-none transition-all placeholder:text-slate-400"
-              />
-            </div>
-
-            {/* Filter Tabs */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <div className="inline-flex p-0.5 bg-slate-100 rounded-lg border border-slate-200/80">
-                {[
-                  { id: 'ALL', label: '전체', count: certificates.length },
-                  { id: 'GOV', label: '공무원', count: govCount },
-                  { id: 'BANK', label: '금융', count: bankCount },
-                  { id: 'NON_STANDARD', label: '비표준', count: nonStandardCount }
-                ].map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setCategoryFilter(cat.id as any)}
-                    className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                      categoryFilter === cat.id
-                        ? 'bg-white text-blue-700 shadow-2xs'
-                        : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    <span>{cat.label}</span>
-                    <span className="text-[9px] opacity-60">({cat.count})</span>
-                  </button>
-                ))}
-              </div>
-              <div className="h-4 w-px bg-slate-200 mx-0.5" />
-              <div className="inline-flex p-0.5 bg-slate-100 rounded-lg border border-slate-200/80">
-                <button
-                  onClick={() => setCategoryFilter(categoryFilter === 'VALID' ? 'ALL' : 'VALID')}
-                  className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                    categoryFilter === 'VALID' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-slate-500'
-                  }`}
-                >
-                  유효함 ({validCount})
-                </button>
-                {expiringSoonCount > 0 && (
-                  <button
-                    onClick={() => setCategoryFilter(categoryFilter === 'EXPIRING' ? 'ALL' : 'EXPIRING')}
-                    className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                      categoryFilter === 'EXPIRING' ? 'bg-amber-600 text-white shadow-2xs' : 'text-slate-500'
-                    }`}
-                  >
-                    만료임박 ({expiringSoonCount})
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Table Card */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-xs flex flex-col overflow-hidden">
-        {/* Table Top Toolbar */}
-        <div className="p-3.5 sm:p-4 border-b border-slate-100 flex flex-wrap justify-between items-center bg-slate-50 rounded-t-xl gap-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-sm font-bold text-slate-700">
-              검색된 인증서 목록 (총 {filteredCerts.length}개)
-            </h2>
-            {onRefresh && (
-              <button
-                type="button"
-                id="btn-list-refresh"
-                onClick={onRefresh}
-                disabled={isScanning}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-2xs disabled:opacity-50 active:scale-95"
-                title="인증서 보관함 및 드라이브 새로고침 (유효기간 재계산)"
-              >
-                <RefreshCw className={`w-3 h-3 text-blue-600 ${isScanning ? 'animate-spin' : ''}`} />
-                <span>{isScanning ? '새로고침 중...' : '새로고침'}</span>
-              </button>
-            )}
-            {selectedIds.length > 0 && (
-              <span className="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                {selectedIds.length}개 선택됨
-              </span>
-            )}
-          </div>
-
-          {/* Action buttons: Cleanup options & Selection toggles */}
-          <div className="flex items-center flex-wrap gap-2">
-            {/* 1. 만료된 인증서 삭제 바로가기 버튼 */}
-            {expiredCount > 0 && (
-              <button
-                type="button"
-                onClick={() => onOpenCleanupModal('EXPIRED')}
-                className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                title="만료된 인증서 확인 및 영구 삭제"
-              >
-                <CalendarX className="w-3.5 h-3.5 text-rose-600" />
-                <span>만료 인증서 삭제 ({expiredCount}건)</span>
-              </button>
-            )}
-
-            {/* 2. 다른 사용자 인증서 정리 버튼 */}
-            {distinctUsers.length > 1 && (
-              <button
-                type="button"
-                onClick={() => onOpenCleanupModal('OTHER_USERS')}
-                className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                title="공용 PC 내 타인 인증서 일괄 정리"
-              >
-                <Users className="w-3.5 h-3.5 text-slate-600" />
-                <span>다른 사용자 인증서 정리</span>
-              </button>
-            )}
-
-            {/* 3. 일괄 갱신 안내 버튼 */}
-            {onOpenRenewalGuidance && (
-              <button
-                type="button"
-                id="btn-top-renewal-guidance"
-                onClick={() => {
-                  const selected = certificates.filter(c => selectedIds.includes(c.id));
-                  onOpenRenewalGuidance(selected.length > 0 ? selected : undefined);
-                }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs active:scale-95 ${
-                  selectedIds.length > 0
-                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'
-                    : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
-                }`}
-                title="선택된 인증서의 발급기관(행안부, 교육부, 은행 등) 갱신 홈페이지 바로가기 링크 모달 열기"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span>일괄 갱신 안내{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}</span>
-              </button>
-            )}
-
-            {/* 4. 선택 삭제 버튼 */}
-            {selectedIds.length > 0 && (
-              <button
-                type="button"
-                onClick={() => onOpenCleanupModal('SELECTED')}
-                className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-xs"
-                title="선택된 인증서 일괄 삭제"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>선택 삭제 ({selectedIds.length})</span>
-              </button>
-            )}
-
-            {/* 4. 휴지통 바로가기 버튼 */}
-            {onOpenTrash && (
-              <button
-                type="button"
-                onClick={onOpenTrash}
-                className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                title="삭제된 인증서 임시 보관 휴지통 열기 (복구 가능)"
-              >
-                <RotateCcw className="w-3.5 h-3.5 text-emerald-600" />
-                <span>휴지통</span>
-                {trashCount > 0 && (
-                  <span className="px-1.5 py-0.2 bg-emerald-600 text-white text-[10px] rounded-full font-bold ml-0.5">
-                    {trashCount}
-                  </span>
-                )}
-              </button>
-            )}
-
-            {/* 5. USB에서 PC로 가져오기 버튼 */}
-            {onOpenUsbToPc && (
-              <button
-                type="button"
-                onClick={() => onOpenUsbToPc()}
-                className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                title="USB 메모리에 있는 인증서를 내 PC로 가져오기 (반대 경로)"
-              >
-                <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
-                <span>USB ➔ PC 넣기</span>
-              </button>
-            )}
-
-            {/* 5-1. 데스크탑 앱 바로가기 버튼 */}
-            {onOpenDesktopApp && (
-              <button
-                type="button"
-                onClick={onOpenDesktopApp}
-                className="inline-flex items-center gap-1 px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-300 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                title="C# WPF 네이티브 데스크톱 앱 (.NET 8)"
-              >
-                <Monitor className="w-3.5 h-3.5 text-sky-600" />
-                <span>데스크탑 앱</span>
-              </button>
-            )}
-
-            {/* 6. 작업 로그 바로가기 버튼 */}
-            {onOpenActivityLogs && (
-              <button
-                type="button"
-                onClick={onOpenActivityLogs}
-                className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                title="앱 작업 및 감사 로그 확인"
-              >
-                <FileText className="w-3.5 h-3.5 text-slate-600" />
-                <span>작업 로그</span>
-                {logCount > 0 && (
-                  <span className="px-1.5 py-0.2 bg-blue-100 text-blue-800 text-[10px] rounded-full font-bold ml-0.5">
-                    {logCount}
-                  </span>
-                )}
-              </button>
-            )}
-
-            {/* 세로선 & 좌우여백 조절 컨트롤 */}
-            <div className="flex items-center gap-1.5 bg-slate-100/90 border border-slate-200/90 px-2 py-1 rounded-lg text-xs shadow-2xs">
-              <span className="text-slate-600 font-bold text-[11px] flex items-center gap-1">
-                <SlidersHorizontal className="w-3 h-3 text-blue-600" />
-                <span>좌우 여백:</span>
-              </span>
-              <div className="inline-flex rounded-md p-0.5 bg-white border border-slate-200 shadow-2xs">
-                <button
-                  type="button"
-                  onClick={() => handleSetPaddingDensity("compact")}
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${
-                    paddingDensity === "compact"
-                      ? "bg-blue-600 text-white shadow-2xs"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                  }`}
-                  title="좌우 여백을 좁게 조절하여 많은 정보를 한눈에 표시합니다"
-                >
-                  좁게
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetPaddingDensity("normal")}
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${
-                    paddingDensity === "normal"
-                      ? "bg-blue-600 text-white shadow-2xs"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                  }`}
-                  title="표준 좌우 여백 (기본값)"
-                >
-                  보통
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetPaddingDensity("spacious")}
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${
-                    paddingDensity === "spacious"
-                      ? "bg-blue-600 text-white shadow-2xs"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                  }`}
-                  title="좌우 여백을 넓게 조절하여 시인성을 높입니다"
-                >
-                  넓게
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={handleResetColWidths}
-                className="px-1.5 py-0.5 text-[10px] text-slate-500 hover:text-blue-600 hover:bg-white rounded border border-transparent hover:border-slate-200 cursor-pointer transition-colors font-semibold"
-                title="컬럼 너비와 좌우 여백을 초기 기본값으로 복원합니다"
-              >
-                너비 초기화 ↺
-              </button>
-            </div>
-
-            <div className="hidden sm:flex items-center space-x-2 pl-2 border-l border-slate-200">
-              <button
-                type="button"
-                onClick={handleToggleSelectAllFiltered}
-                className="text-xs text-blue-600 font-bold hover:underline cursor-pointer"
-              >
-                {allFilteredSelected ? "선택 해제" : "목록 전체 선택"}
-              </button>
-              <span className="text-slate-300">|</span>
-              <button
-                type="button"
-                onClick={onClearSelection}
-                className="text-xs text-slate-500 font-bold hover:underline cursor-pointer"
-              >
-                전체 해제
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Table Content with Always Visible Horizontal Bar */}
-        <div className="overflow-x-scroll overflow-y-auto max-h-[460px] pb-2 border-b border-slate-200">
-          {sortedFilteredCerts.length === 0 ? (
-            <div className="py-14 text-center">
-              <FileKey className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <h3 className="text-sm font-semibold text-slate-700">조건에 일치하는 인증서가 없습니다.</h3>
-              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                검색어를 초기화하거나 상단의 [직접 폴더 선택]을 통해 인증서 디렉토리를 불러와 주세요.
-              </p>
-            </div>
           ) : (
-            <table 
-              className={`table-fixed text-left border-collapse border border-slate-300 dark:border-slate-700 bg-white shadow-2xs ${
-                resizingCol ? "select-none" : ""
-              }`}
-              style={{ width: `${totalTableWidth}px`, minWidth: "100%" }}
+            <table
+              className={`table-fixed text-left border-collapse wpf-native ${resizingCol ? 'select-none' : ''}`}
+              style={{
+                width: `${totalTableWidth}px`,
+                minWidth: '100%',
+                color: 'var(--wpf-text-primary)',
+              }}
             >
-              <thead className="sticky top-0 bg-slate-100/95 border-b-2 border-slate-300 dark:border-slate-700 text-[12px] text-slate-700 uppercase font-bold tracking-wider z-20 shadow-2xs">
+              <thead
+                className="sticky top-0 z-20"
+                style={{
+                  backgroundColor: 'var(--wpf-bg-dark)',
+                  color: 'var(--wpf-text-secondary)',
+                  borderBottom: '1px solid var(--wpf-border)',
+                }}
+              >
                 <tr>
-                  {/* 1. 번호 (Number) */}
-                  <th 
-                    style={{ width: `${colWidths.index}px`, minWidth: `${colWidths.index}px`, maxWidth: `${colWidths.index}px` }}
-                    className={`w-[52px] min-w-[52px] ${thPadding} text-center sticky left-0 bg-slate-100 z-30 border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                  {/* 1. 번호 */}
+                  <th
+                    style={{
+                      width: `${colWidths.index}px`,
+                      borderRight: '1px solid var(--wpf-border)',
+                      backgroundColor: 'var(--wpf-bg-dark)',
+                    }}
+                    className={`${thPadding} text-center font-semibold sticky left-0 z-30 relative`}
                   >
-                    <span>번호</span>
-                    {renderColResizer("index")}
+                    번호
+                    {renderColResizer('index')}
                   </th>
 
-                  {/* 2. 체크박스 (Selection Checkbox) */}
-                  <th 
-                    style={{ width: `${colWidths.select}px`, minWidth: `${colWidths.select}px`, maxWidth: `${colWidths.select}px` }}
-                    className={`w-[46px] min-w-[46px] ${thPadding} text-center border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                  {/* 2. 선택 체크박스 */}
+                  <th
+                    style={{
+                      width: `${colWidths.select}px`,
+                      borderRight: '1px solid var(--wpf-border)',
+                    }}
+                    className={`${thPadding} text-center relative`}
                   >
                     <input
                       type="checkbox"
                       checked={allFilteredSelected}
                       onChange={handleToggleSelectAllFiltered}
-                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                      title="필터된 전체 선택/해제"
+                      className="wpf-native w-3.5 h-3.5 accent-[#2563EB] cursor-pointer"
+                      title="목록 전체 선택 / 해제"
                     />
-                    {renderColResizer("select")}
+                    {renderColResizer('select')}
                   </th>
 
-                  {/* 3. 보관 위치 (Storage) */}
-                  <th 
-                    style={{ width: `${colWidths.storage}px`, minWidth: `${colWidths.storage}px`, maxWidth: `${colWidths.storage}px` }}
-                    className={`w-[130px] min-w-[100px] ${thPadding} border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                  {/* 3. 구분 */}
+                  <th
+                    style={{
+                      width: `${colWidths.category}px`,
+                      borderRight: '1px solid var(--wpf-border)',
+                    }}
+                    className={`${thPadding} font-semibold relative`}
                   >
                     <button
                       type="button"
-                      onClick={() => handleSort("storage")}
-                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors max-w-full overflow-hidden"
-                      title="보관 위치 정렬"
+                      onClick={() => handleSort('category')}
+                      className="inline-flex items-center gap-1 cursor-pointer hover:underline max-w-full"
                     >
-                      <span className="truncate">보관 위치</span>
-                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500 shrink-0">
-                        {sortBy === "storage" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
+                      <span className="truncate">구분</span>
+                      <span className="text-[10px] opacity-60">
+                        {sortBy === 'category' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
                       </span>
                     </button>
-                    {renderColResizer("storage")}
+                    {renderColResizer('category')}
                   </th>
 
-                  {/* 4. 인증서 명칭 및 저장 경로 (Category) - min-w-[200px] 보장 */}
-                  <th 
-                    style={{ width: `${colWidths.category}px`, minWidth: `${Math.max(colWidths.category, 200)}px`, maxWidth: `${colWidths.category}px` }}
-                    className={`w-[320px] min-w-[200px] ${thPadding} border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                  {/* 4. 저장 위치 */}
+                  <th
+                    style={{
+                      width: `${colWidths.storage}px`,
+                      borderRight: '1px solid var(--wpf-border)',
+                    }}
+                    className={`${thPadding} font-semibold relative`}
                   >
                     <button
                       type="button"
-                      onClick={() => handleSort("category")}
-                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors max-w-full overflow-hidden"
-                      title="인증서 명칭 및 저장 경로 (최소 200px 유지)"
+                      onClick={() => handleSort('storage')}
+                      className="inline-flex items-center gap-1 cursor-pointer hover:underline max-w-full"
                     >
-                      <span className="truncate">인증서 명칭 및 저장 경로</span>
-                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500 shrink-0">
-                        {sortBy === "category" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
+                      <span className="truncate">저장 위치</span>
+                      <span className="text-[10px] opacity-60">
+                        {sortBy === 'storage' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
                       </span>
                     </button>
-                    {renderColResizer("category")}
+                    {renderColResizer('storage')}
                   </th>
 
-                  {/* 5. 사용자명 / 소속 (Name) */}
-                  <th 
-                    style={{ width: `${colWidths.name}px`, minWidth: `${colWidths.name}px`, maxWidth: `${colWidths.name}px` }}
-                    className={`${thPadding} border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                  {/* 5. 인증서 명칭 (CN) 및 경로 상태 */}
+                  <th
+                    style={{
+                      width: `${colWidths.nameAndPath}px`,
+                      borderRight: '1px solid var(--wpf-border)',
+                    }}
+                    className={`${thPadding} font-semibold relative`}
                   >
                     <button
                       type="button"
-                      onClick={() => handleSort("name")}
-                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors max-w-full overflow-hidden"
-                      title="사용자명 / 소속 정렬"
+                      onClick={() => handleSort('name')}
+                      className="inline-flex items-center gap-1 cursor-pointer hover:underline max-w-full"
                     >
-                      <span className="truncate">사용자명 / 소속</span>
-                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500 shrink-0">
-                        {sortBy === "name" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
+                      <span className="truncate">인증서 명칭 (CN) 및 경로 상태</span>
+                      <span className="text-[10px] opacity-60">
+                        {sortBy === 'name' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
                       </span>
                     </button>
-                    {renderColResizer("name")}
+                    {renderColResizer('nameAndPath')}
                   </th>
 
-                  {/* 6. 발급기관 / 서명기관(CA) (Issuer) - 정확한 공식 기관명 */}
-                  <th 
-                    style={{ width: `${colWidths.issuer}px`, minWidth: `${colWidths.issuer}px`, maxWidth: `${colWidths.issuer}px` }}
-                    className={`${thPadding} border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                  {/* 6. 발급기관 */}
+                  <th
+                    style={{
+                      width: `${colWidths.issuer}px`,
+                      borderRight: '1px solid var(--wpf-border)',
+                    }}
+                    className={`${thPadding} font-semibold relative`}
                   >
                     <button
                       type="button"
-                      onClick={() => handleSort("issuer")}
-                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors max-w-full overflow-hidden"
-                      title="발급기관 정확한 기관명 정렬"
+                      onClick={() => handleSort('issuer')}
+                      className="inline-flex items-center gap-1 cursor-pointer hover:underline max-w-full"
                     >
-                      <span className="truncate">발급기관(공식 기관명)</span>
-                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500 shrink-0">
-                        {sortBy === "issuer" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
+                      <span className="truncate">발급기관</span>
+                      <span className="text-[10px] opacity-60">
+                        {sortBy === 'issuer' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
                       </span>
                     </button>
-                    {renderColResizer("issuer")}
+                    {renderColResizer('issuer')}
                   </th>
 
-                  {/* 7. 만료일 (Expiration Date) */}
-                  <th 
-                    style={{ width: `${colWidths.notAfter}px`, minWidth: `${colWidths.notAfter}px`, maxWidth: `${colWidths.notAfter}px` }}
-                    className={`${thPadding} border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                  {/* 7. 만료일자 */}
+                  <th
+                    style={{
+                      width: `${colWidths.notAfter}px`,
+                      borderRight: '1px solid var(--wpf-border)',
+                    }}
+                    className={`${thPadding} font-semibold relative`}
                   >
                     <button
                       type="button"
-                      onClick={() => handleSort("notAfter")}
-                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors max-w-full overflow-hidden"
-                      title="만료일 정렬"
+                      onClick={() => handleSort('notAfter')}
+                      className="inline-flex items-center gap-1 cursor-pointer hover:underline max-w-full"
                     >
-                      <span className="truncate">만료일</span>
-                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500 shrink-0">
-                        {sortBy === "notAfter" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
+                      <span className="truncate">만료일자</span>
+                      <span className="text-[10px] opacity-60">
+                        {sortBy === 'notAfter' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
                       </span>
                     </button>
-                    {renderColResizer("notAfter")}
+                    {renderColResizer('notAfter')}
                   </th>
 
-                  {/* 8. 상태 (Status) - 최소 크기로 자유자재 축소 가능 */}
-                  <th 
-                    style={{ width: `${colWidths.status}px`, minWidth: `${colWidths.status}px`, maxWidth: `${colWidths.status}px` }}
-                    className={`${thPadding} border-r border-slate-300 dark:border-slate-700 relative group overflow-hidden`}
+                  {/* 8. 상태 */}
+                  <th
+                    style={{
+                      width: `${colWidths.status}px`,
+                      borderRight: '1px solid var(--wpf-border)',
+                    }}
+                    className={`${thPadding} font-semibold relative`}
                   >
                     <button
                       type="button"
-                      onClick={() => handleSort("status")}
-                      className="inline-flex items-center gap-1 hover:text-blue-600 font-bold focus:outline-hidden group cursor-pointer transition-colors max-w-full overflow-hidden"
-                      title="상태 (자유로운 최소 크기 조절 가능)"
+                      onClick={() => handleSort('status')}
+                      className="inline-flex items-center gap-1 cursor-pointer hover:underline max-w-full"
                     >
                       <span className="truncate">상태</span>
-                      <span className="text-[10px] text-slate-400 group-hover:text-blue-500 shrink-0">
-                        {sortBy === "status" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
+                      <span className="text-[10px] opacity-60">
+                        {sortBy === 'status' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
                       </span>
                     </button>
-                    {renderColResizer("status")}
+                    {renderColResizer('status')}
                   </th>
 
-                  {/* 9. 작업 (Actions) */}
-                  <th 
-                    style={{ width: `${colWidths.actions}px`, minWidth: `${colWidths.actions}px`, maxWidth: `${colWidths.actions}px` }}
-                    className={`${thPadding} text-right`}
+                  {/* 9. 비밀키 */}
+                  <th
+                    style={{
+                      width: `${colWidths.privateKey}px`,
+                      borderRight: '1px solid var(--wpf-border)',
+                    }}
+                    className={`${thPadding} text-center font-semibold relative`}
                   >
-                    작업
+                    비밀키
+                    {renderColResizer('privateKey')}
+                  </th>
+
+                  {/* 10. 작업 / 복사 */}
+                  <th
+                    style={{ width: `${colWidths.actions}px` }}
+                    className={`${thPadding} text-center font-semibold`}
+                  >
+                    작업 / 복사
                   </th>
                 </tr>
               </thead>
-              <tbody className="text-sm divide-y divide-slate-200 text-slate-600">
+
+              <tbody>
                 {sortedFilteredCerts.map((cert, index) => {
                   const isSelected = selectedIds.includes(cert.id);
+                  const isInspected = inspectedCertId === cert.id;
                   const isRecentlyCopied = recentlyCopiedIds.includes(cert.id);
-                  const isUsb = isUsbCertificate(cert);
+                  const isUsb = isUsbCertHelper(cert);
                   const driveLetter = getDriveLetter(cert);
+                  const dColor = getDriveColorInfo(driveLetter);
                   const isRareGpki = isRareLocalLowGpkiPath(cert.sourceLocation);
                   const isNonStandard = isRareGpki || cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation);
-                  const cellPadding = paddingDensity === "compact"
-                    ? (isSelected ? "px-2.5 py-3" : "px-2.5 py-2")
-                    : paddingDensity === "spacious"
-                      ? (isSelected ? "px-5 py-4.5" : "px-5 py-4")
-                      : (isSelected ? "px-3.5 py-4" : "px-3.5 py-3");
+                  const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);
+
+                  const rowBg = isRecentlyCopied
+                    ? 'var(--wpf-copied-row)'
+                    : isInspected
+                    ? 'var(--wpf-selected-row)'
+                    : index % 2 === 1
+                    ? 'var(--wpf-bg-dark)'
+                    : 'var(--wpf-bg-card)';
+
+                  const rowTextColor = isInspected
+                    ? 'var(--wpf-selected-row-text)'
+                    : isRecentlyCopied
+                    ? 'var(--wpf-copied-row-text)'
+                    : 'var(--wpf-text-primary)';
 
                   return (
                     <tr
                       key={cert.id}
-                      onClick={() => onToggleSelect(cert.id)}
-                      className={`cursor-pointer transition-all duration-200 border-b ${
-                        isRecentlyCopied
-                          ? "animate-copied-row bg-emerald-50/90 hover:bg-emerald-100/80 border-l-4 border-l-emerald-500 border-b-emerald-200 shadow-xs relative z-5"
-                          : isNonStandard
-                            ? isSelected
-                              ? "bg-amber-100/90 hover:bg-amber-200/80 border-l-4 border-l-amber-500 border-b-2 border-b-amber-400 font-medium shadow-xs relative z-10"
-                              : "bg-amber-50/60 hover:bg-amber-100/70 border-l-4 border-l-amber-400/60 border-b-amber-200/80"
-                            : isSelected
-                              ? "bg-blue-50/95 hover:bg-blue-100/90 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 border-l-4 border-l-blue-600 border-b-2 border-b-blue-400 dark:border-b-blue-600 font-medium shadow-xs relative z-10"
-                              : cert.status === "expired"
-                                ? "bg-rose-50/20 hover:bg-rose-50/40 border-l-4 border-l-transparent border-b-slate-200/90 dark:border-b-slate-800"
-                                : "bg-white hover:bg-slate-50/90 dark:bg-transparent dark:hover:bg-slate-800/40 border-l-4 border-l-transparent border-b-slate-200/90 dark:border-b-slate-800"
+                      onClick={() => onInspectCert?.(cert)}
+                      onDoubleClick={() => onOpenDetailModal(cert)}
+                      className={`cursor-pointer transition-colors h-[48px] ${
+                        isRecentlyCopied ? 'animate-copied-row' : ''
                       }`}
+                      style={{
+                        backgroundColor: rowBg,
+                        color: rowTextColor,
+                        borderBottom: '1px solid var(--wpf-border)',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isInspected && !isRecentlyCopied) {
+                          e.currentTarget.style.backgroundColor = 'var(--wpf-bg-hover)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isInspected && !isRecentlyCopied) {
+                          e.currentTarget.style.backgroundColor = rowBg;
+                        }
+                      }}
                     >
-                      {/* Col 1: 번호 */}
-                      <td 
-                        style={{ width: `${colWidths.index}px`, minWidth: `${colWidths.index}px`, maxWidth: `${colWidths.index}px` }}
-                        className={`${cellPadding} text-center font-mono font-bold text-xs text-slate-500 sticky left-0 z-10 border-r border-slate-300 dark:border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] ${
-                        isRecentlyCopied
-                          ? "bg-emerald-50/90" 
-                          : isNonStandard
-                            ? isSelected
-                              ? "bg-amber-100/90"
-                              : "bg-amber-50/60"
-                            : isSelected
-                              ? "bg-blue-50/95 dark:bg-blue-950/50"
-                              : cert.status === "expired"
-                                ? "bg-rose-50/20 dark:bg-slate-900/20"
-                                : "bg-white dark:bg-slate-900"
-                      }`}>
+                      {/* 1. 번호 */}
+                      <td
+                        style={{
+                          width: `${colWidths.index}px`,
+                          backgroundColor: rowBg,
+                          borderRight: '1px solid var(--wpf-border)',
+                          color: isInspected ? rowTextColor : 'var(--wpf-text-secondary)',
+                        }}
+                        className={`${cellPadding} text-center font-mono font-bold text-[11px] tabular-nums sticky left-0 z-10`}
+                      >
                         {index + 1}
                       </td>
 
-                      {/* Col 2: 체크박스 */}
-                      <td 
-                        style={{ width: `${colWidths.select}px`, minWidth: `${colWidths.select}px`, maxWidth: `${colWidths.select}px` }}
-                        className={`${cellPadding} text-center border-r border-slate-200/90 dark:border-slate-800`}
+                      {/* 2. 선택 체크박스 */}
+                      <td
+                        style={{
+                          width: `${colWidths.select}px`,
+                          borderRight: '1px solid var(--wpf-border)',
+                        }}
+                        className={`${cellPadding} text-center`}
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => onToggleSelect(cert.id)}
-                          className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          className="wpf-native w-3.5 h-3.5 accent-[#2563EB] cursor-pointer"
                         />
                       </td>
 
-                      {/* Col 3: Storage Location Badge Column */}
-                      <td 
-                        style={{ width: `${colWidths.storage}px`, minWidth: `${colWidths.storage}px`, maxWidth: `${colWidths.storage}px` }}
-                        className={`${cellPadding} whitespace-nowrap border-r border-slate-200/90 dark:border-slate-800`}
+                      {/* 3. 구분 Badge */}
+                      <td
+                        style={{
+                          width: `${colWidths.category}px`,
+                          borderRight: '1px solid var(--wpf-border)',
+                        }}
+                        className={`${cellPadding} overflow-hidden`}
                       >
-                        {(() => {
-                          const dColor = getDriveColorInfo(driveLetter);
-                          return (
-                            <div
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-xs transition-transform hover:scale-[1.02]"
-                              style={{
-                                backgroundColor: dColor.bgHex,
-                                borderColor: dColor.borderHex,
-                                color: "#FFFFFF",
-                              }}
-                              title={`보관 위치: ${isUsb ? "이동식 USB" : "컴퓨터 로컬 디스크"} (${driveLetter})`}
-                            >
-                              {isUsb ? (
-                                <HardDrive className="w-3.5 h-3.5 shrink-0" style={{ color: dColor.subTextHex }} />
-                              ) : (
-                                <Laptop className="w-3.5 h-3.5 shrink-0" style={{ color: dColor.subTextHex }} />
-                              )}
-                              <span className="text-white">{isUsb ? "USB" : "컴퓨터"}</span>
-                              <span
-                                className="text-[11px] font-mono font-extrabold px-1.5 py-0.2 rounded border shadow-2xs"
-                                style={{
-                                  backgroundColor: dColor.tagBgHex,
-                                  borderColor: dColor.tagBorderHex,
-                                  color: "#FFFFFF",
-                                }}
-                              >
-                                {dColor.letter}
-                              </span>
-                            </div>
-                          );
-                        })()}
+                        <span
+                          className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-[4px] whitespace-nowrap"
+                          style={{
+                            backgroundColor: 'var(--wpf-badge-cat-bg)',
+                            color: 'var(--wpf-badge-cat-text)',
+                          }}
+                        >
+                          {getCategoryShortBadge(cert.category)}
+                        </span>
                       </td>
 
-                      {/* Col 4: 인증서 명칭 및 저장 경로 (최소 크기까지 자유롭게 조절 가능) */}
-                      <td 
-                        style={{ width: `${colWidths.category}px`, minWidth: `${colWidths.category}px`, maxWidth: `${colWidths.category}px` }}
-                        className={`${cellPadding} font-medium text-slate-800 border-r border-slate-200/90 dark:border-slate-800 overflow-hidden min-w-0`}
+                      {/* 4. 저장 위치 Badge */}
+                      <td
+                        style={{
+                          width: `${colWidths.storage}px`,
+                          borderRight: '1px solid var(--wpf-border)',
+                        }}
+                        className={`${cellPadding} whitespace-nowrap`}
                       >
-                        <div className="flex items-center gap-1.5 flex-nowrap overflow-hidden min-w-0" title={getCategoryLabel(cert)}>
-                          <span className="truncate shrink font-semibold">{getCategoryLabel(cert)}</span>
-                          {cert.isSystemCa && (
-                            <span className="text-[10px] px-1.5 py-0.2 bg-blue-50 text-blue-700 font-bold rounded border border-blue-200 shrink-0">
-                              CA
-                            </span>
+                        <div
+                          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[5px] text-[11px] font-bold border"
+                          style={{
+                            backgroundColor: dColor.bgHex,
+                            borderColor: dColor.borderHex,
+                            color: '#FFFFFF',
+                          }}
+                          title={`보관 위치: ${isUsb ? '이동식 USB' : '컴퓨터 로컬 디스크'} (${driveLetter})`}
+                        >
+                          {isUsb ? (
+                            <HardDrive className="w-3 h-3 shrink-0" />
+                          ) : (
+                            <Laptop className="w-3 h-3 shrink-0" />
                           )}
-                          {cert.isInstitutional && (
-                            <span className="text-[10px] px-1.5 py-0.2 bg-indigo-50 text-indigo-700 font-bold rounded border border-indigo-200 shrink-0">
-                              기관
-                            </span>
-                          )}
-                          {cert.isCustomAdded && (
-                            <span className="text-[10px] px-1.5 py-0.2 bg-teal-50 text-teal-700 rounded border border-teal-200 shrink-0">
-                              수동
+                          <span>{isUsb ? 'USB' : '컴퓨터'}</span>
+                          <span
+                            className="text-[10px] font-mono font-extrabold px-1 rounded-[3px] border"
+                            style={{
+                              backgroundColor: dColor.tagBgHex,
+                              borderColor: dColor.tagBorderHex,
+                              color: '#FFFFFF',
+                            }}
+                          >
+                            {dColor.letter}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* 5. 인증서 명칭 (CN) 및 경로 상태 */}
+                      <td
+                        style={{
+                          width: `${colWidths.nameAndPath}px`,
+                          borderRight: '1px solid var(--wpf-border)',
+                        }}
+                        className={`${cellPadding} overflow-hidden`}
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="font-bold text-[13px] truncate" title={cert.name}>
+                            {cert.name}
+                          </span>
+                          {isNonStandard && (
+                            <span
+                              className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-[3px] border shrink-0 whitespace-nowrap"
+                              style={{
+                                backgroundColor: 'var(--wpf-badge-expiring-bg)',
+                                borderColor: 'var(--wpf-badge-expiring-border)',
+                                color: 'var(--wpf-badge-expiring-text)',
+                              }}
+                              title={isRareGpki ? '실무 미사용 GPKI 예외 경로' : '일반 인증서 창 미인식 비표준 위치'}
+                            >
+                              <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
+                              <span>{isRareGpki ? '비권장 경로' : '비표준 위치'}</span>
                             </span>
                           )}
                           {isRecentlyCopied && (
-                            <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.2 bg-emerald-600 text-white rounded-full font-bold shadow-xs shrink-0">
-                              <Sparkles className="w-2.5 h-2.5 text-amber-300" />
-                              <span>복사</span>
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-[3px] bg-[#10B981] text-white shrink-0">
+                              <Sparkles className="w-2.5 h-2.5" />
+                              <span>복사됨</span>
                             </span>
                           )}
                         </div>
-                        <div 
-                          className="text-[11px] text-slate-600 font-medium mt-1 font-mono flex items-center justify-between gap-1 bg-slate-50/70 p-1 rounded border border-slate-200/50 group/path overflow-hidden min-w-0"
-                          title={`인증서 전체 저장 경로: ${cert.sourceLocation}`}
-                        >
-                          <span className="select-all leading-relaxed truncate shrink min-w-0">{cert.sourceLocation}</span>
+
+                        <div className="flex items-center justify-between gap-1.5 mt-0.5 min-w-0 group/path">
+                          <span
+                            className="text-[10.5px] font-mono truncate"
+                            style={{ color: isInspected ? 'var(--wpf-selected-row-secondary)' : isRecentlyCopied ? 'var(--wpf-copied-row-secondary)' : 'var(--wpf-text-secondary)' }}
+                            title={cert.sourceLocation}
+                          >
+                            {cert.sourceLocation}
+                          </span>
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigator.clipboard.writeText(cert.sourceLocation);
-                              alert("인증서 전체 경로가 클립보드에 복사되었습니다.");
+                              try {
+                                navigator.clipboard.writeText(cert.sourceLocation);
+                                setCopiedPathId(cert.id);
+                                onNotifyCopy?.(`📋 경로가 클립보드에 복사되었습니다: ${cert.sourceLocation}`);
+                                setTimeout(() => setCopiedPathId(null), 1500);
+                              } catch {}
                             }}
-                            className="opacity-0 group-hover/path:opacity-100 transition-opacity p-0.5 text-slate-400 hover:text-blue-600 rounded shrink-0 cursor-pointer"
-                            title="전체 경로 클립보드 복사"
+                            className="opacity-0 group-hover/path:opacity-100 transition-opacity p-0.5 rounded shrink-0 cursor-pointer"
+                            title="경로 복사"
                           >
-                            <Copy className="w-3 h-3" />
-                          </button>
-                        </div>
-                        {isRareGpki ? (
-                          <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.2 bg-amber-100/90 text-amber-900 border border-amber-300 rounded text-[10px] font-bold shadow-2xs overflow-hidden max-w-full truncate shrink-0" title="실제 사용 환경에서 거의 사용되지 않는 비권장 경로입니다. 공무원 행정전자서명(GPKI)의 정부 정규 표준 위치는 [C:\GPKI\Certificate\class2]입니다. 온-나라, 새올 등 행정망에서 인식되지 않을 수 있습니다.">
-                            <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
-                            <span className="truncate">⚠️ 실무 미사용 경로 (GPKI 예외)</span>
-                          </div>
-                        ) : isNonStandard ? (
-                          <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.2 bg-amber-100/80 text-amber-900 border border-amber-300 rounded text-[10px] font-bold shadow-2xs overflow-hidden max-w-full truncate shrink-0" title="일반 인증서 프로그램(은행/정부)이 인식하지 못하는 위치입니다. [USB ➔ PC] 또는 [정 위치 복사]가 필요합니다.">
-                            <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
-                            <span className="truncate">⚠️ 비표준 위치</span>
-                          </div>
-                        ) : null}
-                      </td>
-
-                      {/* Col 5: 사용자명 / 소속 */}
-                      <td 
-                        style={{ width: `${colWidths.name}px`, minWidth: `${colWidths.name}px`, maxWidth: `${colWidths.name}px` }}
-                        className={`${cellPadding} border-r border-slate-200/90 dark:border-slate-800 overflow-hidden min-w-0`}
-                      >
-                        <div className="flex items-center gap-2 overflow-hidden min-w-0">
-                          {isRareGpki ? (
-                            <div className="p-1.5 bg-amber-100 text-amber-900 rounded-md border border-amber-300 shadow-2xs shrink-0" title="실무 미사용 GPKI 예외 경로 보관 인증서">
-                              <FileKey className="w-4 h-4 text-amber-700" />
-                            </div>
-                          ) : isNonStandard ? (
-                            <div className="p-1.5 bg-amber-100 text-amber-800 rounded-md border border-amber-300 shadow-2xs shrink-0" title="비표준 경로 보관 인증서">
-                              <FileKey className="w-4 h-4 text-amber-600" />
-                            </div>
-                          ) : (
-                            <div className="p-1.5 bg-slate-100 text-slate-600 rounded-md shrink-0">
-                              <FileKey className="w-4 h-4 text-slate-500" />
-                            </div>
-                          )}
-                          <div className="min-w-0 overflow-hidden">
-                            <div className="font-semibold text-slate-900 flex items-center gap-1.5 overflow-hidden">
-                              <span className="truncate">{cert.name}</span>
-                              {isRareGpki ? (
-                                <span className="text-[10px] px-1.5 py-0.2 bg-amber-100 text-amber-900 border border-amber-300 rounded font-bold shrink-0" title="정부 공식 표준: C:\GPKI\Certificate\class2">
-                                  ⚠️ GPKI 예외
-                                </span>
-                              ) : isNonStandard ? (
-                                <span className="text-[10px] px-1.5 py-0.2 bg-amber-100 text-amber-800 border border-amber-300 rounded font-bold shrink-0">
-                                  ⚠️ 비표준
-                                </span>
-                              ) : null}
-                            </div>
-                            {cert.departmentOrOrg && (
-                              <div className="text-xs text-slate-500 truncate" title={cert.departmentOrOrg}>
-                                {cert.departmentOrOrg}
-                              </div>
+                            {copiedPathId === cert.id ? (
+                              <Check className="w-3 h-3 text-[#10B981]" />
+                            ) : (
+                              <Copy className="w-3 h-3" style={{ color: 'var(--wpf-accent-text)' }} />
                             )}
-                          </div>
+                          </button>
                         </div>
                       </td>
 
-                      {/* Col 6: 발급기관 / 서명기관(CA) - 정확한 공식 기관명 표시 */}
-                      <td 
-                        style={{ width: `${colWidths.issuer}px`, minWidth: `${colWidths.issuer}px`, maxWidth: `${colWidths.issuer}px` }}
-                        className={`${cellPadding} text-slate-700 border-r border-slate-200/90 dark:border-slate-800 overflow-hidden min-w-0`}
+                      {/* 6. 발급기관 */}
+                      <td
+                        style={{
+                          width: `${colWidths.issuer}px`,
+                          borderRight: '1px solid var(--wpf-border)',
+                        }}
+                        className={`${cellPadding} overflow-hidden`}
                       >
-                        {(() => {
-                          const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);
-                          return (
-                            <div className="flex flex-col gap-1 min-w-0 overflow-hidden">
-                              <div className="flex items-center gap-1.5 min-w-0 overflow-hidden" title={issuerInfo.officialOrgName}>
-                                <span className={`text-[10px] px-1.5 py-0.2 rounded font-extrabold border shrink-0 ${issuerInfo.badgeClass}`}>
-                                  {issuerInfo.brandTag}
-                                </span>
-                                <span className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm truncate">
-                                  {issuerInfo.officialOrgName}
-                                </span>
-                              </div>
-                              <div className="text-[11px] text-slate-500 font-medium truncate" title={issuerInfo.centerName}>
-                                {issuerInfo.centerName}
-                              </div>
-                              {cert.caSignatureName && cert.caSignatureName !== issuerInfo.centerName && (
-                                <div 
-                                  className="text-[10px] text-blue-700 dark:text-blue-400 font-mono flex items-center gap-1 bg-blue-50/80 dark:bg-blue-950/40 px-1 py-0.2 rounded border border-blue-200/70 dark:border-blue-800/60 truncate max-w-full" 
-                                  title={`인증기관 서명 식별자: ${cert.caSignatureName}`}
-                                >
-                                  <span className="truncate">{cert.caSignatureName}</span>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </td>
-
-                      {/* Col 7: 만료일 */}
-                      <td 
-                        style={{ width: `${colWidths.notAfter}px`, minWidth: `${colWidths.notAfter}px`, maxWidth: `${colWidths.notAfter}px` }}
-                        className={`${cellPadding} font-mono text-xs text-slate-700 border-r border-slate-200/90 dark:border-slate-800 whitespace-nowrap overflow-hidden`}
-                      >
-                        <span className="truncate block">{cert.validTo}</span>
-                      </td>
-
-                      {/* Col 8: 상태 (최소 크기까지 자유롭게 조절 가능) */}
-                      <td 
-                        style={{ width: `${colWidths.status}px`, minWidth: `${colWidths.status}px`, maxWidth: `${colWidths.status}px` }}
-                        className={`${cellPadding} border-r border-slate-200/90 dark:border-slate-800 overflow-hidden min-w-0`}
-                      >
-                        <div className="overflow-hidden min-w-0 flex items-center">
-                          {getStatusBadge(cert)}
+                        <div className="text-xs font-semibold truncate" title={issuerInfo.officialOrgName}>
+                          {issuerInfo.officialOrgName}
+                        </div>
+                        <div
+                          className="text-[10px] truncate"
+                          style={{ color: isInspected ? 'var(--wpf-selected-row-secondary)' : isRecentlyCopied ? 'var(--wpf-copied-row-secondary)' : 'var(--wpf-text-secondary)' }}
+                          title={cert.caSignatureName || issuerInfo.centerName}
+                        >
+                          {cert.caSignatureName || issuerInfo.centerName}
                         </div>
                       </td>
 
-                      {/* Col 9: 작업 */}
-                      <td 
-                        style={{ width: `${colWidths.actions}px`, minWidth: `${colWidths.actions}px`, maxWidth: `${colWidths.actions}px` }}
-                        className={`${cellPadding} text-right`}
+                      {/* 7. 만료일자 */}
+                      <td
+                        style={{
+                          width: `${colWidths.notAfter}px`,
+                          borderRight: '1px solid var(--wpf-border)',
+                        }}
+                        className={`${cellPadding} font-mono text-xs tabular-nums whitespace-nowrap`}
                       >
-                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                        {cert.validTo}
+                      </td>
+
+                      {/* 8. 상태 */}
+                      <td
+                        style={{
+                          width: `${colWidths.status}px`,
+                          borderRight: '1px solid var(--wpf-border)',
+                        }}
+                        className={`${cellPadding}`}
+                      >
+                        {getStatusBadge(cert)}
+                      </td>
+
+                      {/* 9. 비밀키 */}
+                      <td
+                        style={{
+                          width: `${colWidths.privateKey}px`,
+                          borderRight: '1px solid var(--wpf-border)',
+                        }}
+                        className={`${cellPadding} text-center whitespace-nowrap`}
+                      >
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#10B981]">
+                          <KeyRound className="w-3 h-3" />
+                          <span>보유</span>
+                        </span>
+                      </td>
+
+                      {/* 10. 작업 / 복사 */}
+                      <td
+                        style={{ width: `${colWidths.actions}px` }}
+                        className={`${cellPadding} text-center`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="inline-flex items-center justify-center gap-1.5">
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); onOpenDetailModal(cert); }}
-                            className="p-1.5 px-2.5 text-xs text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded font-medium transition-colors cursor-pointer"
-                            title="상세 정보 보기"
+                            onClick={() => onQuickBackupSingle(cert)}
+                            className="wpf-btn-primary wpf-native px-2 py-1 text-[11px] inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                            title="이 인증서만 복사 대상 디스크를 지정하여 복사합니다."
                           >
-                            상세
+                            <Save className="w-3 h-3" />
+                            <span>복사</span>
                           </button>
-                          {onOpenRenewalGuidance && (
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); onOpenRenewalGuidance([cert]); }}
-                              className={`p-1.5 px-2 text-xs rounded font-medium transition-colors cursor-pointer border flex items-center gap-1 ${
-                                cert.status === "expiring" || cert.status === "expired"
-                                  ? "bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100"
-                                  : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
-                              }`}
-                              title={`${cert.issuer} 갱신 안내 및 홈페이지 바로가기`}
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                              <span>갱신</span>
-                            </button>
-                          )}
+
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); onQuickBackupSingle(cert); }}
-                            className="p-1.5 px-2.5 text-xs text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded font-medium border border-blue-200 transition-colors cursor-pointer"
-                            title="이 인증서만 단독 복사"
+                            onClick={() => onOpenDetailModal(cert)}
+                            className="wpf-btn-secondary wpf-native px-2 py-1 text-[11px] inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                            title="인증서 전문 규격 팝업 보기"
                           >
-                            복사
+                            <Search className="w-3 h-3" />
+                            <span>상세</span>
                           </button>
+
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); onRequestDeleteSingle(cert); }}
-                            className="p-1.5 px-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer border border-transparent hover:border-rose-200"
-                            title="이 인증서 영구 삭제"
+                            onClick={() => onRequestDeleteSingle(cert)}
+                            className="wpf-btn-secondary wpf-native p-1 text-[#F43F5E] cursor-pointer"
+                            title="휴지통으로 안전 삭제"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1736,96 +1344,109 @@ export const CertificateList: React.FC<CertificateListProps> = ({
         </div>
       </div>
 
-      {/* Bottom Action Bar (from Design HTML) */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-2 gap-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center bg-blue-50 px-4 py-2 rounded-lg border border-blue-100 shadow-2xs">
-            <span className="text-xs font-bold text-blue-700 mr-2">선택된 항목:</span>
-            <span className="text-sm font-bold text-blue-800">{selectedIds.length}건</span>
-          </div>
-          <p className="text-xs text-slate-500">
-            * 이동식 매체(USB)로 복사 시 기존 인증서는 안전하게 유지됩니다.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center space-x-3 shrink-0">
-          {onOpenRenewalGuidance && (
-            <button
-              type="button"
-              id="btn-bottom-renewal-guidance"
-              onClick={() => {
-                const selected = certificates.filter(c => selectedIds.includes(c.id));
-                onOpenRenewalGuidance(selected.length > 0 ? selected : undefined);
-              }}
-              className="px-4 py-3 border border-indigo-300 bg-indigo-50 text-indigo-800 rounded-lg text-sm font-bold hover:bg-indigo-100 transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
-              title="선택된 인증서의 발급기관(행안부, 교육부, 은행 등) 갱신 홈페이지 바로가기 링크 모달"
-            >
-              <ExternalLink className="w-4 h-4 text-indigo-600" />
-              <span>일괄 갱신 안내 {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}</span>
-            </button>
-          )}
-
-          {selectedIds.length > 0 && (
-            <button
-              type="button"
-              onClick={() => onOpenCleanupModal('SELECTED')}
-              className="px-4 py-3 border border-rose-200 bg-rose-50 text-rose-700 rounded-lg text-sm font-bold hover:bg-rose-100 transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
-            >
-              <Trash2 className="w-4 h-4 text-rose-600" />
-              <span>선택 삭제 ({selectedIds.length})</span>
-            </button>
-          )}
-
+      {/* Row 3: Bottom Bulk Action Controls (Matches WPF MainWindow.xaml lines 1241-1285) */}
+      <div
+        className="wpf-card wpf-native p-3.5 flex flex-wrap items-center justify-between gap-2.5 shrink-0"
+        style={{
+          backgroundColor: 'var(--wpf-bg-card)',
+          border: '1px solid var(--wpf-border)',
+          borderRadius: '8px',
+        }}
+      >
+        <div className="flex flex-wrap items-center gap-2">
           {onOpenUsbToPc && (
             <button
               type="button"
               onClick={() => onOpenUsbToPc()}
-              className="px-5 py-3 border border-emerald-300 bg-emerald-50 text-emerald-800 rounded-lg text-sm font-bold hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
+              className="wpf-btn-secondary wpf-native px-3 py-2 text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
             >
-              <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
-              <span>USB ➔ PC 넣기 (반대경로)</span>
-            </button>
-          )}
-
-          {onOpenDesktopApp && (
-            <button
-              type="button"
-              onClick={onOpenDesktopApp}
-              className="px-4 py-3 border border-sky-300 bg-sky-50 text-sky-800 rounded-lg text-sm font-bold hover:bg-sky-100 transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
-              title="Windows C# WPF 네이티브 데스크톱 앱 (.NET 8)"
-            >
-              <Monitor className="w-4 h-4 text-sky-600" />
-              <span className="hidden sm:inline">데스크탑 앱</span>
+              <ArrowDownLeft className="w-3.5 h-3.5 text-[#10B981]" />
+              <span className="text-[#10B981]">USB ➔ PC 넣기</span>
             </button>
           )}
 
           <button
             type="button"
             onClick={() => {
-              onSelectAll();
-              onOpenBackupModal();
+              if (hasActiveFilter && onSelectFilteredIds) {
+                onSelectFilteredIds(sortedFilteredCerts.map(c => c.id));
+              } else {
+                onSelectAll();
+              }
             }}
-            className="px-6 py-3 border border-slate-200 bg-white text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors cursor-pointer shadow-xs"
+            className="wpf-btn-secondary wpf-native px-3 py-2 text-xs font-medium cursor-pointer whitespace-nowrap"
           >
-            전체 일괄 백업
+            전체 선택
+          </button>
+
+          <button
+            type="button"
+            onClick={onClearSelection}
+            className="wpf-btn-secondary wpf-native px-3 py-2 text-xs font-medium cursor-pointer whitespace-nowrap"
+          >
+            선택 해제
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onOpenCleanupModal('SELECTED')}
+            className="wpf-btn-secondary wpf-native px-3 py-2 text-xs font-semibold cursor-pointer whitespace-nowrap"
+            style={{ color: '#E11D48' }}
+          >
+            선택 항목 일괄 삭제
+          </button>
+
+          {canUndo && onUndoDelete && (
+            <button
+              type="button"
+              onClick={onUndoDelete}
+              className="wpf-btn-secondary wpf-native px-3 py-2 text-xs font-semibold flex items-center gap-1 cursor-pointer whitespace-nowrap"
+              style={{ color: '#10B981' }}
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>삭제 취소</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => onOpenCleanupModal('EXPIRED')}
+            className="wpf-btn-secondary wpf-native px-3 py-2 text-xs font-semibold cursor-pointer whitespace-nowrap"
+            style={{ color: '#D97706' }}
+          >
+            🧹 만료 정리
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={onOpenBackupModal}
+            className="wpf-btn-primary wpf-native px-3.5 py-2 text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            title="복사 목적지 디스크(USB 메모리 또는 로컬 디스크)를 지정하는 팝업창을 띄우고 선택한 인증서를 복사합니다."
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span>선택 인증서 복사 / 백업</span>
           </button>
 
           <button
             type="button"
             onClick={() => {
-              if (selectedIds.length === 0) {
+              if (onBackupAll) {
+                onBackupAll();
+              } else {
                 onSelectAll();
+                onOpenBackupModal();
               }
-              onOpenBackupModal();
             }}
-            className="px-8 py-3 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md shadow-blue-200 transition-all cursor-pointer"
+            className="wpf-btn-success wpf-native px-3.5 py-2 text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            title="복사 목적지 디스크(USB 메모리 또는 로컬 디스크)를 지정하는 팝업창을 띄우고 전체 인증서를 일괄 복사합니다."
           >
-            인증서 복사 시작
+            <Zap className="w-3.5 h-3.5" />
+            <span>전체 일괄 복사 / 백업</span>
           </button>
         </div>
       </div>
     </div>
   );
 };
-
-

@@ -760,12 +760,12 @@ export async function copyUsbCertificatesToComputer(
         '⏭️ 동일 파일 건너뛰기 (Skip)'
       }`);
 
-      // C: 드라이브 GPKI/EPKI 경로 스캔 및 디렉터리 존재/권한 사전 예외 검증
+      // 대상 드라이브 GPKI/EPKI 경로 스캔 및 디렉터리 존재/권한 사전 예외 검증
       try {
         const pathScanSummary = verifyAndScanLocalDriveGpkiEpkiPaths(targetUsername);
-        logs.push(`[1단계: C: 드라이브 사전 검증] GPKI/EPKI/NPKI 경로 ${pathScanSummary.totalPathsChecked}개 스캔 완료 (정상: ${pathScanSummary.existingPathsCount}, 세이프가드 폴백 지원)`);
+        logs.push(`[1단계: ${cleanTargetDrive} 드라이브 사전 검증] GPKI/EPKI/NPKI 경로 ${pathScanSummary.totalPathsChecked}개 스캔 완료 (정상: ${pathScanSummary.existingPathsCount}, 세이프가드 폴백 지원)`);
       } catch (scanErr: any) {
-        logs.push(`[1단계: 경고] C: 드라이브 경로 검증 예외 발생 (자동 폴백 적용): ${scanErr?.message || 'I/O 경고'}`);
+        logs.push(`[1단계: 경고] ${cleanTargetDrive} 드라이브 경로 검증 예외 발생 (자동 폴백 적용): ${scanErr?.message || 'I/O 경고'}`);
       }
 
       for (const usbCert of selectedCerts) {
@@ -778,14 +778,19 @@ export async function copyUsbCertificatesToComputer(
           continue;
         }
 
-        // Strictly search existing PC certificates only (never match USB certificates as existing PC targets)
-        const existingIndex = existingCerts.findIndex(
-          c => isPcCertificate(c) && (
-            (c.sourceLocation && c.sourceLocation.trim().toUpperCase() === localPath.trim().toUpperCase()) ||
+        // Strictly search existing PC certificates on the selected target drive only (never match USB certs or another local drive)
+        const existingIndex = existingCerts.findIndex(c => {
+          if (!isPcCertificate(c)) return false;
+          const locUpper = (c.sourceLocation || '').trim().toUpperCase();
+          const drvUpper = (c.sourceDrive || '').trim().toUpperCase();
+          const isOnTargetDrive = locUpper.startsWith(cleanTargetDrive) || drvUpper.includes(cleanTargetDrive);
+          if (!isOnTargetDrive) return false;
+          return (
+            locUpper === localPath.trim().toUpperCase() ||
             c.serialNumber === usbCert.serialNumber ||
             (c.name === usbCert.name && c.category === usbCert.category)
-          )
-        );
+          );
+        });
 
         const isDuplicate = existingIndex !== -1;
         // Always assign a distinct PC certificate ID unless explicitly overwriting an existing PC certificate
@@ -793,7 +798,7 @@ export async function copyUsbCertificatesToComputer(
 
         if (isDuplicate) {
           if (duplicateStrategy === 'skip') {
-            logs.push(`[⏭️ 건너뜀] ${usbCert.name} (${usbCert.category}) - PC에 동일 인증서가 존재하여 복사를 건너뜁니다.`);
+            logs.push(`[⏭️ 건너뜀] ${usbCert.name} (${usbCert.category}) - ${cleanTargetDrive}에 동일 인증서가 존재하여 복사를 건너뜁니다.`);
             continue;
           } else if (duplicateStrategy === 'rename') {
             const timeTag = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -802,12 +807,10 @@ export async function copyUsbCertificatesToComputer(
             logs.push(`[📁 이름 변경 보존] ${usbCert.name} - 기존 파일을 보존하기 위해 '${localPath}' 경로로 새로 복사합니다.`);
             importedCount++;
           } else {
-            // overwrite existing PC certificate
-            logs.push(`[⚡ 최신 덮어쓰기] ${usbCert.name} - PC의 기존 인증서를 USB의 최신 파일로 자동 교체합니다.`);
+            // overwrite existing PC certificate on target drive
+            logs.push(`[⚡ 최신 덮어쓰기] ${usbCert.name} - ${cleanTargetDrive}의 기존 인증서를 USB의 최신 파일로 자동 교체합니다.`);
             updatedCount++;
-            if (isPcCertificate(existingCerts[existingIndex])) {
-              finalCertId = existingCerts[existingIndex].id;
-            }
+            finalCertId = existingCerts[existingIndex].id;
           }
         } else {
           logs.push(`[✨ 신규 복사] ${usbCert.name} (${usbCert.issuer}) ➔ ${localPath}`);
@@ -835,7 +838,8 @@ export async function copyUsbCertificatesToComputer(
           status: usbCert.status,
           daysRemaining: usbCert.daysRemaining,
           sourceLocation: localPath,
-          sourceDrive: 'C: (로컬 디스크)',
+          sourceDrive: `${cleanTargetDrive} (로컬 디스크)`,
+          isRemovableMedia: false,
           departmentOrOrg: usbCert.departmentOrOrg || 'USB에서 복원됨',
           files: {
             certName: usbCert.files.certName,
@@ -853,7 +857,7 @@ export async function copyUsbCertificatesToComputer(
         importedCerts.push(newCertItem);
       }
 
-      logs.push(`[4단계: 완료] 총 ${importedCount + updatedCount}건의 인증서 (${totalFilesCopied}개 파일)가 컴퓨터 C: 드라이브에 안전하게 복사되었습니다.`);
+      logs.push(`[4단계: 완료] 총 ${importedCount + updatedCount}건의 인증서 (${totalFilesCopied}개 파일)가 컴퓨터 ${cleanTargetDrive} 드라이브에 안전하게 복사되었습니다.`);
       logs.push(`[안내] 이제 인터넷뱅킹, 정부24, 온-나라, 나이스(NEIS)에서 '하드디스크' 선택 시 바로 사용할 수 있습니다.`);
 
       return {
@@ -863,7 +867,7 @@ export async function copyUsbCertificatesToComputer(
         totalFilesCopied,
         importedCerts,
         logs,
-        targetBaseFolder: `C:\\Users\\${targetUsername}\\AppData\\LocalLow`,
+        targetBaseFolder: `${cleanTargetDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`,
         checksum: selectedCerts[0]?.files.sha256.slice(0, 16) || 'SECURE_HASH_OK',
       };
     },
@@ -881,7 +885,7 @@ export async function copyUsbCertificatesToComputer(
     totalFilesCopied: 0,
     importedCerts: [],
     logs: retryResult.logs,
-    targetBaseFolder: `C:\\Users\\${targetUsername}\\AppData\\LocalLow`,
+    targetBaseFolder: `${cleanTargetDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`,
     checksum: 'FAILED',
   };
 }

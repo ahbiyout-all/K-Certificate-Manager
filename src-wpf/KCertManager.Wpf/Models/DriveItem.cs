@@ -86,6 +86,7 @@ namespace KCertManager.Wpf.Models
         public string DeviceTypeBorderHex => IsRemovable ? "#10B981" : "#3B82F6";
         public string DeviceTypeFgHex => IsRemovable ? "#A7F3D0" : "#BFDBFE";
         public string FormattedTitle => string.IsNullOrEmpty(VolumeLabel) ? Name : $"{Name} [{VolumeLabel}]";
+        public string CapacityText => FormattedFreeSpace;
         public string CapacityCertText
         {
             get

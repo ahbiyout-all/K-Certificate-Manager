@@ -70,7 +70,13 @@ namespace KCertManager.Wpf.ViewModels
         public DriveItem? SelectedTargetDrive
         {
             get => _selectedTargetDrive;
-            set => SetProperty(ref _selectedTargetDrive, value);
+            set
+            {
+                if (SetProperty(ref _selectedTargetDrive, value))
+                {
+                    (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                }
+            }
         }
 
         public DriveItem? SelectedSourceDrive
@@ -297,6 +303,37 @@ namespace KCertManager.Wpf.ViewModels
             IsBusy = false;
         }
 
+        private static string ResolveTargetRootForCategory(
+            string category,
+            string? sourceDirectory,
+            string targetDriveLetter,
+            string username,
+            string sysRoot,
+            string userProfile)
+        {
+            string cleanDrive = (string.IsNullOrWhiteSpace(targetDriveLetter)
+                ? "C"
+                : targetDriveLetter.TrimEnd(':', '\\', '/')).ToUpperInvariant() + ":\\";
+
+            bool isGpki = string.Equals(category, "GPKI", StringComparison.OrdinalIgnoreCase) ||
+                          (!string.IsNullOrWhiteSpace(sourceDirectory) &&
+                           (sourceDirectory.IndexOf(@"\GPKI\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            sourceDirectory.IndexOf(@"/GPKI/", StringComparison.OrdinalIgnoreCase) >= 0));
+
+            if (isGpki)
+            {
+                return Directory.Exists(cleanDrive) ? cleanDrive : sysRoot;
+            }
+
+            if (cleanDrive.StartsWith("C", StringComparison.OrdinalIgnoreCase) || !Directory.Exists(cleanDrive))
+            {
+                return Path.Combine(userProfile, "AppData", "LocalLow");
+            }
+
+            string effectiveUser = string.IsNullOrWhiteSpace(username) ? Environment.UserName : username;
+            return Path.Combine(cleanDrive, "Users", effectiveUser, "AppData", "LocalLow");
+        }
+
         public async Task TransferToPcAsync()
         {
             var selected = FoundUsbCertificates.Where(x => x.IsSelected).ToList();
@@ -304,15 +341,19 @@ namespace KCertManager.Wpf.ViewModels
 
             string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\') + "\\";
             var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string targetDrive = SelectedTargetDrive?.Name?.TrimEnd('\\') ?? "C:";
+            string selectedDriveShort = (string.IsNullOrWhiteSpace(targetDrive)
+                ? "C"
+                : targetDrive.TrimEnd(':', '\\', '/')).ToUpperInvariant() + ":";
+            string selectedDriveRoot = selectedDriveShort + "\\";
+            string effectiveUsername = string.IsNullOrWhiteSpace(TargetUsername) ? Environment.UserName : TargetUsername;
 
             // 0. 자가 복사(동일 위치 복사) 사전 전체 검증
             bool isAllSelfCopy = selected.All(cert =>
             {
                 if (string.IsNullOrWhiteSpace(cert.DirectoryPath)) return false;
                 string cat = cert.Category.ToString();
-                string targetRoot = string.Equals(cat, "GPKI", StringComparison.OrdinalIgnoreCase)
-                    ? sysRoot
-                    : Path.Combine(userProfile, "AppData", "LocalLow");
+                string targetRoot = ResolveTargetRootForCategory(cat, cert.DirectoryPath, targetDrive, effectiveUsername, sysRoot, userProfile);
                 string relativePath = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
                 string destDir = Path.Combine(targetRoot, relativePath);
                 string fullSourceDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar);
@@ -324,7 +365,7 @@ namespace KCertManager.Wpf.ViewModels
             {
                 try { System.Media.SystemSounds.Hand.Play(); } catch { }
                 MessageBox.Show(
-                    "[자가 복사 금지 / 복사 경로 오류]\n\n선택한 모든 인증서가 이미 컴퓨터 로컬 저장소(AppData\\LocalLow 또는 C:\\GPKI)의 동일한 위치에 보관 중인 원본입니다.\n\n동일한 위치로는 자가 복사를 수행할 수 없으니, 다른 인증서나 목적지 USB 드라이브를 선택해 주세요.",
+                    $"[자가 복사 금지 / 복사 경로 오류]\n\n선택한 모든 인증서가 이미 대상 컴퓨터 로컬 저장소({selectedDriveShort} AppData\\LocalLow 또는 {selectedDriveShort}\\GPKI)의 동일한 위치에 보관 중인 원본입니다.\n\n동일한 위치로는 자가 복사를 수행할 수 없으니, 다른 인증서나 목적지 드라이브를 선택해 주세요.",
                     "복사 경로 오류 - 자가 복사 차단 안내",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -332,7 +373,7 @@ namespace KCertManager.Wpf.ViewModels
             }
 
             IsBusy = true;
-            StatusMessage = $"PC 보관함으로 {selected.Count}개 인증서 가져오는 중...";
+            StatusMessage = $"PC 보관함({selectedDriveShort})으로 {selected.Count}개 인증서 가져오는 중...";
 
             int success = 0;
             var successfulDestinations = new List<string>();
@@ -347,9 +388,7 @@ namespace KCertManager.Wpf.ViewModels
                         var cat = cert.Category.ToString();
                         destinationCategories.Add(cat);
 
-                        string targetRoot = string.Equals(cat, "GPKI", StringComparison.OrdinalIgnoreCase)
-                            ? sysRoot
-                            : Path.Combine(userProfile, "AppData", "LocalLow");
+                        string targetRoot = ResolveTargetRootForCategory(cat, cert.DirectoryPath, targetDrive, effectiveUsername, sysRoot, userProfile);
                         string relativePath = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
                         string destDir = Path.Combine(targetRoot, relativePath);
                         string fullSourceDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar);
@@ -362,8 +401,7 @@ namespace KCertManager.Wpf.ViewModels
                             continue;
                         }
 
-                        string targetDrive = SelectedTargetDrive?.Name?.TrimEnd('\\') ?? "C:";
-                        var transferResult = _backupService.CopyCertificateToLocalPc(cert.DirectoryPath, cat, TargetUsername, targetDrive);
+                        var transferResult = _backupService.CopyCertificateToLocalPc(cert.DirectoryPath, cat, effectiveUsername, targetDrive);
                         if (transferResult.IsSuccess)
                         {
                             success++;
@@ -378,7 +416,7 @@ namespace KCertManager.Wpf.ViewModels
             });
 
             IsBusy = false;
-            StatusMessage = $"PC 가져오기 완료: {selected.Count}개 중 {success}개 성공 (자동 새로고침 반영)";
+            StatusMessage = $"PC({selectedDriveShort}) 가져오기 완료: {selected.Count}개 중 {success}개 성공 (자동 새로고침 반영)";
             if (success > 0)
             {
                 SoundService.PlayCompletionSound();
@@ -403,6 +441,9 @@ namespace KCertManager.Wpf.ViewModels
                                  selected.Any(c => c.Category == CertCategory.EPKI) ||
                                  (!string.IsNullOrEmpty(firstDest) && firstDest.IndexOf(@"\EPKI\", StringComparison.OrdinalIgnoreCase) >= 0);
 
+                string gpkiTargetRoot = ResolveTargetRootForCategory("GPKI", null, targetDrive, effectiveUsername, sysRoot, userProfile);
+                string localLowTargetRoot = ResolveTargetRootForCategory("NPKI", null, targetDrive, effectiveUsername, sysRoot, userProfile);
+
                 string targetPath;
                 if (!string.IsNullOrEmpty(firstDest))
                 {
@@ -410,29 +451,33 @@ namespace KCertManager.Wpf.ViewModels
                 }
                 else if (isAnyGpki)
                 {
-                    targetPath = Path.Combine(sysRoot, "GPKI", "Certificate", "class2");
+                    targetPath = Path.Combine(gpkiTargetRoot, "GPKI", "Certificate", "class2");
                 }
                 else if (isAnyEpki)
                 {
-                    targetPath = Path.Combine(userProfile, "AppData", "LocalLow", "EPKI");
+                    targetPath = Path.Combine(localLowTargetRoot, "EPKI");
                 }
                 else
                 {
-                    targetPath = Path.Combine(userProfile, "AppData", "LocalLow", "NPKI");
+                    targetPath = Path.Combine(localLowTargetRoot, "NPKI");
                 }
+
+                string gpkiDisplayPath = Path.Combine(gpkiTargetRoot, "GPKI", "Certificate", "class2");
+                string epkiDisplayPath = Path.Combine(localLowTargetRoot, "EPKI");
+                string npkiDisplayPath = Path.Combine(localLowTargetRoot, "NPKI");
 
                 string destCategoryName = isAnyGpki ? "GPKI (행정전자서명)" : (isAnyEpki ? "EPKI (교육전자서명)" : "NPKI (금융/공동인증서)");
                 string destLocationText = isAnyGpki
-                    ? @"정부 표준 공식 보관함(C:\GPKI\Certificate\class2)"
-                    : (isAnyEpki ? @"교육부 표준 보관함(AppData\LocalLow\EPKI)" : @"금융 표준 보관함(AppData\LocalLow\NPKI)");
+                    ? $"정부 표준 공식 보관함({gpkiDisplayPath})"
+                    : (isAnyEpki ? $"교육부 표준 보관함({epkiDisplayPath})" : $"금융 표준 보관함({npkiDisplayPath})");
 
-                string subtitle = $"선택하신 인증서 {success}개가 내 컴퓨터의 {destCategoryName} {destLocationText}으로 성공적으로 복사되었습니다.";
+                string subtitle = $"선택하신 인증서 {success}개가 내 컴퓨터({selectedDriveShort})의 {destCategoryName} {destLocationText}으로 성공적으로 복사되었습니다.";
 
                 string guideTip = isAnyGpki
-                    ? "• 공무원/행정 전자서명(GPKI) 정부 공식 표준 폴더(C:\\GPKI\\Certificate\\class2)에 정상 안착되었습니다.\n• 행정안전부 온-나라, 정부24, 시도/새올 행정시스템에서 즉시 로그인하실 수 있습니다.\n• 메인 화면의 인증서 목록이 자동으로 새로고침되었습니다."
+                    ? $"• 공무원/행정 전자서명(GPKI) 표준 폴더({gpkiDisplayPath})에 정상 안착되었습니다.\n• 행정안전부 온-나라, 정부24, 시도/새올 행정시스템에서 즉시 로그인하실 수 있습니다.\n• 메인 화면의 인증서 목록이 자동으로 새로고침되었습니다."
                     : (isAnyEpki
-                        ? "• 교육부/나이스 전자서명(EPKI) 표준 폴더(AppData\\LocalLow\\EPKI)에 정상 안착되었습니다.\n• 나이스(NEIS), K-에듀파인 등 교육 포털에서 즉시 로그인하실 수 있습니다.\n• 메인 화면의 인증서 목록이 자동으로 새로고침되었습니다."
-                        : "• 이제 내 컴퓨터의 웹 브라우저나 금융 프로그램에서 [하드디스크]를 선택하시면 바로 로그인하실 수 있습니다.\n• 메인 화면의 인증서 목록이 자동으로 새로고침되었습니다.");
+                        ? $"• 교육부/나이스 전자서명(EPKI) 표준 폴더({epkiDisplayPath})에 정상 안착되었습니다.\n• 나이스(NEIS), K-에듀파인 등 교육 포털에서 즉시 로그인하실 수 있습니다.\n• 메인 화면의 인증서 목록이 자동으로 새로고침되었습니다."
+                        : $"• 내 컴퓨터({selectedDriveShort}) 보관함({npkiDisplayPath})에 정상 안착되었습니다.\n• 웹 브라우저나 금융 프로그램에서 [하드디스크]를 선택하시면 바로 로그인하실 수 있습니다.\n• 메인 화면의 인증서 목록이 자동으로 새로고침되었습니다.");
 
                 UserFriendlyMessageHelper.ShowOperationComplete(
                     "인증서 PC 가져오기 완료!",
@@ -448,7 +493,7 @@ namespace KCertManager.Wpf.ViewModels
                 UserFriendlyMessageHelper.ShowWarning(
                     $"인증서 {selected.Count}개 중 {success}개 성공, {selected.Count - success}개 실패하였습니다.\n\n인증서 목록이 자동으로 새로고침되었습니다.",
                     "인증서 가져오기 결과 안내",
-                    "• PC 로컬 저장소(AppData\\LocalLow 또는 C:\\GPKI)의 쓰기 권한을 확인해 주세요.\n• 관리자 권한으로 프로그램을 실행해 보세요.");
+                    $"• PC 로컬 저장소({selectedDriveShort} AppData\\LocalLow 또는 {selectedDriveShort}\\GPKI)의 쓰기 권한을 확인해 주세요.\n• 관리자 권한으로 프로그램을 실행해 보세요.");
             }
         }
     }

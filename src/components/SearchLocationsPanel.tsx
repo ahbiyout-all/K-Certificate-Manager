@@ -23,6 +23,7 @@ interface SearchLocationsPanelProps {
   onAddCustomPath: (pathStr: string) => void;
   onCustomScannedCerts: (certs: any[]) => void;
   isScanning: boolean;
+  onNotify?: (message: string) => void;
 }
 
 export const SearchLocationsPanel: React.FC<SearchLocationsPanelProps> = ({
@@ -31,13 +32,20 @@ export const SearchLocationsPanel: React.FC<SearchLocationsPanelProps> = ({
   onAddCustomPath,
   onCustomScannedCerts,
   isScanning,
+  onNotify,
 }) => {
   const [activeTab, setActiveTab] = useState<'default' | 'custom'>('default');
   const [customPathInput, setCustomPathInput] = useState('');
   const [isExpanded, setIsExpanded] = useState(true);
   const [isFileSystemLoading, setIsFileSystemLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [feedbackNotice, setFeedbackNotice] = useState<{ type: 'success' | 'warn'; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const reportNotice = (type: 'success' | 'warn', text: string) => {
+    setFeedbackNotice({ type, text });
+    onNotify?.(text);
+  };
 
   const handleAddCustomPath = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +57,7 @@ export const SearchLocationsPanel: React.FC<SearchLocationsPanelProps> = ({
   // Modern Web File System Access API (showDirectoryPicker)
   const handlePickDirectory = async () => {
     if (!('showDirectoryPicker' in window)) {
-      alert('현재 브라우저에서는 파일 시스템 직접 탐색 API를 지원하지 않습니다. 아래 [폴더 업로드] 버튼을 이용해 주세요.');
+      reportNotice('warn', '현재 브라우저에서는 폴더 직접 탐색 API를 지원하지 않아 [폴더 업로드] 방식으로 전환합니다.');
       fileInputRef.current?.click();
       return;
     }
@@ -62,15 +70,15 @@ export const SearchLocationsPanel: React.FC<SearchLocationsPanelProps> = ({
       });
       const scanned = await scanDirectoryHandle(dirHandle, dirHandle.name);
       if (scanned.length === 0) {
-        alert(`선택한 폴더 [${dirHandle.name}]에서 signCert.der 또는 signPri.key 인증서 파일을 찾지 못했습니다.\n\n[도움말]\n• 올바른 NPKI/GPKI 인증서 하위 폴더를 선택했는지 확인해 주세요.`);
+        reportNotice('warn', `선택한 폴더 [${dirHandle.name}]에서 signCert.der 또는 signPri.key 인증서 파일을 찾지 못했습니다.`);
       } else {
         onCustomScannedCerts(scanned);
-        alert(`선택한 폴더 [${dirHandle.name}]에서 총 ${scanned.length}개의 인증서를 성공적으로 불러왔습니다.`);
+        reportNotice('success', `선택한 폴더 [${dirHandle.name}]에서 총 ${scanned.length}개의 인증서를 성공적으로 불러왔습니다.`);
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         const errorInfo = parseUserFriendlyError(err, '인증서 폴더 탐색');
-        alert(`${errorInfo.summary}\n\n[해결 방법 안내]\n${errorInfo.actionTip}`);
+        reportNotice('warn', `${errorInfo.summary} (${errorInfo.actionTip})`);
       }
     } finally {
       setIsFileSystemLoading(false);
@@ -84,10 +92,10 @@ export const SearchLocationsPanel: React.FC<SearchLocationsPanelProps> = ({
       try {
         const certs = await groupUploadedCertFiles(e.target.files);
         if (certs.length === 0) {
-          alert('선택된 폴더에서 signCert.der 또는 signPri.key 파일을 찾지 못했습니다.');
+          reportNotice('warn', '선택된 폴더에서 signCert.der 또는 signPri.key 파일을 찾지 못했습니다.');
         } else {
           onCustomScannedCerts(certs);
-          alert(`총 ${certs.length}개의 인증서를 성공적으로 로드했습니다.`);
+          reportNotice('success', `총 ${certs.length}개의 인증서를 성공적으로 로드했습니다.`);
         }
       } catch (err) {
         console.error(err);
@@ -119,9 +127,9 @@ export const SearchLocationsPanel: React.FC<SearchLocationsPanelProps> = ({
         const certs = await groupUploadedCertFiles(e.dataTransfer.files);
         if (certs.length > 0) {
           onCustomScannedCerts(certs);
-          alert(`${certs.length}개의 인증서를 드래그 앤 드롭으로 추가했습니다.`);
+          reportNotice('success', `${certs.length}개의 인증서를 드래그 앤 드롭으로 추가했습니다.`);
         } else {
-          alert('드롭된 파일 중 signCert.der 파일이 감지되지 않았습니다.');
+          reportNotice('warn', '드롭된 파일 중 signCert.der 파일이 감지되지 않았습니다.');
         }
       } catch (err) {
         console.error(err);
@@ -167,6 +175,32 @@ export const SearchLocationsPanel: React.FC<SearchLocationsPanelProps> = ({
 
       {isExpanded && (
         <div className="p-5">
+          {feedbackNotice && (
+            <div
+              className={`mb-4 p-3 rounded-lg border text-xs flex items-center justify-between gap-2 ${
+                feedbackNotice.type === 'success'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                  : 'bg-amber-50 border-amber-200 text-amber-900'
+              }`}
+            >
+              <div className="flex items-center gap-2 font-medium">
+                {feedbackNotice.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                )}
+                <span>{feedbackNotice.text}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFeedbackNotice(null)}
+                className="text-xs font-bold opacity-70 hover:opacity-100 cursor-pointer shrink-0"
+              >
+                닫기
+              </button>
+            </div>
+          )}
+
           {/* Navigation Tabs: Step 1 (Default) vs Step 2 (Custom) */}
           <div className="flex border-b border-slate-200 mb-5">
             <button

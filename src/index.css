@@ -1,709 +1,463 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   WPF-MATCHED DESIGN TOKEN SYSTEM (Synced with KCertManager.Wpf/App.xaml & MainViewModel.ApplyTheme)
+   ========================================================================== */
+
+:root,
+[data-theme="dark"],
+[data-theme="pastel-black"] {
+  --wpf-bg-dark: #0F1219;
+  --wpf-bg-card: #1A1F2C;
+  --wpf-bg-hover: #262E3F;
+  --wpf-border: #2D3546;
+  --wpf-text-primary: #F8FAFC;
+  --wpf-text-secondary: #CBD5E1;
+  --wpf-text-muted: #94A3B8;
+  --wpf-accent-blue: #2563EB;
+  --wpf-accent-blue-hover: #1D4ED8;
+  --wpf-accent-text: #60A5FA;
+  --wpf-accent-green: #10B981;
+  --wpf-accent-rose: #F43F5E;
+  --wpf-selected-row: #1E3A8A;
+  --wpf-selected-row-text: #FFFFFF;
+  --wpf-selected-row-secondary: #DBEAFE;
+  --wpf-copied-row: #065F46;
+  --wpf-copied-row-text: #E6FFFA;
+  --wpf-copied-row-secondary: #A7F3D0;
+  --wpf-badge-cat-bg: #1E3A8A;
+  --wpf-badge-cat-text: #93C5FD;
+  --wpf-badge-valid-bg: #064E3B;
+  --wpf-badge-valid-border: #059669;
+  --wpf-badge-valid-text: #34D399;
+  --wpf-badge-expiring-bg: #78350F;
+  --wpf-badge-expiring-border: #D97706;
+  --wpf-badge-expiring-text: #FBBF24;
+  --wpf-badge-expired-bg: #881337;
+  --wpf-badge-expired-border: #E11D48;
+  --wpf-badge-expired-text: #FDA4AF;
+  --wpf-scrollbar-track: #0F1219;
+  --wpf-scrollbar-thumb: #475569;
+  --wpf-scrollbar-thumb-hover: #3B82F6;
+  --card-inner-bg: #0F1219;
+}
+
+[data-theme="gray"],
+[data-theme="pastel-gray"] {
+  --wpf-bg-dark: #E2E8F0;
+  --wpf-bg-card: #FFFFFF;
+  --wpf-bg-hover: #F1F5F9;
+  --wpf-border: #94A3B8;
+  --wpf-text-primary: #0F172A;
+  --wpf-text-secondary: #1E293B;
+  --wpf-text-muted: #475569;
+  --wpf-accent-blue: #2563EB;
+  --wpf-accent-blue-hover: #1D4ED8;
+  --wpf-accent-text: #1D4ED8;
+  --wpf-accent-green: #059669;
+  --wpf-accent-rose: #E11D48;
+  --wpf-selected-row: #DBEAFE;
+  --wpf-selected-row-text: #0F172A;
+  --wpf-selected-row-secondary: #1E40AF;
+  --wpf-copied-row: #D1FAE5;
+  --wpf-copied-row-text: #065F46;
+  --wpf-copied-row-secondary: #047857;
+  --wpf-badge-cat-bg: #DBEAFE;
+  --wpf-badge-cat-text: #1E40AF;
+  --wpf-badge-valid-bg: #D1FAE5;
+  --wpf-badge-valid-border: #10B981;
+  --wpf-badge-valid-text: #065F46;
+  --wpf-badge-expiring-bg: #FEF3C7;
+  --wpf-badge-expiring-border: #D97706;
+  --wpf-badge-expiring-text: #92400E;
+  --wpf-badge-expired-bg: #FFE4E6;
+  --wpf-badge-expired-border: #E11D48;
+  --wpf-badge-expired-text: #9F1239;
+  --wpf-scrollbar-track: #E2E8F0;
+  --wpf-scrollbar-thumb: #94A3B8;
+  --wpf-scrollbar-thumb-hover: #475569;
+  --card-inner-bg: #FFFFFF;
+}
+
+[data-theme="beige"],
+[data-theme="pastel-beige"] {
+  --wpf-bg-dark: #F5F2EB;
+  --wpf-bg-card: #FFFFFF;
+  --wpf-bg-hover: #EEE9DE;
+  --wpf-border: #D6CEBF;
+  --wpf-text-primary: #1C1917;
+  --wpf-text-secondary: #292524;
+  --wpf-text-muted: #44403C;
+  --wpf-accent-blue: #2563EB;
+  --wpf-accent-blue-hover: #1D4ED8;
+  --wpf-accent-text: #1E40AF;
+  --wpf-accent-green: #059669;
+  --wpf-accent-rose: #E11D48;
+  --wpf-selected-row: #DBEAFE;
+  --wpf-selected-row-text: #1C1917;
+  --wpf-selected-row-secondary: #1E40AF;
+  --wpf-copied-row: #D1FAE5;
+  --wpf-copied-row-text: #065F46;
+  --wpf-copied-row-secondary: #047857;
+  --wpf-badge-cat-bg: #DBEAFE;
+  --wpf-badge-cat-text: #1E40AF;
+  --wpf-badge-valid-bg: #D1FAE5;
+  --wpf-badge-valid-border: #10B981;
+  --wpf-badge-valid-text: #065F46;
+  --wpf-badge-expiring-bg: #FEF3C7;
+  --wpf-badge-expiring-border: #D97706;
+  --wpf-badge-expiring-text: #92400E;
+  --wpf-badge-expired-bg: #FFE4E6;
+  --wpf-badge-expired-border: #E11D48;
+  --wpf-badge-expired-text: #9F1239;
+  --wpf-scrollbar-track: #EEE9DE;
+  --wpf-scrollbar-thumb: #A8A29E;
+  --wpf-scrollbar-thumb-hover: #78716C;
+  --card-inner-bg: #FFFFFF;
+}
+
+[data-theme="white"],
+[data-theme="pastel-white"],
+[data-theme="classic"] {
+  --wpf-bg-dark: #F8FAFC;
+  --wpf-bg-card: #FFFFFF;
+  --wpf-bg-hover: #F1F5F9;
+  --wpf-border: #CBD5E1;
+  --wpf-text-primary: #0F172A;
+  --wpf-text-secondary: #1E293B;
+  --wpf-text-muted: #475569;
+  --wpf-accent-blue: #2563EB;
+  --wpf-accent-blue-hover: #1D4ED8;
+  --wpf-accent-text: #1D4ED8;
+  --wpf-accent-green: #059669;
+  --wpf-accent-rose: #E11D48;
+  --wpf-selected-row: #DBEAFE;
+  --wpf-selected-row-text: #0F172A;
+  --wpf-selected-row-secondary: #1E40AF;
+  --wpf-copied-row: #D1FAE5;
+  --wpf-copied-row-text: #065F46;
+  --wpf-copied-row-secondary: #047857;
+  --wpf-badge-cat-bg: #DBEAFE;
+  --wpf-badge-cat-text: #1E40AF;
+  --wpf-badge-valid-bg: #D1FAE5;
+  --wpf-badge-valid-border: #10B981;
+  --wpf-badge-valid-text: #065F46;
+  --wpf-badge-expiring-bg: #FEF3C7;
+  --wpf-badge-expiring-border: #D97706;
+  --wpf-badge-expiring-text: #92400E;
+  --wpf-badge-expired-bg: #FFE4E6;
+  --wpf-badge-expired-border: #E11D48;
+  --wpf-badge-expired-text: #9F1239;
+  --wpf-scrollbar-track: #F1F5F9;
+  --wpf-scrollbar-thumb: #94A3B8;
+  --wpf-scrollbar-thumb-hover: #475569;
+  --card-inner-bg: #FFFFFF;
+}
+
 @layer base {
+  html,
   body {
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
-    color: #0f172a;
-    background-color: #f8fafc;
+    font-family: 'Pretendard', 'Plus Jakarta Sans', 'Segoe UI', 'Malgun Gothic', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--wpf-bg-dark);
+    color: var(--wpf-text-primary);
     -webkit-font-smoothing: antialiased;
+    margin: 0;
+  }
+
+  code,
+  pre,
+  .font-mono {
+    font-family: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+    font-variant-numeric: tabular-nums;
   }
 }
 
-/* Custom scrollbar for dense certificate listings (Clear Horizontal & Vertical Bar) */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 10px;
-}
-::-webkit-scrollbar-track {
-  background: #e2e8f0;
-  border-radius: 6px;
-  transition: background-color 0.2s ease-in-out;
-}
-::-webkit-scrollbar-track:hover {
-  background: #cbd5e1;
-}
-::-webkit-scrollbar-thumb {
-  background: #94a3b8;
-  border-radius: 9999px;
-  border-width: 2px;
-  border-style: solid;
-  border-color: #e2e8f0;
-  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #475569;
-  border-color: #cbd5e1;
-}
-
-[data-theme="dark"] ::-webkit-scrollbar-track,
-[data-theme="pastel-black"] ::-webkit-scrollbar-track {
-  background: #111827;
-  transition: background-color 0.2s ease-in-out;
-}
-[data-theme="dark"] ::-webkit-scrollbar-track:hover,
-[data-theme="pastel-black"] ::-webkit-scrollbar-track:hover {
-  background: #1f2937;
-}
-[data-theme="dark"] ::-webkit-scrollbar-thumb,
-[data-theme="pastel-black"] ::-webkit-scrollbar-thumb {
-  background: #475569;
-  border-width: 2px;
-  border-style: solid;
-  border-color: #111827;
-  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
-}
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
-[data-theme="pastel-black"] ::-webkit-scrollbar-thumb:hover {
-  background: #3b82f6;
-  border-color: #1d4ed8;
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ==========================================================================
-   ENHANCED HIGH-CONTRAST THEME SYSTEM (WCAG AAA/AA Contrast Compliance)
-   1. 다크 (Dark) / 2. 회색 (Gray) / 3. 화이트 (White) / 4. 베이지 (Beige)
+   WPF DESKTOP COMPONENT PRIMITIVES (6px / 8px Radius, Crisp 1px Hairline Borders)
    ========================================================================== */
 
-/* --------------------------------------------------------------------------
-   1. [다크 (Dark)] - 깊이감 있고 선명한 차콜 다크 테마
-   -------------------------------------------------------------------------- */
-[data-theme="dark"],
-[data-theme="pastel-black"] {
-  background-color: #0f1219 !important;
-  color: #ffffff !important;
+.wpf-shell {
+  background-color: var(--wpf-bg-dark);
+  color: var(--wpf-text-primary);
 }
 
-[data-theme="dark"] #app-header,
-[data-theme="pastel-black"] #app-header,
-[data-theme="dark"] header,
-[data-theme="pastel-black"] header {
-  background-color: #151922 !important;
-  border-color: #282e3d !important;
-  color: #ffffff !important;
+.wpf-card {
+  background-color: var(--wpf-bg-card);
+  border: 1px solid var(--wpf-border);
+  border-radius: 8px;
+  color: var(--wpf-text-primary);
 }
 
-[data-theme="dark"] #app-sidebar,
-[data-theme="pastel-black"] #app-sidebar,
-[data-theme="dark"] aside,
-[data-theme="pastel-black"] aside {
-  background-color: #0a0d13 !important;
-  border-color: #1f2430 !important;
-  color: #ffffff !important;
+.wpf-well {
+  background-color: var(--wpf-bg-dark);
+  border: 1px solid var(--wpf-border);
+  border-radius: 6px;
+  color: var(--wpf-text-primary);
 }
 
-/* Cards & Containers in Dark Theme */
-[data-theme="dark"] .bg-white,
-[data-theme="pastel-black"] .bg-white {
-  background-color: #1a1f2c !important;
-  border-color: #2d3546 !important;
-  color: #ffffff !important;
+.wpf-btn-primary {
+  background-color: var(--wpf-accent-blue);
+  color: #FFFFFF;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background-color 0.15s ease, transform 0.1s ease;
 }
-
-[data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3, [data-theme="dark"] h4, [data-theme="dark"] h5, [data-theme="dark"] h6,
-[data-theme="pastel-black"] h1, [data-theme="pastel-black"] h2, [data-theme="pastel-black"] h3, [data-theme="pastel-black"] h4, [data-theme="pastel-black"] h5, [data-theme="pastel-black"] h6 {
-  color: #ffffff !important;
-}
-
-/* High-Contrast Primary / Secondary / Subtext in Dark Mode */
-[data-theme="dark"] .text-slate-900, [data-theme="dark"] .text-slate-800, [data-theme="dark"] .text-slate-700, [data-theme="dark"] .text-slate-950,
-[data-theme="pastel-black"] .text-slate-900, [data-theme="pastel-black"] .text-slate-800, [data-theme="pastel-black"] .text-slate-700, [data-theme="pastel-black"] .text-slate-950 {
-  color: #ffffff !important;
-}
-
-[data-theme="dark"] .text-slate-600, [data-theme="dark"] .text-slate-500,
-[data-theme="pastel-black"] .text-slate-600, [data-theme="pastel-black"] .text-slate-500 {
-  color: #e2e8f0 !important;
-}
-
-[data-theme="dark"] .text-slate-400, [data-theme="dark"] .text-slate-300,
-[data-theme="pastel-black"] .text-slate-400, [data-theme="pastel-black"] .text-slate-300 {
-  color: #cbd5e1 !important;
-}
-
-/* Override Dark Colored Text in Badges, Alerts, and Modals for Dark Mode */
-[data-theme="dark"] .text-blue-900, [data-theme="dark"] .text-blue-950, [data-theme="dark"] .text-blue-800, [data-theme="dark"] .text-blue-700,
-[data-theme="pastel-black"] .text-blue-900, [data-theme="pastel-black"] .text-blue-950, [data-theme="pastel-black"] .text-blue-800, [data-theme="pastel-black"] .text-blue-700 {
-  color: #bfdbfe !important;
-}
-
-[data-theme="dark"] .text-amber-900, [data-theme="dark"] .text-amber-950, [data-theme="dark"] .text-amber-800, [data-theme="dark"] .text-amber-700,
-[data-theme="pastel-black"] .text-amber-900, [data-theme="pastel-black"] .text-amber-950, [data-theme="pastel-black"] .text-amber-800, [data-theme="pastel-black"] .text-amber-700 {
-  color: #fef08a !important;
-}
-
-[data-theme="dark"] .text-rose-900, [data-theme="dark"] .text-rose-950, [data-theme="dark"] .text-rose-800, [data-theme="dark"] .text-rose-700,
-[data-theme="pastel-black"] .text-rose-900, [data-theme="pastel-black"] .text-rose-950, [data-theme="pastel-black"] .text-rose-800, [data-theme="pastel-black"] .text-rose-700 {
-  color: #fecdd3 !important;
-}
-
-[data-theme="dark"] .text-emerald-900, [data-theme="dark"] .text-emerald-950, [data-theme="dark"] .text-emerald-800, [data-theme="dark"] .text-emerald-700,
-[data-theme="pastel-black"] .text-emerald-900, [data-theme="pastel-black"] .text-emerald-950, [data-theme="pastel-black"] .text-emerald-800, [data-theme="pastel-black"] .text-emerald-700 {
-  color: #a7f3d0 !important;
-}
-
-[data-theme="dark"] .text-indigo-900, [data-theme="dark"] .text-indigo-950, [data-theme="dark"] .text-indigo-800, [data-theme="dark"] .text-indigo-700,
-[data-theme="pastel-black"] .text-indigo-900, [data-theme="pastel-black"] .text-indigo-950, [data-theme="pastel-black"] .text-indigo-800, [data-theme="pastel-black"] .text-indigo-700 {
-  color: #c7d2fe !important;
-}
-
-[data-theme="dark"] .text-purple-900, [data-theme="dark"] .text-purple-950, [data-theme="dark"] .text-purple-800, [data-theme="dark"] .text-purple-700,
-[data-theme="pastel-black"] .text-purple-900, [data-theme="pastel-black"] .text-purple-950, [data-theme="pastel-black"] .text-purple-800, [data-theme="pastel-black"] .text-purple-700 {
-  color: #e9d5ff !important;
-}
-
-[data-theme="dark"] .border-slate-200, [data-theme="dark"] .border-slate-100,
-[data-theme="pastel-black"] .border-slate-200, [data-theme="pastel-black"] .border-slate-100 {
-  border-color: #2d3546 !important;
-}
-
-[data-theme="dark"] .bg-slate-50, [data-theme="dark"] .bg-slate-100,
-[data-theme="pastel-black"] .bg-slate-50, [data-theme="pastel-black"] .bg-slate-100 {
-  background-color: #222838 !important;
-  color: #ffffff !important;
-}
-
-[data-theme="dark"] .bg-slate-200,
-[data-theme="pastel-black"] .bg-slate-200 {
-  background-color: #2d3546 !important;
-  color: #ffffff !important;
-}
-
-[data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea,
-[data-theme="pastel-black"] input, [data-theme="pastel-black"] select, [data-theme="pastel-black"] textarea {
-  background-color: #131722 !important;
-  border-color: #374151 !important;
-  color: #ffffff !important;
-}
-
-[data-theme="dark"] input::placeholder, [data-theme="pastel-black"] input::placeholder {
-  color: #94a3b8 !important;
-}
-
-[data-theme="dark"] .hover\:bg-slate-50:hover, [data-theme="dark"] .hover\:bg-slate-100:hover,
-[data-theme="pastel-black"] .hover\:bg-slate-50:hover, [data-theme="pastel-black"] .hover\:bg-slate-100:hover {
-  background-color: #262e3f !important;
-}
-
-[data-theme="dark"] button.bg-white,
-[data-theme="pastel-black"] button.bg-white {
-  background-color: #1e2432 !important;
-  border-color: #323d52 !important;
-  color: #ffffff !important;
-}
-
-[data-theme="dark"] button.bg-white:hover,
-[data-theme="pastel-black"] button.bg-white:hover {
-  background-color: #283246 !important;
-}
-
-/* High-Contrast Pastel Badges & Alerts in Dark Mode */
-[data-theme="dark"] .bg-blue-50, [data-theme="pastel-black"] .bg-blue-50 {
-  background-color: rgba(59, 130, 246, 0.25) !important;
-  color: #bfdbfe !important;
-  border-color: rgba(59, 130, 246, 0.5) !important;
-}
-[data-theme="dark"] .bg-emerald-50, [data-theme="pastel-black"] .bg-emerald-50 {
-  background-color: rgba(16, 185, 129, 0.25) !important;
-  color: #a7f3d0 !important;
-  border-color: rgba(16, 185, 129, 0.5) !important;
-}
-[data-theme="dark"] .bg-amber-50, [data-theme="pastel-black"] .bg-amber-50 {
-  background-color: rgba(245, 158, 11, 0.25) !important;
-  color: #fef08a !important;
-  border-color: rgba(245, 158, 11, 0.5) !important;
-}
-[data-theme="dark"] .bg-rose-50, [data-theme="pastel-black"] .bg-rose-50 {
-  background-color: rgba(244, 63, 94, 0.25) !important;
-  color: #fecdd3 !important;
-  border-color: rgba(244, 63, 94, 0.5) !important;
-}
-[data-theme="dark"] .bg-indigo-50, [data-theme="pastel-black"] .bg-indigo-50 {
-  background-color: rgba(99, 102, 241, 0.25) !important;
-  color: #c7d2fe !important;
-  border-color: rgba(99, 102, 241, 0.5) !important;
-}
-[data-theme="dark"] .bg-sky-50, [data-theme="pastel-black"] .bg-sky-50 {
-  background-color: rgba(14, 165, 233, 0.25) !important;
-  color: #bae6fd !important;
-  border-color: rgba(14, 165, 233, 0.5) !important;
-}
-[data-theme="dark"] .bg-purple-50, [data-theme="pastel-black"] .bg-purple-50 {
-  background-color: rgba(168, 85, 247, 0.25) !important;
-  color: #e9d5ff !important;
-  border-color: rgba(168, 85, 247, 0.5) !important;
-}
-
-[data-theme="dark"] ::-webkit-scrollbar-track, [data-theme="pastel-black"] ::-webkit-scrollbar-track {
-  background: #0f1219 !important;
-  transition: background-color 0.2s ease-in-out !important;
-}
-[data-theme="dark"] ::-webkit-scrollbar-track:hover, [data-theme="pastel-black"] ::-webkit-scrollbar-track:hover {
-  background: #1e293b !important;
-}
-[data-theme="dark"] ::-webkit-scrollbar-thumb, [data-theme="pastel-black"] ::-webkit-scrollbar-thumb {
-  background: #334155 !important;
-  border-width: 2px !important;
-  border-style: solid !important;
-  border-color: #0f1219 !important;
-  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out !important;
-}
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover, [data-theme="pastel-black"] ::-webkit-scrollbar-thumb:hover {
-  background: #3b82f6 !important;
-  border-color: #1e3a8a !important;
-}
-
-/* --------------------------------------------------------------------------
-   2. [회색 (Gray)] - 차분하고 선명한 실버 슬레이트 모노 톤
-   -------------------------------------------------------------------------- */
-[data-theme="gray"],
-[data-theme="pastel-gray"] {
-  background-color: #e2e8f0 !important;
-  color: #0f172a !important;
-}
-
-[data-theme="gray"] #app-header,
-[data-theme="pastel-gray"] #app-header,
-[data-theme="gray"] header,
-[data-theme="pastel-gray"] header {
-  background-color: #f1f5f9 !important;
-  border-color: #cbd5e1 !important;
-  color: #0f172a !important;
-}
-
-[data-theme="gray"] #app-sidebar,
-[data-theme="pastel-gray"] #app-sidebar,
-[data-theme="gray"] aside,
-[data-theme="pastel-gray"] aside {
-  background-color: #1e293b !important;
-  border-color: #334155 !important;
-  color: #ffffff !important;
-}
-
-/* Cards pop off the gray canvas with ultra-sharp dark text */
-[data-theme="gray"] .bg-white,
-[data-theme="pastel-gray"] .bg-white {
-  background-color: #ffffff !important;
-  border-color: #94a3b8 !important;
-  color: #0f172a !important;
-}
-
-[data-theme="gray"] h1, [data-theme="gray"] h2, [data-theme="gray"] h3, [data-theme="gray"] h4, [data-theme="gray"] h5, [data-theme="gray"] h6,
-[data-theme="pastel-gray"] h1, [data-theme="pastel-gray"] h2, [data-theme="pastel-gray"] h3, [data-theme="pastel-gray"] h4, [data-theme="pastel-gray"] h5, [data-theme="pastel-gray"] h6 {
-  color: #0f172a !important;
-}
-
-[data-theme="gray"] .text-slate-900, [data-theme="gray"] .text-slate-800, [data-theme="gray"] .text-slate-700, [data-theme="gray"] .text-slate-950,
-[data-theme="pastel-gray"] .text-slate-900, [data-theme="pastel-gray"] .text-slate-800, [data-theme="pastel-gray"] .text-slate-700, [data-theme="pastel-gray"] .text-slate-950 {
-  color: #0f172a !important;
-}
-
-[data-theme="gray"] .text-slate-600, [data-theme="gray"] .text-slate-500,
-[data-theme="pastel-gray"] .text-slate-600, [data-theme="pastel-gray"] .text-slate-500 {
-  color: #1e293b !important;
-}
-
-[data-theme="gray"] .text-slate-400, [data-theme="gray"] .text-slate-300,
-[data-theme="pastel-gray"] .text-slate-400, [data-theme="pastel-gray"] .text-slate-300 {
-  color: #334155 !important;
-}
-
-[data-theme="gray"] .bg-slate-50, [data-theme="gray"] .bg-slate-100,
-[data-theme="pastel-gray"] .bg-slate-50, [data-theme="pastel-gray"] .bg-slate-100 {
-  background-color: #f1f5f9 !important;
-  color: #0f172a !important;
-}
-
-[data-theme="gray"] .border-slate-200, [data-theme="gray"] .border-slate-100,
-[data-theme="pastel-gray"] .border-slate-200, [data-theme="pastel-gray"] .border-slate-100 {
-  border-color: #cbd5e1 !important;
-}
-
-[data-theme="gray"] input, [data-theme="gray"] select, [data-theme="gray"] textarea,
-[data-theme="pastel-gray"] input, [data-theme="pastel-gray"] select, [data-theme="pastel-gray"] textarea {
-  background-color: #ffffff !important;
-  border-color: #94a3b8 !important;
-  color: #0f172a !important;
-}
-
-[data-theme="gray"] input::placeholder, [data-theme="pastel-gray"] input::placeholder {
-  color: #64748b !important;
-}
-
-[data-theme="gray"] .hover\:bg-slate-50:hover, [data-theme="gray"] .hover\:bg-slate-100:hover,
-[data-theme="pastel-gray"] .hover\:bg-slate-50:hover, [data-theme="pastel-gray"] .hover\:bg-slate-100:hover {
-  background-color: #e2e8f0 !important;
-}
-
-/* Dark Container Protection in Gray Mode (Sidebar & Dark Modal Headers) */
-[data-theme="gray"] #app-sidebar .text-slate-900, [data-theme="gray"] #app-sidebar .text-slate-800, [data-theme="gray"] #app-sidebar .text-slate-700,
-[data-theme="gray"] .bg-slate-900 .text-slate-900, [data-theme="gray"] .bg-slate-900 .text-slate-800, [data-theme="gray"] .bg-slate-900 .text-slate-700,
-[data-theme="pastel-gray"] #app-sidebar .text-slate-900, [data-theme="pastel-gray"] #app-sidebar .text-slate-800, [data-theme="pastel-gray"] #app-sidebar .text-slate-700,
-[data-theme="pastel-gray"] .bg-slate-900 .text-slate-900, [data-theme="pastel-gray"] .bg-slate-900 .text-slate-800, [data-theme="pastel-gray"] .bg-slate-900 .text-slate-700 {
-  color: #ffffff !important;
-}
-
-[data-theme="gray"] #app-sidebar .text-slate-600, [data-theme="gray"] #app-sidebar .text-slate-500, [data-theme="gray"] #app-sidebar .text-slate-400, [data-theme="gray"] #app-sidebar .text-slate-300,
-[data-theme="gray"] .bg-slate-900 .text-slate-600, [data-theme="gray"] .bg-slate-900 .text-slate-500, [data-theme="gray"] .bg-slate-900 .text-slate-400, [data-theme="gray"] .bg-slate-900 .text-slate-300,
-[data-theme="pastel-gray"] #app-sidebar .text-slate-600, [data-theme="pastel-gray"] #app-sidebar .text-slate-500, [data-theme="pastel-gray"] #app-sidebar .text-slate-400, [data-theme="pastel-gray"] #app-sidebar .text-slate-300,
-[data-theme="pastel-gray"] .bg-slate-900 .text-slate-600, [data-theme="pastel-gray"] .bg-slate-900 .text-slate-500, [data-theme="pastel-gray"] .bg-slate-900 .text-slate-400, [data-theme="pastel-gray"] .bg-slate-900 .text-slate-300 {
-  color: #cbd5e1 !important;
-}
-
-/* --------------------------------------------------------------------------
-   3. [화이트 (White)] - 선명한 우윳빛 순백색 톤 (가독성 최적화)
-   -------------------------------------------------------------------------- */
-[data-theme="white"],
-[data-theme="pastel-white"] {
-  background-color: #f8fafc !important;
-  color: #020617 !important;
-}
-
-[data-theme="white"] #app-header,
-[data-theme="pastel-white"] #app-header,
-[data-theme="white"] header,
-[data-theme="pastel-white"] header {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  color: #020617 !important;
-}
-
-[data-theme="white"] #app-sidebar,
-[data-theme="pastel-white"] #app-sidebar,
-[data-theme="white"] aside,
-[data-theme="pastel-white"] aside {
-  background-color: #0f172a !important;
-  border-color: #1e293b !important;
-  color: #ffffff !important;
-}
-
-[data-theme="white"] .bg-white,
-[data-theme="pastel-white"] .bg-white {
-  background-color: #ffffff !important;
-  border-color: #cbd5e1 !important;
-  color: #020617 !important;
-}
-
-[data-theme="white"] h1, [data-theme="white"] h2, [data-theme="white"] h3, [data-theme="white"] h4, [data-theme="white"] h5, [data-theme="white"] h6,
-[data-theme="pastel-white"] h1, [data-theme="pastel-white"] h2, [data-theme="pastel-white"] h3, [data-theme="pastel-white"] h4, [data-theme="pastel-white"] h5, [data-theme="pastel-white"] h6 {
-  color: #020617 !important;
-}
-
-[data-theme="white"] .text-slate-900, [data-theme="white"] .text-slate-800, [data-theme="white"] .text-slate-700, [data-theme="white"] .text-slate-950,
-[data-theme="pastel-white"] .text-slate-900, [data-theme="pastel-white"] .text-slate-800, [data-theme="pastel-white"] .text-slate-700, [data-theme="pastel-white"] .text-slate-950 {
-  color: #020617 !important;
-}
-
-[data-theme="white"] .text-slate-600, [data-theme="white"] .text-slate-500,
-[data-theme="pastel-white"] .text-slate-600, [data-theme="pastel-white"] .text-slate-500 {
-  color: #1e293b !important;
+.wpf-btn-primary:hover:not(:disabled) {
+  background-color: var(--wpf-accent-blue-hover);
 }
 
-[data-theme="white"] .text-slate-400, [data-theme="white"] .text-slate-300,
-[data-theme="pastel-white"] .text-slate-400, [data-theme="pastel-white"] .text-slate-300 {
-  color: #334155 !important;
+.wpf-btn-secondary {
+  background-color: var(--wpf-bg-card);
+  color: var(--wpf-text-primary);
+  border: 1px solid var(--wpf-border);
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
-
-[data-theme="white"] .bg-slate-50, [data-theme="white"] .bg-slate-100,
-[data-theme="pastel-white"] .bg-slate-50, [data-theme="pastel-white"] .bg-slate-100 {
-  background-color: #f1f5f9 !important;
-  color: #020617 !important;
-}
-
-[data-theme="white"] .border-slate-200, [data-theme="white"] .border-slate-100,
-[data-theme="pastel-white"] .border-slate-200, [data-theme="pastel-white"] .border-slate-100 {
-  border-color: #cbd5e1 !important;
-}
-
-[data-theme="white"] input, [data-theme="white"] select, [data-theme="white"] textarea,
-[data-theme="pastel-white"] input, [data-theme="pastel-white"] select, [data-theme="pastel-white"] textarea {
-  background-color: #ffffff !important;
-  border-color: #cbd5e1 !important;
-  color: #020617 !important;
-}
-
-[data-theme="white"] input::placeholder, [data-theme="pastel-white"] input::placeholder {
-  color: #64748b !important;
-}
-
-/* Dark Container Protection in White Mode (Sidebar & Dark Modal Headers) */
-[data-theme="white"] #app-sidebar .text-slate-900, [data-theme="white"] #app-sidebar .text-slate-800, [data-theme="white"] #app-sidebar .text-slate-700,
-[data-theme="white"] .bg-slate-900 .text-slate-900, [data-theme="white"] .bg-slate-900 .text-slate-800, [data-theme="white"] .bg-slate-900 .text-slate-700,
-[data-theme="pastel-white"] #app-sidebar .text-slate-900, [data-theme="pastel-white"] #app-sidebar .text-slate-800, [data-theme="pastel-white"] #app-sidebar .text-slate-700,
-[data-theme="pastel-white"] .bg-slate-900 .text-slate-900, [data-theme="pastel-white"] .bg-slate-900 .text-slate-800, [data-theme="pastel-white"] .bg-slate-900 .text-slate-700 {
-  color: #ffffff !important;
-}
-
-[data-theme="white"] #app-sidebar .text-slate-600, [data-theme="white"] #app-sidebar .text-slate-500, [data-theme="white"] #app-sidebar .text-slate-400, [data-theme="white"] #app-sidebar .text-slate-300,
-[data-theme="white"] .bg-slate-900 .text-slate-600, [data-theme="white"] .bg-slate-900 .text-slate-500, [data-theme="white"] .bg-slate-900 .text-slate-400, [data-theme="white"] .bg-slate-900 .text-slate-300,
-[data-theme="pastel-white"] #app-sidebar .text-slate-600, [data-theme="pastel-white"] #app-sidebar .text-slate-500, [data-theme="pastel-white"] #app-sidebar .text-slate-400, [data-theme="pastel-white"] #app-sidebar .text-slate-300,
-[data-theme="pastel-white"] .bg-slate-900 .text-slate-600, [data-theme="pastel-white"] .bg-slate-900 .text-slate-500, [data-theme="pastel-white"] .bg-slate-900 .text-slate-400, [data-theme="pastel-white"] .bg-slate-900 .text-slate-300 {
-  color: #cbd5e1 !important;
-}
-
-/* --------------------------------------------------------------------------
-   4. [베이지 (Beige)] - 포근하고 선명한 크림 베이지 톤
-   -------------------------------------------------------------------------- */
-[data-theme="beige"],
-[data-theme="pastel-beige"] {
-  background-color: #f5f2eb !important;
-  color: #1c1917 !important;
-}
-
-[data-theme="beige"] #app-header,
-[data-theme="pastel-beige"] #app-header,
-[data-theme="beige"] header,
-[data-theme="pastel-beige"] header {
-  background-color: #faf7f2 !important;
-  border-color: #dcd5c7 !important;
-  color: #1c1917 !important;
+.wpf-btn-secondary:hover:not(:disabled) {
+  background-color: var(--wpf-bg-hover);
 }
 
-[data-theme="beige"] #app-sidebar,
-[data-theme="pastel-beige"] #app-sidebar,
-[data-theme="beige"] aside,
-[data-theme="pastel-beige"] aside {
-  background-color: #292524 !important;
-  border-color: #44403c !important;
-  color: #ffffff !important;
+.wpf-btn-success {
+  background-color: #10B981;
+  color: #FFFFFF;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-weight: 700;
+  transition: background-color 0.15s ease, transform 0.1s ease;
 }
-
-[data-theme="beige"] .bg-white,
-[data-theme="pastel-beige"] .bg-white {
-  background-color: #ffffff !important;
-  border-color: #c8bfaf !important;
-  color: #1c1917 !important;
-}
-
-[data-theme="beige"] h1, [data-theme="beige"] h2, [data-theme="beige"] h3, [data-theme="beige"] h4, [data-theme="beige"] h5, [data-theme="beige"] h6,
-[data-theme="pastel-beige"] h1, [data-theme="pastel-beige"] h2, [data-theme="pastel-beige"] h3, [data-theme="pastel-beige"] h4, [data-theme="pastel-beige"] h5, [data-theme="pastel-beige"] h6 {
-  color: #1c1917 !important;
-}
-
-[data-theme="beige"] .text-slate-900, [data-theme="beige"] .text-slate-800, [data-theme="beige"] .text-slate-700, [data-theme="beige"] .text-slate-950,
-[data-theme="pastel-beige"] .text-slate-900, [data-theme="pastel-beige"] .text-slate-800, [data-theme="pastel-beige"] .text-slate-700, [data-theme="pastel-beige"] .text-slate-950 {
-  color: #1c1917 !important;
+.wpf-btn-success:hover:not(:disabled) {
+  background-color: #059669;
 }
 
-[data-theme="beige"] .text-slate-600, [data-theme="beige"] .text-slate-500,
-[data-theme="pastel-beige"] .text-slate-600, [data-theme="pastel-beige"] .text-slate-500 {
-  color: #292524 !important;
+.wpf-nav-radio {
+  background-color: var(--wpf-bg-dark);
+  color: var(--wpf-text-secondary);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-
-[data-theme="beige"] .text-slate-400, [data-theme="beige"] .text-slate-300,
-[data-theme="pastel-beige"] .text-slate-400, [data-theme="pastel-beige"] .text-slate-300 {
-  color: #44403c !important;
+.wpf-nav-radio:hover {
+  background-color: var(--wpf-bg-hover);
+  color: var(--wpf-text-primary);
 }
-
-[data-theme="beige"] .bg-slate-50, [data-theme="beige"] .bg-slate-100,
-[data-theme="pastel-beige"] .bg-slate-50, [data-theme="pastel-beige"] .bg-slate-100 {
-  background-color: #eee9de !important;
-  color: #1c1917 !important;
+.wpf-nav-radio-active {
+  background-color: var(--wpf-accent-blue);
+  border-color: #3B82F6;
+  color: #FFFFFF;
+  font-weight: 600;
 }
-
-[data-theme="beige"] .border-slate-200, [data-theme="beige"] .border-slate-100,
-[data-theme="pastel-beige"] .border-slate-200, [data-theme="pastel-beige"] .border-slate-100 {
-  border-color: #c8bfaf !important;
+.wpf-nav-radio-active:hover {
+  background-color: var(--wpf-accent-blue);
+  color: #FFFFFF;
 }
 
-[data-theme="beige"] input, [data-theme="beige"] select, [data-theme="beige"] textarea,
-[data-theme="pastel-beige"] input, [data-theme="pastel-beige"] select, [data-theme="pastel-beige"] textarea {
-  background-color: #fcfbfa !important;
-  border-color: #c8bfaf !important;
-  color: #1c1917 !important;
+/* Responsive CSS Grid auto-fill for CertificateList cards */
+.cert-grid-autofill {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 14px;
+  align-items: stretch;
 }
 
-[data-theme="beige"] input::placeholder, [data-theme="pastel-beige"] input::placeholder {
-  color: #78716c !important;
-}
+/* ==========================================================================
+   WPF SLIM HIGH-CONTRAST SCROLLBARS (Matches App.xaml ScrollBar Template)
+   ========================================================================== */
 
-[data-theme="beige"] .hover\:bg-slate-50:hover, [data-theme="beige"] .hover\:bg-slate-100:hover,
-[data-theme="pastel-beige"] .hover\:bg-slate-50:hover, [data-theme="pastel-beige"] .hover\:bg-slate-100:hover {
-  background-color: #e8e2d4 !important;
+::-webkit-scrollbar {
+  width: 10px;
+  height: 11px;
 }
-
-[data-theme="beige"] button.bg-white,
-[data-theme="pastel-beige"] button.bg-white {
-  background-color: #fcfbfa !important;
-  border-color: #c8bfaf !important;
-  color: #1c1917 !important;
+::-webkit-scrollbar-track {
+  background: var(--wpf-scrollbar-track);
 }
-
-/* Dark Container Protection in Beige Mode (Sidebar & Dark Modal Headers) */
-[data-theme="beige"] #app-sidebar .text-slate-900, [data-theme="beige"] #app-sidebar .text-slate-800, [data-theme="beige"] #app-sidebar .text-slate-700,
-[data-theme="beige"] .bg-slate-900 .text-slate-900, [data-theme="beige"] .bg-slate-900 .text-slate-800, [data-theme="beige"] .bg-slate-900 .text-slate-700,
-[data-theme="pastel-beige"] #app-sidebar .text-slate-900, [data-theme="pastel-beige"] #app-sidebar .text-slate-800, [data-theme="pastel-beige"] #app-sidebar .text-slate-700,
-[data-theme="pastel-beige"] .bg-slate-900 .text-slate-900, [data-theme="pastel-beige"] .bg-slate-900 .text-slate-800, [data-theme="pastel-beige"] .bg-slate-900 .text-slate-700 {
-  color: #ffffff !important;
+::-webkit-scrollbar-thumb {
+  background: var(--wpf-scrollbar-thumb);
+  border-radius: 4px;
+  border: 2px solid var(--wpf-scrollbar-track);
 }
-
-[data-theme="beige"] #app-sidebar .text-slate-600, [data-theme="beige"] #app-sidebar .text-slate-500, [data-theme="beige"] #app-sidebar .text-slate-400, [data-theme="beige"] #app-sidebar .text-slate-300,
-[data-theme="beige"] .bg-slate-900 .text-slate-600, [data-theme="beige"] .bg-slate-900 .text-slate-500, [data-theme="beige"] .bg-slate-900 .text-slate-400, [data-theme="beige"] .bg-slate-900 .text-slate-300,
-[data-theme="pastel-beige"] #app-sidebar .text-slate-600, [data-theme="pastel-beige"] #app-sidebar .text-slate-500, [data-theme="pastel-beige"] #app-sidebar .text-slate-400, [data-theme="pastel-beige"] #app-sidebar .text-slate-300,
-[data-theme="pastel-beige"] .bg-slate-900 .text-slate-600, [data-theme="pastel-beige"] .bg-slate-900 .text-slate-500, [data-theme="pastel-beige"] .bg-slate-900 .text-slate-400, [data-theme="pastel-beige"] .bg-slate-900 .text-slate-300 {
-  color: #e7e5e4 !important;
+::-webkit-scrollbar-thumb:hover {
+  background: var(--wpf-scrollbar-thumb-hover);
 }
-
-/* Universal Dark Container Text Contrast Protection across all themes */
-.bg-slate-900, .bg-slate-800, .bg-slate-950, .bg-blue-900, .bg-indigo-950, .bg-zinc-900, .bg-slate-950 {
-  color: #ffffff !important;
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }
 
-.bg-slate-900 h1, .bg-slate-900 h2, .bg-slate-900 h3, .bg-slate-900 h4, .bg-slate-900 h5, .bg-slate-900 h6,
-.bg-slate-800 h1, .bg-slate-800 h2, .bg-slate-800 h3, .bg-slate-800 h4, .bg-slate-800 h5, .bg-slate-800 h6,
-.bg-indigo-950 h1, .bg-indigo-950 h2, .bg-indigo-950 h3, .bg-indigo-950 h4, .bg-indigo-950 h5, .bg-indigo-950 h6 {
-  color: #ffffff !important;
-}
+/* ==========================================================================
+   ANIMATIONS & ROW HIGHLIGHTS
+   ========================================================================== */
 
-.bg-slate-900 .text-slate-900, .bg-slate-900 .text-slate-800, .bg-slate-900 .text-slate-700,
-.bg-slate-800 .text-slate-900, .bg-slate-800 .text-slate-800, .bg-slate-800 .text-slate-700,
-.bg-indigo-950 .text-slate-900, .bg-indigo-950 .text-slate-800, .bg-indigo-950 .text-slate-700 {
-  color: #ffffff !important;
+button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
 }
 
-.bg-slate-900 .text-slate-600, .bg-slate-900 .text-slate-500, .bg-slate-900 .text-slate-400,
-.bg-slate-800 .text-slate-600, .bg-slate-800 .text-slate-500, .bg-slate-800 .text-slate-400,
-.bg-indigo-950 .text-slate-600, .bg-indigo-950 .text-slate-500, .bg-indigo-950 .text-slate-400 {
-  color: #cbd5e1 !important;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
-/* Ensure Button Active / Click Feedback Visual Effects */
-button:active {
-  transform: translateY(1px) scale(0.98);
+.animate-fadeIn {
+  animation: fadeIn 0.16s ease-out;
 }
 
-.button-selected {
-  outline: 2px solid #3b82f6 !important;
-  outline-offset: 1px !important;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35) !important;
-}
 @keyframes rowCopiedFlash {
   0% {
-    background-color: rgba(16, 185, 129, 0.45) !important;
-    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.9), 0 0 14px rgba(16, 185, 129, 0.4);
-    transform: scale(1.006);
-  }
-  25% {
-    background-color: rgba(16, 185, 129, 0.20) !important;
-    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.6), 0 0 8px rgba(16, 185, 129, 0.2);
-    transform: scale(1.002);
+    background-color: rgba(16, 185, 129, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.9);
   }
   50% {
-    background-color: rgba(16, 185, 129, 0.38) !important;
-    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.85), 0 0 12px rgba(16, 185, 129, 0.3);
-    transform: scale(1.004);
-  }
-  75% {
-    background-color: rgba(16, 185, 129, 0.15) !important;
-    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.5);
-    transform: scale(1.001);
+    background-color: rgba(16, 185, 129, 0.22);
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.7);
   }
   100% {
     background-color: transparent;
     box-shadow: none;
-    transform: scale(1);
   }
 }
 
 .animate-copied-row {
   animation: rowCopiedFlash 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  position: relative;
-  z-index: 5;
 }
 
-/* High-Contrast Tooltip Styling for Web Interface */
-[data-tooltip] {
-  position: relative;
-}
-[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: 125%;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #0f172a;
-  color: #f8fafc;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s ease-in-out;
-  border: 1px solid #334155;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.25);
-  z-index: 9999;
-}
-[data-tooltip]:hover::after {
-  opacity: 1;
-}
-
-/* ==========================================================================
-   ANIMATED MOVING GRADIENT BORDER FOR DRIVE CARDS & TARGET SELECTION
-   Boosts visual affordance & immediate drive recognition rate (High-Contrast & Neon Glow)
-   ========================================================================== */
 @keyframes borderMoveGlow {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
-@keyframes neonGlowPulse {
-  0%, 100% {
-    box-shadow: 0 0 12px rgba(37, 99, 235, 0.45), 0 0 24px rgba(16, 185, 129, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.7), 0 0 36px rgba(245, 158, 11, 0.5);
-  }
-}
-
-/* High Intensity Moving Border Glow for Main Selection & Banners */
 .animated-drive-card {
-  position: relative !important;
-  border: 3px solid transparent !important;
-  background-clip: padding-box, border-box !important;
-  background-origin: padding-box, border-box !important;
-  background-image: 
-    linear-gradient(var(--card-inner-bg, #ffffff), var(--card-inner-bg, #ffffff)),
-    linear-gradient(90deg, #2563eb, #10b981, #f59e0b, #ec4899, #8b5cf6, #06b6d4, #2563eb) !important;
-  background-size: 100% 100%, 350% 350% !important;
-  animation: borderMoveGlow 3s linear infinite, neonGlowPulse 2.5s ease-in-out infinite alternate !important;
+  position: relative;
+  border: 2px solid transparent;
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
+  background-image:
+    linear-gradient(var(--card-inner-bg, #0F1219), var(--card-inner-bg, #0F1219)),
+    linear-gradient(90deg, #2563EB, #10B981, #F59E0B, #6366F1, #2563EB);
+  background-size: 100% 100%, 300% 300%;
+  animation: borderMoveGlow 3.2s linear infinite;
 }
 
-/* Subtle Moving Border Glow for Drive List Items */
 .animated-drive-card-subtle {
-  position: relative !important;
-  border: 2.5px solid transparent !important;
-  background-clip: padding-box, border-box !important;
-  background-origin: padding-box, border-box !important;
-  background-image: 
-    linear-gradient(var(--card-inner-bg, #f0f9ff), var(--card-inner-bg, #f0f9ff)),
-    linear-gradient(90deg, #0284c7, #059669, #6366f1, #0284c7) !important;
-  background-size: 100% 100%, 300% 300% !important;
-  animation: borderMoveGlow 3.5s ease-in-out infinite !important;
-  box-shadow: 0 0 12px rgba(2, 132, 199, 0.35) !important;
-}
-
-[data-theme="dark"] .animated-drive-card,
-[data-theme="pastel-black"] .animated-drive-card {
-  --card-inner-bg: #1e293b;
-}
-
-[data-theme="dark"] .animated-drive-card-subtle,
-[data-theme="pastel-black"] .animated-drive-card-subtle {
-  --card-inner-bg: #1e293b;
+  position: relative;
+  border: 2px solid transparent;
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
+  background-image:
+    linear-gradient(var(--card-inner-bg, #0F1219), var(--card-inner-bg, #0F1219)),
+    linear-gradient(90deg, #2563EB, #10B981, #6366F1, #2563EB);
+  background-size: 100% 100%, 300% 300%;
+  animation: borderMoveGlow 3.8s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animated-drive-card,
   .animated-drive-card-subtle {
-    animation: none !important;
-    background-position: 50% 50% !important;
+    animation: none;
+    background-position: 50% 50%;
   }
 }
 
+/* ==========================================================================
+   MODAL & SUB-PANEL THEME ADAPTATION (Preserves contrast in all legacy modals)
+   Scoped away from .wpf-native elements so main shell stays 100% variable-driven
+   ========================================================================== */
+
+[data-theme="dark"] .bg-white:not(.wpf-native),
+[data-theme="pastel-black"] .bg-white:not(.wpf-native) {
+  background-color: #1A1F2C !important;
+  border-color: #2D3546 !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .bg-slate-50:not(.wpf-native),
+[data-theme="dark"] .bg-slate-100:not(.wpf-native),
+[data-theme="pastel-black"] .bg-slate-50:not(.wpf-native),
+[data-theme="pastel-black"] .bg-slate-100:not(.wpf-native) {
+  background-color: #0F1219 !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .text-slate-900:not(.wpf-native),
+[data-theme="dark"] .text-slate-800:not(.wpf-native),
+[data-theme="dark"] .text-slate-700:not(.wpf-native),
+[data-theme="dark"] .text-slate-950:not(.wpf-native),
+[data-theme="pastel-black"] .text-slate-900:not(.wpf-native),
+[data-theme="pastel-black"] .text-slate-800:not(.wpf-native),
+[data-theme="pastel-black"] .text-slate-700:not(.wpf-native),
+[data-theme="pastel-black"] .text-slate-950:not(.wpf-native) {
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .text-slate-600:not(.wpf-native),
+[data-theme="dark"] .text-slate-500:not(.wpf-native),
+[data-theme="pastel-black"] .text-slate-600:not(.wpf-native),
+[data-theme="pastel-black"] .text-slate-500:not(.wpf-native) {
+  color: #CBD5E1 !important;
+}
+
+[data-theme="dark"] .border-slate-200:not(.wpf-native),
+[data-theme="dark"] .border-slate-100:not(.wpf-native),
+[data-theme="pastel-black"] .border-slate-200:not(.wpf-native),
+[data-theme="pastel-black"] .border-slate-100:not(.wpf-native) {
+  border-color: #2D3546 !important;
+}
+
+[data-theme="dark"] input:not(.wpf-native):not([type="checkbox"]),
+[data-theme="dark"] select:not(.wpf-native),
+[data-theme="dark"] textarea:not(.wpf-native),
+[data-theme="pastel-black"] input:not(.wpf-native):not([type="checkbox"]),
+[data-theme="pastel-black"] select:not(.wpf-native),
+[data-theme="pastel-black"] textarea:not(.wpf-native) {
+  background-color: #0F1219 !important;
+  border-color: #2D3546 !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .bg-blue-50:not(.wpf-native),
+[data-theme="pastel-black"] .bg-blue-50:not(.wpf-native) {
+  background-color: rgba(37, 99, 235, 0.22) !important;
+  color: #BFDBFE !important;
+  border-color: rgba(59, 130, 246, 0.45) !important;
+}
+[data-theme="dark"] .bg-emerald-50:not(.wpf-native),
+[data-theme="pastel-black"] .bg-emerald-50:not(.wpf-native) {
+  background-color: rgba(16, 185, 129, 0.22) !important;
+  color: #A7F3D0 !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
+}
+[data-theme="dark"] .bg-amber-50:not(.wpf-native),
+[data-theme="pastel-black"] .bg-amber-50:not(.wpf-native) {
+  background-color: rgba(245, 158, 11, 0.22) !important;
+  color: #FDE68A !important;
+  border-color: rgba(245, 158, 11, 0.45) !important;
+}
+[data-theme="dark"] .bg-rose-50:not(.wpf-native),
+[data-theme="pastel-black"] .bg-rose-50:not(.wpf-native) {
+  background-color: rgba(244, 63, 94, 0.22) !important;
+  color: #FECDD3 !important;
+  border-color: rgba(244, 63, 94, 0.45) !important;
+}
+
+[data-theme="dark"] .text-blue-900:not(.wpf-native), [data-theme="dark"] .text-blue-800:not(.wpf-native), [data-theme="dark"] .text-blue-700:not(.wpf-native) {
+  color: #BFDBFE !important;
+}
+[data-theme="dark"] .text-emerald-900:not(.wpf-native), [data-theme="dark"] .text-emerald-800:not(.wpf-native), [data-theme="dark"] .text-emerald-700:not(.wpf-native) {
+  color: #A7F3D0 !important;
+}
+[data-theme="dark"] .text-amber-900:not(.wpf-native), [data-theme="dark"] .text-amber-800:not(.wpf-native), [data-theme="dark"] .text-amber-700:not(.wpf-native) {
+  color: #FDE68A !important;
+}
+[data-theme="dark"] .text-rose-900:not(.wpf-native), [data-theme="dark"] .text-rose-800:not(.wpf-native), [data-theme="dark"] .text-rose-700:not(.wpf-native) {
+  color: #FECDD3 !important;
+}
+
+/* Explicit Light/Beige/Gray Select Option Readability */
+[data-theme="dark"] select option,
+[data-theme="pastel-black"] select option {
+  background-color: #1A1F2C;
+  color: #F8FAFC;
+}

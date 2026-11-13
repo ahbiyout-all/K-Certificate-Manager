@@ -1,344 +1,378 @@
 import React from 'react';
-import { 
-  ShieldCheck, 
-  Copy, 
-  FolderSearch, 
-  History, 
-  Sliders, 
-  Lock, 
-  HardDrive,
-  FileKey,
-  HelpCircle,
-  CheckCircle2,
-  ExternalLink,
-  Globe,
-  Scale,
-  Palette
-} from 'lucide-react';
-import { APP_VERSION, DEVELOPER_INFO } from '../version';
-import { AppTheme } from '../types';
-import { THEME_OPTIONS } from '../data/themes';
-import { BRANDING_ASSETS } from '../data/brandingAssets';
+import { Globe, HardDrive, Laptop, AlertTriangle, ChevronRight, ShieldCheck } from 'lucide-react';
+import { DiskDrive } from '../types';
+import { filterPhysicalDrivesOnly } from '../utils/driveFilter';
+
+export type SidebarCategoryFilter = 'ALL' | 'GPKI' | 'EPKI' | 'NPKI' | 'EXPIRED' | 'NON_STANDARD';
+export type SidebarSourceFilter = 'ALL' | 'LOCAL' | 'REMOVABLE';
 
 interface SidebarProps {
-  activeTab: 'copy' | 'history' | 'paths' | 'security';
-  setActiveTab: (tab: 'copy' | 'history' | 'paths' | 'security') => void;
-  totalCerts: number;
-  removableDrives: number;
-  theme?: AppTheme;
-  onThemeChange?: (theme: AppTheme) => void;
-  onOpenSecurityGuide: () => void;
-  onOpenBackupModal: () => void;
-  onOpenUsbToPc?: () => void;
-  onOpenDesktopApp?: () => void;
-  onOpenUsbDiagnostic?: () => void;
-  onOpenCleanup?: (mode: 'EXPIRED' | 'OTHER_USERS') => void;
-  onOpenTrash?: () => void;
+  categoryFilter: SidebarCategoryFilter;
+  sourceFilter: SidebarSourceFilter;
+  onSelectCategoryFilter: (cat: SidebarCategoryFilter) => void;
+  onSelectSourceFilter: (src: SidebarSourceFilter) => void;
+  counts: {
+    total: number;
+    gpki: number;
+    epki: number;
+    npki: number;
+    expired: number;
+    nonStandard: number;
+    pc: number;
+    usb: number;
+  };
+  availableDrives: DiskDrive[];
+  selectedDriveId: string;
+  onSelectDriveId: (id: string) => void;
+  onOpenTargetDrivePicker?: () => void;
   onOpenRenewalGuidance?: () => void;
-  onOpenActivityLogs?: () => void;
-  onOpenLicense?: () => void;
-  onOpenCoreSpec?: () => void;
-  onCheckUpdates?: () => void;
-  isCheckingUpdates?: boolean;
-  hasUpdateBadge?: boolean;
-  logCount?: number;
-  trashCount?: number;
-  expiredCount?: number;
-  nonStandardCount?: number;
-  selectedCount: number;
-  onSelectCategoryFilter?: (filter: string) => void;
-  appViewMode?: 'simple' | 'advanced';
-  onToggleAppViewMode?: (mode: 'simple' | 'advanced') => void;
-  onOpenStartupWorkflow?: () => void;
-  onOpenSettings?: () => void;
+  onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-  activeTab,
-  setActiveTab,
-  totalCerts,
-  removableDrives,
-  theme = 'pastel-white',
-  onThemeChange,
-  onOpenSecurityGuide,
-  onOpenBackupModal,
-  onOpenUsbToPc,
-  onOpenDesktopApp,
-  onOpenUsbDiagnostic,
-  onOpenCleanup,
-  onOpenTrash,
-  onOpenRenewalGuidance,
-  onOpenActivityLogs,
-  onOpenLicense,
-  onOpenCoreSpec,
-  onCheckUpdates,
-  isCheckingUpdates = false,
-  hasUpdateBadge = false,
-  logCount = 0,
-  trashCount = 0,
-  expiredCount = 0,
-  nonStandardCount = 0,
-  selectedCount,
+  categoryFilter,
+  sourceFilter,
   onSelectCategoryFilter,
-  appViewMode = 'simple',
-  onToggleAppViewMode,
-  onOpenStartupWorkflow,
-  onOpenSettings,
+  onSelectSourceFilter,
+  counts,
+  availableDrives,
+  selectedDriveId,
+  onSelectDriveId,
+  onOpenTargetDrivePicker,
+  onOpenRenewalGuidance,
+  onCloseMobile,
 }) => {
+  const physicalDrives = filterPhysicalDrivesOnly(availableDrives);
+  const selectedDrive =
+    physicalDrives.find(d => d.id === selectedDriveId) ||
+    physicalDrives.find(d => d.type === 'removable') ||
+    physicalDrives[0];
+
+  const handleCatClick = (cat: SidebarCategoryFilter) => {
+    onSelectCategoryFilter(cat);
+    if (cat === 'ALL') {
+      onSelectSourceFilter('ALL');
+    }
+    onCloseMobile?.();
+  };
+
+  const handleSourceClick = (src: SidebarSourceFilter) => {
+    onSelectSourceFilter(sourceFilter === src ? 'ALL' : src);
+    onCloseMobile?.();
+  };
+
   return (
-    <aside className="w-64 bg-slate-900 flex flex-col h-full border-r border-slate-800 shadow-xl z-20 shrink-0 overflow-hidden">
-      {/* Brand Header - Compact */}
-      <div className="p-4 bg-slate-950 border-b border-slate-800 flex items-center gap-3">
-        <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg border border-blue-500/30 shrink-0">
-          <ShieldCheck className="w-5 h-5 text-white" />
+    <aside
+      id="app-sidebar"
+      className="wpf-native w-[260px] flex flex-col justify-between h-full p-3.5 shrink-0 select-none overflow-y-auto"
+      style={{
+        backgroundColor: 'var(--wpf-bg-card)',
+        borderRight: '1px solid var(--wpf-border)',
+        color: 'var(--wpf-text-primary)',
+      }}
+    >
+      {/* Top Filter Navigation Stack (Matches WPF MainWindow.xaml lines 278-367) */}
+      <div className="space-y-1">
+        <div
+          className="text-[11px] font-bold px-2 pb-1.5"
+          style={{ color: 'var(--wpf-text-muted)' }}
+        >
+          인증서 카테고리
         </div>
-        <div className="flex flex-col min-w-0">
-          <h2 className="text-sm font-bold text-white tracking-tight leading-none mb-1 truncate">K-인증서 매니저</h2>
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Security Shield</span>
-          </div>
-        </div>
-      </div>
 
-      {/* Navigation Items - Optimized for Single Screen */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
-        {onOpenStartupWorkflow && (
-          <button
-            type="button"
-            onClick={onOpenStartupWorkflow}
-            className="w-full flex items-center px-3 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-xs transition-all cursor-pointer text-left border border-blue-400/30 mb-2"
-          >
-            <span className="mr-2 text-base">🚀</span>
-            <span className="flex-1">시작 가이드</span>
-            <span className="text-[9px] px-1.5 py-0.5 bg-white/20 rounded">GO</span>
-          </button>
-        )}
-
-        {/* Primary Action: Copy/Move */}
+        {/* 전체 인증서 */}
         <button
           type="button"
-          onClick={() => setActiveTab('copy')}
-          className={`w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors cursor-pointer text-left ${
-            activeTab === 'copy'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+          onClick={() => handleCatClick('ALL')}
+          className={`wpf-native w-full flex items-center justify-between px-2.5 py-2 text-xs cursor-pointer text-left wpf-nav-radio ${
+            categoryFilter === 'ALL' && sourceFilter === 'ALL' ? 'wpf-nav-radio-active' : ''
           }`}
         >
-          <span className="mr-2.5 opacity-90 text-base">📂</span>
-          <span className="flex-1">인증서 복사/이동</span>
-          {selectedCount > 0 && (
-            <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-blue-500/30 text-blue-200 rounded-full font-bold">
-              {selectedCount}
-            </span>
-          )}
+          <span className="truncate">전체 인증서</span>
+          <span
+            className="font-bold tabular-nums shrink-0 ml-2"
+            style={{
+              color:
+                categoryFilter === 'ALL' && sourceFilter === 'ALL'
+                  ? '#FFFFFF'
+                  : 'var(--wpf-accent-text)',
+            }}
+          >
+            {counts.total}
+          </span>
         </button>
 
-        {/* Group: Essential Tools */}
-        <div className="pt-2 pb-1 px-1">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 pl-1">핵심 도구</p>
-          <div className="space-y-0.5">
-            {onOpenUsbToPc && (
-              <button
-                type="button"
-                onClick={onOpenUsbToPc}
-                className="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-emerald-400 hover:bg-slate-800 hover:text-emerald-300 transition-colors cursor-pointer text-left"
-              >
-                <span className="mr-2.5 opacity-90 text-sm">📥</span>
-                <span className="flex-1">USB ➔ PC 가져오기</span>
-              </button>
-            )}
-            
-            {onOpenRenewalGuidance && (
-              <button
-                type="button"
-                onClick={onOpenRenewalGuidance}
-                className="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-blue-300 hover:bg-slate-800 hover:text-blue-200 transition-colors cursor-pointer text-left"
-              >
-                <span className="mr-2.5 opacity-90 text-sm">🌐</span>
-                <span className="flex-1">인증서 갱신 안내</span>
-              </button>
-            )}
-          </div>
+        {/* GPKI */}
+        <button
+          type="button"
+          onClick={() => handleCatClick('GPKI')}
+          className={`wpf-native w-full flex items-center justify-between px-2.5 py-2 text-xs cursor-pointer text-left wpf-nav-radio ${
+            categoryFilter === 'GPKI' ? 'wpf-nav-radio-active' : ''
+          }`}
+        >
+          <span className="truncate">GPKI (행정전자서명)</span>
+          <span
+            className="tabular-nums shrink-0 ml-2"
+            style={{
+              color: categoryFilter === 'GPKI' ? '#FFFFFF' : 'var(--wpf-accent-text)',
+            }}
+          >
+            {counts.gpki}
+          </span>
+        </button>
+
+        {/* EPKI */}
+        <button
+          type="button"
+          onClick={() => handleCatClick('EPKI')}
+          className={`wpf-native w-full flex items-center justify-between px-2.5 py-2 text-xs cursor-pointer text-left wpf-nav-radio ${
+            categoryFilter === 'EPKI' ? 'wpf-nav-radio-active' : ''
+          }`}
+        >
+          <span className="truncate">EPKI (교육기관서명)</span>
+          <span
+            className="tabular-nums shrink-0 ml-2"
+            style={{
+              color: categoryFilter === 'EPKI' ? '#FFFFFF' : 'var(--wpf-accent-text)',
+            }}
+          >
+            {counts.epki}
+          </span>
+        </button>
+
+        {/* NPKI */}
+        <button
+          type="button"
+          onClick={() => handleCatClick('NPKI')}
+          className={`wpf-native w-full flex items-center justify-between px-2.5 py-2 text-xs cursor-pointer text-left wpf-nav-radio ${
+            categoryFilter === 'NPKI' ? 'wpf-nav-radio-active' : ''
+          }`}
+        >
+          <span className="truncate">NPKI (금융/공동)</span>
+          <span
+            className="tabular-nums shrink-0 ml-2"
+            style={{
+              color: categoryFilter === 'NPKI' ? '#FFFFFF' : 'var(--wpf-accent-text)',
+            }}
+          >
+            {counts.npki}
+          </span>
+        </button>
+
+        {/* 만료된 인증서 */}
+        <button
+          type="button"
+          onClick={() => handleCatClick('EXPIRED')}
+          className={`wpf-native w-full flex items-center justify-between px-2.5 py-2 text-xs cursor-pointer text-left wpf-nav-radio ${
+            categoryFilter === 'EXPIRED' ? 'wpf-nav-radio-active' : ''
+          }`}
+        >
+          <span
+            className="truncate"
+            style={{ color: categoryFilter === 'EXPIRED' ? '#FFFFFF' : '#E11D48' }}
+          >
+            만료된 인증서
+          </span>
+          <span
+            className="font-bold tabular-nums shrink-0 ml-2"
+            style={{ color: categoryFilter === 'EXPIRED' ? '#FFFFFF' : '#E11D48' }}
+          >
+            {counts.expired}
+          </span>
+        </button>
+
+        {/* 비표준 위치 인증서 */}
+        <button
+          type="button"
+          onClick={() => handleCatClick('NON_STANDARD')}
+          className={`wpf-native w-full flex items-center justify-between px-2.5 py-2 text-xs cursor-pointer text-left wpf-nav-radio ${
+            categoryFilter === 'NON_STANDARD' ? 'wpf-nav-radio-active' : ''
+          }`}
+        >
+          <span
+            className="flex items-center gap-1.5 truncate"
+            style={{ color: categoryFilter === 'NON_STANDARD' ? '#FFFFFF' : '#D97706' }}
+          >
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">비표준 위치 인증서</span>
+          </span>
+          <span
+            className="font-bold tabular-nums shrink-0 ml-2"
+            style={{ color: categoryFilter === 'NON_STANDARD' ? '#FFFFFF' : '#D97706' }}
+          >
+            {counts.nonStandard}
+          </span>
+        </button>
+
+        {/* Divider */}
+        <div className="my-2.5" style={{ borderTop: '1px solid var(--wpf-border)' }} />
+
+        <div
+          className="text-[11px] font-bold px-2 pb-1.5"
+          style={{ color: 'var(--wpf-text-muted)' }}
+        >
+          저장 매체 구분 (USB / PC)
         </div>
 
-        {/* Group: Management & Logs */}
-        <div className="pt-1 pb-1 px-1">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 pl-1">관리 및 기록</p>
-          <div className="space-y-0.5">
-            <button
-              type="button"
-              onClick={() => setActiveTab('history')}
-              className={`w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer text-left ${
-                activeTab === 'history' ? 'bg-slate-800 text-blue-400' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-              }`}
-            >
-              <span className="mr-2.5 opacity-90 text-sm">🛡️</span>
-              <span className="flex-1">백업 이력</span>
-            </button>
+        {/* 컴퓨터 (로컬 보관함) */}
+        <button
+          type="button"
+          onClick={() => handleSourceClick('LOCAL')}
+          className={`wpf-native w-full flex items-center justify-between px-2.5 py-2 text-xs cursor-pointer text-left wpf-nav-radio ${
+            sourceFilter === 'LOCAL' ? 'wpf-nav-radio-active' : ''
+          }`}
+        >
+          <span className="flex items-center gap-1.5 truncate">
+            <Laptop className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">컴퓨터 (로컬 보관함)</span>
+          </span>
+          <span
+            className="font-semibold tabular-nums shrink-0 ml-2"
+            style={{
+              color: sourceFilter === 'LOCAL' ? '#FFFFFF' : 'var(--wpf-accent-text)',
+            }}
+          >
+            {counts.pc}
+          </span>
+        </button>
 
-            {onOpenTrash && (
-              <button
-                type="button"
-                onClick={onOpenTrash}
-                className="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-emerald-300 transition-colors cursor-pointer text-left"
-                title="안전 격리 휴지통 및 복원된 항목 암호화 보호 보관소 (Windows DPAPI / AES-256)"
-              >
-                <span className="mr-2.5 opacity-90 text-sm">♻️</span>
-                <span className="flex-1">휴지통 & 보관소</span>
-                {trashCount > 0 && <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full font-bold">{trashCount}</span>}
-              </button>
-            )}
+        {/* USB (이동식 저장소) */}
+        <button
+          type="button"
+          onClick={() => handleSourceClick('REMOVABLE')}
+          className={`wpf-native w-full flex items-center justify-between px-2.5 py-2 text-xs cursor-pointer text-left wpf-nav-radio ${
+            sourceFilter === 'REMOVABLE' ? 'wpf-nav-radio-active' : ''
+          }`}
+        >
+          <span className="flex items-center gap-1.5 truncate">
+            <HardDrive className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">USB (이동식 저장소)</span>
+          </span>
+          <span
+            className="font-bold tabular-nums shrink-0 ml-2"
+            style={{
+              color: sourceFilter === 'REMOVABLE' ? '#FFFFFF' : '#10B981',
+            }}
+          >
+            {counts.usb}
+          </span>
+        </button>
 
-            {onOpenActivityLogs && (
-              <button
-                type="button"
-                onClick={onOpenActivityLogs}
-                className="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-blue-300 transition-colors cursor-pointer text-left"
-              >
-                <span className="mr-2.5 opacity-90 text-sm">📜</span>
-                <span className="flex-1">작업 로그</span>
-                {logCount > 0 && <span className="text-[9px] px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded-full font-bold">{logCount}</span>}
-              </button>
-            )}
-          </div>
+        {/* Divider */}
+        <div className="my-3" style={{ borderTop: '1px solid var(--wpf-border)' }} />
+
+        <div
+          className="text-[11px] font-bold px-2 pb-1.5"
+          style={{ color: 'var(--wpf-text-muted)' }}
+        >
+          인증서 서비스 센터
         </div>
 
-        {/* Group: Advanced & Technical (Show more in Advanced Mode) */}
-        <div className="pt-1 pb-1 px-1">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 pl-1">고급 및 기술</p>
-          <div className="space-y-0.5">
-            <button
-              type="button"
-              onClick={() => setActiveTab('paths')}
-              className={`w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer text-left ${
-                activeTab === 'paths' ? 'bg-slate-800 text-blue-400' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-              }`}
-            >
-              <span className="mr-2.5 opacity-90 text-sm">⚙️</span>
-              <span className="flex-1">탐색 경로 설정</span>
-            </button>
-
-            {appViewMode === 'advanced' && (
-              <>
-                {onOpenUsbDiagnostic && (
-                  <button
-                    type="button"
-                    onClick={onOpenUsbDiagnostic}
-                    className="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-indigo-300 hover:bg-slate-800 hover:text-indigo-200 transition-colors cursor-pointer text-left"
-                  >
-                    <span className="mr-2.5 opacity-90 text-sm">🔍</span>
-                    <span className="flex-1">USB VSN/WMI 진단</span>
-                  </button>
-                )}
-                {onOpenDesktopApp && (
-                  <button
-                    type="button"
-                    onClick={onOpenDesktopApp}
-                    className="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-sky-300 hover:bg-slate-800 hover:text-sky-200 transition-colors cursor-pointer text-left"
-                  >
-                    <span className="mr-2.5 opacity-90 text-sm">🖥️</span>
-                    <span className="flex-1">데스크탑 앱 (WPF)</span>
-                  </button>
-                )}
-                {onOpenCoreSpec && (
-                  <button
-                    type="button"
-                    onClick={onOpenCoreSpec}
-                    className="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-blue-300 hover:bg-slate-800 hover:text-blue-200 transition-colors cursor-pointer text-left"
-                  >
-                    <span className="mr-2.5 opacity-90 text-sm">🛠️</span>
-                    <span className="flex-1">코어 DLL 명세</span>
-                  </button>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Group: Information */}
-        <div className="pt-1 pb-1 px-1">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 pl-1">정보</p>
-          <div className="space-y-0.5">
-            <button
-              type="button"
-              onClick={onOpenSecurityGuide}
-              className="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors cursor-pointer text-left"
-            >
-              <span className="mr-2.5 opacity-90 text-sm">🛡️</span>
-              <span className="flex-1">보안 수칙</span>
-            </button>
-            {onOpenLicense && (
-              <button
-                type="button"
-                onClick={onOpenLicense}
-                className="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors cursor-pointer text-left"
-              >
-                <span className="mr-2.5 opacity-90 text-sm">⚖️</span>
-                <span className="flex-1">라이선스</span>
-              </button>
-            )}
-            {onCheckUpdates && (
-              <button
-                type="button"
-                onClick={onCheckUpdates}
-                disabled={isCheckingUpdates}
-                className="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-amber-300 transition-colors cursor-pointer text-left"
-              >
-                <span className="mr-2.5 opacity-90 text-sm">{isCheckingUpdates ? '🔄' : '✨'}</span>
-                <span className="flex-1">{isCheckingUpdates ? '확인 중...' : '업데이트 확인'}</span>
-                {hasUpdateBadge && <span className="ml-auto w-2 h-2 rounded-full bg-rose-500 animate-pulse" />}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {onOpenSettings && (
+        {onOpenRenewalGuidance && (
           <button
             type="button"
-            onClick={onOpenSettings}
-            className="w-full flex items-center px-3 py-2.5 rounded-lg text-xs font-bold text-slate-300 bg-slate-800/40 hover:bg-slate-800 hover:text-white transition-all cursor-pointer text-left border border-slate-700/50 mt-2"
+            onClick={() => {
+              onOpenRenewalGuidance();
+              onCloseMobile?.();
+            }}
+            className="wpf-btn-primary wpf-native w-full h-[38px] px-3 flex items-center justify-center gap-2 text-[13px] font-bold cursor-pointer"
           >
-            <span className="mr-2.5 opacity-90 text-sm">⚙️</span>
-            <span className="flex-1">환경 설정 (소리/테마)</span>
+            <Globe className="w-4 h-4 shrink-0" />
+            <span>인증서 갱신 안내</span>
           </button>
         )}
-      </nav>
-
-      {/* Quick Status Block - Compact */}
-      <div className="px-3 py-2 border-t border-slate-700/50 bg-slate-900/40">
-        <div className="grid grid-cols-2 gap-2 text-[10px]">
-          <div className="bg-slate-800/60 p-2 rounded border border-slate-700/50">
-            <span className="text-slate-500 block mb-0.5">USB 디스크</span>
-            <span className="font-bold text-white">{removableDrives}개</span>
-          </div>
-          <div className="bg-slate-800/60 p-2 rounded border border-slate-700/50">
-            <span className="text-slate-500 block mb-0.5">발견 인증서</span>
-            <span className="font-bold text-blue-400">{totalCerts}건</span>
-          </div>
-        </div>
       </div>
 
-      {/* Developer & Release Info - Very Compact */}
-      <div className="p-3 bg-slate-950 border-t border-slate-800">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-slate-300">{DEVELOPER_INFO.author}</span>
-            <span className="text-[9px] text-slate-500">{DEVELOPER_INFO.affiliation}</span>
+      {/* Bottom Pinned Stack (Matches WPF MainWindow.xaml lines 231-276) */}
+      <div className="mt-4 space-y-3 shrink-0">
+        {/* Target USB / Disk Drive Selector Card */}
+        <div
+          className="wpf-native animated-drive-card rounded-[8px] p-3"
+          style={{ ['--card-inner-bg' as string]: 'var(--wpf-bg-dark)' }}
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <span
+              className="text-[11px] font-bold"
+              style={{ color: 'var(--wpf-accent-text)' }}
+            >
+              복사 / 백업 대상 드라이브
+            </span>
+            {onOpenTargetDrivePicker && (
+              <button
+                type="button"
+                onClick={onOpenTargetDrivePicker}
+                className="wpf-native text-[10px] font-semibold flex items-center gap-0.5 cursor-pointer hover:underline"
+                style={{ color: 'var(--wpf-accent-text)' }}
+                title="드라이브 선택 창 열기"
+              >
+                <span>상세 선택</span>
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            )}
           </div>
-          <a
-            href={DEVELOPER_INFO.github}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-md transition-colors"
-            title="GitHub"
+
+          <select
+            value={selectedDrive?.id || ''}
+            onChange={(e) => onSelectDriveId(e.target.value)}
+            className="wpf-native w-full h-9 px-2 rounded-[6px] text-xs font-semibold cursor-pointer focus:outline-none mb-1.5"
+            style={{
+              backgroundColor: 'var(--wpf-bg-card)',
+              border: '1px solid var(--wpf-border)',
+              color: 'var(--wpf-text-primary)',
+            }}
           >
-            <Globe className="w-3.5 h-3.5" />
-          </a>
+            {physicalDrives.length === 0 ? (
+              <option value="">(사용 가능한 드라이브 없음)</option>
+            ) : (
+              physicalDrives.map((d) => {
+                const isUsb = d.type === 'removable' || d.busType === 'USB';
+                return (
+                  <option key={d.id} value={d.id}>
+                    [{d.letter}] {isUsb ? '[이동식 USB]' : '[로컬 디스크]'} {d.name.split('(')[0].trim()}
+                  </option>
+                );
+              })
+            )}
+          </select>
+
+          <div
+            className="text-[10px] tabular-nums truncate"
+            style={{ color: 'var(--wpf-text-secondary)' }}
+          >
+            {selectedDrive
+              ? `여유 ${selectedDrive.freeSpace} / 전체 ${selectedDrive.totalSpace}`
+              : '(사용 가능한 드라이브 없음)'}
+          </div>
         </div>
-        <div className="flex items-center justify-between text-[9px] text-slate-600">
-          <span>© 2026 K-Cert Mgr</span>
-          <span className="font-mono">v{APP_VERSION}</span>
+
+        {/* Local Sandbox Isolation Card */}
+        <div
+          className="wpf-native rounded-[8px] p-2.5"
+          style={{
+            backgroundColor: 'var(--wpf-bg-dark)',
+            border: '1px solid #10B981',
+          }}
+        >
+          <div className="flex items-center gap-1.5 mb-1">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#10B981] shrink-0" />
+            <span className="text-[11px] font-bold text-[#10B981]">
+              로컬 샌드박스 격리
+            </span>
+          </div>
+          <p
+            className="text-[10px] leading-snug"
+            style={{ color: 'var(--wpf-text-secondary)' }}
+          >
+            인터넷 전송 없음 · 100% 로컬 암호화
+          </p>
+        </div>
+
+        {/* Copyright */}
+        <div
+          className="px-0.5 text-[10px]"
+          style={{ color: 'var(--wpf-text-muted)' }}
+        >
+          저작권: AhBiYout
         </div>
       </div>
     </aside>

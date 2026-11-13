@@ -138,6 +138,11 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     }
   }, [selectedCerts]);
 
+  const effectiveSelectedCerts = useMemo(
+    () => selectedCerts.filter(c => activeSelectedCertIds.includes(c.id)),
+    [selectedCerts, activeSelectedCertIds]
+  );
+
   const handleStartResize = (colKey: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -219,7 +224,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   useEffect(() => {
     if (isOpen && targetDrive) {
       runWriteCheck(targetDrive, simulatedLockedDriveIds, true);
-      const dup = detectDuplicateCertificates(selectedCerts, existingCertificates, targetDrive);
+      const dup = detectDuplicateCertificates(effectiveSelectedCerts, existingCertificates, targetDrive);
       setDuplicateResult(dup);
       const initialDecisions: Record<string, 'overwrite' | 'skip' | 'archive_old'> = {};
       dup.conflicts.forEach(c => {
@@ -227,7 +232,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       });
       setCustomDuplicateDecisions(initialDecisions);
     }
-  }, [isOpen, selectedDriveId, simulatedLockedDriveIds, selectedCerts, existingCertificates]);
+  }, [isOpen, selectedDriveId, simulatedLockedDriveIds, effectiveSelectedCerts, existingCertificates]);
 
   if (!isOpen) return null;
 
@@ -251,7 +256,16 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     setDirectWriteError(null);
     setWriteProtectionError(null);
 
-    // 0. Pre-flight Target Drive Selection Check
+    // 0. Pre-flight Certificate Selection Check
+    if (effectiveSelectedCerts.length === 0) {
+      setLogs([
+        `[❌ 인증서 미선택] 복사할 인증서가 1건도 선택되지 않았습니다.`,
+        `[작업 중단] 상단 인증서 목록에서 복사할 인증서를 체크 선택해 주세요.`,
+      ]);
+      return;
+    }
+
+    // 0.05 Pre-flight Target Drive Selection Check
     if (!targetDrive) {
       setLogs([
         `[❌ 목적지 미선택] 복사를 진행할 대상 디스크가 선택되지 않았습니다.`,
@@ -286,7 +300,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     }
 
     // 2. Pre-flight Duplicate Certificate Folder Check on Target Drive
-    const dupCheck = detectDuplicateCertificates(selectedCerts, existingCertificates, targetDrive);
+    const dupCheck = detectDuplicateCertificates(effectiveSelectedCerts, existingCertificates, targetDrive);
     setDuplicateResult(dupCheck);
 
     if (dupCheck.hasDuplicates && !overrideDuplicateConfirmed) {
@@ -301,7 +315,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     const archivedCertIds: string[] = [];
     const overwrittenCertIds: string[] = [];
 
-    selectedCerts.forEach(cert => {
+    effectiveSelectedCerts.forEach(cert => {
       const decision = decisions[cert.id] || duplicateMode;
       const isConflict = dupCheck.conflicts.some(c => c.cert.id === cert.id);
       if (isConflict) {
@@ -316,7 +330,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     });
 
     // If all selected certs are skipped
-    if (selectedCerts.length > 0 && skippedCertIds.length === selectedCerts.length) {
+    if (effectiveSelectedCerts.length > 0 && skippedCertIds.length === effectiveSelectedCerts.length) {
       setLogs([
         '[복사 취소] 모든 중복 인증서가 "건너뛰기(Skip)"로 지정되어 복사할 대상 파일이 없습니다.',
       ]);
@@ -337,8 +351,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         driveLetter: targetDrive?.letter,
         driveName: targetDrive?.name,
         direction: 'PC_TO_USB',
-        failedCount: selectedCerts.length,
-        certNames: selectedCerts.map(c => c.name),
+        failedCount: effectiveSelectedCerts.length,
+        certNames: effectiveSelectedCerts.map(c => c.name),
         technicalDetail: writeProtectionError?.message || 'Drive status: WRITE_PROTECTED',
       });
       return;
@@ -360,8 +374,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         driveLetter: targetDrive?.letter,
         driveName: targetDrive?.name,
         direction: 'PC_TO_USB',
-        failedCount: selectedCerts.length,
-        certNames: selectedCerts.map(c => c.name),
+        failedCount: effectiveSelectedCerts.length,
+        certNames: effectiveSelectedCerts.map(c => c.name),
         technicalDetail: `DiskError: E_DISK_FULL (0x80070070 - Not enough disk space. Free: ${freeSpaceStr})`,
       });
       return;
@@ -380,8 +394,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         driveLetter: targetDrive?.letter,
         driveName: targetDrive?.name,
         direction: 'PC_TO_USB',
-        failedCount: selectedCerts.length,
-        certNames: selectedCerts.map(c => c.name),
+        failedCount: effectiveSelectedCerts.length,
+        certNames: effectiveSelectedCerts.map(c => c.name),
         technicalDetail: 'DeviceError: MEDIA_TYPE_OPTICAL_READONLY (0x80070013)',
       });
       return;
@@ -421,7 +435,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           setProgress(attempt === 1 ? 30 : 45);
 
           const copyLogs: string[] = [];
-          selectedCerts.forEach(cert => {
+          effectiveSelectedCerts.forEach(cert => {
             const stdPath = getStandardDirectoryPath(cert);
             if (skippedCertIds.includes(cert.id)) {
               copyLogs.push(`[중복 건너뜀] ⏭️ ${cert.name} (${cert.category}) -> 이미 존재하여 복사 건너뜀`);
@@ -454,7 +468,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               }
 
               setLogs(prev => [...prev, `[디스크 쓰기] 선택된 폴더: ${dirHandle.name}에 NPKI/GPKI 구조 직접 기록 시작...`]);
-              const res = await writeCertificatesToDirectoryHandle(selectedCerts, dirHandle, {
+              const res = await writeCertificatesToDirectoryHandle(effectiveSelectedCerts, dirHandle, {
                 skippedCertIds,
               });
               if (!res.success) {
@@ -471,7 +485,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           await new Promise(r => setTimeout(r, 400));
           setProgress(85);
 
-          const result = await copyCertificatesToDisk(selectedCerts, targetDrive, {
+          const result = await copyCertificatesToDisk(effectiveSelectedCerts, targetDrive, {
             includeManifest,
             duplicateHandlingMode: duplicateMode,
             skippedCertIds,
@@ -523,8 +537,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           timestamp: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
           targetDisk: `${targetDrive.letter} ${targetDrive.name}`,
           targetPath: `${targetDrive.letter}\\ (NPKI/GPKI 표준 구조)`,
-          certificatesCount: selectedCerts.length - skippedCertIds.length,
-          certNames: selectedCerts.filter(c => !skippedIds(c.id, skippedCertIds)).map(c => c.name),
+          certificatesCount: effectiveSelectedCerts.length - skippedCertIds.length,
+          certNames: effectiveSelectedCerts.filter(c => !skippedIds(c.id, skippedCertIds)).map(c => c.name),
           status: 'success',
           hashCheckPassed: true,
           retryAttemptsUsed: retryResult.attemptsUsed,
@@ -547,8 +561,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           driveLetter: targetDrive?.letter,
           driveName: targetDrive?.name,
           direction: 'PC_TO_USB',
-          failedCount: selectedCerts.length - skippedCertIds.length,
-          certNames: selectedCerts.map(c => c.name),
+          failedCount: effectiveSelectedCerts.length - skippedCertIds.length,
+          certNames: effectiveSelectedCerts.map(c => c.name),
         });
       }
     } catch (err: any) {
@@ -565,8 +579,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         driveLetter: targetDrive?.letter,
         driveName: targetDrive?.name,
         direction: 'PC_TO_USB',
-        failedCount: selectedCerts.length - skippedCertIds.length,
-        certNames: selectedCerts.map(c => c.name),
+        failedCount: effectiveSelectedCerts.length - skippedCertIds.length,
+        certNames: effectiveSelectedCerts.map(c => c.name),
       });
     } finally {
       setIsProcessing(false);
@@ -614,8 +628,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const currentDriveDuplicates = targetDrive ? (duplicateResult?.conflicts.length || 0) : 0;
 
   // Self-copy prohibition check (Certificates on same disk/USB cannot copy to themselves)
-  const selfCopyCerts = targetDrive ? selectedCerts.filter(c => isSameDriveSelfCopy(c, targetDrive)) : [];
-  const isAllSelfCopy = targetDrive ? (selectedCerts.length > 0 && selfCopyCerts.length === selectedCerts.length) : false;
+  const selfCopyCerts = targetDrive ? effectiveSelectedCerts.filter(c => isSameDriveSelfCopy(c, targetDrive)) : [];
+  const isAllSelfCopy = targetDrive ? (effectiveSelectedCerts.length > 0 && selfCopyCerts.length === effectiveSelectedCerts.length) : false;
   const selfCopyCount = selfCopyCerts.length;
 
   return (
@@ -902,7 +916,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                 </span>
               </h3>
               <p className="text-xs text-slate-400">
-                선택된 <span className="text-blue-300 font-semibold">{selectedCerts.length}명</span>의 공무원·은행 인증서를 대상 디스크의 쓰기 권한 점검 후 안전하게 복사합니다.
+                선택된 <span className="text-blue-300 font-semibold">{effectiveSelectedCerts.length}명</span>의 공무원·은행 인증서를 대상 디스크의 쓰기 권한 점검 후 안전하게 복사합니다.
               </p>
             </div>
           </div>
@@ -1299,10 +1313,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     ).length;
                     const driveBadge = getDriveBadgeStyle(drive);
 
-                    // Calculate duplicates for this drive
-                    const driveDups = detectDuplicateCertificates(selectedCerts, existingCertificates, drive);
+                    // Calculate duplicates for this drive based on checked certificates
+                    const driveDups = detectDuplicateCertificates(effectiveSelectedCerts, existingCertificates, drive);
                     const dupCount = driveDups.conflicts.length;
-                    const driveSelfCopyCount = selectedCerts.filter(c => isSameDriveSelfCopy(c, drive)).length;
+                    const driveSelfCopyCount = effectiveSelectedCerts.filter(c => isSameDriveSelfCopy(c, drive)).length;
 
                     return (
                       <div
@@ -1463,7 +1477,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                         </span>
                       </div>
                       <p className="text-[11px] text-rose-800 leading-relaxed font-medium">
-                        선택된 {selectedCerts.length}개 인증서가 모두 이미 <strong>{targetDrive.letter} ({targetDrive.name})</strong> 드라이브에 존재합니다. 같은 디스크나 USB 내에서의 자가 복사는 원본 훼손 방지를 위해 엄격히 제한됩니다. 상단 목록에서 다른 목적지 드라이브(C:, D:, 타 USB)를 선택해 주세요.
+                        선택된 {effectiveSelectedCerts.length}개 인증서가 모두 이미 <strong>{targetDrive.letter} ({targetDrive.name})</strong> 드라이브에 존재합니다. 같은 디스크나 USB 내에서의 자가 복사는 원본 훼손 방지를 위해 엄격히 제한됩니다. 상단 목록에서 다른 목적지 드라이브(C:, D:, 타 USB)를 선택해 주세요.
                       </p>
                     </div>
                   </div>
@@ -1849,8 +1863,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                               driveLetter: targetDrive.letter,
                               driveName: targetDrive.name,
                               direction: 'PC_TO_USB',
-                              failedCount: selectedCerts.length,
-                              certNames: selectedCerts.map(c => c.name),
+                              failedCount: effectiveSelectedCerts.length,
+                              certNames: effectiveSelectedCerts.map(c => c.name),
                               technicalDetail: 'DiskError: E_DISK_WRITE_PROTECTED (0x80070013 - The media is write protected)',
                             });
                           }}
@@ -1877,8 +1891,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                               driveLetter: targetDrive.letter,
                               driveName: targetDrive.name,
                               direction: 'PC_TO_USB',
-                              failedCount: selectedCerts.length,
-                              certNames: selectedCerts.map(c => c.name),
+                              failedCount: effectiveSelectedCerts.length,
+                              certNames: effectiveSelectedCerts.map(c => c.name),
                               technicalDetail: 'DOMException: NotAllowedError: The request is not allowed by the user agent or the platform in the current context.',
                             });
                           }}
@@ -1904,8 +1918,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                               driveLetter: targetDrive.letter,
                               driveName: targetDrive.name,
                               direction: 'PC_TO_USB',
-                              failedCount: selectedCerts.length,
-                              certNames: selectedCerts.map(c => c.name),
+                              failedCount: effectiveSelectedCerts.length,
+                              certNames: effectiveSelectedCerts.map(c => c.name),
                               technicalDetail: 'DiskError: E_DISK_FULL (0x80070070 - There is not enough space on the disk. QuotaExceededError)',
                             });
                           }}
@@ -2009,10 +2023,12 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   <button
                     type="button"
                     onClick={() => handleStartBackup(false)}
-                    disabled={!targetDrive || isProcessing || isCheckingWrite || isAllSelfCopy}
+                    disabled={!targetDrive || isProcessing || isCheckingWrite || isAllSelfCopy || effectiveSelectedCerts.length === 0}
                     className={`inline-flex items-center gap-2 px-6 py-2.5 text-white text-xs sm:text-sm font-bold rounded-lg shadow-md transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:active:scale-100 ${
                       !targetDrive
                         ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-200'
+                        : effectiveSelectedCerts.length === 0
+                        ? 'bg-slate-500 cursor-not-allowed shadow-none'
                         : isAllSelfCopy
                         ? 'bg-slate-600 cursor-not-allowed shadow-none'
                         : isCurrentTargetLocked
@@ -2030,6 +2046,11 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                         <AlertCircle className="w-4 h-4 text-amber-100" />
                         <span>복사 목적지 디스크 선택 필요 (위의 디스크 클릭)</span>
                       </>
+                    ) : effectiveSelectedCerts.length === 0 ? (
+                      <>
+                        <AlertCircle className="w-4 h-4 text-slate-200" />
+                        <span>복사할 인증서를 선택해 주세요 (0건)</span>
+                      </>
                     ) : isAllSelfCopy ? (
                       <>
                         <AlertCircle className="w-4 h-4 text-rose-300" />
@@ -2038,12 +2059,12 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     ) : isCurrentTargetLocked ? (
                       <>
                         <Lock className="w-4 h-4" />
-                        <span>쓰기 금지 해제 후 복사</span>
+                        <span>쓰기 금지 해제 후 복사 ({effectiveSelectedCerts.length}건)</span>
                       </>
                     ) : currentDriveDuplicates > 0 ? (
                       <>
                         <CopyCheck className="w-4 h-4" />
-                        <span>{targetDrive.letter} 복사 시작 (중복 확인)</span>
+                        <span>{targetDrive.letter} 복사 시작 ({effectiveSelectedCerts.length}건 · 중복 확인)</span>
                       </>
                     ) : (
                       <>
@@ -2053,7 +2074,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                           {targetDrive.type === 'removable' || targetDrive.deviceKind === 'fast_usb' || targetDrive.deviceKind === 'external_ssd'
                             ? (targetDrive.deviceKindLabel || 'USB')
                             : '내장 디스크'
-                          }]로 복사 시작
+                          }]로 복사 시작 ({effectiveSelectedCerts.length}건)
                         </span>
                       </>
                     )}

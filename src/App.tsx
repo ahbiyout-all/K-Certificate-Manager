@@ -22,12 +22,12 @@ import {
 } from './types';
 import { loadProtectedRestoredItems, saveProtectedRestoredItems } from './utils/protectedVaultStorage';
 import { Header } from './components/Header';
-import { Sidebar } from './components/Sidebar';
+import { Sidebar, SidebarCategoryFilter, SidebarSourceFilter } from './components/Sidebar';
 import { SimpleTransferHero } from './components/SimpleTransferHero';
-import { QuickTransferConfigCard } from './components/QuickTransferConfigCard';
 import { ConnectedDrivesBar } from './components/ConnectedDrivesBar';
 import { SearchLocationsPanel } from './components/SearchLocationsPanel';
-import { CertificateList } from './components/CertificateList';
+import { CertificateList, filterCertificatesByCriteria } from './components/CertificateList';
+import { CertificateDetailSidebar } from './components/CertificateDetailSidebar';
 import { BackupModal } from './components/BackupModal';
 import { TargetDrivePickerModal } from './components/TargetDrivePickerModal';
 import { CertificateDetailModal } from './components/CertificateDetailModal';
@@ -56,11 +56,9 @@ import {
   getAvailableUsbCertificates,
   startUsbDriveWatcher, 
   subscribeUsbDriveChanges, 
-  simulateUsbMount, 
-  simulateUsbUnmount,
   setActiveDrives 
 } from './utils/usbToPcService';
-import { isPcCertificate, isSameDriveSelfCopy } from './utils/driveFilter';
+import { isPcCertificate, isUsbCertificate, isSameDriveSelfCopy } from './utils/driveFilter';
 import { isNonStandardCertPath } from './utils/certPathUtils';
 import { isCertificateExpired } from './utils/certParser';
 import { getStoredActivityLogs, logActivity, clearAllActivityLogs, formatCurrentTimestamp } from './utils/activityLogger';
@@ -68,13 +66,11 @@ import {
   CheckCircle2, 
   ShieldCheck,
   X,
-  Lock,
   RotateCcw,
   Trash2,
-  ExternalLink,
-  FileText,
-  ChevronDown,
-  SlidersHorizontal
+  PanelRight,
+  FolderSearch,
+  History
 } from 'lucide-react';
 import { APP_VERSION, DEVELOPER_INFO } from './version';
 
@@ -125,7 +121,7 @@ export default function App() {
   });
   const [searchPaths, setSearchPaths] = useState<SearchPath[]>(INITIAL_SEARCH_PATHS);
   const [availableDrives, setAvailableDrives] = useState<DiskDrive[]>(INITIAL_DRIVES);
-  const [selectedIds, setSelectedIds] = useState<string[]>(() => INITIAL_CERTIFICATES.map(c => c.id));
+  const [selectedIds, setSelectedIds] = useState<string[]>(() => certificates.map(c => c.id));
   const [explicitBackupCerts, setExplicitBackupCerts] = useState<CertificateItem[] | null>(null);
   const [selectedDriveId, setSelectedDriveId] = useState<string>('drive-e');
   const [activeNavTab, setActiveNavTab] = useState<'copy' | 'history' | 'paths' | 'security'>('copy');
@@ -221,7 +217,7 @@ export default function App() {
     } catch {
       // Fallback
     }
-    return 'beige';
+    return 'dark';
   });
   const [appViewMode, setAppViewMode] = useState<'simple' | 'advanced'>(() => {
     try {
@@ -232,7 +228,13 @@ export default function App() {
     }
     return 'simple';
   });
-  const [isAdvancedBottomExpanded, setIsAdvancedBottomExpanded] = useState<boolean>(false);
+  const [sidebarCategoryFilter, setSidebarCategoryFilter] = useState<SidebarCategoryFilter>('ALL');
+  const [sidebarSourceFilter, setSidebarSourceFilter] = useState<SidebarSourceFilter>('ALL');
+  const [gridSearchQuery, setGridSearchQuery] = useState('');
+  const [inspectedCert, setInspectedCert] = useState<CertificateItem | null>(null);
+  const [isDetailSidebarVisible, setIsDetailSidebarVisible] = useState<boolean>(false);
+  const [detailSidebarWidth, setDetailSidebarWidth] = useState<number>(390);
+  const [lastUndoSnapshot, setLastUndoSnapshot] = useState<{ trashItems: TrashItem[]; certs: CertificateItem[] } | null>(null);
 
   const handleToggleAppViewMode = (mode: 'simple' | 'advanced') => {
     setAppViewMode(mode);
@@ -286,6 +288,15 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', currentTheme);
   }, [currentTheme]);
+
+  // Keep selectedIds pruned to existing certificates
+  useEffect(() => {
+    const validIdSet = new Set(certificates.map(c => c.id));
+    setSelectedIds(prev => {
+      const pruned = prev.filter(id => validIdSet.has(id));
+      return pruned.length === prev.length ? prev : pruned;
+    });
+  }, [certificates]);
 
   const handleThemeChange = (newTheme: AppTheme) => {
     setCurrentTheme(newTheme);
@@ -480,11 +491,12 @@ export default function App() {
         const trashCertIds = new Set(trashItems.map(t => t.cert.id));
         return INITIAL_CERTIFICATES.filter(cert => {
           if (trashCertIds.has(cert.id)) return false;
-          if (cert.sourceLocation.startsWith('E:') && !isUsbEnabled) return false;
+          const isUsb = isUsbCertificate(cert);
+          if (isUsb && !isUsbEnabled) return false;
           if (cert.category === 'GPKI_GOV' && !enabledTypes.includes('default_gpki')) return false;
           if (cert.category === 'EPKI_EDU' && !enabledTypes.includes('default_epki')) return false;
-          if (cert.category === 'NPKI_BANK' && !enabledTypes.includes('default_npki') && !cert.sourceLocation.startsWith('E:')) return false;
-          if (cert.category === 'NPKI_CORP' && !enabledTypes.includes('default_npki')) return false;
+          if (cert.category === 'NPKI_BANK' && !enabledTypes.includes('default_npki') && !isUsb) return false;
+          if (cert.category === 'NPKI_CORP' && !enabledTypes.includes('default_npki') && !isUsb) return false;
           return true;
         });
       });
@@ -580,9 +592,9 @@ export default function App() {
         } else if (p.type === 'default_epki') {
           count = certificates.filter(c => c.category === 'EPKI_EDU').length;
         } else if (p.type === 'default_npki') {
-          count = certificates.filter(c => (c.category === 'NPKI_BANK' || c.category === 'NPKI_CORP') && !c.sourceLocation.startsWith('E:')).length;
+          count = certificates.filter(c => (c.category === 'NPKI_BANK' || c.category === 'NPKI_CORP') && isPcCertificate(c)).length;
         } else if (p.type === 'removable_usb') {
-          count = certificates.filter(c => c.sourceLocation.startsWith('E:') || c.sourceDrive?.includes('이동식')).length;
+          count = certificates.filter(c => isUsbCertificate(c)).length;
         }
         return { ...p, countFound: count, exists: true };
       });
@@ -766,31 +778,40 @@ export default function App() {
     // Remove from active list and selection
     setCertificates(prev => prev.filter(c => !deletedCertIds.has(c.id)));
     setSelectedIds(prev => prev.filter(id => !deletedCertIds.has(id)));
+    setLastUndoSnapshot({ trashItems: newTrashItems, certs: deletedCerts });
 
     // Provide immediate Undo action in the Toast!
-    const trashIds = newTrashItems.map(t => t.id);
     showToast(
       `${reason} (${count}건이 휴지통으로 이동되었습니다.)`,
-      () => handleUndoDelete(trashIds, deletedCerts),
+      () => handleUndoDelete(newTrashItems, deletedCerts),
       () => setIsTrashModalOpen(true)
     );
+
+    const hasUsbDeleted = deletedCerts.some(c => isUsbCertificate(c));
+    const hasPcDeleted = deletedCerts.some(c => isPcCertificate(c));
+    const deleteSourceLabel = hasUsbDeleted && hasPcDeleted
+      ? '로컬 PC 및 이동식 USB'
+      : hasUsbDeleted
+        ? (deletedCerts[0]?.sourceDrive || '이동식 USB')
+        : '로컬 AppData\\LocalLow';
 
     const newLog = logActivity({
       category: 'DELETE',
       level: 'WARN',
       action: `인증서 ${count}건 휴지통 이동`,
       details: `${reason} - 대상: ${deletedCerts.map(c => c.name).join(', ')}`,
-      source: '로컬 AppData\\LocalLow',
+      source: deleteSourceLabel,
       target: '임시 보관 휴지통',
       count: count
     });
     setActivityLogs(prev => [newLog, ...prev]);
   };
 
-  const handleUndoDelete = (trashIdsToUndo: string[], restoredCerts: CertificateItem[]) => {
+  const handleUndoDelete = (undoneTrashItems: TrashItem[], restoredCerts: CertificateItem[]) => {
+    const trashIdsToUndo = new Set(undoneTrashItems.map(t => t.id));
+    setLastUndoSnapshot(null);
     // Remove from trash
-    const undoneTrashItems = trashItems.filter(t => trashIdsToUndo.includes(t.id));
-    setTrashItems(prev => prev.filter(t => !trashIdsToUndo.includes(t.id)));
+    setTrashItems(prev => prev.filter(t => !trashIdsToUndo.has(t.id)));
 
     // Record in restored items vault
     const nowStr = new Date().toLocaleString('ko-KR', {
@@ -811,7 +832,7 @@ export default function App() {
       zipContainerName: `${item.cert.id}_encrypted_vault.zip.dat`,
       encryptedZipPath: `%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault\\Archives\\${item.cert.id}_encrypted_vault.zip.dat`,
       vaultArchiveLocation: `%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault\\Archives\\${item.cert.id}_encrypted_vault.zip.dat`,
-      compressedSizeBytes: item.cert.files?.fileSize ? Math.round(item.cert.files.fileSize * 0.72) : 2845,
+      compressedSizeBytes: item.cert.files ? Math.round(((item.cert.files.certSize || 2048) + (item.cert.files.keySize || 1024)) * 0.72) : 2845,
       integrityBeforeAfter: {
         beforeStatus: '🔒 격리 보관소 파티션 SHA-256 무결성 검증 통과 (해시 손상 없음)',
         afterStatus: '⚡ 원본 경로 복원 완료 - signCert.der/signPri.key 개인키 Pair 검증 정상',
@@ -1019,11 +1040,16 @@ export default function App() {
 
   const handleClearRestoredTrash = () => {
     setRestoredTrashItems([]);
+    saveProtectedRestoredItems([]);
     showToast('🧹 복원 항목 이력 보관소를 완전히 비웠습니다.');
   };
 
   const handleDeleteRestoredTrashItem = (id: string) => {
-    setRestoredTrashItems(prev => prev.filter(item => item.id !== id));
+    setRestoredTrashItems(prev => {
+      const updated = prev.filter(item => item.id !== id);
+      saveProtectedRestoredItems(updated);
+      return updated;
+    });
     showToast('🗑️ 지정한 복원 이력 항목이 삭제되었습니다.');
   };
 
@@ -1241,7 +1267,6 @@ export default function App() {
 
     setCertificates(prev => {
       const nextList = [...prev];
-      const newlyAddedIds: string[] = [];
 
       for (const importedCert of importedCerts) {
         // Strictly match by exact certificate ID or exact destination PC sourceLocation to prevent name-based co-deletion
@@ -1251,17 +1276,16 @@ export default function App() {
 
         if (existingIdx >= 0) {
           nextList[existingIdx] = importedCert;
-          newlyAddedIds.push(importedCert.id);
         } else {
           nextList.unshift(importedCert);
-          newlyAddedIds.push(importedCert.id);
         }
       }
 
-      // Automatically select newly imported certificates
-      setSelectedIds(prevSelected => [...new Set([...prevSelected, ...newlyAddedIds])]);
       return nextList;
     });
+
+    // Automatically select newly imported certificates outside pure state updater
+    setSelectedIds(prevSelected => [...new Set([...prevSelected, ...newlyAddedIds])]);
 
     // Also remove from trash if imported (strictly by exact certificate ID)
     setTrashItems(prev => {
@@ -1269,13 +1293,17 @@ export default function App() {
       return prev.filter(t => !importedIds.has(t.cert.id));
     });
 
+    const firstImported = importedCerts[0];
+    const resolvedTargetPath = firstImported?.sourceLocation || 'C:\\Users\\Admin\\AppData\\LocalLow\\NPKI';
+    const resolvedTargetDrive = firstImported?.sourceDrive || '내 컴퓨터 로컬 디스크 (C:)';
+
     const newLog = logActivity({
       category: 'IMPORT',
       level: 'SUCCESS',
       action: 'USB ➔ PC 인증서 가져오기 완료',
-      details: summaryMessage || `외부 매체에서 로컬 PC AppData\\LocalLow 보관함으로 ${importedCerts.length}건 복사 완료 (${importedCerts.map(c => c.name).join(', ')})`,
-      source: importedCerts[0]?.sourceLocation || '이동식 USB 매체',
-      target: 'C:\\Users\\Admin\\AppData\\LocalLow',
+      details: summaryMessage || `외부 매체에서 ${resolvedTargetDrive} 보관함으로 ${importedCerts.length}건 복사 완료 (${importedCerts.map(c => c.name).join(', ')})`,
+      source: '이동식 USB 매체',
+      target: resolvedTargetPath,
       count: importedCerts.length
     });
     setActivityLogs(prev => [newLog, ...prev]);
@@ -1290,13 +1318,13 @@ export default function App() {
     // 전용 작업 완료 안내 팝업창(모달) 오픈
     setOperationCompleteData({
       title: '인증서 컴퓨터(PC) 가져오기 완료!',
-      subtitle: `USB 메모리의 인증서 ${importedCerts.length}개가 내 컴퓨터의 공인 보관함(AppData\\LocalLow)으로 안전하게 복사되었습니다.`,
+      subtitle: `USB 메모리의 인증서 ${importedCerts.length}개가 ${resolvedTargetDrive}의 공인 보관함으로 안전하게 복사되었습니다.`,
       operationType: 'USB_TO_PC',
       count: importedCerts.length,
       certNames: importedCerts.map(c => c.name),
-      targetDiskName: '내 컴퓨터 로컬 디스크 (C:)',
-      targetPath: 'C:\\Users\\...\\AppData\\LocalLow\\NPKI',
-      sourcePath: importedCerts[0]?.sourceLocation || '이동식 USB 매체 (NPKI)',
+      targetDiskName: resolvedTargetDrive,
+      targetPath: resolvedTargetPath,
+      sourcePath: '이동식 USB 매체 (NPKI/GPKI)',
       timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       checksum: 'SHA-256 무결성 검증 통과',
       certificates: importedCerts.map(c => ({
@@ -1322,10 +1350,8 @@ export default function App() {
     if (tab === 'security') {
       setIsSecurityModalOpen(true);
     } else if (tab === 'history') {
-      setIsAdvancedBottomExpanded(true);
       setTimeout(() => historyPanelRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
     } else if (tab === 'paths') {
-      setIsAdvancedBottomExpanded(true);
       setTimeout(() => pathsPanelRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
     } else if (tab === 'copy') {
       copyPanelRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1336,6 +1362,38 @@ export default function App() {
   const expiredCount = certificates.filter(isCertificateExpired).length;
   const removableDrivesCount = availableDrives.filter(d => d.type === 'removable').length;
 
+  const sidebarCounts = useMemo(() => ({
+    total: certificates.length,
+    gpki: certificates.filter(c => c.category === 'GPKI_GOV').length,
+    epki: certificates.filter(c => c.category === 'EPKI_EDU').length,
+    npki: certificates.filter(c => c.category === 'NPKI_BANK' || c.category === 'NPKI_CORP').length,
+    expired: certificates.filter(isCertificateExpired).length,
+    nonStandard: nonStandardCount,
+    pc: certificates.filter(c => !isUsbCertificate(c)).length,
+    usb: certificates.filter(c => isUsbCertificate(c)).length,
+  }), [certificates, nonStandardCount]);
+
+  const displayedCertCount = useMemo(
+    () => filterCertificatesByCriteria(certificates, sidebarCategoryFilter, sidebarSourceFilter, gridSearchQuery).length,
+    [certificates, sidebarCategoryFilter, sidebarSourceFilter, gridSearchQuery]
+  );
+
+  const handleStartDetailSplitterDrag = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = detailSidebarWidth;
+    const onMove = (ev: MouseEvent) => {
+      const delta = startX - ev.clientX;
+      setDetailSidebarWidth(Math.max(320, Math.min(540, startWidth + delta)));
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
   const selectedCertificates = useMemo(() => {
     if (explicitBackupCerts !== null) {
       return explicitBackupCerts;
@@ -1343,37 +1401,50 @@ export default function App() {
     return certificates.filter(c => selectedIds.includes(c.id));
   }, [certificates, selectedIds, explicitBackupCerts]);
 
+  const resolvedInspectedCert = useMemo(() => {
+    if (inspectedCert && certificates.some(c => c.id === inspectedCert.id)) {
+      return inspectedCert;
+    }
+    return certificates[0] || null;
+  }, [inspectedCert, certificates]);
+
   return (
-    <div 
-      className="flex min-h-screen font-sans antialiased transition-colors duration-150"
+    <div
+      className="wpf-shell wpf-native flex flex-col min-h-screen lg:h-screen lg:overflow-hidden font-sans antialiased transition-colors duration-150"
       data-theme={currentTheme}
       id="app-root"
     >
-      {/* Interactive Toast notification with Undo & Trash shortcuts + Integrity Check Badge */}
+      {/* Floating Interactive Toast Notification (Matches WPF Floating Toast) */}
       {toastData && (
-        <div className="fixed top-5 right-5 z-50 bg-slate-900/95 text-white px-4 py-3 rounded-xl shadow-2xl text-xs sm:text-sm font-medium flex items-center gap-3 border border-slate-700 animate-fadeIn backdrop-blur-xs max-w-xl">
+        <div
+          className="wpf-native fixed top-[74px] right-6 z-50 px-4 py-3 rounded-[10px] shadow-2xl text-xs sm:text-[13px] font-medium flex items-center gap-3 animate-fadeIn max-w-xl"
+          style={{
+            backgroundColor: '#0F172A',
+            border: '1.5px solid #38BDF8',
+            color: '#F8FAFC',
+          }}
+        >
           {toastData.type === 'delete' ? (
-            <div className="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/30">
+            <div className="w-7 h-7 rounded-[6px] bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/30">
               <Trash2 className="w-4 h-4" />
             </div>
           ) : toastData.hasIntegrityBadge ? (
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+            <div className="w-7 h-7 rounded-[6px] bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
               <ShieldCheck className="w-4 h-4" />
             </div>
           ) : (
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+            <div className="w-7 h-7 rounded-[6px] bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           )}
 
           <div className="flex-1 min-w-0 pr-1">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-slate-100 text-xs sm:text-[13px] leading-snug">{toastData.message}</p>
+              <p className="text-slate-100 leading-snug font-semibold">{toastData.message}</p>
               {toastData.hasIntegrityBadge && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold shadow-2xs">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>무결성 확인 완료</span>
-                  <span className="text-[10px] text-emerald-400/80 font-mono font-normal">({toastData.checksumText || 'SHA-256'})</span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[#065F46] text-[#A7F3D0] border border-[#34D399] text-[11px] font-bold">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#34D399] shrink-0" />
+                  <span>무결성 확인 완료 ({toastData.checksumText || 'SHA-256'})</span>
                 </span>
               )}
             </div>
@@ -1390,8 +1461,7 @@ export default function App() {
                   toastData.onUndo?.();
                   setToastData(null);
                 }}
-                className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
-                title="마지막 삭제 작업 취소"
+                className="px-2.5 py-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-[6px] text-xs font-bold flex items-center gap-1 cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>실행 취소</span>
@@ -1405,7 +1475,7 @@ export default function App() {
                   toastData.onOpenTrash?.();
                   setToastData(null);
                 }}
-                className="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-[6px] text-xs font-medium cursor-pointer"
               >
                 휴지통 보기
               </button>
@@ -1414,7 +1484,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setToastData(null)}
-              className="p-1 text-slate-400 hover:text-white rounded cursor-pointer ml-0.5"
+              className="p-1 text-slate-400 hover:text-white rounded cursor-pointer"
               aria-label="닫기"
             >
               <X className="w-4 h-4" />
@@ -1423,172 +1493,105 @@ export default function App() {
         </div>
       )}
 
-      {/* Desktop Sidebar */}
-      <div className="hidden md:flex shrink-0">
-        <Sidebar
-          activeTab={activeNavTab}
-          setActiveTab={handleNavTabSelect}
-          totalCerts={certificates.length}
-          removableDrives={removableDrivesCount}
-          theme={currentTheme}
-          onThemeChange={handleThemeChange}
-          onOpenSecurityGuide={() => setIsSecurityModalOpen(true)}
-          onOpenBackupModal={() => handleOpenGeneralBackupModal()}
-          onOpenUsbToPc={() => setIsUsbToPcModalOpen(true)}
-          onOpenDesktopApp={() => setIsDesktopAppModalOpen(true)}
-          onOpenUsbDiagnostic={() => setIsUsbDiagnosticModalOpen(true)}
-          onOpenCleanup={handleOpenCleanupModal}
-          onOpenTrash={() => setIsTrashModalOpen(true)}
-          onOpenRenewalGuidance={handleOpenRenewalGuidance}
-          onOpenActivityLogs={() => setIsActivityLogModalOpen(true)}
-          onOpenLicense={() => setIsLicenseModalOpen(true)}
-          onOpenCoreSpec={() => setIsCoreSpecModalOpen(true)}
-          onCheckUpdates={handleManualCheckUpdates}
-          isCheckingUpdates={isCheckingUpdates}
-          hasUpdateBadge={!!updateInfo?.hasUpdate}
-          logCount={activityLogs.length}
-          trashCount={trashItems.length}
-          expiredCount={expiredCount}
-          nonStandardCount={nonStandardCount}
-          selectedCount={selectedIds.length}
-          appViewMode={appViewMode}
-          onToggleAppViewMode={handleToggleAppViewMode}
-          onOpenStartupWorkflow={() => setIsStartupWorkflowOpen(true)}
-          onOpenSettings={() => setIsSettingsModalOpen(true)}
-        />
-      </div>
+      {/* ROW 0: WPF Full-Width 64px Header Bar */}
+      <Header
+        totalCount={certificates.length}
+        validCount={validCount}
+        removableCount={removableDrivesCount}
+        isScanning={isScanning}
+        theme={currentTheme}
+        onThemeChange={handleThemeChange}
+        onRefresh={() => handleRefresh()}
+        onOpenSecurityGuide={() => setIsSecurityModalOpen(true)}
+        onOpenUsbToPc={() => setIsUsbToPcModalOpen(true)}
+        onOpenDesktopApp={() => setIsDesktopAppModalOpen(true)}
+        onOpenUsbDiagnostic={() => setIsUsbDiagnosticModalOpen(true)}
+        onOpenTrash={() => setIsTrashModalOpen(true)}
+        onOpenActivityLogs={() => setIsActivityLogModalOpen(true)}
+        onOpenLicense={() => setIsLicenseModalOpen(true)}
+        onOpenCoreSpec={() => setIsCoreSpecModalOpen(true)}
+        onOpenRenewalGuidance={() => handleOpenRenewalGuidance()}
+        onCheckUpdates={handleManualCheckUpdates}
+        onOpenPaths={() => setActiveNavTab(prev => (prev === 'paths' ? 'copy' : 'paths'))}
+        onOpenHistory={() => setActiveNavTab(prev => (prev === 'history' ? 'copy' : 'history'))}
+        activeNavTab={activeNavTab}
+        isCheckingUpdates={isCheckingUpdates}
+        hasUpdateBadge={!!updateInfo?.hasUpdate}
+        logCount={activityLogs.length}
+        trashCount={trashItems.length}
+        lastScanTime={lastScanTime}
+        onToggleMobileMenu={() => setIsMobileSidebarOpen(true)}
+        appViewMode={appViewMode}
+        onToggleAppViewMode={handleToggleAppViewMode}
+        onOpenStartupWorkflow={() => setIsStartupWorkflowOpen(true)}
+        onOpenSettings={() => setIsSettingsModalOpen(true)}
+      />
 
-      {/* Mobile Drawer Overlay */}
-      {isMobileSidebarOpen && (
-        <div className="fixed inset-0 z-40 md:hidden flex">
-          <div 
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" 
-            onClick={() => setIsMobileSidebarOpen(false)} 
+      {/* ROW 1: 2-Column Main Body (Left 260px Sidebar + Main Workspace) */}
+      <div className="flex-1 flex min-h-0 overflow-hidden relative">
+        {/* Desktop 260px Filter Sidebar */}
+        <div className="hidden lg:flex shrink-0 h-full">
+          <Sidebar
+            categoryFilter={sidebarCategoryFilter}
+            sourceFilter={sidebarSourceFilter}
+            onSelectCategoryFilter={(cat) => {
+              setSidebarCategoryFilter(cat);
+              setActiveNavTab('copy');
+            }}
+            onSelectSourceFilter={(src) => {
+              setSidebarSourceFilter(src);
+              setActiveNavTab('copy');
+            }}
+            counts={sidebarCounts}
+            availableDrives={availableDrives}
+            selectedDriveId={selectedDriveId}
+            onSelectDriveId={setSelectedDriveId}
+            onOpenTargetDrivePicker={() => setIsTargetDrivePickerOpen(true)}
+            onOpenRenewalGuidance={() => handleOpenRenewalGuidance()}
           />
-          <div className="relative flex-1 flex flow-col max-w-xs w-full bg-[#1e293b] z-50">
-            <button
-              type="button"
-              onClick={() => setIsMobileSidebarOpen(false)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-lg"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <Sidebar
-              activeTab={activeNavTab}
-              setActiveTab={handleNavTabSelect}
-              totalCerts={certificates.length}
-              removableDrives={removableDrivesCount}
-              theme={currentTheme}
-              onThemeChange={handleThemeChange}
-              onOpenSecurityGuide={() => {
-                setIsMobileSidebarOpen(false);
-                setIsSecurityModalOpen(true);
-              }}
-              onOpenBackupModal={() => {
-                setIsMobileSidebarOpen(false);
-                handleOpenGeneralBackupModal();
-              }}
-              onOpenUsbToPc={() => {
-                setIsMobileSidebarOpen(false);
-                setIsUsbToPcModalOpen(true);
-              }}
-              onOpenDesktopApp={() => {
-                setIsMobileSidebarOpen(false);
-                setIsDesktopAppModalOpen(true);
-              }}
-              onOpenUsbDiagnostic={() => {
-                setIsMobileSidebarOpen(false);
-                setIsUsbDiagnosticModalOpen(true);
-              }}
-              onOpenCleanup={(mode) => {
-                setIsMobileSidebarOpen(false);
-                handleOpenCleanupModal(mode);
-              }}
-              onOpenTrash={() => {
-                setIsMobileSidebarOpen(false);
-                setIsTrashModalOpen(true);
-              }}
-              onOpenRenewalGuidance={() => {
-                setIsMobileSidebarOpen(false);
-                handleOpenRenewalGuidance();
-              }}
-              onOpenActivityLogs={() => {
-                setIsMobileSidebarOpen(false);
-                setIsActivityLogModalOpen(true);
-              }}
-              onOpenLicense={() => {
-                setIsMobileSidebarOpen(false);
-                setIsLicenseModalOpen(true);
-              }}
-              onOpenCoreSpec={() => {
-                setIsMobileSidebarOpen(false);
-                setIsCoreSpecModalOpen(true);
-              }}
-              onCheckUpdates={() => {
-                setIsMobileSidebarOpen(false);
-                handleManualCheckUpdates();
-              }}
-              isCheckingUpdates={isCheckingUpdates}
-              hasUpdateBadge={!!updateInfo?.hasUpdate}
-              logCount={activityLogs.length}
-              trashCount={trashItems.length}
-              expiredCount={expiredCount}
-              nonStandardCount={nonStandardCount}
-              selectedCount={selectedIds.length}
-              appViewMode={appViewMode}
-              onToggleAppViewMode={(mode) => {
-                handleToggleAppViewMode(mode);
-                setIsMobileSidebarOpen(false);
-              }}
-              onOpenStartupWorkflow={() => {
-                setIsMobileSidebarOpen(false);
-                setIsStartupWorkflowOpen(true);
-              }}
-              onOpenSettings={() => {
-                setIsMobileSidebarOpen(false);
-                setIsSettingsModalOpen(true);
-              }}
-            />
-          </div>
         </div>
-      )}
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header */}
-        <Header
-          totalCount={certificates.length}
-          validCount={validCount}
-          removableCount={removableDrivesCount}
-          isScanning={isScanning}
-          theme={currentTheme}
-          onThemeChange={handleThemeChange}
-          onRefresh={handleRefresh}
-          onOpenSecurityGuide={() => setIsSecurityModalOpen(true)}
-          onOpenUsbToPc={() => setIsUsbToPcModalOpen(true)}
-          onOpenDesktopApp={() => setIsDesktopAppModalOpen(true)}
-          onOpenUsbDiagnostic={() => setIsUsbDiagnosticModalOpen(true)}
-          onOpenTrash={() => setIsTrashModalOpen(true)}
-          onOpenActivityLogs={() => setIsActivityLogModalOpen(true)}
-          onOpenLicense={() => setIsLicenseModalOpen(true)}
-          onOpenCoreSpec={() => setIsCoreSpecModalOpen(true)}
-          onOpenRenewalGuidance={() => handleOpenRenewalGuidance()}
-          onCheckUpdates={handleManualCheckUpdates}
-          isCheckingUpdates={isCheckingUpdates}
-          hasUpdateBadge={!!updateInfo?.hasUpdate}
-          logCount={activityLogs.length}
-          trashCount={trashItems.length}
-          lastScanTime={lastScanTime}
-          onToggleMobileMenu={() => setIsMobileSidebarOpen(true)}
-          appViewMode={appViewMode}
-          onToggleAppViewMode={handleToggleAppViewMode}
-          onOpenStartupWorkflow={() => setIsStartupWorkflowOpen(true)}
-          onOpenSettings={() => setIsSettingsModalOpen(true)}
-        />
+        {/* Mobile Drawer Overlay */}
+        {isMobileSidebarOpen && (
+          <div className="fixed inset-0 z-40 lg:hidden flex">
+            <div
+              className="fixed inset-0 bg-black/60"
+              onClick={() => setIsMobileSidebarOpen(false)}
+            />
+            <div className="relative flex h-full z-50">
+              <Sidebar
+                categoryFilter={sidebarCategoryFilter}
+                sourceFilter={sidebarSourceFilter}
+                onSelectCategoryFilter={(cat) => {
+                  setSidebarCategoryFilter(cat);
+                  setActiveNavTab('copy');
+                }}
+                onSelectSourceFilter={(src) => {
+                  setSidebarSourceFilter(src);
+                  setActiveNavTab('copy');
+                }}
+                counts={sidebarCounts}
+                availableDrives={availableDrives}
+                selectedDriveId={selectedDriveId}
+                onSelectDriveId={setSelectedDriveId}
+                onOpenTargetDrivePicker={() => {
+                  setIsMobileSidebarOpen(false);
+                  setIsTargetDrivePickerOpen(true);
+                }}
+                onOpenRenewalGuidance={() => handleOpenRenewalGuidance()}
+                onCloseMobile={() => setIsMobileSidebarOpen(false)}
+              />
+            </div>
+          </div>
+        )}
 
-        {/* Content Body */}
-        <main className="p-4 sm:p-6 lg:p-8 flex-1 space-y-6 max-w-7xl w-full mx-auto" ref={copyPanelRef}>
-          {/* Smart USB Detected Banner when USB certificates are present */}
+        {/* Right Main Content Workspace (Matches WPF Grid.Column="1" Margin="20") */}
+        <main
+          ref={copyPanelRef}
+          className="flex-1 flex flex-col min-w-0 min-h-0 p-4 sm:p-5 gap-3 overflow-y-auto"
+          style={{ backgroundColor: 'var(--wpf-bg-dark)' }}
+        >
+          {/* Smart USB Detected Banner */}
           {!isDismissedUsbBanner && allConnectedUsbCerts.length > 0 && (
             <UsbDetectedBanner
               detectedCerts={allConnectedUsbCerts}
@@ -1601,256 +1604,320 @@ export default function App() {
             />
           )}
 
-          {/* Simple Transfer Hero Bar: One-Click Reassuring Action & Mode Switcher */}
-          <SimpleTransferHero
-            certificates={certificates}
-            selectedIds={selectedIds}
-            availableDrives={availableDrives}
-            selectedDriveId={selectedDriveId}
-            appViewMode={appViewMode}
-            onToggleAppViewMode={handleToggleAppViewMode}
-            onOpenTargetDrivePicker={() => setIsTargetDrivePickerOpen(true)}
-            onStartBackup={() => handleOpenGeneralBackupModal(selectedDriveId)}
-            onOpenUsbToPcModal={() => setIsUsbToPcModalOpen(true)}
-            onSelectAll={handleSelectAll}
-          />
+          {/* Main Grid Row 0: Section Header & Quick Tools (Matches WPF lines 381-420) */}
+          <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h2
+                className="text-lg font-bold tracking-tight"
+                style={{ color: 'var(--wpf-text-primary)' }}
+              >
+                인증서 보관함 목록
+              </h2>
+              <span
+                className="px-2.5 py-1 rounded-full text-xs font-semibold tabular-nums"
+                style={{
+                  backgroundColor: 'var(--wpf-bg-card)',
+                  border: '1px solid var(--wpf-border)',
+                  color: 'var(--wpf-accent-text)',
+                }}
+              >
+                표시 중: {displayedCertCount}개
+              </span>
+              <span
+                className="text-[11px] hidden sm:inline"
+                style={{ color: 'var(--wpf-text-secondary)' }}
+              >
+                (항목 더블클릭 시 상세 규격 및 지문 조회)
+              </span>
+            </div>
 
-          {/* Advanced Mode Only: Detailed Transfer Config & Physical Drives Status Bar */}
-          {appViewMode === 'advanced' && (
-            <>
-              {/* Quick Transfer Config Grid (1. Source, 2. Target) */}
-              <QuickTransferConfigCard
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              {(activeNavTab === 'paths' || activeNavTab === 'history') && (
+                <button
+                  type="button"
+                  onClick={() => setActiveNavTab('copy')}
+                  className="wpf-btn-primary wpf-native px-3 py-1.5 text-xs cursor-pointer whitespace-nowrap"
+                >
+                  인증서 목록으로 돌아가기
+                </button>
+              )}
+
+              {lastUndoSnapshot && (
+                <button
+                  type="button"
+                  onClick={() => handleUndoDelete(lastUndoSnapshot.trashItems, lastUndoSnapshot.certs)}
+                  className="px-3 py-1.5 bg-[#D97706] hover:bg-[#B45309] text-white rounded-[6px] text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>삭제 취소(되돌리기)</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIsDetailSidebarVisible(prev => !prev)}
+                className={`wpf-native px-3 py-1.5 text-xs flex items-center gap-1.5 rounded-[6px] cursor-pointer whitespace-nowrap ${
+                  isDetailSidebarVisible ? 'wpf-btn-primary' : 'wpf-btn-secondary'
+                }`}
+                title="인증서의 모든 규격, 정책 OID, 일련번호, 지문을 확인하는 상세 사이드바를 열거나 닫습니다."
+              >
+                <PanelRight className="w-3.5 h-3.5" />
+                <span>상세 사이드바</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleOpenCleanupModal('EXPIRED')}
+                className="wpf-btn-secondary wpf-native px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              >
+                <Trash2 className="w-3.5 h-3.5" style={{ color: 'var(--wpf-badge-expiring-text)' }} />
+                <span>만료 인증서 정리</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Optional Advanced Sub-Views: 탐색 경로 / 백업 이력 */}
+          {activeNavTab === 'paths' && (
+            <div ref={pathsPanelRef} className="shrink-0">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: 'var(--wpf-accent-text)' }}>
+                  <FolderSearch className="w-4 h-4" />
+                  <span>탐색 경로 관리</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveNavTab('copy')}
+                  className="wpf-btn-secondary wpf-native px-2 py-1 text-[11px] cursor-pointer"
+                >
+                  닫기
+                </button>
+              </div>
+              <SearchLocationsPanel
                 searchPaths={searchPaths}
-                availableDrives={availableDrives}
-                selectedDriveId={selectedDriveId}
-                onSelectDriveId={setSelectedDriveId}
-                onTogglePathsPanel={() => {
-                  setIsAdvancedBottomExpanded(true);
-                  setTimeout(() => pathsPanelRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
-                }}
-                onOpenCustomDirectory={() => {
-                  setIsAdvancedBottomExpanded(true);
-                  setTimeout(() => pathsPanelRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
-                }}
-                onOpenUsbToPcModal={(driveLetter) => {
-                  if (driveLetter) {
-                    setTargetUsbLetterForModal(driveLetter);
-                  }
-                  setIsUsbToPcModalOpen(true);
-                }}
-                onSimulateUsbMount={() => {
-                  const newDrive = simulateUsbMount();
-                  setTargetUsbLetterForModal(newDrive.letter);
-                }}
+                onTogglePath={handleTogglePath}
+                onAddCustomPath={handleAddCustomPath}
+                onCustomScannedCerts={handleCustomScannedCerts}
+                isScanning={isScanning}
+                onNotify={(msg) => showToast(msg)}
               />
+            </div>
+          )}
 
-              {/* Connected Drives Status Bar (NVMe / SATA / USB distinction with Basic/Advanced mode toggle) */}
-              <ConnectedDrivesBar
+          {activeNavTab === 'history' && (
+            <div ref={historyPanelRef} className="shrink-0">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: 'var(--wpf-accent-text)' }}>
+                  <History className="w-4 h-4" />
+                  <span>백업 및 복사 이력</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveNavTab('copy')}
+                  className="wpf-btn-secondary wpf-native px-2 py-1 text-[11px] cursor-pointer"
+                >
+                  닫기
+                </button>
+              </div>
+              <BackupHistoryPanel
+                history={backupHistory}
+                onClearHistory={() => setBackupHistory([])}
+              />
+            </div>
+          )}
+
+          {/* Main Grid Row 1: Simple Mode Quick Banner OR Advanced Mode Connected Drives Bar */}
+          {appViewMode === 'simple' ? (
+            <SimpleTransferHero
+              certificates={certificates}
+              selectedIds={selectedIds}
+              availableDrives={availableDrives}
+              selectedDriveId={selectedDriveId}
+              appViewMode={appViewMode}
+              onToggleAppViewMode={handleToggleAppViewMode}
+              onOpenTargetDrivePicker={() => setIsTargetDrivePickerOpen(true)}
+              onStartBackup={() => handleOpenGeneralBackupModal(selectedDriveId)}
+              onOpenUsbToPcModal={() => setIsUsbToPcModalOpen(true)}
+              onSelectAll={handleSelectAll}
+            />
+          ) : (
+            <ConnectedDrivesBar
+              availableDrives={availableDrives}
+              certificates={certificates}
+              selectedDriveId={selectedDriveId}
+              onSelectDriveId={setSelectedDriveId}
+              onBackupToDrive={(driveId) => {
+                let targets = certificates.filter(c => selectedIds.includes(c.id));
+                if (targets.length === 0) {
+                  targets = certificates;
+                  setSelectedIds(certificates.map(c => c.id));
+                }
+                setExplicitBackupCerts(targets);
+                handleOpenGeneralBackupModal(driveId, targets);
+              }}
+              onOpenUsbToPc={(driveLetter) => {
+                if (driveLetter) setTargetUsbLetterForModal(driveLetter);
+                setIsUsbToPcModalOpen(true);
+              }}
+              onOpenUsbDiagnostic={() => setIsUsbDiagnosticModalOpen(true)}
+            />
+          )}
+
+          {/* Main Grid Row 2: Split Workspace (DataGrid + Collapsible Resizable Detail Sidebar) */}
+          <div className="flex-1 min-h-0 flex flex-col xl:flex-row gap-3 xl:gap-0">
+            <div className="flex-1 min-w-0 flex flex-col min-h-0">
+              <CertificateList
+                certificates={certificates}
+                selectedIds={selectedIds}
+                recentlyCopiedIds={recentlyCopiedIds}
+                inspectedCertId={resolvedInspectedCert?.id || null}
                 availableDrives={availableDrives}
-                selectedDriveId={selectedDriveId}
-                onSelectDriveId={setSelectedDriveId}
+                categoryFilter={sidebarCategoryFilter}
+                sourceFilter={sidebarSourceFilter}
+                searchQuery={gridSearchQuery}
+                onSearchQueryChange={setGridSearchQuery}
+                onResetFilters={() => {
+                  setSidebarCategoryFilter('ALL');
+                  setSidebarSourceFilter('ALL');
+                  setGridSearchQuery('');
+                }}
+                onInspectCert={(cert) => setInspectedCert(cert)}
+                onToggleSelect={handleToggleSelect}
+                onSelectAll={handleSelectAll}
+                onSelectFilteredIds={(ids) => setSelectedIds(ids)}
+                onClearSelection={handleClearSelection}
+                onOpenBackupModal={() => {
+                  let targets = certificates.filter(c => selectedIds.includes(c.id));
+                  if (targets.length === 0) {
+                    targets = certificates;
+                    setSelectedIds(certificates.map(c => c.id));
+                  }
+                  setExplicitBackupCerts(targets);
+                  handleOpenGeneralBackupModal(undefined, targets);
+                }}
+                onBackupAll={() => {
+                  setSelectedIds(certificates.map(c => c.id));
+                  setExplicitBackupCerts(certificates);
+                  handleOpenGeneralBackupModal(undefined, certificates);
+                }}
+                onOpenDetailModal={(cert) => {
+                  setInspectedCert(cert);
+                  setSelectedCertForDetail(cert);
+                }}
+                onQuickBackupSingle={handleQuickBackupSingle}
+                onOpenCleanupModal={handleOpenCleanupModal}
+                onRequestDeleteSingle={handleRequestDeleteSingle}
+                onUndoDelete={
+                  lastUndoSnapshot
+                    ? () => handleUndoDelete(lastUndoSnapshot.trashItems, lastUndoSnapshot.certs)
+                    : undefined
+                }
+                canUndo={!!lastUndoSnapshot}
                 onOpenUsbToPc={(driveLetter) => {
                   if (driveLetter) setTargetUsbLetterForModal(driveLetter);
                   setIsUsbToPcModalOpen(true);
                 }}
+                onNotifyCopy={(msg) => showToast(msg)}
               />
-            </>
-          )}
+            </div>
 
-          {/* Certificate Table & List (Immediately visible to the user) */}
-          <CertificateList
-            certificates={certificates}
-            selectedIds={selectedIds}
-            recentlyCopiedIds={recentlyCopiedIds}
-            availableDrives={availableDrives}
-            onToggleSelect={handleToggleSelect}
-            onSelectAll={handleSelectAll}
-            onSelectFilteredIds={(ids) => setSelectedIds(ids)}
-            onClearSelection={handleClearSelection}
-            onSelectCategory={handleSelectCategory}
-            onOpenBackupModal={() => {
-              let targets = certificates.filter(c => selectedIds.includes(c.id));
-              if (targets.length === 0) {
-                targets = certificates;
-                setSelectedIds(certificates.map(c => c.id));
-              }
-              setExplicitBackupCerts(targets);
-              handleOpenGeneralBackupModal(undefined, targets);
-            }}
-            onSelectTargetDriveAndBackup={(driveId) => {
-              let targets = certificates.filter(c => selectedIds.includes(c.id));
-              if (targets.length === 0) {
-                targets = certificates;
-                setSelectedIds(certificates.map(c => c.id));
-              }
-              setExplicitBackupCerts(targets);
-              handleOpenGeneralBackupModal(driveId, targets);
-            }}
-            onOpenDetailModal={(cert) => setSelectedCertForDetail(cert)}
-            onQuickBackupSingle={handleQuickBackupSingle}
-            onOpenCleanupModal={handleOpenCleanupModal}
-            onRequestDeleteSingle={handleRequestDeleteSingle}
-            onDeleteCustomCert={handleDeleteCustomCert}
-            onOpenTrash={() => setIsTrashModalOpen(true)}
-            trashCount={trashItems.length}
-            onOpenUsbToPc={(driveLetter) => {
-              if (driveLetter) {
-                setTargetUsbLetterForModal(driveLetter);
-              }
-              setIsUsbToPcModalOpen(true);
-            }}
-            onOpenDesktopApp={() => setIsDesktopAppModalOpen(true)}
-            onOpenUsbDiagnostic={() => setIsUsbDiagnosticModalOpen(true)}
-            onOpenActivityLogs={() => setIsActivityLogModalOpen(true)}
-            logCount={activityLogs.length}
-            onRefresh={handleRefresh}
-            isScanning={isScanning}
-            onOpenRenewalGuidance={handleOpenRenewalGuidance}
-          />
-
-          {/* Collapsible Advanced Settings (Paths & History) */}
-          <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setIsAdvancedBottomExpanded(!isAdvancedBottomExpanded)}
-              className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-slate-50 transition-colors cursor-pointer bg-slate-50/50 border-b border-slate-100"
-            >
-              <div className="flex items-center gap-2.5">
-                <SlidersHorizontal className="w-4 h-4 text-slate-600" />
-                <div>
-                  <span className="text-xs sm:text-sm font-bold text-slate-800">
-                    고급 관리 및 추가 설정 (인증서 저장 위치 관리 · 백업 기록 열람)
-                  </span>
-                  <span className="text-[11px] text-slate-500 ml-2 hidden sm:inline">
-                    {isAdvancedBottomExpanded ? '클릭하여 접기' : '필요할 때만 펼쳐서 세부 설정을 확인하세요'}
-                  </span>
-                </div>
-              </div>
-              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isAdvancedBottomExpanded ? 'rotate-180' : ''}`} />
-            </button>
-
-            {isAdvancedBottomExpanded && (
-              <div className="p-4 sm:p-6 space-y-6 bg-slate-50/30">
-                {/* Search Locations Detailed Panel (Default standard paths & user direct picker) */}
-                <div ref={pathsPanelRef}>
-                  <SearchLocationsPanel
-                    searchPaths={searchPaths}
-                    onTogglePath={handleTogglePath}
-                    onAddCustomPath={handleAddCustomPath}
-                    onCustomScannedCerts={handleCustomScannedCerts}
-                    isScanning={isScanning}
+            {isDetailSidebarVisible && (
+              <>
+                {/* Draggable Splitter (Desktop) */}
+                <div
+                  onMouseDown={handleStartDetailSplitterDrag}
+                  className="hidden xl:flex w-2.5 cursor-col-resize items-center justify-center shrink-0 group select-none"
+                  title="드래그하여 테이블과 상세 정보 사이드바의 너비를 조절합니다"
+                >
+                  <div
+                    className="w-[2px] h-16 rounded-full transition-colors group-hover:bg-[#3B82F6]"
+                    style={{ backgroundColor: 'var(--wpf-border)' }}
                   />
                 </div>
 
-                {/* Backup History Panel */}
-                <div ref={historyPanelRef}>
-                  <BackupHistoryPanel
-                    history={backupHistory}
-                    onClearHistory={() => setBackupHistory([])}
-                  />
-                </div>
-              </div>
+                <CertificateDetailSidebar
+                  cert={resolvedInspectedCert}
+                  width={detailSidebarWidth}
+                  onClose={() => setIsDetailSidebarVisible(false)}
+                  onCopySingle={handleQuickBackupSingle}
+                  onOpenFullDetailModal={(cert) => setSelectedCertForDetail(cert)}
+                  onNotifyCopy={(msg) => showToast(msg)}
+                />
+              </>
             )}
           </div>
         </main>
-
-        {/* Professional Footer with Developer, Company, Blog & Version info */}
-        <footer className="bg-white border-t border-slate-200 py-5 text-xs text-slate-500 mt-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-            {/* Top row of Footer: App Branding & Developer/Company/Blog Info */}
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-3 border-b border-slate-100">
-              {/* Left: App Title & Purpose */}
-              <div className="flex flex-wrap items-center gap-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                <span className="font-bold text-slate-800 text-sm tracking-tight">
-                  K-Cert Manager
-                </span>
-                <span className="px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-700 font-mono rounded text-[11px] font-bold">
-                  v{APP_VERSION}
-                </span>
-                <span className="text-slate-300 hidden sm:inline">|</span>
-                <span className="text-slate-600 font-medium text-xs">
-                  대한민국 공무원(GPKI·EPKI) 및 금융·개인(NPKI) 공인인증서 원클릭 USB 이동·관리 솔루션
-                </span>
-              </div>
-
-              {/* Right: License button */}
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsLicenseModalOpen(true)}
-                  className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-medium text-xs transition-colors cursor-pointer border border-slate-200 flex items-center gap-1.5"
-                >
-                  <FileText className="w-3.5 h-3.5 text-slate-500" />
-                  <span>라이선스 및 법적 고지</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Bottom row of Footer: Explicit Developer, Company, Blog, GitHub & Copyright */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1 text-xs">
-              {/* Requested Developer Info Badges */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-slate-700 font-medium">
-                {/* Developer */}
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
-                  <span className="text-slate-400 font-normal text-[11px]">개발자:</span>
-                  <strong className="text-slate-900 font-bold">{DEVELOPER_INFO.author}</strong>
-                </div>
-
-                {/* Company / Affiliation */}
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
-                  <span className="text-slate-400 font-normal text-[11px]">소속회사:</span>
-                  <a
-                    href={DEVELOPER_INFO.homepage}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline font-bold"
-                    title="소속: https://www.cisnet.co.kr"
-                  >
-                    <span>{DEVELOPER_INFO.affiliation}</span>
-                    <ExternalLink className="w-3 h-3 text-blue-500" />
-                  </a>
-                </div>
-
-                {/* GitHub */}
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
-                  <span className="text-slate-400 font-normal text-[11px]">GitHub 저장소:</span>
-                  <a
-                    href={DEVELOPER_INFO.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline font-bold"
-                    title="공식 GitHub 저장소 열기"
-                  >
-                    <span>{DEVELOPER_INFO.github}</span>
-                    <ExternalLink className="w-3 h-3 text-indigo-500 shrink-0" />
-                  </a>
-                </div>
-
-                {/* Official Google Blog */}
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
-                  <span className="text-slate-400 font-normal text-[11px]">공식 구글 블로그:</span>
-                  <a
-                    href={DEVELOPER_INFO.blog}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 hover:underline font-bold"
-                    title="공식 구글 블로그 열기"
-                  >
-                    <span className="truncate max-w-[200px] sm:max-w-none">{DEVELOPER_INFO.blog}</span>
-                    <ExternalLink className="w-3 h-3 text-emerald-600 shrink-0" />
-                  </a>
-                </div>
-              </div>
-
-              {/* Copyright & Security note */}
-              <div className="text-[11px] text-slate-400 sm:text-right shrink-0">
-                <span>© 2026 {DEVELOPER_INFO.author}. All rights reserved.</span>
-              </div>
-            </div>
-          </div>
-        </footer>
       </div>
+
+      {/* ROW 2: WPF 32px Status Bar Footer (Matches WPF MainWindow.xaml lines 1290-1326) */}
+      <footer
+        className="wpf-native h-8 px-4 flex items-center justify-between gap-3 text-[11px] shrink-0 overflow-x-auto scrollbar-none"
+        style={{
+          backgroundColor: 'var(--wpf-bg-dark)',
+          borderTop: '1px solid var(--wpf-border)',
+          color: 'var(--wpf-text-secondary)',
+        }}
+      >
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="font-bold tabular-nums" style={{ color: 'var(--wpf-accent-text)' }}>v{APP_VERSION}</span>
+          <span
+            className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[4px]"
+            style={{
+              backgroundColor: 'var(--wpf-bg-card)',
+              border: '1px solid var(--wpf-border)',
+              color: 'var(--wpf-text-muted)',
+            }}
+          >
+            Web SPA · Sandbox
+          </span>
+          <span style={{ color: 'var(--wpf-border)' }}>|</span>
+          <span className="truncate max-w-[420px]">
+            인증서 {certificates.length}건 감지 · USB {removableDrivesCount}대 · 마지막 스캔 {lastScanTime}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
+          <span>개발자: {DEVELOPER_INFO.author}</span>
+          <span style={{ color: 'var(--wpf-border)' }}>|</span>
+          <a
+            href={DEVELOPER_INFO.homepage}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline font-medium"
+            style={{ color: 'var(--wpf-accent-text)' }}
+          >
+            {DEVELOPER_INFO.affiliation} (cisnet.co.kr)
+          </a>
+          <span style={{ color: 'var(--wpf-border)' }}>|</span>
+          <a
+            href={DEVELOPER_INFO.blog}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline font-medium"
+            style={{ color: 'var(--wpf-accent-green)' }}
+          >
+            공식 구글 블로그
+          </a>
+          <span style={{ color: 'var(--wpf-border)' }}>|</span>
+          <a
+            href={DEVELOPER_INFO.github}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline font-medium"
+            style={{ color: 'var(--wpf-accent-text)' }}
+          >
+            GitHub 저장소
+          </a>
+          <span style={{ color: 'var(--wpf-border)' }}>|</span>
+          <button
+            type="button"
+            onClick={() => setIsLicenseModalOpen(true)}
+            className="hover:underline cursor-pointer"
+            style={{ color: 'var(--wpf-accent-text)' }}
+          >
+            라이선스
+          </button>
+        </div>
+      </footer>
 
       {/* Modals */}
       <LicenseModal

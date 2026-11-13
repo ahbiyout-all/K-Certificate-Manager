@@ -179,23 +179,44 @@ export function isPcCertificate(
   if (cert.isRemovableMedia === false) return true;
 
   const sourceDrive = (cert.sourceDrive || '').toUpperCase();
-  const sourceLoc = (cert.sourceLocation || '').toUpperCase();
+  const sourceLoc = (cert.sourceLocation || '').trim().toUpperCase();
 
   // Explicit removable flags
-  if (sourceDrive.includes('이동식') || sourceDrive.includes('USB') || sourceDrive.includes('REMOVABLE')) {
+  if (
+    sourceDrive.includes('이동식') ||
+    sourceDrive.includes('USB') ||
+    sourceDrive.includes('REMOVABLE') ||
+    sourceLoc.startsWith('USB:\\') ||
+    sourceLoc.startsWith('USB:/')
+  ) {
     return false;
   }
-  if (sourceLoc.startsWith('E:') || sourceLoc.startsWith('G:') || sourceLoc.startsWith('H:')) {
-    if (sourceDrive.includes('USB') || sourceDrive.includes('이동식')) return false;
+
+  const removableDrivePrefixes = ['E:', 'F:', 'G:', 'H:', 'I:', 'J:', 'K:', 'U:', 'M:'];
+  if (removableDrivePrefixes.some(prefix => sourceLoc.startsWith(prefix) || sourceDrive.startsWith(prefix))) {
+    // Only treat as PC if explicitly labeled as internal/local disk without USB cues
+    if (!sourceDrive.includes('내장') && !sourceDrive.includes('로컬 디스크')) {
+      return false;
+    }
   }
 
-  // PC / C: drive standard indicators
+  // PC / C: / D: standard indicators
   if (sourceDrive.includes('C:') || sourceDrive.includes('컴퓨터') || sourceDrive.includes('로컬')) {
     return true;
   }
-  if (sourceLoc.startsWith('C:') || sourceLoc.includes('APPDATA') || sourceLoc.includes('LOCALLOW') || sourceLoc.includes('PROGRAMDATA') || sourceLoc.includes('USERS')) {
+  if (sourceLoc.startsWith('C:') || sourceLoc.startsWith('D:') || sourceLoc.includes('APPDATA') || sourceLoc.includes('LOCALLOW') || sourceLoc.includes('PROGRAMDATA') || sourceLoc.includes('USERS')) {
     return true;
   }
 
   return !sourceDrive.includes('USB') && !sourceDrive.includes('이동식');
 }
+
+/**
+ * Checks whether a certificate is stored on removable USB / external media.
+ */
+export function isUsbCertificate(
+  cert: { sourceDrive?: string; sourceLocation?: string; isRemovableMedia?: boolean }
+): boolean {
+  return !isPcCertificate(cert);
+}
+

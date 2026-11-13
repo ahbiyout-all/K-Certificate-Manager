@@ -11,10 +11,29 @@ export const BackupHistoryPanel: React.FC<BackupHistoryPanelProps> = ({
   history,
   onClearHistory,
 }) => {
-  if (history.length === 0) return null;
+  if (history.length === 0) {
+    return (
+      <div
+        className="wpf-card wpf-native p-6 text-center"
+        style={{
+          backgroundColor: 'var(--wpf-bg-card)',
+          border: '1px solid var(--wpf-border)',
+          borderRadius: '8px',
+        }}
+      >
+        <History className="w-8 h-8 mx-auto mb-2 opacity-60" style={{ color: 'var(--wpf-text-muted)' }} />
+        <h3 className="text-sm font-bold" style={{ color: 'var(--wpf-text-primary)' }}>
+          아직 수행된 백업 및 복사 이력이 없습니다
+        </h3>
+        <p className="text-xs mt-1" style={{ color: 'var(--wpf-text-secondary)' }}>
+          인증서를 USB 메모리나 다른 드라이브로 복사하면 이력과 SHA-256 무결성 검증 기록이 여기에 표시됩니다.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mt-6">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">

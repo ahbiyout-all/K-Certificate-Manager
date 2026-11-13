@@ -46,9 +46,11 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
   );
 
   const [selectedId, setSelectedId] = useState<string>('');
+  const [pickerError, setPickerError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
+      setPickerError(null);
       if (preferredUsb) {
         setSelectedId(preferredUsb.id);
       } else if (physicalDrives.length > 0) {
@@ -71,18 +73,20 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
     : false;
 
   const handleSelectDriveCard = (drive: DiskDrive) => {
+    setPickerError(null);
     setSelectedId(drive.id);
   };
 
   const handleConfirm = () => {
     if (!activeDrive) {
-      alert('복사를 진행할 목적지 디스크를 먼저 선택해 주세요.');
+      setPickerError('복사를 진행할 목적지 디스크를 먼저 선택해 주세요.');
       return;
     }
     if (isSelfCopy) {
-      alert(`[자가 복사 금지] 선택한 인증서가 이미 ${activeDrive.letter} 드라이브에 위치해 있습니다. 타 드라이브(USB 메모리 등)를 목적지로 지정해 주세요.`);
+      setPickerError(`[자가 복사 금지] 선택한 인증서가 이미 ${activeDrive.letter} 드라이브에 위치해 있습니다. 타 드라이브(USB 메모리 등)를 목적지로 지정해 주세요.`);
       return;
     }
+    setPickerError(null);
     onConfirmTargetDrive(activeDrive.id);
   };
 
@@ -259,6 +263,13 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
                   선택한 인증서가 이미 {activeDrive?.letter} 드라이브에 저장되어 있습니다. 자기 자신 디스크로는 복사할 수 없으니 다른 목적지 드라이브(USB 메모리 등)를 선택해 주세요.
                 </p>
               </div>
+            </div>
+          )}
+
+          {pickerError && !isSelfCopy && (
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 rounded-xl flex items-start gap-2.5 text-rose-900 dark:text-rose-200 text-xs">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <div className="font-semibold">{pickerError}</div>
             </div>
           )}
         </div>

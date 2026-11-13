@@ -17,6 +17,106 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 179] 전수 자아성찰(Self-Reflection & Deep Audit) 및 UI·반응형·테마 대비·상태 동기화 결함 일괄 수정 (v2.0.0)
+- **작업 일시**: 2026-11-12 23:40 KST
+- **요청 사항**:
+  - `**자아성찰(Self-Reflection & Deep Audit)** 과 **오류 수정**`
+- **전수 감사 및 발견된 결함**:
+  1. **모바일/태블릿 뷰포트에서 상세 사이드바 고정 너비 오버플로 (`src/components/CertificateDetailSidebar.tsx`)**:
+     - `xl` 미만(`flex-col` 스택) 화면에서도 `width: ${width}px` 인라인 고정 너비가 유지되어 320px~1024px 구간에서 가로 넘침이나 어색한 좁은 컬럼으로 표시되던 문제.
+  2. **라이트/그레이/베이지 테마 WCAG 명도 대비 미달 (`CertificateDetailSidebar.tsx`, `SimpleTransferHero.tsx`, `Header.tsx`, `App.tsx`)**:
+     - `#38BDF8`, `#A78BFA`, `#34D399`, `#818CF8`, `text-amber-400` 등 어두운 배경 전용 밝은 색상 하드코딩이 화이트·베이지·그레이 테마에서 시인성을 떨어뜨리던 문제.
+  3. **초기화·가져오기 시 `selectedIds` 유령 ID 잔존 및 순수 업데이터 내 `setState` 중첩 (`src/App.tsx`)**:
+     - `localStorage`에서 삭제 후 남은 인증서만 복원된 경우에도 `selectedIds`가 전체 `INITIAL_CERTIFICATES` 기준으로 초기화되어 선택 건수가 총 건수를 초과(`선택: 6 / 5건`)하던 문제.
+     - `handleImportFromUsbSuccess` 내 `setCertificates(prev => ...)` 순수 업데이터 내부에서 `setSelectedIds`를 중첩 호출하던 React 안티패턴.
+  4. **필터 활성 시 하단 `전체 선택` 버튼의 숨겨진 항목 선택 위험 (`src/components/CertificateList.tsx`)**:
+     - 사이드바 필터(GPKI/USB 등) 또는 검색 적용 중 하단 일괄 바의 `전체 선택` 클릭 시 화면에 보이지 않는 인증서까지 선택되어 일괄 삭제 대상에 포함될 수 있던 문제 및 `max-h-[560px]` 고정으로 데스크톱 대형 화면 하단에 공백이 남던 현상.
+  5. **빈 백업 이력 뷰 공백 (`src/components/BackupHistoryPanel.tsx`) 및 브라우저 `alert()` 호출 잔존 (`SearchLocationsPanel.tsx`, `TargetDrivePickerModal.tsx`)**:
+     - `backupHistory`가 0건일 때 `return null`로 인해 '백업 이력' 탭 전환 시 빈 여백만 표시되던 문제.
+     - `SearchLocationsPanel.tsx`(8곳)와 `TargetDrivePickerModal.tsx`(2곳)의 `window.alert()` 호출을 인라인 피드백 배너 및 토스트 알림으로 대체.
+- **수행 내역**:
+  - `CertificateDetailSidebar.tsx`: `--detail-w` CSS 변수 + `w-full xl:w-[var(--detail-w)]` 반응형 너비 적용 및 테마 변수(`var(--wpf-accent-text)`) 통일.
+  - `SimpleTransferHero.tsx`, `Header.tsx`, `Sidebar.tsx`, `App.tsx`: 4종 테마 대비 변수 적용 및 장식용 점 제거(`ShieldCheck` 아이콘화).
+  - `App.tsx`: `selectedIds` 초기값을 복원된 `certificates`와 일치시키고 자동 정리 `useEffect` 추가, `handleImportFromUsbSuccess` 상태 갱신 분리, `SearchLocationsPanel`에 `onNotify` 연결.
+  - `CertificateList.tsx`: `lg:max-h-none` 반응형 스크롤 확장 및 필터 적용 시 `전체 선택`의 필터 범위 제한.
+  - `BackupHistoryPanel.tsx`, `SearchLocationsPanel.tsx`, `TargetDrivePickerModal.tsx`: 빈 상태 안내 카드 추가 및 모든 `alert()` 호출 제거.
+- **검증 결과**:
+  - Web SPA `compile_applet` 및 `lint_applet`(`tsc --noEmit`) 동시 실행 0 Errors 통과 및 개발 서버 재기동 완료.
+
+### 📝 [작업 차수 178] 인증서 목록(CertificateList) CSS Grid `auto-fill` 기반 반응형 카드 리플로우 레이아웃 적용 (v2.0.0)
+- **작업 일시**: 2026-11-12 23:36 KST
+- **요청 사항**:
+  - `인증서 목록(CertificateList)의 레이아웃을 반응형으로 개선하여, 화면 너비에 따라 카드가 자동으로 리플로우(Reflow)되도록 CSS Grid의 'auto-fill' 속성을 적용하세요.`
+- **수행 내역**:
+  1. **CSS Grid `auto-fill` 레이아웃 규칙 정의 (`src/index.css`)**:
+     - `.cert-grid-autofill` 클래스에 `display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 14px; align-items: stretch;`를 선언하여 넓은 데스크톱·분할 상세 패널·모바일 등 모든 화면 너비 변화에 맞춰 카드 열 수가 자동 리플로우(Reflow)되고 수평 오버플로를 원천 방지하도록 구성.
+     - 4종 테마(다크/회색/베이지/화이트)의 선택/복사 완료 카드 보조 텍스트 대비 토큰(`--wpf-selected-row-secondary`, `--wpf-copied-row-secondary`)을 추가하여 모든 테마에서 WCAG 대비 보장.
+  2. **반응형 카드 그리드 뷰 & 표(DataGrid) 전환 UI 구현 (`src/components/CertificateList.tsx`)**:
+     - 기본 보기를 반응형 카드 그리드(`viewMode = 'grid'`)로 전환하고, 상단 툴바에 `카드 | 표` 뷰 전환 토글, 전체 선택 체크박스, 정렬 기준 선택(`만료일자순`/`이름순`/`구분순`/`저장위치순`/`발급기관순`/`상태순` + 오름/내림차순) 컨트롤 탑재.
+     - 각 인증서 카드에 체크박스·순번·드라이브 배지·만료 상태·CN 명칭·카테고리/비밀키/비표준 경고·발급기관·만료일자·경로 복사·개별 복사/상세/삭제 버튼을 단선·고정렬 구조로 배치.
+- **검증 결과**:
+  - Web SPA `compile_applet` 및 `lint_applet` 동시 실행 0 Errors 통과.
+
+### 📝 [작업 차수 177] C# WPF 데스크톱 앱 UI/UX 디자인 Web 형식 전면 이식 및 테마·레이아웃 통합 (v2.0.0)
+- **작업 일시**: 2026-11-12 23:35 KST
+- **요청 사항**:
+  - `WPF 앱 디자인을 Web 형식에도 적용 시키세요.`
+- **수행 내역**:
+  1. **WPF 4종 테마 색상 체계 및 CSS 토큰 정합화 (`index.html`, `src/data/themes.ts`, `src/index.css`)**:
+     - WPF `App.xaml` 및 `MainViewModel.ApplyTheme` 기준 다크(`#0F1219` / `#1A1F2C` / `#2D3546`, 기본값), 그레이(`#E2E8F0` / `#FFFFFF`), 화이트(`#F8FAFC` / `#FFFFFF`), 베이지(`#F5F2EB` / `#FFFFFF`) 4종 테마 팔레트를 CSS 커스텀 프로퍼티(`--wpf-*`)로 전면 구축.
+     - WPF 버튼(`.wpf-btn-primary`, `.wpf-btn-secondary`, `.wpf-btn-success`), 네비게이션 라디오(`.wpf-nav-radio`), 슬림 스크롤바, 애니메이션 드라이브 카드 스타일 및 기존 모달 다크모드 가독성 보호 스코프(`:not(.wpf-native)`) 적용.
+  2. **3단 데스크톱 윈도우 셸 구조 재구성 (`src/App.tsx`, `src/components/Header.tsx`, `src/components/Sidebar.tsx`)**:
+     - `Header.tsx`: WPF Row 0(`64px`) 상단 툴바 규격(로고·제목 좌측, 테마 선택·간편/상세 모드 토글·사운드 슬라이더·환경 설정·시작 가이드·새로고침·휴지통 및 상세 모드 유틸리티 버튼 휠 스크롤 지원)으로 재구축.
+     - `Sidebar.tsx`: WPF 좌측 `260px` 필터 내비게이터로 재편(카테고리 필터: 전체/GPKI/EPKI/NPKI/만료/비표준, 저장 매체 구분: 컴퓨터/USB 실시간 카운트, 인증서 갱신 안내 CTA, 하단 백업 대상 드라이브 카드·로컬 샌드박스 배지·저작권 표기).
+     - `App.tsx`: `64px Header ➔ 260px Sidebar + 본문(데이터그리드 + 드래그 리사이즈 스플리터 + 우측 상세 패널) ➔ 32px 하단 상태 바(Status Bar)` 3단 구조 및 실행 취소(`삭제 취소`) 스냅샷 연동.
+  3. **간편/상세 드라이브 배너·10열 DataGrid·우측 상세 사이드바 신설 (`SimpleTransferHero.tsx`, `ConnectedDrivesBar.tsx`, `CertificateList.tsx`, `CertificateDetailSidebar.tsx`)**:
+     - `SimpleTransferHero.tsx`: WPF 간편 모드 1줄 Quick Action 배너(`⚡ 간편 백업`, 도착 드라이브 선택 카드, `⚡ 원클릭 전체 복사`, `📥 USB ➔ PC 넣기`) 적용.
+     - `ConnectedDrivesBar.tsx`: WPF 상세 모드 `연결된 드라이브 현황` 패널(USB/전체 드라이브 필터, 기본/고급 VSN 표시 토글, WMI 진단, 카드별 즉시 백업/가져오기) 적용.
+     - `CertificateList.tsx`: WPF `CertDataGrid` 10열 구성(`번호`, `선택`, `구분`, `저장 위치`, `인증서 명칭 및 경로`, `발급기관`, `만료일자`, `상태`, `비밀키`, `작업`) 및 Row 3 하단 일괄 작업 바(`USB ➔ PC 넣기`, `전체 선택/해제`, `선택 삭제`, `삭제 취소`, `만료 정리`, `선택/전체 백업`), `filterCertificatesByCriteria` 공용 필터링 구축.
+     - `CertificateDetailSidebar.tsx` *(신규)*: WPF `ColDetailSidebar`에 대응하는 접이식·크기 조절 가능 우측 인증서 상세 사이드바(CN/발급기관/Subject DN/일련번호/유효기간/암호화·정책/원본 경로 복사 및 단일 복사·전문 팝업 실행) 구현.
+- **검증 결과**:
+  - Web SPA `compile_applet` 및 `lint_applet`(`tsc --noEmit`) 동시 실행 0 Errors 통과 및 개발 서버 재기동 완료.
+
+### 📝 [작업 차수 176] 전수 자아성찰(Self-Reflection & Deep Audit) 및 Web ↔ WPF 기능 정합성·선택 복사·드라이브 격리 결함 일괄 수정 (v2.0.0)
+- **작업 일시**: 2026-11-12 23:25 KST
+- **요청 사항**:
+  - `**자아성찰(Self-Reflection & Deep Audit)** 과 오류 수정`
+- **전수 감사 및 발견된 결함**:
+  1. **Web 백업 모달 체크박스 선택 무시 결함 (`src/components/BackupModal.tsx`)**:
+     - 개별 인증서 체크박스/전체 선택/선택 해제 버튼으로 `activeSelectedCertIds`를 변경하더라도, 중복 검사(`detectDuplicateCertificates`), 자가 복사 검증, 실제 디스크 복사(`copyCertificatesToDisk`, `writeCertificatesToDirectoryHandle`), 드라이브 카드 배지, 에러 모달 페이로드가 여전히 전체 `selectedCerts`를 참조하여 해제한 인증서까지 모두 복사되던 결함.
+  2. **Web USB ➔ PC 복사 모달 도착 디스크 선택 UI 누락 및 `C:` 하드코딩 (`src/components/UsbToPcModal.tsx`)**:
+     - `targetPcDrive` / `pcLocalTargetDrives` 상태는 선언되어 있으나 JSX에 도착 디스크(`C:`, `D:` 등) 선택 UI가 렌더링되지 않았고, 다이어그램/완료 메시지/권한 에러 모달/진행바 등에 `C:` 경로가 하드코딩되어 있었으며, `isAlreadyInPc` 중복 배지가 타 드라이브/USB 항목까지 매칭하던 문제.
+  3. **WPF USB ➔ PC 뷰모델 도착 디스크 경로·바인딩 불일치 (`src-wpf/KCertManager.Wpf/ViewModels/UsbTransferViewModel.cs`, `Models/DriveItem.cs`)**:
+     - `UsbTransferDialog.xaml`의 `{Binding CapacityText}` 바인딩에 대응하는 `DriveItem.CapacityText` 프로퍼티가 누락되어 용량 텍스트가 빈 값으로 표시되던 문제.
+     - `UsbTransferViewModel.TransferToPcAsync()`의 자가 복사 검증, 진행 메시지, 완료 대화상자(`OperationCompleteDialog`) 경로/안내 문구가 `SelectedTargetDrive`를 무시하고 `C:` 기준으로 하드코딩되어 있던 문제 및 `SelectedTargetDrive` 변경 시 `TransferToPcCommand.RaiseCanExecuteChanged()` 누락.
+  4. **공용 PC/USB 판별·타겟 드라이브 격리·휴지통 실행 취소 스냅샷 (`src/utils/driveFilter.ts`, `src/utils/usbToPcService.ts`, `src/App.tsx`, `CertificateList.tsx`, `CertificateCleanupModal.tsx`)**:
+     - `E:` 하드코딩 판별을 공용 `isUsbCertificate` / `isPcCertificate` 헬퍼로 통일하고, `copyUsbCertificatesToComputer` 중복 매칭을 선택된 `cleanTargetDrive` PC 인증서로만 제한 및 `isRemovableMedia: false` 명시.
+     - `App.tsx`의 삭제 토스트 실행 취소(`handleUndoDelete`) 클로저 스냅샷 지연 및 영구화 누락, `handleImportFromUsbSuccess`의 `C:` 하드코딩 문자열 수정.
+- **수행 내역**:
+  - `src/components/BackupModal.tsx`: `effectiveSelectedCerts` 파생 메모이제이션을 도입해 모든 복사/중복/자가복사/드라이브 배지/에러 알림/푸터 버튼 비활성화(`0건` 선택 시 차단)에 일관 적용.
+  - `src/components/UsbToPcModal.tsx`: `도착 PC 디스크 지정` 카드 선택 UI 신설, `cleanTargetPcDrive` 기반 동적 경로 표시, `isAlreadyInPc`를 선택된 도착 드라이브의 PC 인증서로 스코핑.
+  - `src-wpf/KCertManager.Wpf/Models/DriveItem.cs`: `CapacityText => FormattedFreeSpace` 바인딩 프로퍼티 추가.
+  - `src-wpf/KCertManager.Wpf/ViewModels/UsbTransferViewModel.cs`: `ResolveTargetRootForCategory` 헬퍼 추가 및 `SelectedTargetDrive` 기준 경로/자가복사/완료 안내 동적화, `RaiseCanExecuteChanged()` 연동.
+  - `src/utils/driveFilter.ts`, `src/utils/usbToPcService.ts`, `src/App.tsx`, `src/components/CertificateList.tsx`, `src/components/CertificateCleanupModal.tsx`: 공용 USB/PC 분류기 통일 및 드라이브별 데이터 격리·보관소 즉시 영구화 보강.
+- **검증 결과**:
+  - C# 전수 괄호/구문 정적 감사 & XAML 바인딩 검증 0건 오류 통과.
+  - Web SPA `compile_applet` & `lint_applet` 동시 검증 0 Errors 무결점 통과.
+
+### 📝 [작업 차수 175] C# .NET & WPF 컴파일 오류(CS1061, CS0117, NU1510) 해결 (v2.0.0)
+- **작업 일시**: 2026-11-12 18:10 KST
+- **요청 사항**:
+  - `UsbTransferViewModel.cs` 내 `'DriveItem' does not contain a definition for 'IsFixed'` (`CS1061`), `'DriveItem' does not contain a definition for 'DriveType'` (`CS0117`), `NU1510` 패키지 경고 해결.
+- **수행 내역**:
+  - `src-wpf/KCertManager.Wpf/Models/DriveItem.cs` 및 `UsbDriveWatcher.cs`에 `DriveType` / `IsFixed` 모델 속성 및 매핑 완비.
+  - `KCertManager.Wpf.csproj`, `KCert.Core.csproj`의 암시적 포함 중복 `System.Security.Cryptography.ProtectedData` 참조 정리(`NU1510` 해소).
+
+### 📝 [작업 차수 174] USB 인증서 삭제 시 동일 이름 PC(C:) 인증서 동시 삭제 결함 수정 (v2.0.0)
+- **작업 일시**: 2026-11-12 17:40 KST
+- **요청 사항**:
+  - `usb 인증서를 삭제 했는데 c에 같은 이름 인증서도 같이 삭제된 오류`
+- **수행 내역**:
+  - `src/utils/usbToPcService.ts` 및 `src/App.tsx`에서 USB 인증서와 PC(로컬) 인증서의 ID·경로·매칭 기준을 엄격 분리하여, USB 드라이브 인증서 삭제가 로컬 드라이브(`C:`, `D:`)의 동일 CN/시리얼 인증서에 전파되지 않도록 완전 격리.
+
 ### 📝 [작업 차수 173] USB ➔ PC(COM) 가져오기 도착 디스크(Target Drive) 자유 지정 기능 구현 및 선택 항목 복사 강제 전체선택 오류 완전 교정 (v2.0.0)
 - **작업 일시**: 2026-11-12 11:30 KST
 - **요청 사항**:
