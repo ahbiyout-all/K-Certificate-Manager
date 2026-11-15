@@ -209,8 +209,16 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
   // Load default simulated USB certs on open or drive filter change, and listen for live events
   useEffect(() => {
     if (isOpen) {
-      const nextDrive = initialDriveLetter ? initialDriveLetter.replace(':', '') : selectedUsbDriveRef.current;
-      if (initialDriveLetter) {
+      let nextDrive = initialDriveLetter ? initialDriveLetter.replace(':', '') : selectedUsbDriveRef.current;
+      if (!initialDriveLetter && nextDrive !== 'ALL') {
+        const stillMounted = availableDrives.some(
+          d => d.type === 'removable' && d.letter.replace(':', '').toUpperCase() === nextDrive.toUpperCase()
+        );
+        if (!stillMounted) {
+          nextDrive = 'ALL';
+        }
+      }
+      if (nextDrive !== selectedUsbDriveRef.current) {
         setSelectedUsbDrive(nextDrive);
         selectedUsbDriveRef.current = nextDrive;
       }
@@ -386,7 +394,9 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
     setLogs([]);
     setErrorMessage(null);
     setCopyErrorModalInfo(null);
-    const initialUsb = getAvailableUsbCertificates(availableDrives);
+    setSelectedUsbDrive('ALL');
+    selectedUsbDriveRef.current = 'ALL';
+    const initialUsb = getAvailableUsbCertificates(availableDrives, 'ALL');
     setDetectedCerts(initialUsb);
     setSelectedCertIds(initialUsb.map(c => c.id));
   };

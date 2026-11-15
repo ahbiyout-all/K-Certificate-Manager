@@ -20,6 +20,7 @@ import {
 import { CertificateItem } from '../types';
 import { getDriveColorInfo } from '../utils/driveColors';
 import { getAccurateIssuerInfo } from '../utils/issuerUtils';
+import { isUsbCertificate } from '../utils/driveFilter';
 
 interface CertificateDetailModalProps {
   cert: CertificateItem | null;
@@ -34,16 +35,15 @@ export const CertificateDetailModal: React.FC<CertificateDetailModalProps> = ({
   onCopySingle,
   onOpenRenewalGuidance,
 }) => {
+  const [copiedPath, setCopiedPath] = React.useState(false);
+
+  React.useEffect(() => {
+    setCopiedPath(false);
+  }, [cert?.id]);
+
   if (!cert) return null;
 
-  const isUsb = (cert.sourceDrive || '').includes('이동식') || 
-                (cert.sourceDrive || '').includes('USB') || 
-                (cert.sourceLocation || '').toUpperCase().startsWith('E:') ||
-                (cert.sourceLocation || '').toUpperCase().startsWith('F:') ||
-                (cert.sourceLocation || '').toUpperCase().startsWith('G:') ||
-                (cert.sourceLocation || '').toUpperCase().startsWith('H:');
-
-  const [copiedPath, setCopiedPath] = React.useState(false);
+  const isUsb = isUsbCertificate(cert);
 
   const copyToClipboard = (text: string) => {
     if (!text) return;
@@ -363,15 +363,17 @@ export const CertificateDetailModal: React.FC<CertificateDetailModalProps> = ({
 
                   <div className="p-2 bg-slate-50 rounded border border-slate-200 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <KeyRound className="w-4 h-4 text-purple-600" />
+                      <KeyRound className={`w-4 h-4 ${cert.files.hasKey ? 'text-purple-600' : 'text-amber-500'}`} />
                       <div>
                         <div className="font-mono text-xs font-semibold text-slate-800">
-                          {cert.files.keyName}
+                          {cert.files.hasKey ? cert.files.keyName : '없음 (CA 공개키)'}
                         </div>
                         <div className="text-[11px] text-slate-500">개인키 (SEED/ARIA 암호화)</div>
                       </div>
                     </div>
-                    <span className="text-[11px] text-emerald-600 font-semibold">페어링 정상</span>
+                    <span className={`text-[11px] font-semibold ${cert.files.hasKey ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      {cert.files.hasKey ? '페어링 정상' : '개인키 미포함'}
+                    </span>
                   </div>
                 </div>
 

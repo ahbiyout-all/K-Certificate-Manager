@@ -243,9 +243,29 @@
                 </Button>
 
                 <Button x:Name="BtnEjectUsb" Visibility="Collapsed" Click="BtnEjectUsb_Click" Background="#92400E" Foreground="#FEF3C7" BorderBrush="#D97706" BorderThickness="1" FontWeight="Bold" Padding="12,7" Cursor="Hand">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="BtnBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="6"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="BtnBorder" Property="Background" Value="#78350F"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.45"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="🔌 " FontSize="11"/>
-                        <TextBlock x:Name="TxtEjectUsb" Text="USB 안전 제거" FontSize="11.5" FontWeight="Bold"/>
+                        <TextBlock x:Name="TxtEjectUsb" Text="USB 안전 제거" FontSize="11.5" FontWeight="Bold" Foreground="#FEF3C7"/>
                     </StackPanel>
                 </Button>
             </StackPanel>

@@ -231,26 +231,37 @@ namespace KCert.Core.Discovery
                 var normPath = Path.GetFullPath(path).Replace('/', '\\').TrimEnd('\\');
                 var upper = normPath.ToUpperInvariant();
 
-                // 1. AppData\LocalLow\GPKI는 공무원 행정전자서명(GPKI) 정부 공식 표준(C:\GPKI\Certificate\class2)이 아니며
+                // 1. 중첩 폴더(복사 오류) 또는 백업/임시 폴더는 명백한 비표준
+                if (upper.Contains(@"\GPKI\GPKI") || upper.Contains(@"\NPKI\NPKI") || upper.Contains(@"\EPKI\EPKI") ||
+                    upper.Contains(@"\GPKI\BACKUP") || upper.Contains(@"\NPKI\BACKUP") || upper.Contains(@"\EPKI\BACKUP") ||
+                    upper.Contains(@"\BACKUP\NPKI") || upper.Contains(@"\인증서") || upper.Contains(@"\백업") || upper.Contains(@"\TEMP"))
+                {
+                    return false;
+                }
+
+                // 2. AppData\LocalLow\GPKI는 공무원 행정전자서명(GPKI) 정부 공식 표준(C:\GPKI\Certificate\class2)이 아니며
                 // 실무 행정망(온-나라, 새올 등)에서 미인식되는 예외 경로이므로 표준에서 제외
                 if (upper.Contains(@"\APPDATA\LOCALLOW\GPKI"))
                 {
                     return false;
                 }
 
-                var fastRoots = GetFastStandardRoots().Select(r => Path.GetFullPath(r).Replace('/', '\\').TrimEnd('\\'));
-                if (fastRoots.Any(r => normPath.StartsWith(r, StringComparison.OrdinalIgnoreCase))) return true;
-
-                if (upper.Contains(@"\APPDATA\LOCALLOW\NPKI") ||
-                    upper.Contains(@"\APPDATA\LOCALLOW\EPKI"))
-                    return true;
-
-                var root = Path.GetPathRoot(normPath)?.TrimEnd('\\').ToUpperInvariant() ?? "";
-                if (!string.IsNullOrEmpty(root))
+                // 3. AppData\LocalLow (금융결제원 NPKI, 교육부 EPKI 표준) - 경로 경계 포함
+                if (System.Text.RegularExpressions.Regex.IsMatch(upper, @"\\APPDATA\\LOCALLOW\\(NPKI|EPKI)($|\\)"))
                 {
-                    if (upper == $"{root}\\NPKI" || upper == $"{root}\\GPKI" || upper == $"{root}\\EPKI" ||
-                        upper.StartsWith($"{root}\\NPKI\\") || upper.StartsWith($"{root}\\GPKI\\") || upper.StartsWith($"{root}\\EPKI\\"))
-                        return true;
+                    return true;
+                }
+
+                // 4. GPKI / EPKI 공식 표준 ([드라이브]:\GPKI\Certificate 또는 [드라이브]:\EPKI\Certificate)
+                if (System.Text.RegularExpressions.Regex.IsMatch(upper, @"^[A-Z]:\\(GPKI|EPKI)\\CERTIFICATE($|\\)"))
+                {
+                    return true;
+                }
+
+                // 5. NPKI 이동식 USB 표준 ([USB]:\NPKI) - 고정 디스크(C:\NPKI 등)는 비표준 처리
+                if (IsRemovableDrive(normPath) && System.Text.RegularExpressions.Regex.IsMatch(upper, @"^[A-Z]:\\NPKI($|\\)"))
+                {
+                    return true;
                 }
             }
             catch { }

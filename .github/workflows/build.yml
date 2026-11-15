@@ -76,10 +76,12 @@ jobs:
       # ------------------------------------------------------------------------
       # .NET SDK Environment Setup (.NET 8 & 10 Support)
       # ------------------------------------------------------------------------
-      - name: Setup .NET SDK
+      - name: Setup .NET SDK (8.0.x & 10.0.x)
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
       - name: Restore .NET Solution
         run: dotnet restore KCertManager.sln

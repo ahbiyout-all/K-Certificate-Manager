@@ -78,6 +78,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setOpenSections({ sound: false, startup: false, gpki: false, usbExplorer: false, display: false });
   };
 
+  const [testingPhase, setTestingPhase] = useState<SoundPhase | null>(null);
+
+  const [excludeLocalLowGpki, setExcludeLocalLowGpki] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('kcert_exclude_locallow_gpki');
+      return saved === null ? true : saved === 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  const [autoOpenUsbFolder, setAutoOpenUsbFolder] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('kcert_auto_open_usb_folder');
+      return saved === null ? false : saved === 'true';
+    } catch {
+      return false;
+    }
+  });
+
   // Sync state when modal opens or custom event fires
   useEffect(() => {
     if (isOpen) {
@@ -94,6 +114,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     window.addEventListener(SOUND_SETTINGS_CHANGED_EVENT, handleSettingsChanged);
     return () => {
       window.removeEventListener(SOUND_SETTINGS_CHANGED_EVENT, handleSettingsChanged);
+      if (volumeDebounceRef.current) {
+        clearTimeout(volumeDebounceRef.current);
+        volumeDebounceRef.current = null;
+      }
     };
   }, [isOpen]);
 
@@ -123,8 +147,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }, 150);
   };
 
-  const [testingPhase, setTestingPhase] = useState<SoundPhase | null>(null);
-
   const handleTestPhase = (phase: SoundPhase) => {
     setTestingPhase(phase);
     setIsPlayingTest(true);
@@ -147,15 +169,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     triggerSaveBadge();
   };
 
-  const [excludeLocalLowGpki, setExcludeLocalLowGpki] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('kcert_exclude_locallow_gpki');
-      return saved === null ? true : saved === 'true';
-    } catch {
-      return true;
-    }
-  });
-
   const handleToggleExcludeLocalLowGpki = (checked: boolean) => {
     setExcludeLocalLowGpki(checked);
     try {
@@ -163,15 +176,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     } catch {}
     triggerSaveBadge();
   };
-
-  const [autoOpenUsbFolder, setAutoOpenUsbFolder] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('kcert_auto_open_usb_folder');
-      return saved === null ? false : saved === 'true';
-    } catch {
-      return false;
-    }
-  });
 
   const handleToggleAutoOpenUsbFolder = (checked: boolean) => {
     setAutoOpenUsbFolder(checked);

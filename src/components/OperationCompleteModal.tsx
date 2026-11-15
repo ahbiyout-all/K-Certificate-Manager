@@ -77,18 +77,23 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
   if (!isOpen || !data) return null;
 
   const diskLabel = data.targetDiskName || '';
+  const isLocalDiskDriveLetter =
+    /^(C|D):/i.test(diskLabel.trim()) &&
+    data.operationType !== 'PC_TO_USB' &&
+    data.operationType !== 'USB_RESTORE';
   const isExplicitLocalDisk =
     data.operationType === 'USB_TO_PC' ||
     data.operationType === 'RESTORE' ||
     diskLabel.includes('로컬 디스크') ||
     diskLabel.includes('로컬 보관함') ||
     diskLabel.includes('내장') ||
-    /^(C|D):/i.test(diskLabel.trim());
+    isLocalDiskDriveLetter;
 
   const isUsbTarget =
-    data.operationType === 'PC_TO_USB' ||
-    data.operationType === 'USB_RESTORE' ||
-    (data.operationType === 'BACKUP' && !isExplicitLocalDisk);
+    !isExplicitLocalDisk &&
+    (data.operationType === 'PC_TO_USB' ||
+      data.operationType === 'USB_RESTORE' ||
+      data.operationType === 'BACKUP');
   const isPcTarget = data.operationType === 'USB_TO_PC' || isExplicitLocalDisk;
 
   let autoOpenUsbEnabled = false;
@@ -300,34 +305,48 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
               className="bg-slate-50/90 border border-slate-200 rounded-xl p-2.5 space-y-1.5 overflow-y-auto max-h-48 sm:max-h-56 shadow-inner"
               style={{ maxHeight: '210px', overflowY: 'auto' }}
             >
-              {data.certificates && data.certificates.length > 0 ? (
-                data.certificates.map((c, idx) => (
-                  <div key={idx} className="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200 text-xs shadow-2xs hover:border-emerald-300 transition-colors">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0">
-                        {idx + 1}
-                      </span>
-                      <FileCheck2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <span className="font-bold text-slate-900 truncate block">{c.name}</span>
-                        {c.issuer && (
-                          <span className="text-[11px] text-slate-500 truncate block">({c.issuer})</span>
-                        )}
+              {(() => {
+                const certList =
+                  data.certificates && data.certificates.length > 0
+                    ? data.certificates
+                    : data.transferredCerts && data.transferredCerts.length > 0
+                      ? data.transferredCerts.map((c: any) => ({
+                          name: c.name || c.CommonName || '공동인증서',
+                          issuer: c.issuer || c.Issuer,
+                          policy: c.policy,
+                          validTo: c.validTo,
+                        }))
+                      : null;
+
+                if (certList) {
+                  return certList.map((c, idx) => (
+                    <div key={idx} className="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200 text-xs shadow-2xs hover:border-emerald-300 transition-colors">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0">
+                          {idx + 1}
+                        </span>
+                        <FileCheck2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <span className="font-bold text-slate-900 truncate block">{c.name}</span>
+                          {c.issuer && (
+                            <span className="text-[11px] text-slate-500 truncate block">({c.issuer})</span>
+                          )}
+                        </div>
                       </div>
+                      {c.validTo ? (
+                        <span className="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded shrink-0 border border-slate-200">
+                          ~{c.validTo}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold border border-emerald-200 shrink-0">
+                          복사 완료 ✓
+                        </span>
+                      )}
                     </div>
-                    {c.validTo ? (
-                      <span className="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded shrink-0 border border-slate-200">
-                        ~{c.validTo}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold border border-emerald-200 shrink-0">
-                        복사 완료 ✓
-                      </span>
-                    )}
-                  </div>
-                ))
-              ) : (
-                data.certNames.map((name, idx) => (
+                  ));
+                }
+
+                return data.certNames.map((name, idx) => (
                   <div key={idx} className="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200 text-xs shadow-2xs hover:border-emerald-300 transition-colors">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0">
@@ -340,8 +359,8 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
                       복사 완료 ✓
                     </span>
                   </div>
-                ))
-              )}
+                ));
+              })()}
             </div>
           </div>
 

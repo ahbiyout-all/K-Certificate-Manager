@@ -433,9 +433,9 @@ export async function scanDirectoryHandleForCertificates(dirHandle: any): Promis
           if (!subjectDn) {
             const folderParts = currentPath.split('/');
             const leafFolder = folderParts[folderParts.length - 1] || '인증서';
-            subjectDn = leafFolder.startsWith('cn=') ? leafFolder : `cn=${leafFolder}`;
+            subjectDn = leafFolder.toLowerCase().startsWith('cn=') ? leafFolder : `cn=${leafFolder}`;
             if (name === '사용자') {
-              name = leafFolder.replace(/^cn=/, '').split('(')[0].split(',')[0] || '사용자';
+              name = leafFolder.replace(/^cn=/i, '').split('(')[0].split(',')[0] || '사용자';
             }
           }
 
@@ -698,14 +698,17 @@ export function getLocalPcStandardPath(
   const cleanDrive = (targetDriveLetter || 'C:').replace(/[^a-zA-Z]/g, '').toUpperCase() + ':';
   const userFolder = `${cleanDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`;
 
+  const subjectDn = (cert.subjectDn || '').trim();
+  const hasCnPrefix = subjectDn.toLowerCase().startsWith('cn=');
+
   if (cert.category === 'GPKI_GOV') {
-    const cn = cert.subjectDn.startsWith('cn=') ? cert.subjectDn : `cn=${cert.name}`;
+    const cn = hasCnPrefix ? subjectDn.split(',')[0].trim() : `cn=${cert.name}`;
     // 공무원 행정전자서명(GPKI) 정부 공식 표준 경로: {cleanDrive}\GPKI\Certificate\class2
     return `${cleanDrive}\\GPKI\\Certificate\\class2\\${cn}`;
   }
 
   if (cert.category === 'EPKI_EDU') {
-    const cn = cert.subjectDn.startsWith('cn=') ? cert.subjectDn : `cn=${cert.name}`;
+    const cn = hasCnPrefix ? subjectDn.split(',')[0].trim() : `cn=${cert.name}`;
     return `${userFolder}\\EPKI\\Certificate\\class2\\${cn}`;
   }
 
@@ -717,10 +720,12 @@ export function getLocalPcStandardPath(
     caSubdir = 'KICA';
   } else if (cert.issuer.includes('한국전자인증') || cert.issuer.includes('CrossCert')) {
     caSubdir = 'CrossCert';
+  } else if (cert.issuer.includes('한국무역정보') || cert.issuer.includes('TradeSign')) {
+    caSubdir = 'TradeSign';
   }
 
-  const cn = cert.subjectDn.startsWith('cn=')
-    ? cert.subjectDn
+  const cn = hasCnPrefix
+    ? subjectDn
     : `cn=${cert.name},ou=personal,o=${caSubdir},c=kr`;
 
   return `${userFolder}\\NPKI\\${caSubdir}\\USER\\${cn}`;

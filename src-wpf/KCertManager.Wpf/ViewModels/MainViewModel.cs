@@ -39,6 +39,7 @@ namespace KCertManager.Wpf.ViewModels
         private string _statusMessage = "준비 완료 (오프라인 보안)";
         private List<TrashItem> _lastDeletedBatch = new();
         private bool _canUndo;
+        private int _scanGeneration;
 
         private bool _isSimpleMode = true;
         private bool _isDriveAdvancedMode;
@@ -1285,8 +1286,16 @@ namespace KCertManager.Wpf.ViewModels
 
         #region Methods
 
-        public async Task RefreshCertificatesAsync(IEnumerable<string>? customPaths = null)
+        public Task RefreshCertificatesAsync(IEnumerable<string>? customPaths = null)
+            => RefreshCertificatesInternalAsync(customPaths, waitForDeepPass: false);
+
+        public Task RefreshAllCertificatesCompleteAsync()
+            => RefreshCertificatesInternalAsync(null, waitForDeepPass: true);
+
+        private async Task RefreshCertificatesInternalAsync(IEnumerable<string>? customPaths, bool waitForDeepPass)
         {
+            int scanGen = System.Threading.Interlocked.Increment(ref _scanGeneration);
+
             try
             {
                 IsBusy = true;
@@ -1304,10 +1313,13 @@ namespace KCertManager.Wpf.ViewModels
                     {
                         var list = _scannerService.ScanCertificates(_customSearchPaths);
                         AttachCertEvents(list);
-                        DispatchUpdateCertificates(list);
+                        DispatchUpdateCertificates(list, scanGen);
                     });
-                    IsBusy = false;
-                    StatusMessage = $"총 {TotalCount}개 인증서를 찾았습니다.";
+                    if (scanGen == _scanGeneration)
+                    {
+                        IsBusy = false;
+                        StatusMessage = $"총 {TotalCount}개 인증서를 찾았습니다.";
+                    }
                     return;
                 }
 
@@ -1315,8 +1327,10 @@ namespace KCertManager.Wpf.ViewModels
                 // [1단계 Fast-Pass]: 표준 경로만 0.05~0.1초 만에 즉시 스캔하여 화면 갱신
                 // =========================================================================
                 var fastList = await _scannerService.ScanFastPassAsync();
+                if (scanGen != _scanGeneration) return;
+
                 AttachCertEvents(fastList);
-                DispatchUpdateCertificates(fastList);
+                DispatchUpdateCertificates(fastList, scanGen);
 
                 IsBusy = false; // 사용자 UI 즉각 사용 가능하게 전환!
                 StatusMessage = $"표준 인증서 {fastList.Count}개 표시됨 (추가 폴더 확인 중...)";
@@ -1324,7 +1338,7 @@ namespace KCertManager.Wpf.ViewModels
                 // =========================================================================
                 // [2단계 Deep-Pass]: 비표준 및 외장 디스크 심층 탐색을 백그라운드 비동기로 실행
                 // =========================================================================
-                _ = Task.Run(async () =>
+                var deepTask = Task.Run(async () =>
                 {
                     try
                     {
@@ -1333,12 +1347,14 @@ namespace KCertManager.Wpf.ViewModels
 
                         int newDiscovered = await _scannerService.ScanDeepPassBackgroundAsync(newItem =>
                         {
+                            if (scanGen != _scanGeneration) return;
                             AttachCertEvent(newItem);
                             var dispatcher = Application.Current?.Dispatcher;
                             if (dispatcher != null)
                             {
                                 dispatcher.BeginInvoke(new Action(() =>
                                 {
+                                    if (scanGen != _scanGeneration) return;
                                     _allCertificates.Add(newItem);
                                     UpdateDriveCertificateCounts();
                                     ApplyFilter();
@@ -1354,9 +1370,12 @@ namespace KCertManager.Wpf.ViewModels
                             }
                         }, seenDers, seenSigs);
 
+                        if (scanGen != _scanGeneration) return;
+
                         var dispatcherFinal = Application.Current?.Dispatcher;
                         Action updateStatusAction = () =>
                         {
+                            if (scanGen != _scanGeneration) return;
                             StatusMessage = $"전체 스캔 완료: 총 {TotalCount}개 인증서 (PC: {ComputerCount}개, USB: {UsbCount}개" +
                                             (newDiscovered > 0 ? $", 비표준 {newDiscovered}개 추가 감지" : "") + ").";
                         };
@@ -1384,6 +1403,11 @@ namespace KCertManager.Wpf.ViewModels
                         System.Diagnostics.Debug.WriteLine($"[Deep Scan Error] {ex.Message}");
                     }
                 });
+
+                if (waitForDeepPass)
+                {
+                    await deepTask;
+                }
             }
             catch (Exception ex)
             {
@@ -1414,12 +1438,17 @@ namespace KCertManager.Wpf.ViewModels
             };
         }
 
-        private void DispatchUpdateCertificates(List<CertificateItem> list)
+        private void DispatchUpdateCertificates(List<CertificateItem> list, int scanGen)
         {
             var dispatcher = Application.Current?.Dispatcher;
             Action updateAction = () =>
             {
-                _allCertificates = new ObservableCollection<CertificateItem>(list);
+                if (scanGen != _scanGeneration) return;
+                _allCertificates.Clear();
+                foreach (var item in list)
+                {
+                    _allCertificates.Add(item);
+                }
                 UpdateDriveCertificateCounts();
                 ApplyFilter();
                 UpdateCounts();
@@ -1735,22 +1764,32 @@ namespace KCertManager.Wpf.ViewModels
             }
         }
 
+        private static string ResolveBackupDestinationRoot(string targetDriveName, CertificateItem cert)
+        {
+            string cleanTarget = (targetDriveName ?? string.Empty).TrimEnd('\\').ToUpperInvariant();
+            string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\').ToUpperInvariant();
+
+            if (string.Equals(cleanTarget, sysRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                if (cert.Category == CertCategory.GPKI)
+                {
+                    return sysRoot + "\\";
+                }
+
+                var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                return Path.Combine(userProfile, "AppData", "LocalLow");
+            }
+
+            return string.IsNullOrWhiteSpace(cleanTarget) ? targetDriveName : cleanTarget + "\\";
+        }
+
         public async Task ExecuteBackupWithConflictOptionAsync(List<CertificateItem> selected, DriveItem targetDrive, string conflictOption)
         {
             if (targetDrive == null || !selected.Any()) return;
 
             var targetDriveName = targetDrive.Name;
             bool isTargetUsb = targetDrive.IsRemovable;
-            string targetRoot = targetDriveName.TrimEnd('\\').ToUpperInvariant() + "\\";
-
             string cleanTarget = targetDriveName.TrimEnd('\\').ToUpperInvariant();
-            string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\').ToUpperInvariant();
-            string defaultDestRoot = targetDriveName;
-            if (string.Equals(cleanTarget, sysRoot, StringComparison.OrdinalIgnoreCase))
-            {
-                var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                defaultDestRoot = Path.Combine(userProfile, "AppData", "LocalLow");
-            }
 
             // 1. 복사 대상 드라이브에 원본과 동일한 인증서가 이미 존재하는지 '중복 방지 체크' 사전 검사
             var duplicateConflicts = new List<Views.DuplicateConflictEntry>();
@@ -1760,8 +1799,9 @@ namespace KCertManager.Wpf.ViewModels
             {
                 if (string.IsNullOrWhiteSpace(cert?.DirectoryPath)) continue;
 
+                string destRoot = ResolveBackupDestinationRoot(targetDriveName, cert);
                 string safeRel = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
-                string expectedDstDir = Path.GetFullPath(Path.Combine(defaultDestRoot, safeRel)).TrimEnd('\\');
+                string expectedDstDir = Path.GetFullPath(Path.Combine(destRoot, safeRel)).TrimEnd('\\');
                 string currentSrcDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd('\\');
 
                 // 동일 폴더 자가 복사(Self-Copy)는 별도 처리되므로 중복 체크 제외
@@ -1835,6 +1875,9 @@ namespace KCertManager.Wpf.ViewModels
 
             int success = 0;
             int skippedCount = 0;
+            int failedCount = 0;
+            var copiedTargets = new List<CertificateItem>();
+            var highlightDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             await Task.Run(() =>
             {
@@ -1852,8 +1895,9 @@ namespace KCertManager.Wpf.ViewModels
                         };
 
                         // 동일 경로 복사 방지 (대상 폴더와 원본 폴더가 완전히 동일할 때만 자가 복사 생략)
+                        string destRoot = ResolveBackupDestinationRoot(targetDriveName, cert);
                         string safeRel = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
-                        string expectedDstDir = Path.GetFullPath(Path.Combine(defaultDestRoot, safeRel)).TrimEnd('\\');
+                        string expectedDstDir = Path.GetFullPath(Path.Combine(destRoot, safeRel)).TrimEnd('\\');
                         string currentSrcDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd('\\');
                         if (string.Equals(currentSrcDir, expectedDstDir, StringComparison.OrdinalIgnoreCase))
                         {
@@ -1878,6 +1922,8 @@ namespace KCertManager.Wpf.ViewModels
                                 UpdateBackupHistoryIndices();
                             }));
                             success++;
+                            copiedTargets.Add(cert);
+                            highlightDirs.Add(currentSrcDir);
                             continue;
                         }
 
@@ -1945,6 +1991,12 @@ namespace KCertManager.Wpf.ViewModels
                         if (result.IsSuccess)
                         {
                             success++;
+                            copiedTargets.Add(cert);
+                            highlightDirs.Add(currentSrcDir);
+                            if (!string.IsNullOrWhiteSpace(result.DestinationPath))
+                            {
+                                highlightDirs.Add(Path.GetFullPath(result.DestinationPath).TrimEnd('\\'));
+                            }
                             string detailNote = isConflictCert && actualConflictOption == "overwrite" 
                                 ? " (기존 동일 인증서 덮어쓰기 갱신 완료)"
                                 : "";
@@ -1958,6 +2010,7 @@ namespace KCertManager.Wpf.ViewModels
                         }
                         else
                         {
+                            failedCount++;
                             ActivityLogService.Instance.Log(
                                 LogCategory.BACKUP,
                                 LogLevel.ERROR,
@@ -1969,6 +2022,7 @@ namespace KCertManager.Wpf.ViewModels
                     }
                     catch (Exception ex)
                     {
+                        failedCount++;
                         var failResult = new BackupHistoryItem
                         {
                             CertCommonName = cert.CommonName,
@@ -1992,25 +2046,33 @@ namespace KCertManager.Wpf.ViewModels
             // 복사작업 성공 후 새로고침 자동으로 진행
             await RefreshCertificatesAsync();
 
-            StatusMessage = $"복사/백업 및 자동 새로고침 완료: {selected.Count}개 중 {success}개 성공 ({targetDriveName})";
+            StatusMessage = $"복사/백업 및 자동 새로고침 완료: {selected.Count}개 중 {success}개 성공" +
+                (skippedCount > 0 ? $", {skippedCount}개 건너뜀" : string.Empty) +
+                (failedCount > 0 ? $", {failedCount}개 실패" : string.Empty) +
+                $" ({targetDriveName})";
 
             string targetTypeName = isTargetUsb ? "이동식 USB" : "로컬 디스크";
             if (success > 0)
             {
                 PlayCompletionSound();
 
-                // 1.8초간 복사된 행에 반짝이는 강조 효과(Highlight Animation) 적용
-                foreach (var cert in selected)
+                // 새로고침된 라이브 목록(_allCertificates)에서 복사된 원본/사본 행 찾아 1.8초간 강조 효과 적용
+                var liveHighlighted = _allCertificates
+                    .Where(c => !string.IsNullOrWhiteSpace(c.DirectoryPath) &&
+                                highlightDirs.Contains(Path.GetFullPath(c.DirectoryPath).TrimEnd('\\')))
+                    .ToList();
+
+                foreach (var liveCert in liveHighlighted)
                 {
-                    cert.IsRecentlyCopied = true;
+                    liveCert.IsRecentlyCopied = true;
                 }
                 _ = Task.Delay(1800).ContinueWith(_ =>
                 {
                     Application.Current?.Dispatcher?.Invoke(() =>
                     {
-                        foreach (var cert in selected)
+                        foreach (var liveCert in liveHighlighted)
                         {
-                            cert.IsRecentlyCopied = false;
+                            liveCert.IsRecentlyCopied = false;
                         }
                     });
                 }, TaskScheduler.Default);
@@ -2031,21 +2093,25 @@ namespace KCertManager.Wpf.ViewModels
                 }
             }
 
-            if (success == selected.Count)
+            if (failedCount == 0 && success > 0)
             {
-                var completeItems = selected.Select(c => new OperationCompleteItem
+                var completeItems = copiedTargets.Select(c => new OperationCompleteItem
                 {
                     Name = !string.IsNullOrWhiteSpace(c.CommonName) ? c.CommonName : "공동인증서",
                     IssuerAndPolicy = $"{c.IssuerName} · 만료일: {c.NotAfter:yyyy-MM-dd}"
                 }).ToList();
 
-                string sourcePath = selected.FirstOrDefault()?.DirectoryPath ?? "내 컴퓨터 (NPKI/GPKI)";
+                string sourcePath = copiedTargets.FirstOrDefault()?.DirectoryPath ?? selected.FirstOrDefault()?.DirectoryPath ?? "내 컴퓨터 (NPKI/GPKI)";
                 var lastSuccessItem = _backupHistory.FirstOrDefault(h => h.IsSuccess && !string.IsNullOrEmpty(h.DestinationPath));
                 string targetPath = lastSuccessItem?.DestinationPath ?? $"{targetDriveName}\\";
 
+                string subtitle = skippedCount > 0
+                    ? $"{targetTypeName}({targetDriveName})에 인증서 {success}개를 안전하게 복사했습니다. (중복 {skippedCount}개 건너뜀)"
+                    : $"{targetTypeName}({targetDriveName})에 인증서 {success}개를 안전하게 복사했습니다.";
+
                 UserFriendlyMessageHelper.ShowOperationComplete(
                     "인증서 복사 완료!",
-                    $"{targetTypeName}({targetDriveName})에 인증서 {success}개를 안전하게 복사했습니다.",
+                    subtitle,
                     success,
                     sourcePath,
                     targetPath,
@@ -2053,6 +2119,12 @@ namespace KCertManager.Wpf.ViewModels
                     isTargetUsb
                         ? "• 다른 PC에서 USB를 꽂은 뒤 [이동식 디스크]를 선택해 로그인하세요.\n• 분리 전 작업 표시줄의 '하드웨어 안전하게 제거'를 눌러 주세요."
                         : "• 복사된 표준 폴더를 백업용으로 보관하세요.\n• 필요할 때 언제든 다시 복원할 수 있습니다.");
+            }
+            else if (failedCount == 0 && skippedCount > 0)
+            {
+                UserFriendlyMessageHelper.ShowInfo(
+                    $"선택한 인증서 {skippedCount}개는 대상 드라이브({targetDriveName})에 이미 존재하여 중복 복사를 건너뛰었습니다.",
+                    "중복 인증서 건너뜀 안내");
             }
             else
             {
@@ -2099,7 +2171,9 @@ namespace KCertManager.Wpf.ViewModels
                 }
 
                 UserFriendlyMessageHelper.ShowWarning(
-                    $"{targetDriveName}: {selected.Count}개 중 {success}개 성공, {selected.Count - success}개 실패\n원인: {(string.IsNullOrEmpty(firstFailMsg) ? "쓰기 권한 또는 입출력 오류" : firstFailMsg)}",
+                    $"{targetDriveName}: {selected.Count}개 중 {success}개 성공, {failedCount}개 실패" +
+                    (skippedCount > 0 ? $", {skippedCount}개 건너뜀" : string.Empty) +
+                    $"\n원인: {(string.IsNullOrEmpty(firstFailMsg) ? "쓰기 권한 또는 입출력 오류" : firstFailMsg)}",
                     errorCategoryTitle,
                     detailedTip);
             }

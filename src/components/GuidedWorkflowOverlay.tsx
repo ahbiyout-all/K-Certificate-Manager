@@ -57,17 +57,22 @@ export const GuidedWorkflowOverlay: React.FC<GuidedWorkflowOverlayProps> = ({
 
   // Reset steps when workflow changes
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
     if (workflowType) {
       setCurrentStep(1);
       setIsCompleted(false);
 
       if (workflowType === 'usb_to_pc') {
         // Automatically open USB to PC modal on step 2
-        setTimeout(() => {
+        timer = setTimeout(() => {
           onOpenUsbToPcModal();
         }, 500);
       }
     }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workflowType]);
 
   if (!workflowType || workflowType === 'dashboard') return null;

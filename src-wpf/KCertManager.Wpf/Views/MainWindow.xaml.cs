@@ -502,11 +502,11 @@ namespace KCertManager.Wpf.Views
                 var dialog = new DiagnosticsRepairDialog(
                     ViewModel.AllCertificates,
                     ViewModel.BackupService,
-                    () => ViewModel.RefreshCertificatesAsync())
+                    () => ViewModel.RefreshAllCertificatesCompleteAsync())
                 {
                     Owner = this
                 };
-                if (dialog.ShowDialog() == true)
+                if (dialog.ShowDialog() == true || dialog.HasMadeChanges)
                 {
                     ViewModel.RefreshTrash();
                 }
@@ -548,7 +548,7 @@ namespace KCertManager.Wpf.Views
                 {
                     Owner = this
                 };
-                if (dialog.ShowDialog() == true)
+                if (dialog.ShowDialog() == true || dialog.AnyItemRestored)
                 {
                     _ = ViewModel?.RefreshCertificatesAsync();
                     ViewModel?.RefreshTrash();

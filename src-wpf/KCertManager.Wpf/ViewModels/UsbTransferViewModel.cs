@@ -325,7 +325,7 @@ namespace KCertManager.Wpf.ViewModels
                 return Directory.Exists(cleanDrive) ? cleanDrive : sysRoot;
             }
 
-            if (cleanDrive.StartsWith("C", StringComparison.OrdinalIgnoreCase) || !Directory.Exists(cleanDrive))
+            if (string.Equals(cleanDrive, sysRoot, StringComparison.OrdinalIgnoreCase) || !Directory.Exists(cleanDrive))
             {
                 return Path.Combine(userProfile, "AppData", "LocalLow");
             }

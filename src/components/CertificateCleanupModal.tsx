@@ -97,6 +97,13 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
     return hong ? hong.name : (distinctUsers[0]?.name || '');
   });
 
+  React.useEffect(() => {
+    if (isOpen && (!myUserName || !distinctUsers.some(u => u.name === myUserName))) {
+      const hong = distinctUsers.find(u => u.name === '홍길동');
+      setMyUserName(hong ? hong.name : (distinctUsers[0]?.name || ''));
+    }
+  }, [isOpen, distinctUsers, myUserName]);
+
   // Base raw candidates per tab
   const rawCandidates = useMemo(() => {
     switch (activeTab) {
@@ -142,6 +149,10 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
       setIsConfirmed(false);
       setIsDeleting(false);
 
+      const resolvedMyUser = (!myUserName || !distinctUsers.some(u => u.name === myUserName))
+        ? (distinctUsers.find(u => u.name === '홍길동')?.name || distinctUsers[0]?.name || '')
+        : myUserName;
+
       let initialCands: CertificateItem[] = [];
       if (initialMode === 'EXPIRED') {
         const expiredAll = certificates.filter(isCertificateExpired);
@@ -150,7 +161,7 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
         initialCands = expiredAll;
       } else if (initialMode === 'OTHER_USERS') {
         setStorageFilter('ALL');
-        initialCands = certificates.filter(c => c.name !== myUserName);
+        initialCands = certificates.filter(c => c.name !== resolvedMyUser);
       } else if (initialMode === 'SELECTED') {
         setStorageFilter('ALL');
         initialCands = certificates.filter(c => selectedIds.includes(c.id));
@@ -160,7 +171,8 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
       }
       setCheckedIds(initialCands.map(c => c.id));
     }
-  }, [isOpen, initialMode, singleCert]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, initialMode, singleCert, certificates, selectedIds]);
 
   const handleTabChange = (tab: CleanupModalMode) => {
     setActiveTab(tab);
@@ -624,8 +636,8 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
                     {activeTab === 'EXPIRED' 
                       ? `[${storageFilter === 'LOCAL' ? '컴퓨터만' : storageFilter === 'REMOVABLE' ? 'USB만' : '전체'}] 만료 인증서 ${effectiveCheckedIds.length}건 정리` 
                       : activeTab === 'OTHER_USERS'
-                      ? `타인 인증서 ${effectiveCheckedIds.length}건 삭제`
-                      : `선택한 인증서 ${effectiveCheckedIds.length}건 영구 삭제`}
+                      ? `타인 인증서 ${effectiveCheckedIds.length}건 휴지통 이동`
+                      : `선택한 인증서 ${effectiveCheckedIds.length}건 휴지통으로 이동`}
                   </span>
                 </>
               )}

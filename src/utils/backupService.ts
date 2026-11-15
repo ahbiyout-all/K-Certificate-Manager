@@ -56,10 +56,15 @@ export function detectDuplicateCertificates(
   targetDrive: DiskDrive
 ): DuplicateDetectionResult {
   // Find all certs currently residing on targetDrive
+  const targetLetterClean = targetDrive.letter.replace(':', '').toUpperCase();
   const targetDriveCerts = existingCerts.filter(c => {
-    const sDrive = c.sourceDrive || '';
-    const sLoc = c.sourceLocation || '';
-    return sDrive.includes(targetDrive.letter) || sLoc.startsWith(targetDrive.letter);
+    const sDrive = (c.sourceDrive || '').toUpperCase();
+    const sLoc = (c.sourceLocation || '').toUpperCase();
+    return (
+      sDrive.startsWith(`${targetLetterClean}:`) ||
+      sDrive.includes(`(${targetLetterClean}:)`) ||
+      sLoc.startsWith(`${targetLetterClean}:`)
+    );
   });
 
   const conflicts: DuplicateConflictItem[] = [];
@@ -277,18 +282,21 @@ function sanitizePathSegment(segment: string): string {
  * NPKI / GPKI 표준 디렉토리 경로 계산
  */
 export function getStandardDirectoryPath(cert: CertificateItem): string {
+  const subjectDn = (cert.subjectDn || '').trim();
+  const hasCn = subjectDn.toLowerCase().includes('cn=');
+
   // 공무원 인증서 (GPKI)
   if (cert.category === 'GPKI_GOV') {
-    const rawCn = cert.subjectDn.includes('cn=') 
-      ? cert.subjectDn.split(',')[0]
+    const rawCn = hasCn
+      ? subjectDn.split(',')[0].trim()
       : `cn=${cert.name}`;
     return `GPKI/Certificate/class2/${sanitizePathSegment(rawCn)}`;
   }
 
   // 교육행정 인증서 (EPKI)
   if (cert.category === 'EPKI_EDU') {
-    const rawCn = cert.subjectDn.includes('cn=') 
-      ? cert.subjectDn.split(',')[0]
+    const rawCn = hasCn
+      ? subjectDn.split(',')[0].trim()
       : `cn=${cert.name}`;
     return `EPKI/Certificate/class2/${sanitizePathSegment(rawCn)}`;
   }
@@ -305,9 +313,9 @@ export function getStandardDirectoryPath(cert: CertificateItem): string {
     caSubdir = 'TradeSign';
   }
 
-  const rawCn = cert.subjectDn.includes('cn=')
-    ? cert.subjectDn
-    : `cn=${cert.name},ou=personal,o=yessign,c=kr`;
+  const rawCn = hasCn
+    ? subjectDn
+    : `cn=${cert.name},ou=personal,o=${caSubdir},c=kr`;
 
   return `NPKI/${caSubdir}/USER/${sanitizePathSegment(rawCn)}`;
 }

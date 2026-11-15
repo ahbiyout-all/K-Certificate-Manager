@@ -183,7 +183,7 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
           const certCount = certificates.filter(c => {
             const loc = (c.sourceLocation || '').toUpperCase();
             const drv = (c.sourceDrive || '').toUpperCase();
-            return loc.startsWith(letterClean + ':') || drv.startsWith(letterClean + ':');
+            return loc.startsWith(`${letterClean}:`) || drv.startsWith(`${letterClean}:`) || drv.includes(`(${letterClean}:)`);
           }).length;
           const hasCerts = certCount > 0;
 

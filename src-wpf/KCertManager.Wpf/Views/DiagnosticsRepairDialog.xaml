@@ -9,10 +9,6 @@
         Background="{DynamicResource BgDarkBrush}"
         Foreground="{DynamicResource TextPrimaryBrush}">
 
-    <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="LocalBoolToVis"/>
-    </Window.Resources>
-
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -138,7 +134,7 @@
                                         <Border Background="#0B2E26" Padding="12,8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
                                             <StackPanel>
                                                 <TextBlock Text="{Binding PrimaryLabel}" FontSize="11.5" FontWeight="Bold" Foreground="#34D399"/>
-                                                <TextBlock Text="{Binding PrimaryPath}" FontSize="11" FontFamily="Consolas, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" ToolTip="{Binding PrimaryPath}" Margin="0,2,0,0"/>
+                                                <TextBlock Text="{Binding PrimaryPath}" FontSize="11" FontFamily="Consolas, Segoe UI" Foreground="#D1FAE5" TextTrimming="CharacterEllipsis" ToolTip="{Binding PrimaryPath}" Margin="0,2,0,0"/>
                                             </StackPanel>
                                         </Border>
 
@@ -256,10 +252,25 @@
                     <TextBlock Text="닫기" FontSize="12"/>
                 </Button>
 
-                <Button x:Name="BtnExecuteDuplicates" Click="BtnExecuteDuplicates_Click" Background="#D97706" Foreground="White" FontWeight="Bold" Padding="16,8" Cursor="Hand">
+                <Button x:Name="BtnExecuteDuplicates" Click="BtnExecuteDuplicates_Click" Background="#D97706" Foreground="White" FontWeight="Bold" Padding="16,8" Cursor="Hand" BorderThickness="0">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="BtnBorder" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="BtnBorder" Property="Background" Value="#B45309"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.45"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="🗑️ " FontSize="12"/>
-                        <TextBlock Text="선택한 중복 사본 휴지통 이동" FontSize="12" FontWeight="Bold"/>
+                        <TextBlock Text="선택한 중복 사본 휴지통 이동" FontSize="12" FontWeight="Bold" Foreground="White"/>
                     </StackPanel>
                 </Button>
 

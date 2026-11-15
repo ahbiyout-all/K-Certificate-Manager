@@ -853,9 +853,12 @@ export default function App() {
 
     const repairedItems: CertificateItem[] = [];
     const oldIdsToTrash: string[] = [];
+    const repairedTargetUppers = new Set<string>();
 
     for (const cand of candidates) {
       const targetUpper = cand.canonicalPath.trim().toUpperCase();
+      repairedTargetUppers.add(targetUpper);
+
       const drivePrefix = cand.targetDrive || 'C:';
       const driveLabel = cand.cert.isRemovableMedia
         ? `${drivePrefix} (이동식 USB)`
@@ -876,9 +879,6 @@ export default function App() {
       if (trashSourceAfterCopy) {
         oldIdsToTrash.push(cand.cert.id);
       }
-
-      // Remove duplicates targeting the exact same canonical path
-      void targetUpper;
     }
 
     if (trashSourceAfterCopy && oldIdsToTrash.length > 0) {
@@ -891,20 +891,33 @@ export default function App() {
         minute: '2-digit',
       });
       const sourceCerts = candidates.map(c => c.cert);
+      const trashedCertIds = new Set(sourceCerts.map(c => c.id));
       const trashEntries: TrashItem[] = sourceCerts.map(cert => ({
         id: `trash-repair-${Date.now()}-${cert.id}`,
         deletedAt: nowStr,
         deleteReason: '표준 경로 복구 후 기존 비표준 폴더 정리',
         cert,
       }));
-      setTrashItems(prev => [...trashEntries, ...prev]);
+      setTrashItems(prev => [
+        ...trashEntries,
+        ...prev.filter(t => !trashedCertIds.has(t.cert.id)),
+      ]);
       setCertificates(prev => {
-        const remaining = prev.filter(c => !oldSet.has(c.id));
+        const remaining = prev.filter(
+          c =>
+            !oldSet.has(c.id) &&
+            !repairedTargetUppers.has((c.sourceLocation || '').trim().toUpperCase())
+        );
         return [...repairedItems, ...remaining];
       });
       setLastUndoSnapshot({ trashItems: trashEntries, certs: sourceCerts });
     } else {
-      setCertificates(prev => [...repairedItems, ...prev]);
+      setCertificates(prev => {
+        const remaining = prev.filter(
+          c => !repairedTargetUppers.has((c.sourceLocation || '').trim().toUpperCase())
+        );
+        return [...repairedItems, ...remaining];
+      });
     }
 
     const newLog = logActivity({
@@ -1363,10 +1376,22 @@ export default function App() {
       return drive;
     }));
 
+    const matchedTargetDrive = availableDrives.find(
+      d =>
+        record.targetDisk.includes(d.letter) ||
+        (record.targetPath && record.targetPath.toUpperCase().startsWith(d.letter.toUpperCase()))
+    );
+    const isUsbTargetDrive = matchedTargetDrive
+      ? matchedTargetDrive.type === 'removable' ||
+        matchedTargetDrive.busType === 'USB' ||
+        matchedTargetDrive.deviceKind === 'fast_usb' ||
+        matchedTargetDrive.deviceKind === 'external_ssd'
+      : !/^(C|D):/i.test(record.targetDisk.trim()) && !record.targetDisk.includes('로컬 디스크');
+
     const newLog = logActivity({
       category: 'BACKUP',
       level: 'SUCCESS',
-      action: '이동식 디스크(USB) 백업 완료',
+      action: isUsbTargetDrive ? '이동식 디스크(USB) 백업 완료' : '로컬 디스크 백업 완료',
       details: `${record.targetDisk}로 ${record.certificatesCount}건 복사 완료 (${record.certNames.join(', ')}) / 무결성 검증 통과`,
       source: copiedCertObjects[0]?.sourceLocation || 'C:\\Users\\Admin\\AppData\\LocalLow',
       target: record.targetPath,
@@ -1382,9 +1407,9 @@ export default function App() {
     );
 
     setOperationCompleteData({
-      title: 'USB 복사 완료',
+      title: isUsbTargetDrive ? 'USB 복사 완료' : '로컬 디스크 백업 완료',
       subtitle: `인증서 ${record.certificatesCount}건을 ${record.targetDisk}에 복사했습니다.`,
-      operationType: 'PC_TO_USB',
+      operationType: isUsbTargetDrive ? 'PC_TO_USB' : 'BACKUP',
       count: record.certificatesCount,
       certNames: record.certNames,
       targetDiskName: record.targetDisk,
@@ -1551,6 +1576,17 @@ export default function App() {
     return certificates[0] || null;
   }, [inspectedCert, certificates]);
 
+  const diagnosticsIssueCount = useMemo(() => {
+    const dupSum = analyzeDuplicateCertificates(certificates);
+    const repCands = analyzePathRepairs(certificates);
+    return (
+      dupSum.groups.reduce(
+        (sum, g) => sum + g.redundantEntries.filter(e => e.defaultChecked).length,
+        0
+      ) + repCands.length
+    );
+  }, [certificates]);
+
   return (
     <div
       className="wpf-shell wpf-native flex flex-col min-h-screen lg:h-screen lg:overflow-hidden font-sans antialiased transition-colors duration-150"
@@ -1669,12 +1705,7 @@ export default function App() {
         onOpenStartupWorkflow={() => setIsStartupWorkflowOpen(true)}
         onOpenSettings={() => setIsSettingsModalOpen(true)}
         onOpenDiagnostics={() => setIsDiagnosticsModalOpen(true)}
-        diagnosticsIssueCount={
-          analyzeDuplicateCertificates(certificates).groups.reduce(
-            (sum, g) => sum + g.redundantEntries.filter(e => e.defaultChecked).length,
-            0
-          ) + analyzePathRepairs(certificates).length
-        }
+        diagnosticsIssueCount={diagnosticsIssueCount}
       />
 
       {/* ROW 1: 2-Column Main Body (Left 260px Sidebar + Main Workspace) */}
@@ -1886,6 +1917,7 @@ export default function App() {
               onToggleAppViewMode={handleToggleAppViewMode}
               onOpenTargetDrivePicker={() => setIsTargetDrivePickerOpen(true)}
               onStartBackup={() => handleOpenGeneralBackupModal(selectedDriveId)}
+              onBackupAll={() => handleOpenGeneralBackupModal(selectedDriveId, certificates)}
               onOpenUsbToPcModal={() => setIsUsbToPcModalOpen(true)}
               onSelectAll={handleSelectAll}
             />

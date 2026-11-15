@@ -807,7 +807,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                               <span aria-hidden="true">·</span>
                               <span
                                 className="inline-flex items-center gap-0.5 font-semibold"
-                                style={{ color: 'var(--wpf-badge-expiring-text)' }}
+                                style={{ color: isInspected ? '#FDE68A' : 'var(--wpf-badge-expiring-text)' }}
                                 title={isRareGpki ? '실무 미사용 GPKI 예외 경로' : '일반 인증서 창 미인식 비표준 위치'}
                               >
                                 <AlertTriangle className="w-3 h-3 shrink-0" />

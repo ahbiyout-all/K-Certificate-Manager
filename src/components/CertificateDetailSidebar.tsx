@@ -132,10 +132,10 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
         {cert ? (
           (() => {
             const isUsb = isUsbCertificate(cert);
-            const driveLetter =
-              cert.sourceLocation?.length >= 2 && cert.sourceLocation[1] === ':'
-                ? cert.sourceLocation.substring(0, 2)
-                : 'C:';
+            const driveMatch =
+              cert.sourceLocation?.match(/^([A-Za-z]:)/) ||
+              cert.sourceDrive?.match(/([A-Za-z]:)/);
+            const driveLetter = driveMatch ? driveMatch[1].toUpperCase() : 'C:';
             const dColor = getDriveColorInfo(driveLetter);
             const isNonStandard = cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation);
             const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);
@@ -377,9 +377,15 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
                     <div className="text-[11px]" style={{ color: 'var(--wpf-text-secondary)' }}>
                       개인키(signPri.key) 상태:
                     </div>
-                    <div className="text-[11.5px] font-semibold text-[#10B981] flex items-center gap-1 mt-0.5">
+                    <div
+                      className={`text-[11.5px] font-semibold flex items-center gap-1 mt-0.5 ${
+                        cert.files?.hasKey ? 'text-[#10B981]' : 'text-[#F59E0B]'
+                      }`}
+                    >
                       <KeyRound className="w-3.5 h-3.5 shrink-0" />
-                      <span>개인키 정상 보유 (사용 가능)</span>
+                      <span>
+                        {cert.files?.hasKey ? '개인키 정상 보유 (사용 가능)' : '개인키 미포함 (CA 공개키 / 전자서명 불가)'}
+                      </span>
                     </div>
                   </div>
                 </div>

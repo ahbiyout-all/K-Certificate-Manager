@@ -372,21 +372,16 @@ namespace KCertManager.Wpf.Views
             bool trashOld = ChkTrashSourceAfterRepair.IsChecked == true;
             int repairedCount = 0;
             var failMessages = new List<string>();
+            var succeededRepairs = new List<(NonStandardRepairItem Item, string RepairedPath)>();
 
+            // Pass 1: Copy all selected non-standard certificates to standard paths before trashing any source folder
             foreach (var item in targets)
             {
                 var res = CertIntegrityDoctor.RepairToStandardHierarchy(item.SourcePath, item.DestinationRoot);
                 if (res.IsSuccess)
                 {
                     repairedCount++;
-                    if (trashOld && Directory.Exists(item.SourcePath))
-                    {
-                        try
-                        {
-                            _backupService.MoveToTrash(item.Cert);
-                        }
-                        catch { }
-                    }
+                    succeededRepairs.Add((item, res.RepairedPath));
 
                     ActivityLogService.Instance.Log(
                         LogCategory.RESTORE,
@@ -399,6 +394,32 @@ namespace KCertManager.Wpf.Views
                 else
                 {
                     failMessages.Add($"{item.CommonName}: {res.Message}");
+                }
+            }
+
+            // Pass 2: Deduplicate source directories and move to trash only after all repairs finish
+            if (trashOld && succeededRepairs.Any())
+            {
+                var trashedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var (item, repairedPath) in succeededRepairs)
+                {
+                    if (string.IsNullOrWhiteSpace(item.SourcePath)) continue;
+
+                    try
+                    {
+                        string normSrc = Path.GetFullPath(item.SourcePath).TrimEnd('\\');
+                        string normDst = string.IsNullOrWhiteSpace(repairedPath)
+                            ? string.Empty
+                            : Path.GetFullPath(repairedPath).TrimEnd('\\');
+
+                        if (string.Equals(normSrc, normDst, StringComparison.OrdinalIgnoreCase)) continue;
+                        if (!trashedPaths.Add(normSrc)) continue;
+                        if (Directory.Exists(item.SourcePath))
+                        {
+                            _backupService.MoveToTrash(item.Cert);
+                        }
+                    }
+                    catch { }
                 }
             }
 

@@ -256,7 +256,7 @@ namespace KCert.Core.Vault
             }
             if (upper.Contains("EPKI"))
             {
-                return Path.Combine("EPKI", "Certificate", "class1", folderName);
+                return Path.Combine("EPKI", "Certificate", "class2", folderName);
             }
 
             return Path.Combine("NPKI", "yessign", "User", folderName);

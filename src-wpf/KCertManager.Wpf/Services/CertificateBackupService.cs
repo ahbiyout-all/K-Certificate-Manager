@@ -121,8 +121,9 @@ namespace KCertManager.Wpf.Services
                 else
                 {
                     // 선택된 도착 디스크 (C:, D:, E: 등)의 Users AppData 경로로 안전 배치
+                    string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\').ToUpperInvariant() + "\\";
                     string driveUsersDir = Path.Combine(cleanDrive, "Users", username, "AppData", "LocalLow");
-                    if (cleanDrive.StartsWith("C", StringComparison.OrdinalIgnoreCase) || !Directory.Exists(cleanDrive))
+                    if (string.Equals(cleanDrive, sysRoot, StringComparison.OrdinalIgnoreCase) || !Directory.Exists(cleanDrive))
                     {
                         var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
                         targetRoot = Path.Combine(userProfile, "AppData", "LocalLow");

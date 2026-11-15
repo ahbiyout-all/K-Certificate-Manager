@@ -465,9 +465,11 @@ namespace KCertManager.Wpf.ViewModels
             StatusMessage = $"{targetDriveName} 드라이브로 {selected.Count}건의 인증서 복사 진행 중...";
 
             int success = 0;
+            int skipped = 0;
             int failed = 0;
             var errorList = new List<string>();
             var successfulDestinations = new List<string>();
+            var copiedTargets = new List<CertificateItem>();
 
             await Task.Run(() =>
             {
@@ -507,6 +509,7 @@ namespace KCertManager.Wpf.ViewModels
                         if (fullSourceDir.Equals(fullTargetDir, StringComparison.OrdinalIgnoreCase))
                         {
                             success++;
+                            copiedTargets.Add(cert);
                             cert.IsRecentlyCopied = true;
                             successfulDestinations.Add(fullTargetDir);
                             continue;
@@ -516,6 +519,7 @@ namespace KCertManager.Wpf.ViewModels
                         {
                             if (ConflictOption == "skip")
                             {
+                                skipped++;
                                 continue;
                             }
                             else if (ConflictOption == "rename")
@@ -529,6 +533,7 @@ namespace KCertManager.Wpf.ViewModels
                         if (transferResult.IsSuccess)
                         {
                             success++;
+                            copiedTargets.Add(cert);
                             cert.IsRecentlyCopied = true;
                             successfulDestinations.Add(transferResult.DestinationDirectory);
                         }
@@ -552,13 +557,13 @@ namespace KCertManager.Wpf.ViewModels
             {
                 SoundService.PlayCompletionSound();
                 string targetDesc = isTargetUsb ? "USB 메모리" : "로컬 디스크";
-                var completeItems = selected.Select(c => new OperationCompleteItem
+                var completeItems = copiedTargets.Select(c => new OperationCompleteItem
                 {
                     Name = !string.IsNullOrWhiteSpace(c.CommonName) ? c.CommonName : "공동인증서",
                     IssuerAndPolicy = $"{c.IssuerName} · 만료일: {c.NotAfter:yyyy-MM-dd}"
                 }).ToList();
 
-                string sourcePath = selected.FirstOrDefault()?.DirectoryPath ?? "내 컴퓨터 (NPKI/GPKI)";
+                string sourcePath = copiedTargets.FirstOrDefault()?.DirectoryPath ?? selected.FirstOrDefault()?.DirectoryPath ?? "내 컴퓨터 (NPKI/GPKI)";
                 string firstDest = successfulDestinations.FirstOrDefault(d => !string.IsNullOrEmpty(d)) ?? string.Empty;
                 string targetPath = !string.IsNullOrEmpty(firstDest)
                     ? firstDest
@@ -568,9 +573,13 @@ namespace KCertManager.Wpf.ViewModels
                             ? Path.Combine(targetDriveName, "EPKI")
                             : (targetDriveName.EndsWith("\\") ? $"{targetDriveName}NPKI" : $"{targetDriveName}\\NPKI")));
 
+                string subtitle = skipped > 0
+                    ? $"{targetDriveName} ({targetDesc})에 인증서 {success}개를 안전하게 복사했습니다. (중복 {skipped}개 건너뜀)"
+                    : $"{targetDriveName} ({targetDesc})에 인증서 {success}개를 안전하게 복사했습니다.";
+
                 UserFriendlyMessageHelper.ShowOperationComplete(
                     "인증서 복사 완료!",
-                    $"{targetDriveName} ({targetDesc})에 인증서 {success}개를 안전하게 복사했습니다.",
+                    subtitle,
                     success,
                     sourcePath,
                     targetPath,
@@ -579,9 +588,16 @@ namespace KCertManager.Wpf.ViewModels
 
                 TransferCompleted?.Invoke();
             }
+            else if (failed == 0 && skipped > 0)
+            {
+                UserFriendlyMessageHelper.ShowInfo(
+                    $"선택한 인증서 {skipped}개는 대상 드라이브({targetDriveName})에 이미 존재하여 중복 복사를 건너뛰었습니다.",
+                    "중복 인증서 건너뜀 안내");
+            }
             else
             {
-                string errMsg = $"인증서 복사에 실패하였습니다.\n\n원인:\n{string.Join("\n", errorList)}";
+                string detailText = errorList.Any() ? string.Join("\n", errorList) : "알 수 없는 쓰기 또는 경로 오류가 발생했습니다.";
+                string errMsg = $"인증서 복사에 실패하였습니다.\n\n원인:\n{detailText}";
                 MessageBox.Show(errMsg, "복사 오류 안내", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }

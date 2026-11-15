@@ -225,14 +225,30 @@ namespace KCertManager.Wpf.Views
             if (_cert == null) return;
             try
             {
-                var drives = UsbDriveWatcher.GetAvailableDrives().Where(d => !d.IsCdRom).ToList();
-                var dialog = new TargetDrivePickerDialog(new System.Collections.Generic.List<CertificateItem> { _cert }, drives)
+                var mainWin = Owner as MainWindow ?? Application.Current?.MainWindow as MainWindow;
+                var drives = mainWin?.ViewModel?.AvailableTargetDrives?.ToList()
+                             ?? UsbDriveWatcher.GetAvailableDrives().Where(d => !d.IsCdRom).ToList();
+
+                var dialog = new TargetDrivePickerDialog(new List<CertificateItem> { _cert }, drives)
                 {
                     Owner = this
                 };
 
                 if (dialog.ShowDialog() == true && dialog.SelectedDrive != null)
                 {
+                    if (mainWin?.ViewModel != null)
+                    {
+                        var selectedDrive = dialog.SelectedDrive;
+                        var conflictOption = dialog.ConflictOption;
+                        mainWin.ViewModel.SelectedTargetDrive = selectedDrive;
+                        Close();
+                        _ = mainWin.ViewModel.ExecuteBackupWithConflictOptionAsync(
+                            new List<CertificateItem> { _cert },
+                            selectedDrive,
+                            conflictOption);
+                        return;
+                    }
+
                     var backupService = new CertificateBackupService();
                     var res = backupService.BackupCertificateToDrive(_cert, dialog.SelectedDrive.Name);
                     if (res.IsSuccess)

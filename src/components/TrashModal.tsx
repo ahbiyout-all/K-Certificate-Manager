@@ -552,7 +552,7 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                 <div>• 소유자명(CN): <span className="font-bold text-slate-900">{selectedProofItem.cert?.name || (selectedProofItem as any).certCommonName || '알 수 없음'}</span></div>
                 <div>• 발급기관: <span className="text-slate-800">{selectedProofItem.cert?.issuer || (selectedProofItem as any).issuer || '알 수 없음'}</span></div>
                 <div>• 구분: <span className="text-slate-800">{selectedProofItem.cert?.category || (selectedProofItem as any).category || 'NPKI'}</span></div>
-                <div>• 만료일자: <span className="text-slate-800 font-mono">{selectedProofItem.cert?.expireDate || (selectedProofItem as any).expireDate || '-'}</span></div>
+                <div>• 만료일자: <span className="text-slate-800 font-mono">{selectedProofItem.cert?.validTo || (selectedProofItem as any).expireDate || '-'}</span></div>
               </div>
 
               <div className="p-3 bg-slate-50 rounded-xl space-y-1.5 border border-slate-200">

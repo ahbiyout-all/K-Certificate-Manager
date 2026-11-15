@@ -85,13 +85,16 @@ namespace KCert.Core.Diagnostics
                 var files = Directory.GetFiles(folderPath);
                 foundFiles.AddRange(files.Select(Path.GetFileName).Where(f => !string.IsNullOrEmpty(f))!);
 
-                // 1. 중첩 폴더 검사 (GPKI\GPKI, NPKI\NPKI, EPKI\EPKI 등)
+                // 1. 중첩 폴더 및 백업/임시 폴더 검사 (GPKI\GPKI, NPKI\NPKI, EPKI\EPKI, Backup, Temp 등)
                 string upperPath = folderPath.Replace('/', '\\').ToUpperInvariant();
                 if (upperPath.Contains(@"\GPKI\GPKI") || upperPath.Contains(@"\NPKI\NPKI") || upperPath.Contains(@"\EPKI\EPKI") ||
-                    upperPath.Contains(@"\BACKUP\NPKI") || upperPath.Contains(@"\인증서\NPKI"))
+                    upperPath.Contains(@"\GPKI\BACKUP") || upperPath.Contains(@"\NPKI\BACKUP") || upperPath.Contains(@"\EPKI\BACKUP") ||
+                    upperPath.Contains(@"\BACKUP\NPKI") || upperPath.Contains(@"\인증서\NPKI") ||
+                    upperPath.Contains(@"\백업\") || upperPath.EndsWith(@"\백업") ||
+                    upperPath.Contains(@"\TEMP\") || upperPath.EndsWith(@"\TEMP"))
                 {
                     flags |= CertAnomalyFlags.NestedFolderError;
-                    issues.Add("폴더 복사 실수로 인증서 계층 구조가 중첩(\"...\\GPKI\\GPKI...\")되어 정부/은행 서명 모듈에서 인식되지 않습니다.");
+                    issues.Add("폴더 복사 실수 또는 백업/임시 경로 저장으로 인증서 계층 구조가 표준과 달라 정부/은행 서명 모듈에서 인식되지 않습니다.");
                 }
 
                 // 2. 파일 목록 검사
@@ -331,11 +334,11 @@ namespace KCert.Core.Diagnostics
 
             if (sysType == CertSystemType.GPKI)
             {
-                return Path.Combine("GPKI", "Certificate", "class1", safeUserFolder);
+                return Path.Combine("GPKI", "Certificate", "class2", safeUserFolder);
             }
             if (sysType == CertSystemType.EPKI)
             {
-                return Path.Combine("EPKI", "Certificate", "class1", safeUserFolder);
+                return Path.Combine("EPKI", "Certificate", "class2", safeUserFolder);
             }
 
             // NPKI 기본

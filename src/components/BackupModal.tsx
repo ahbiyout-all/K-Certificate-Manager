@@ -236,10 +236,17 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     }
   };
 
-  // Check duplicate status whenever drive or selection changes
+  // Run write check only when modal opens or drive/simulated-lock changes
   useEffect(() => {
     if (isOpen && targetDrive) {
       runWriteCheck(targetDrive, simulatedLockedDriveIds, true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, selectedDriveId, simulatedLockedDriveIds]);
+
+  // Check duplicate status whenever drive or selection changes
+  useEffect(() => {
+    if (isOpen && targetDrive) {
       const dup = detectDuplicateCertificates(effectiveSelectedCerts, existingCertificates, targetDrive);
       setDuplicateResult(dup);
       const initialDecisions: Record<string, 'overwrite' | 'skip' | 'archive_old'> = {};
@@ -248,7 +255,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       });
       setCustomDuplicateDecisions(initialDecisions);
     }
-  }, [isOpen, selectedDriveId, simulatedLockedDriveIds, effectiveSelectedCerts, existingCertificates]);
+  }, [isOpen, selectedDriveId, targetDrive, effectiveSelectedCerts, existingCertificates]);
 
   if (!isOpen) return null;
 

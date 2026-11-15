@@ -13,6 +13,7 @@ interface SimpleTransferHeroProps {
   onToggleAppViewMode: (mode: 'simple' | 'advanced') => void;
   onOpenTargetDrivePicker: () => void;
   onStartBackup: () => void;
+  onBackupAll?: () => void;
   onOpenUsbToPcModal: () => void;
   onSelectAll: () => void;
 }
@@ -23,6 +24,7 @@ export const SimpleTransferHero: React.FC<SimpleTransferHeroProps> = ({
   selectedDriveId,
   onOpenTargetDrivePicker,
   onStartBackup,
+  onBackupAll,
   onOpenUsbToPcModal,
   onSelectAll,
 }) => {
@@ -109,8 +111,12 @@ export const SimpleTransferHero: React.FC<SimpleTransferHeroProps> = ({
         <button
           type="button"
           onClick={() => {
-            if (certificates.length > 0) onSelectAll();
-            onStartBackup();
+            if (onBackupAll) {
+              onBackupAll();
+            } else {
+              if (certificates.length > 0) onSelectAll();
+              onStartBackup();
+            }
           }}
           className="wpf-btn-success wpf-native px-3.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           title="모든 인증서를 선택 드라이브로 바로 복사"

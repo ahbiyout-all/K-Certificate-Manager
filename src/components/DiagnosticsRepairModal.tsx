@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   X,
   FolderSync,
@@ -45,6 +45,7 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
   const [selectedRepairIds, setSelectedRepairIds] = useState<string[]>([]);
   const [trashSourceAfterRepair, setTrashSourceAfterRepair] = useState(true);
   const [actionBanner, setActionBanner] = useState<string | null>(null);
+  const wasOpenRef = useRef(false);
 
   const dupSummary = useMemo(
     () => analyzeDuplicateCertificates(certificates),
@@ -57,15 +58,31 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
   );
 
   useEffect(() => {
-    if (!isOpen) return;
-    setActiveTab(initialTab);
-    setActionBanner(null);
+    if (!isOpen) {
+      wasOpenRef.current = false;
+      return;
+    }
 
-    const defaultDupIds = dupSummary.groups.flatMap((g) =>
-      g.redundantEntries.filter((e) => e.defaultChecked).map((e) => e.cert.id)
+    if (!wasOpenRef.current) {
+      wasOpenRef.current = true;
+      setActiveTab(initialTab);
+      setActionBanner(null);
+
+      const defaultDupIds = dupSummary.groups.flatMap((g) =>
+        g.redundantEntries.filter((e) => e.defaultChecked).map((e) => e.cert.id)
+      );
+      setSelectedDupIds(defaultDupIds);
+      setSelectedRepairIds(repairCandidates.map((r) => r.cert.id));
+      return;
+    }
+
+    const validDupIds = new Set(
+      dupSummary.groups.flatMap((g) => g.redundantEntries.map((e) => e.cert.id))
     );
-    setSelectedDupIds(defaultDupIds);
-    setSelectedRepairIds(repairCandidates.map((r) => r.cert.id));
+    setSelectedDupIds((prev) => prev.filter((id) => validDupIds.has(id)));
+
+    const validRepairIds = new Set(repairCandidates.map((r) => r.cert.id));
+    setSelectedRepairIds((prev) => prev.filter((id) => validRepairIds.has(id)));
   }, [isOpen, initialTab, dupSummary, repairCandidates]);
 
   if (!isOpen) return null;
