@@ -372,7 +372,7 @@ namespace KCertManager.Wpf.Views
             bool trashOld = ChkTrashSourceAfterRepair.IsChecked == true;
             int repairedCount = 0;
             var failMessages = new List<string>();
-            var succeededRepairs = new List<(NonStandardRepairItem Item, string RepairedPath)>();
+            var succeededRepairs = new List<(RepairCandidateVm Item, string RepairedPath)>();
 
             // Pass 1: Copy all selected non-standard certificates to standard paths before trashing any source folder
             foreach (var item in targets)

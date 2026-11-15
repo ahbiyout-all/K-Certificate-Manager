@@ -1780,7 +1780,7 @@ namespace KCertManager.Wpf.ViewModels
                 return Path.Combine(userProfile, "AppData", "LocalLow");
             }
 
-            return string.IsNullOrWhiteSpace(cleanTarget) ? targetDriveName : cleanTarget + "\\";
+            return string.IsNullOrWhiteSpace(cleanTarget) ? (targetDriveName ?? string.Empty) : cleanTarget + "\\";
         }
 
         public async Task ExecuteBackupWithConflictOptionAsync(List<CertificateItem> selected, DriveItem targetDrive, string conflictOption)

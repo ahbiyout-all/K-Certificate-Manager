@@ -144,7 +144,7 @@ namespace KCertManager.Wpf.Views
             catch { }
         }
 
-        private MainViewModel? ViewModel => DataContext as MainViewModel;
+        public MainViewModel? ViewModel => DataContext as MainViewModel;
         private GridLength _savedSidebarWidth = new GridLength(410);
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
