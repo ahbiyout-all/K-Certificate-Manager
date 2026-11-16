@@ -45,8 +45,7 @@ namespace KCertManager.Wpf.Views
                     {
                         Process.Start(new ProcessStartInfo
                         {
-                            FileName = "explorer.exe",
-                            Arguments = $"\"{dir}\"",
+                            FileName = dir,
                             UseShellExecute = true
                         });
                     }

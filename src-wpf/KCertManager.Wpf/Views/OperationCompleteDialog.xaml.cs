@@ -151,20 +151,68 @@ namespace KCertManager.Wpf.Views
         {
             try
             {
-                if (!string.IsNullOrWhiteSpace(_targetPath) && (Directory.Exists(_targetPath) || File.Exists(_targetPath)))
+                string path = _targetPath;
+                if (string.IsNullOrWhiteSpace(path))
                 {
-                    string targetFolder = Directory.Exists(_targetPath) ? _targetPath : Path.GetDirectoryName(_targetPath) ?? string.Empty;
-                    Process.Start(new ProcessStartInfo
+                    path = "C:\\NPKI";
+                }
+
+                // Extract drive letter e.g. E: or C:
+                string driveLetter = "C:";
+                if (path.Length >= 2 && char.IsLetter(path[0]) && path[1] == ':')
+                {
+                    driveLetter = path.Substring(0, 2).ToUpperInvariant();
+                }
+                else if (path.Contains(":"))
+                {
+                    int idx = path.IndexOf(":");
+                    if (idx >= 1)
                     {
-                        FileName = "explorer.exe",
-                        Arguments = targetFolder,
-                        UseShellExecute = true
-                    });
+                        driveLetter = path.Substring(idx - 1, 2).ToUpperInvariant();
+                    }
                 }
-                else
+
+                string targetFolder = path;
+                if (!Path.IsPathRooted(targetFolder) && !string.IsNullOrEmpty(driveLetter))
                 {
-                    MessageBox.Show($"폴더 경로를 찾을 수 없거나 접근할 수 없습니다:\n{_targetPath}", "안내", MessageBoxButton.OK, MessageBoxImage.Information);
+                    targetFolder = Path.Combine(driveLetter + "\\", path.TrimStart('\\', '/'));
                 }
+
+                if (!Directory.Exists(targetFolder) && !File.Exists(targetFolder))
+                {
+                    string parentDir = Path.GetDirectoryName(targetFolder) ?? string.Empty;
+                    if (Directory.Exists(parentDir))
+                    {
+                        targetFolder = parentDir;
+                    }
+                    else
+                    {
+                        string rootFallback = driveLetter + "\\";
+                        if (path.Contains("NPKI", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var npkiPath = Path.Combine(rootFallback, "NPKI");
+                            if (Directory.Exists(npkiPath)) rootFallback = npkiPath;
+                        }
+                        else if (path.Contains("GPKI", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var gpkiPath = Path.Combine(rootFallback, "GPKI");
+                            if (Directory.Exists(gpkiPath)) rootFallback = gpkiPath;
+                        }
+                        targetFolder = rootFallback;
+                    }
+                }
+
+                string folderToOpen = Directory.Exists(targetFolder) ? targetFolder : (Path.GetDirectoryName(targetFolder) ?? driveLetter + "\\");
+                if (!Directory.Exists(folderToOpen))
+                {
+                    folderToOpen = driveLetter + "\\";
+                }
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = folderToOpen,
+                    UseShellExecute = true
+                });
             }
             catch (Exception ex)
             {

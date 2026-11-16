@@ -696,6 +696,7 @@ export function getLocalPcStandardPath(
   targetDriveLetter: string = 'C:'
 ): string {
   const cleanDrive = (targetDriveLetter || 'C:').replace(/[^a-zA-Z]/g, '').toUpperCase() + ':';
+  const isSystemDrive = cleanDrive.startsWith('C');
   const userFolder = `${cleanDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`;
 
   const subjectDn = (cert.subjectDn || '').trim();
@@ -709,7 +710,8 @@ export function getLocalPcStandardPath(
 
   if (cert.category === 'EPKI_EDU') {
     const cn = hasCnPrefix ? subjectDn.split(',')[0].trim() : `cn=${cert.name}`;
-    return `${userFolder}\\EPKI\\Certificate\\class2\\${cn}`;
+    const baseFolder = isSystemDrive ? userFolder : cleanDrive;
+    return `${baseFolder}\\EPKI\\Certificate\\class2\\${cn}`;
   }
 
   // NPKI (은행/금융)
@@ -728,7 +730,8 @@ export function getLocalPcStandardPath(
     ? subjectDn
     : `cn=${cert.name},ou=personal,o=${caSubdir},c=kr`;
 
-  return `${userFolder}\\NPKI\\${caSubdir}\\USER\\${cn}`;
+  const baseFolder = isSystemDrive ? userFolder : cleanDrive;
+  return `${baseFolder}\\NPKI\\${caSubdir}\\USER\\${cn}`;
 }
 
 /**

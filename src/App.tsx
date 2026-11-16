@@ -881,21 +881,22 @@ export default function App() {
       }
     }
 
+    const sourceCerts = candidates.map(c => c.cert);
+    const nowStr = new Date().toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
     if (trashSourceAfterCopy && oldIdsToTrash.length > 0) {
       const oldSet = new Set(oldIdsToTrash);
-      const nowStr = new Date().toLocaleString('ko-KR', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-      const sourceCerts = candidates.map(c => c.cert);
       const trashedCertIds = new Set(sourceCerts.map(c => c.id));
       const trashEntries: TrashItem[] = sourceCerts.map(cert => ({
         id: `trash-repair-${Date.now()}-${cert.id}`,
         deletedAt: nowStr,
-        deleteReason: '표준 경로 복구 후 기존 비표준 폴더 정리',
+        deleteReason: '비표준 위치 정위치(표준 경로) 복구 후 원본 안전 휴지통 이동',
         cert,
       }));
       setTrashItems(prev => [
@@ -920,12 +921,16 @@ export default function App() {
       });
     }
 
+    const actionDesc = trashSourceAfterCopy
+      ? `비표준 폴더 ${candidates.length}건 정위치 복구 및 원본 휴지통 안전 이동 완료`
+      : `비표준 폴더 ${candidates.length}건 정위치 복구 완료`;
+
     const newLog = logActivity({
-      category: 'SYSTEM',
+      category: 'RESTORE',
       level: 'SUCCESS',
-      action: `비표준 폴더 ${candidates.length}건 표준 위치로 자동 복구`,
+      action: actionDesc,
       details: candidates
-        .map(c => `${c.cert.name}: ${c.sourcePath} ➔ ${c.canonicalPath}`)
+        .map(c => `${c.cert.name}: ${c.sourcePath} ➔ ${c.canonicalPath} ${trashSourceAfterCopy ? '(원본 휴지통 격리 완료)' : ''}`)
         .join(' | '),
       source: candidates[0]?.sourcePath || '비표준 폴더',
       target: candidates[0]?.canonicalPath || '표준 경로',
@@ -936,7 +941,7 @@ export default function App() {
     playSuccessChime();
     triggerCopiedHighlight(repairedItems.map(r => r.id));
     showToast(
-      `✅ 비표준 인증서 ${candidates.length}건을 표준 위치로 복구했습니다 (SHA-256 검사 완료).`
+      `✅ 비표준 인증서 ${candidates.length}건 정위치 복구 완료${trashSourceAfterCopy ? ' (원본 휴지통 이동됨)' : ''} · SHA-256 검증 성공`
     );
   };
 

@@ -315,6 +315,13 @@ namespace KCertManager.Wpf.ViewModels
                 ? "C"
                 : targetDriveLetter.TrimEnd(':', '\\', '/')).ToUpperInvariant() + ":\\";
 
+            bool isSystemDrive = string.Equals(cleanDrive, sysRoot, StringComparison.OrdinalIgnoreCase);
+
+            if (!isSystemDrive)
+            {
+                return cleanDrive;
+            }
+
             bool isGpki = string.Equals(category, "GPKI", StringComparison.OrdinalIgnoreCase) ||
                           (!string.IsNullOrWhiteSpace(sourceDirectory) &&
                            (sourceDirectory.IndexOf(@"\GPKI\", StringComparison.OrdinalIgnoreCase) >= 0 ||
@@ -325,7 +332,7 @@ namespace KCertManager.Wpf.ViewModels
                 return Directory.Exists(cleanDrive) ? cleanDrive : sysRoot;
             }
 
-            if (string.Equals(cleanDrive, sysRoot, StringComparison.OrdinalIgnoreCase) || !Directory.Exists(cleanDrive))
+            if (!Directory.Exists(cleanDrive))
             {
                 return Path.Combine(userProfile, "AppData", "LocalLow");
             }

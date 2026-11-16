@@ -443,6 +443,22 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
               )}
             </button>
 
+            <button
+              type="button"
+              onClick={() => {
+                const rawPath = data.targetPath || data.targetDiskName || '';
+                const match = rawPath.match(/([A-Za-z]:)/);
+                const drive = match ? match[1].toUpperCase() + '\\' : 'E:\\';
+                const folder = data.targetPath && data.targetPath.includes(':') ? data.targetPath : `${drive}NPKI`;
+                alert(`[복사된 폴더 열기]\n시스템 파일 탐색기 대상 경로: ${folder}`);
+              }}
+              className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg border border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-900 transition-colors cursor-pointer"
+              title="시스템 파일 탐색기로 복사된 드라이브 및 폴더 열기"
+            >
+              <FolderOpen className="w-3.5 h-3.5 text-blue-700" />
+              <span>복사된 폴더 열기</span>
+            </button>
+
             {onOpenHistory && (
               <button
                 type="button"
