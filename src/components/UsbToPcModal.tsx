@@ -72,7 +72,11 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
     const fixed = availableDrives.filter(
       d => d.type === 'fixed' || d.type === 'local' || d.deviceKind === 'c_drive' || d.deviceKind === 'secondary_fixed'
     );
-    const existingLetters = new Set(fixed.map(d => d.letter.replace(':', '').toUpperCase()));
+    const existingLetters = new Set(
+      fixed
+        .map(d => (d.letter.match(/\b([A-Za-z]):/)?.[1] || d.letter.match(/([A-Za-z])/)?.[1] || '').toUpperCase())
+        .filter(Boolean)
+    );
     if (!existingLetters.has('C')) {
       fixed.unshift({
         id: 'local-c-drive',
@@ -91,15 +95,16 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
   }, [availableDrives]);
 
   const cleanTargetPcDrive = useMemo(() => {
-    const clean = (targetPcDrive || 'C:').replace(/[^a-zA-Z]/g, '').toUpperCase();
-    return (clean || 'C') + ':';
+    const match = (targetPcDrive || '').match(/\b([A-Za-z]):/) || (targetPcDrive || '').match(/([A-Za-z])/);
+    return (match ? match[1] : 'C').toUpperCase() + ':';
   }, [targetPcDrive]);
 
   const selectedTargetDriveObj = useMemo(
     () =>
-      pcLocalTargetDrives.find(
-        d => d.letter.replace(/[^a-zA-Z]/g, '').toUpperCase() + ':' === cleanTargetPcDrive
-      ) || pcLocalTargetDrives[0],
+      pcLocalTargetDrives.find(d => {
+        const m = d.letter.match(/\b([A-Za-z]):/) || d.letter.match(/([A-Za-z])/);
+        return ((m ? m[1] : 'C').toUpperCase() + ':') === cleanTargetPcDrive;
+      }) || pcLocalTargetDrives[0],
     [pcLocalTargetDrives, cleanTargetPcDrive]
   );
   
@@ -165,7 +170,8 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
     );
 
     const drivesWithData = removableDrives.map(d => {
-      const letterClean = d.letter.replace(':', '');
+      const lm = d.letter.match(/\b([A-Za-z]):/) || d.letter.match(/([A-Za-z])/);
+      const letterClean = (lm ? lm[1] : d.letter.replace(':', '')).toUpperCase();
       const certsInThisDrive = getAvailableUsbCertificates(availableDrives, letterClean);
       const hasGov = certsInThisDrive.some(c => c.category === 'GPKI_GOV');
       const hasEdu = certsInThisDrive.some(c => c.category === 'EPKI_EDU');
@@ -209,11 +215,16 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
   // Load default simulated USB certs on open or drive filter change, and listen for live events
   useEffect(() => {
     if (isOpen) {
-      let nextDrive = initialDriveLetter ? initialDriveLetter.replace(':', '') : selectedUsbDriveRef.current;
+      const initMatch = initialDriveLetter
+        ? initialDriveLetter.match(/\b([A-Za-z]):/) || initialDriveLetter.match(/([A-Za-z])/)
+        : null;
+      let nextDrive = initMatch ? initMatch[1].toUpperCase() : selectedUsbDriveRef.current;
       if (!initialDriveLetter && nextDrive !== 'ALL') {
-        const stillMounted = availableDrives.some(
-          d => d.type === 'removable' && d.letter.replace(':', '').toUpperCase() === nextDrive.toUpperCase()
-        );
+        const stillMounted = availableDrives.some(d => {
+          const dm = d.letter.match(/\b([A-Za-z]):/) || d.letter.match(/([A-Za-z])/);
+          const clean = (dm ? dm[1] : d.letter.replace(':', '')).toUpperCase();
+          return (d.type === 'removable' || d.deviceKind === 'external_ssd' || d.deviceKind === 'fast_usb') && clean === nextDrive.toUpperCase();
+        });
         if (!stillMounted) {
           nextDrive = 'ALL';
         }
@@ -329,7 +340,9 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
       setLogs(prev => [
         ...prev,
         `[디스크 검증] USB 이동식 매체 파일 읽기 및 SHA-256 서명 지문 유효성 검사 진행`,
-        `[도착 디스크] 대상 PC 저장소 디스크: ${targetPcDrive} (경로: ${targetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow\\ 및 ${targetPcDrive}\\GPKI)`,
+        cleanTargetPcDrive === 'C:'
+          ? `[도착 디스크] 대상 PC 저장소 디스크: ${cleanTargetPcDrive} (경로: ${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow\\ 및 ${cleanTargetPcDrive}\\GPKI)`
+          : `[도착 디스크] 대상 PC 저장소 디스크: ${cleanTargetPcDrive} (경로: ${cleanTargetPcDrive}\\NPKI, ${cleanTargetPcDrive}\\EPKI 및 ${cleanTargetPcDrive}\\GPKI)`,
       ]);
 
       await new Promise(r => setTimeout(r, 500));
@@ -362,10 +375,15 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
       setShowCelebration(true);
 
       // Trigger success callback to add to main certificates list
-      onImportSuccess(
-        res.importedCerts,
-        `${certsToCopy.length}명의 인증서가 내 컴퓨터(${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow)로 안전하게 복사되었습니다.`
-      );
+      const destDisplay =
+        cleanTargetPcDrive === 'C:'
+          ? `${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`
+          : `${cleanTargetPcDrive}\\NPKI`;
+      const actualCopiedCount = res.importedCerts.length;
+      const callbackMessage = actualCopiedCount > 0
+        ? `${actualCopiedCount}명의 인증서가 내 컴퓨터(${destDisplay})로 안전하게 복사되었습니다.`
+        : `선택한 ${certsToCopy.length}건 모두 이미 내 컴퓨터(${destDisplay})에 존재하여 복사를 건너뛰었습니다.`;
+      onImportSuccess(res.importedCerts, callbackMessage);
     } catch (err: any) {
       playErrorSound();
       const errInfo = parseUserFriendlyError(err, '인증서 컴퓨터 복사');
@@ -402,7 +420,6 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
   };
 
   const selectedCerts = detectedCerts.filter(c => selectedCertIds.includes(c.id));
-  const usbDrives = availableDrives.filter(d => d.type === 'removable');
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
@@ -460,13 +477,15 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                   <CheckCircle2 className="w-8 h-8 relative z-10" />
                 </div>
                 <h4 className="text-lg font-bold text-emerald-950 flex items-center justify-center gap-2">
-                  <span>컴퓨터 복사 완료</span>
+                  <span>{importResult.importedCount + importResult.updatedCount > 0 ? '컴퓨터 복사 완료' : '중복 건너뛰기 완료'}</span>
                   <span className="px-2 py-0.5 bg-emerald-600 text-white rounded-full text-xs font-bold shadow-xs">
                     완료
                   </span>
                 </h4>
                 <p className="text-xs sm:text-sm text-emerald-800 mt-1 max-w-lg mx-auto">
-                  인증서 {importResult.importedCount + importResult.updatedCount}건을 내 컴퓨터({cleanTargetPcDrive})에 복사했습니다.
+                  {importResult.importedCount + importResult.updatedCount > 0
+                    ? `인증서 ${importResult.importedCount + importResult.updatedCount}건을 내 컴퓨터(${cleanTargetPcDrive})에 복사했습니다.${importResult.skippedCount > 0 ? ` (중복 ${importResult.skippedCount}건 건너뜀)` : ''}`
+                    : `동일한 인증서 ${importResult.skippedCount}건이 이미 내 컴퓨터(${cleanTargetPcDrive})에 존재하여 복사를 건너뛰었습니다.`}
                 </p>
                 <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
                   <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full border border-emerald-300 text-xs font-mono text-emerald-900">
@@ -544,7 +563,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                 </div>
                 {showUsageGuide && (
                   <p className="text-[11px] text-slate-600 mt-2 pl-9.5 leading-relaxed">
-                    표준 위치(<code className="font-mono">AppData\LocalLow</code> 및 <code className="font-mono">C:\GPKI</code>)에 자동 저장되어 은행·공공기관 인증서 창에서 즉시 인식됩니다.
+                    표준 위치(<code className="font-mono">{cleanTargetPcDrive === 'C:' ? 'C:\\Users\\...\\AppData\\LocalLow' : `${cleanTargetPcDrive}\\NPKI`}</code> 및 <code className="font-mono">{cleanTargetPcDrive}\GPKI</code>)에 자동 저장되어 은행·공공기관 인증서 창에서 즉시 인식됩니다.
                   </p>
                 )}
               </div>
@@ -573,7 +592,9 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                     <span>컴퓨터로 복사</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </div>
-                  <span className="text-[10px] text-slate-400 mt-1">AppData\LocalLow</span>
+                  <span className="text-[10px] text-slate-400 mt-1">
+                    {cleanTargetPcDrive === 'C:' ? 'AppData\\LocalLow' : `${cleanTargetPcDrive}\\NPKI · EPKI · GPKI`}
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -588,7 +609,9 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                       내 컴퓨터 로컬 ({cleanTargetPcDrive} {selectedTargetDriveObj?.name ? `· ${selectedTargetDriveObj.name}` : '하드디스크'})
                     </span>
                     <span className="text-[11px] text-slate-500 block">
-                      {cleanTargetPcDrive}\Users\{targetUsername}\AppData\LocalLow
+                      {cleanTargetPcDrive === 'C:'
+                        ? `${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`
+                        : `${cleanTargetPcDrive}\\NPKI · ${cleanTargetPcDrive}\\EPKI · ${cleanTargetPcDrive}\\GPKI`}
                     </span>
                   </div>
                 </div>
@@ -1052,7 +1075,9 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                 <div className="text-xs font-bold text-slate-800 flex items-center justify-between flex-wrap gap-1.5">
                   <span>3. 컴퓨터(PC) 저장소 및 동일 파일 중복 해결 옵션</span>
                   <span className="text-[11px] text-blue-600 font-normal font-mono">
-                    {cleanTargetPcDrive}\Users\{targetUsername}\AppData\LocalLow
+                    {cleanTargetPcDrive === 'C:'
+                      ? `${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`
+                      : `${cleanTargetPcDrive}\\NPKI · ${cleanTargetPcDrive}\\EPKI · ${cleanTargetPcDrive}\\GPKI`}
                   </span>
                 </div>
 
@@ -1063,7 +1088,8 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     {pcLocalTargetDrives.map(drive => {
-                      const driveLetterClean = drive.letter.replace(/[^a-zA-Z]/g, '').toUpperCase() + ':';
+                      const dMatch = drive.letter.match(/\b([A-Za-z]):/) || drive.letter.match(/([A-Za-z])/);
+                      const driveLetterClean = (dMatch ? dMatch[1] : 'C').toUpperCase() + ':';
                       const isTargetSelected = cleanTargetPcDrive === driveLetterClean;
                       const driveBadge = getDriveBadgeStyle(drive);
                       return (
@@ -1183,7 +1209,12 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
 
                 <div className="text-[11px] text-slate-600 font-mono bg-white p-2 rounded-lg border border-slate-200/80 flex items-center justify-between flex-wrap gap-1">
                   <span>
-                    최종 복사 경로: <strong className="text-blue-700">{cleanTargetPcDrive}\Users\{targetUsername}\AppData\LocalLow\(NPKI | EPKI) · {cleanTargetPcDrive}\GPKI</strong>
+                    최종 복사 경로:{' '}
+                    <strong className="text-blue-700">
+                      {cleanTargetPcDrive === 'C:'
+                        ? `${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow\\(NPKI | EPKI) · ${cleanTargetPcDrive}\\GPKI`
+                        : `${cleanTargetPcDrive}\\NPKI · ${cleanTargetPcDrive}\\EPKI · ${cleanTargetPcDrive}\\GPKI`}
+                    </strong>
                   </span>
                   <span className="text-[10px] text-slate-600">
                     선택 처리방침: <strong className="text-indigo-700">{
@@ -1257,15 +1288,19 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                   <button
                     type="button"
                     onClick={() => {
+                      const targetFolderHint =
+                        cleanTargetPcDrive === 'C:'
+                          ? `${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow\\NPKI`
+                          : `${cleanTargetPcDrive}\\NPKI`;
                       setCopyErrorModalInfo({
                         title: '컴퓨터 로컬 보관함 쓰기 권한 거부 (Permission Denied)',
-                        summary: `내 컴퓨터 ${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow\\NPKI 폴더에 대한 파일 생성 및 쓰기 권한이 거부되었습니다.`,
+                        summary: `내 컴퓨터 ${targetFolderHint} 폴더에 대한 파일 생성 및 쓰기 권한이 거부되었습니다.`,
                         category: 'PERMISSION_DENIED',
                         solutions: [
                           '브라우저에서 [파일 시스템 권한] 허용 여부를 확인해 주세요.',
                           'Windows 관리자 계정으로 로그인되어 있는지 확인해 주세요.',
-                          '사내 PC 보안 정책 또는 백신 프로그램(V3, 알약 등)의 실시간 감시가 AppData 쓰기를 차단하는지 확인해 주세요.',
-                          `${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow 폴더가 [읽기 전용]으로 잠겨 있지 않은지 확인해 주세요.`,
+                          '사내 PC 보안 정책 또는 백신 프로그램(V3, 알약 등)의 실시간 감시가 폴더 쓰기를 차단하는지 확인해 주세요.',
+                          `${targetFolderHint} 폴더가 [읽기 전용]으로 잠겨 있지 않은지 확인해 주세요.`,
                         ],
                         driveLetter: `${cleanTargetPcDrive}\\`,
                         driveName: `내 컴퓨터 (로컬 ${cleanTargetPcDrive} 드라이브)`,

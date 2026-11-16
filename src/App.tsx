@@ -53,6 +53,8 @@ import { DiagnosticsRepairModal } from './components/DiagnosticsRepairModal';
 import {
   analyzeDuplicateCertificates,
   analyzePathRepairs,
+  buildCanonicalCertPath,
+  extractDriveLetterFromPathOrLabel,
   PathRepairCandidate,
   prepareSafeUsbEject,
 } from './utils/certDiagnostics';
@@ -130,6 +132,14 @@ export default function App() {
   useEffect(() => {
     certificatesRef.current = certificates;
   }, [certificates]);
+  const updateCertificates = (
+    updater: CertificateItem[] | ((prev: CertificateItem[]) => CertificateItem[])
+  ): CertificateItem[] => {
+    const next = typeof updater === 'function' ? updater(certificatesRef.current) : updater;
+    certificatesRef.current = next;
+    setCertificates(next);
+    return next;
+  };
   const [searchPaths, setSearchPaths] = useState<SearchPath[]>(INITIAL_SEARCH_PATHS);
   const [availableDrives, setAvailableDrives] = useState<DiskDrive[]>(INITIAL_DRIVES);
   const [selectedIds, setSelectedIds] = useState<string[]>(() => certificates.map(c => c.id));
@@ -294,7 +304,7 @@ export default function App() {
   }, [availableDrives]);
 
   const nonStandardCount = useMemo(() => {
-    return certificates.filter(c => c.isCustomPath || isNonStandardCertPath(c.sourceLocation)).length;
+    return certificates.filter(c => c.isCustomPath || isNonStandardCertPath(c.sourceLocation, isUsbCertificate(c))).length;
   }, [certificates]);
 
   // Apply theme to document element
@@ -551,7 +561,7 @@ export default function App() {
 
   // Add custom scanned certificates from File System API or Folder upload
   const handleCustomScannedCerts = (newCerts: CertificateItem[]) => {
-    setCertificates(prev => {
+    updateCertificates(prev => {
       const existingIds = new Set(prev.filter(Boolean).map(c => c.id));
       const filteredNew = newCerts.filter(c => c && c.id && !existingIds.has(c.id));
       return [...filteredNew, ...prev];
@@ -609,8 +619,7 @@ export default function App() {
       }
       return cert;
     });
-    certificatesRef.current = nextCertificates;
-    setCertificates(nextCertificates);
+    updateCertificates(nextCertificates);
 
     // 2. Refresh search paths countFound to match active certificates
     setSearchPaths(prevPaths => {
@@ -806,7 +815,7 @@ export default function App() {
     });
 
     // Remove from active list and selection
-    setCertificates(prev => prev.filter(c => !deletedCertIds.has(c.id)));
+    updateCertificates(prev => prev.filter(c => !deletedCertIds.has(c.id)));
     setSelectedIds(prev => prev.filter(id => !deletedCertIds.has(id)));
     setLastUndoSnapshot({ trashItems: newTrashItems, certs: deletedCerts });
 
@@ -857,12 +866,23 @@ export default function App() {
 
     for (const cand of candidates) {
       const targetUpper = cand.canonicalPath.trim().toUpperCase();
+      if (repairedTargetUppers.has(targetUpper)) {
+        if (trashSourceAfterCopy) {
+          oldIdsToTrash.push(cand.cert.id);
+        }
+        continue;
+      }
       repairedTargetUppers.add(targetUpper);
 
-      const drivePrefix = cand.targetDrive || 'C:';
-      const driveLabel = cand.cert.isRemovableMedia
-        ? `${drivePrefix} (이동식 USB)`
-        : `${drivePrefix} (로컬 디스크)`;
+      const drivePrefix = (cand.targetDrive || 'C:').replace(/[\\/\s]+$/, '').toUpperCase();
+      const matchedDrive = availableDrives.find(
+        d => extractDriveLetterFromPathOrLabel(d.letter) === drivePrefix
+      );
+      const driveLabel = matchedDrive
+        ? `${drivePrefix} (${matchedDrive.name})`
+        : isUsbCertificate(cand.cert)
+          ? `${drivePrefix} (이동식 USB)`
+          : `${drivePrefix} (로컬 디스크)`;
 
       repairedItems.push({
         ...cand.cert,
@@ -903,7 +923,7 @@ export default function App() {
         ...trashEntries,
         ...prev.filter(t => !trashedCertIds.has(t.cert.id)),
       ]);
-      setCertificates(prev => {
+      updateCertificates(prev => {
         const remaining = prev.filter(
           c =>
             !oldSet.has(c.id) &&
@@ -911,9 +931,22 @@ export default function App() {
         );
         return [...repairedItems, ...remaining];
       });
+      setSelectedIds(prev => prev.filter(id => !oldSet.has(id)));
+      if (inspectedCert && oldSet.has(inspectedCert.id)) {
+        const matchedRepaired = repairedItems.find(
+          r => r.name === inspectedCert.name && r.serialNumber === inspectedCert.serialNumber
+        );
+        setInspectedCert(matchedRepaired || null);
+      }
+      if (selectedCertForDetail && oldSet.has(selectedCertForDetail.id)) {
+        const matchedRepaired = repairedItems.find(
+          r => r.name === selectedCertForDetail.name && r.serialNumber === selectedCertForDetail.serialNumber
+        );
+        setSelectedCertForDetail(matchedRepaired || null);
+      }
       setLastUndoSnapshot({ trashItems: trashEntries, certs: sourceCerts });
     } else {
-      setCertificates(prev => {
+      updateCertificates(prev => {
         const remaining = prev.filter(
           c => !repairedTargetUppers.has((c.sourceLocation || '').trim().toUpperCase())
         );
@@ -1008,8 +1041,8 @@ export default function App() {
       return updated;
     });
 
-    // Add back to certificates without duplicates
-    setCertificates(prev => {
+    // Add back to certificates without duplicates (sync ref before handleRefresh)
+    updateCertificates(prev => {
       const existingIds = new Set(prev.map(c => c.id));
       const toAdd = restoredCerts.filter(c => !existingIds.has(c.id));
       return [...toAdd, ...prev];
@@ -1040,7 +1073,7 @@ export default function App() {
       count: restoredCerts.length,
       certNames: restoredCerts.map(c => c.name),
       targetDiskName: restoredCerts[0]?.sourceDrive || '로컬 보관함',
-      targetPath: restoredCerts[0]?.sourceLocation || '원래 보관 디렉터리',
+      targetPath: restoredCerts[0]?.sourceLocation || '',
       transferredCerts: restoredCerts,
       hasIntegrityVerified: true,
       sha256Checksum: restoredCerts[0]?.files?.sha256 || 'SHA-256 VERIFIED'
@@ -1086,7 +1119,7 @@ export default function App() {
       return updated;
     });
 
-    setCertificates(prev => {
+    updateCertificates(prev => {
       const existingIds = new Set(prev.map(c => c.id));
       const toAdd = certsToRestore.filter(c => !existingIds.has(c.id));
       return [...toAdd, ...prev];
@@ -1117,7 +1150,7 @@ export default function App() {
       count: certsToRestore.length,
       certNames: certsToRestore.map(c => c.name),
       targetDiskName: certsToRestore[0]?.sourceDrive || '로컬 보관함',
-      targetPath: certsToRestore[0]?.sourceLocation || '원래 보관 디렉터리',
+      targetPath: certsToRestore[0]?.sourceLocation || '',
       transferredCerts: certsToRestore,
       hasIntegrityVerified: true,
       sha256Checksum: certsToRestore[0]?.files?.sha256 || 'SHA-256 VERIFIED'
@@ -1161,7 +1194,7 @@ export default function App() {
       return updated;
     });
 
-    setCertificates(prev => {
+    updateCertificates(prev => {
       const existingIds = new Set(prev.map(c => c.id));
       const toAdd = certsToRestore.filter(c => !existingIds.has(c.id));
       return [...toAdd, ...prev];
@@ -1193,7 +1226,7 @@ export default function App() {
       count: count,
       certNames: certsToRestore.map(c => c.name),
       targetDiskName: certsToRestore[0]?.sourceDrive || '로컬 보관함',
-      targetPath: certsToRestore[0]?.sourceLocation || '원래 보관 디렉터리',
+      targetPath: certsToRestore[0]?.sourceLocation || '',
       transferredCerts: certsToRestore,
       hasIntegrityVerified: true,
       sha256Checksum: certsToRestore[0]?.files?.sha256 || 'SHA-256 VERIFIED'
@@ -1227,22 +1260,38 @@ export default function App() {
       return;
     }
 
+    const cleanUsbLetter =
+      extractDriveLetterFromPathOrLabel(removableDrive.letter) ||
+      removableDrive.letter.replace(/[\\/\s]+$/, '').toUpperCase();
     const certCat = item.cert.category;
     const certSubFolder = certCat.startsWith('GPKI') ? 'GPKI' : certCat.startsWith('EPKI') ? 'EPKI' : 'NPKI';
-    const targetUsbPath = `${removableDrive.letter}\\${certSubFolder}\\${item.cert.name}`;
+    const targetUsbPath = buildCanonicalCertPath({
+      ...item.cert,
+      sourceLocation: `${cleanUsbLetter}\\${certSubFolder}`,
+      sourceDrive: `${cleanUsbLetter} (${removableDrive.name})`,
+      isRemovableMedia: true,
+    });
 
-    // Add/update restored cert on USB to active certificates
+    // Add/update restored cert on USB to active certificates without overwriting distinct PC cert IDs
+    const hasSameIdElsewhere = certificatesRef.current.some(
+      c => c.id === item.cert.id && (c.sourceLocation || '').trim().toUpperCase() !== targetUsbPath.trim().toUpperCase()
+    );
     const restoredCertToUsb: CertificateItem = {
       ...item.cert,
+      id: hasSameIdElsewhere ? `usb-restored-${Date.now()}-${item.cert.id}` : item.cert.id,
       sourceLocation: targetUsbPath,
-      sourceDrive: `${removableDrive.letter} (${removableDrive.name})`,
+      sourceDrive: `${cleanUsbLetter} (${removableDrive.name})`,
+      isRemovableMedia: true,
+      isCustomPath: false,
       status: isCertificateExpired(item.cert) ? 'expired' : 'valid'
     };
 
-    setCertificates(prev => {
-      const existing = prev.find(c => c.id === item.cert.id || (c.sourceLocation && c.sourceLocation.trim().toUpperCase() === targetUsbPath.trim().toUpperCase()));
-      if (existing) {
-        return prev.map(c => (c.id === existing.id) ? restoredCertToUsb : c);
+    updateCertificates(prev => {
+      const existingByPath = prev.find(
+        c => c.sourceLocation && c.sourceLocation.trim().toUpperCase() === targetUsbPath.trim().toUpperCase()
+      );
+      if (existingByPath) {
+        return prev.map(c => (c.id === existingByPath.id) ? restoredCertToUsb : c);
       }
       return [restoredCertToUsb, ...prev];
     });
@@ -1252,7 +1301,7 @@ export default function App() {
       category: 'RESTORE',
       level: 'SUCCESS',
       action: '암호화 보관함 ➔ USB 복원 완료',
-      details: `보관함 [${item.cert.name}] ➔ USB (${removableDrive.letter}) ${certSubFolder} 경로로 복원 및 손상 검사(SHA-256) 통과`,
+      details: `보관함 [${item.cert.name}] ➔ USB (${cleanUsbLetter}) ${certSubFolder} 표준 경로로 복원 및 손상 검사(SHA-256) 통과`,
       source: '암호화 보관함 (%LOCALAPPDATA%\\KCertManager\\ProtectedRestoredVault)',
       target: targetUsbPath,
       count: 1
@@ -1263,11 +1312,11 @@ export default function App() {
     playSuccessChime();
     setOperationCompleteData({
       title: '보관함 ➔ USB 복원 완료',
-      subtitle: `[${item.cert.name}] 인증서를 USB(${removableDrive.letter} ${removableDrive.name}) 표준 폴더로 복원했습니다.`,
+      subtitle: `[${item.cert.name}] 인증서를 USB(${cleanUsbLetter} ${removableDrive.name}) 표준 폴더로 복원했습니다.`,
       operationType: 'USB_RESTORE',
       count: 1,
       certNames: [item.cert.name],
-      targetDiskName: `${removableDrive.letter} (${removableDrive.name})`,
+      targetDiskName: `${cleanUsbLetter} (${removableDrive.name})`,
       targetPath: targetUsbPath,
       transferredCerts: [restoredCertToUsb],
       hasIntegrityVerified: true,
@@ -1435,10 +1484,26 @@ export default function App() {
   };
 
   const handleImportFromUsbSuccess = (importedCerts: CertificateItem[], summaryMessage?: string) => {
+    if (!importedCerts || importedCerts.length === 0) {
+      const skipMsg = summaryMessage || '동일한 인증서가 이미 내 컴퓨터에 존재하여 복사를 건너뛰었습니다.';
+      const infoLog = logActivity({
+        category: 'IMPORT',
+        level: 'INFO',
+        action: 'USB ➔ PC 가져오기 건너뜀 (중복)',
+        details: skipMsg,
+        source: '이동식 USB 매체',
+        target: '내 컴퓨터 로컬 디스크',
+        count: 0
+      });
+      setActivityLogs(prev => [infoLog, ...prev]);
+      showToast(skipMsg);
+      return;
+    }
+
     const newlyAddedIds: string[] = importedCerts.map(c => c.id);
     triggerCopiedHighlight(newlyAddedIds);
 
-    setCertificates(prev => {
+    updateCertificates(prev => {
       const nextList = [...prev];
 
       for (const importedCert of importedCerts) {
@@ -2302,8 +2367,31 @@ export default function App() {
           ? `선택한 ${guidedSelectedCerts.length}개 인증서가 이미 ${guidedTargetDrive.letter} (${guidedTargetDrive.name}) 드라이브에 있어 같은 위치로 복사할 수 없습니다. 다른 드라이브를 선택해 주세요.`
           : null;
 
-        const guidedDuplicateCount = guidedTargetDrive && guidedSelectedCerts.length > 0
-          ? guidedSelectedCerts.filter(c => !isSameDriveSelfCopy(c, guidedTargetDrive) && certificates.some(other => other.id !== c.id && (other.name === c.name || other.serialNumber === c.serialNumber) && ((other.sourceLocation && other.sourceLocation.includes(guidedTargetDrive.letter)) || (other.sourceDrive && other.sourceDrive.includes(guidedTargetDrive.letter))))).length
+        const guidedTargetLetter = guidedTargetDrive
+          ? extractDriveLetterFromPathOrLabel(guidedTargetDrive.letter)
+          : null;
+        const guidedDuplicateCount = guidedTargetDrive && guidedTargetLetter && guidedSelectedCerts.length > 0
+          ? guidedSelectedCerts.filter(c =>
+              !isSameDriveSelfCopy(c, guidedTargetDrive) &&
+              certificates.some(other => {
+                if (other.id === c.id) return false;
+                const otherDrive = extractDriveLetterFromPathOrLabel(other.sourceLocation) || extractDriveLetterFromPathOrLabel(other.sourceDrive);
+                if (otherDrive !== guidedTargetLetter) return false;
+                const shaMatch =
+                  Boolean(c.files?.sha256 && other.files?.sha256) &&
+                  c.files.sha256.length >= 12 &&
+                  c.files.sha256 === other.files.sha256;
+                const serialIssuerMatch =
+                  Boolean(c.serialNumber && other.serialNumber) &&
+                  c.serialNumber === other.serialNumber &&
+                  c.issuer === other.issuer;
+                const catNameIssuerMatch =
+                  c.category === other.category &&
+                  c.name === other.name &&
+                  c.issuer === other.issuer;
+                return shaMatch || serialIssuerMatch || catNameIssuerMatch;
+              })
+            ).length
           : 0;
 
         const guidedDuplicateNotice = guidedDuplicateCount > 0

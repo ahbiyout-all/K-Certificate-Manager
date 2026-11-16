@@ -138,7 +138,7 @@ export function buildCanonicalCertPath(cert: CertificateItem): string {
   if (cert.category === 'EPKI_EDU') {
     const classTier = pathUpper.includes('\\CLASS1') ? 'class1' : 'class2';
     const cleanCn = leaf.toLowerCase().startsWith('cn=') ? leaf : `cn=${cert.name}`;
-    if (isUsb) {
+    if (isUsb || drive !== 'C:') {
       return `${drive}\\EPKI\\Certificate\\${classTier}\\${cleanCn}`;
     }
     return `${drive}\\Users\\${username}\\AppData\\LocalLow\\EPKI\\Certificate\\${classTier}\\${cleanCn}`;
@@ -147,7 +147,7 @@ export function buildCanonicalCertPath(cert: CertificateItem): string {
   // NPKI (은행/금융/법인)
   const caDir = extractCaFolderName(cert);
   const cleanCn = leaf.toLowerCase().startsWith('cn=') ? leaf : `cn=${cert.name},ou=personal,o=${caDir},c=kr`;
-  if (isUsb) {
+  if (isUsb || drive !== 'C:') {
     return `${drive}\\NPKI\\${caDir}\\USER\\${cleanCn}`;
   }
   return `${drive}\\Users\\${username}\\AppData\\LocalLow\\NPKI\\${caDir}\\USER\\${cleanCn}`;
@@ -155,8 +155,8 @@ export function buildCanonicalCertPath(cert: CertificateItem): string {
 
 function scorePrimaryPriority(cert: CertificateItem): number {
   let score = 0;
-  const isStd = isStandardCertPath(cert.sourceLocation, cert.isRemovableMedia);
   const isUsb = isUsbCertificate(cert);
+  const isStd = isStandardCertPath(cert.sourceLocation, isUsb);
   const expired = isCertificateExpired(cert);
 
   if (isStd) score += 100;
@@ -192,7 +192,7 @@ export function analyzeDuplicateCertificates(certs: CertificateItem[]): Deduplic
 
     const redundantEntries: DuplicateRedundantEntry[] = sorted.slice(1).map((cert) => {
       const isUsb = isUsbCertificate(cert);
-      const isStd = isStandardCertPath(cert.sourceLocation, cert.isRemovableMedia);
+      const isStd = isStandardCertPath(cert.sourceLocation, isUsb);
       const drive = getDriveLetterFromCert(cert);
 
       let locationKind: DuplicateRedundantEntry['locationKind'] = 'PC_STANDARD';
@@ -263,7 +263,7 @@ export function analyzePathRepairs(certs: CertificateItem[]): PathRepairCandidat
   for (const cert of certs) {
     const path = (cert.sourceLocation || '').replace(/\//g, '\\');
     const upper = path.toUpperCase();
-    const isNonStd = cert.isCustomPath || isNonStandardCertPath(path);
+    const isNonStd = cert.isCustomPath || isNonStandardCertPath(path, isUsbCertificate(cert));
     if (!isNonStd) continue;
 
     let issueType: PathRepairCandidate['issueType'] = 'NON_STANDARD_PC';

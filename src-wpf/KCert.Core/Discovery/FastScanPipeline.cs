@@ -172,7 +172,7 @@ namespace KCert.Core.Discovery
                     category = "GPKI";
                 else if (upper.Contains(@"\EPKI\") || upper.Contains(@"/EPKI/") || upper.Contains(@"\EPKI") || upper.Contains(@"/EPKI"))
                     category = "EPKI";
-                else if (upper.Contains(@"\MPKI\") || upper.Contains(@"/MPKI/"))
+                else if (upper.Contains(@"\MPKI\") || upper.Contains(@"/MPKI/") || upper.EndsWith(@"\MPKI") || upper.EndsWith(@"/MPKI"))
                     category = "GPKI";
 
                 return new DiscoveredCertLocation

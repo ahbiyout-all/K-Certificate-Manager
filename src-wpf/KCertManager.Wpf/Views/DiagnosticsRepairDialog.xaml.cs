@@ -255,6 +255,7 @@ namespace KCertManager.Wpf.Views
         private static (string DestinationRoot, string PreviewPath) ComputeCanonicalDestination(CertificateItem cert, string canonicalSubPath)
         {
             string sysRoot = Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\";
+            string sysDriveTrimmed = sysRoot.TrimEnd('\\', '/').ToUpperInvariant();
             string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             string localLow = Path.Combine(userProfile, "AppData", "LocalLow");
 
@@ -266,12 +267,17 @@ namespace KCertManager.Wpf.Views
                     "NPKI\\yessign\\USER",
                     Path.GetFileName(cert.DirectoryPath));
 
+            string certDrive = (cert.DriveLetter ?? Path.GetPathRoot(cert.DirectoryPath) ?? string.Empty)
+                .TrimEnd('\\', '/')
+                .ToUpperInvariant();
+            if (!string.IsNullOrWhiteSpace(certDrive) && !certDrive.EndsWith(":")) certDrive += ":";
+            bool isNonSystemDrive = !string.IsNullOrWhiteSpace(certDrive) &&
+                                    !string.Equals(certDrive, sysDriveTrimmed, StringComparison.OrdinalIgnoreCase);
+
             string destRoot;
-            if (cert.IsRemovableMedia && !string.IsNullOrWhiteSpace(cert.DriveLetter))
+            if ((cert.IsRemovableMedia || isNonSystemDrive) && !string.IsNullOrWhiteSpace(certDrive))
             {
-                string dl = cert.DriveLetter.TrimEnd('\\', '/').ToUpperInvariant();
-                if (!dl.EndsWith(":")) dl += ":";
-                destRoot = dl + "\\";
+                destRoot = certDrive + "\\";
             }
             else if (cert.Category == CertCategory.GPKI)
             {
@@ -417,9 +423,19 @@ namespace KCertManager.Wpf.Views
                         if (Directory.Exists(item.SourcePath))
                         {
                             _backupService.MoveToTrash(item.Cert);
+                            ActivityLogService.Instance.Log(
+                                LogCategory.DELETE,
+                                LogLevel.INFO,
+                                "정위치 복구 후 원본 비표준 폴더 휴지통 이동",
+                                $"{item.CommonName}: {item.SourcePath} (복구 위치: {repairedPath})",
+                                item.SourcePath,
+                                "SafetyTrash");
                         }
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        failMessages.Add($"{item.CommonName} 원본 휴지통 이동 실패: {ex.Message}");
+                    }
                 }
             }
 

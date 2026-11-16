@@ -137,7 +137,7 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
               cert.sourceDrive?.match(/([A-Za-z]:)/);
             const driveLetter = driveMatch ? driveMatch[1].toUpperCase() : 'C:';
             const dColor = getDriveColorInfo(driveLetter);
-            const isNonStandard = cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation);
+            const isNonStandard = cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation, isUsb);
             const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);
 
             const statusBadgeStyle =

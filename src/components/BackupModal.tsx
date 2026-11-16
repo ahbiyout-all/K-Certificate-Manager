@@ -561,11 +561,23 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         const copiedCerts = effectiveSelectedCerts.filter(
           c => !skippedIds(c.id, skippedCertIds) && !isSameDriveSelfCopy(c, targetDrive)
         );
+        const firstCopiedSubPath =
+          copiedCerts.length > 0
+            ? getStandardDirectoryPath(copiedCerts[0]).replace(/\//g, '\\')
+            : 'NPKI';
+        const driveCharMatch = targetDrive.letter.trim().match(/\b([A-Za-z]):/) || targetDrive.letter.trim().match(/([A-Za-z])/);
+        const resolvedDriveRoot = driveCharMatch ? `${driveCharMatch[1].toUpperCase()}:` : targetDrive.letter.trim().replace(/[\\/]+$/, '');
+        const isSystemC = resolvedDriveRoot.toUpperCase() === 'C:';
+        const isGpkiFirst = copiedCerts[0]?.category === 'GPKI_GOV';
+        const resolvedTargetPath =
+          isSystemC && !isGpkiFirst
+            ? `C:\\Users\\Admin\\AppData\\LocalLow\\${firstCopiedSubPath}`
+            : `${resolvedDriveRoot}\\${firstCopiedSubPath}`;
         onBackupSuccess({
           id: `backup-${Date.now()}`,
           timestamp: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
           targetDisk: `${targetDrive.letter} ${targetDrive.name}`,
-          targetPath: `${targetDrive.letter}\\ (NPKI/GPKI 표준 구조)`,
+          targetPath: resolvedTargetPath,
           certificatesCount: copiedCerts.length,
           certNames: copiedCerts.map(c => c.name),
           certIds: copiedCerts.map(c => c.id),
@@ -805,7 +817,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                                 </span>
                               </div>
                               <div className="text-[10px] text-slate-500 font-mono truncate max-w-sm mt-0.5">
-                                경로: {targetDrive.letter}\{item.standardPath}
+                                경로: {targetDrive.letter.trim().replace(/[\\/]+$/, '')}\{item.standardPath.replace(/\//g, '\\')}
                               </div>
                             </div>
 

@@ -112,12 +112,14 @@ EncryptedPrivateKeyInfo ::= SEQUENCE {
 #### 1) 2단계 분리형 초고속 스캔 파이프라인 (`FastScanPipeline.cs`)
 - **1단계 (Fast-Pass, 0.05초~0.1초)**:
   - `AppData\LocalLow\NPKI`, `AppData\LocalLow\GPKI`, `AppData\LocalLow\EPKI` 및 장착된 USB 루트의 표준 깊이($\le 3$)만 `Parallel.ForEach`로 즉각 스캔하여 사용자 UI를 딜레이 없이 렌더링.
+  - `\MPKI\` 및 말단 `\MPKI`·`/MPKI` 경로까지 `GPKI` 국방 범주로 일관되게 자동 분류.
 - **2단계 (Deep-Pass, 백그라운드 점진적 스캔)**:
   - 사용자 홈 디렉터리 전체, 구버전 잔여 경로, 보조 드라이브(D:\, E:\)를 백그라운드 태스크로 탐색하며 발견 즉시 스레드 세이프 이벤트로 UI에 스트리밍 병합.
 
-#### 2) 지능형 자동 복구(Auto-Repair) 닥터 (`CertIntegrityDoctor.cs`)
+#### 2) 지능형 자동 복구(Auto-Repair) 닥터 (`CertIntegrityDoctor.cs`) & 중복 탐지 (`KCertAntiDuplicationEngine.cs`)
 - 사용자가 폴더를 통째로 복사하면서 발생하는 중첩 폴더 오류(`.../GPKI/GPKI/...`, `.../NPKI/NPKI/...`)를 감지.
-- 소유자 DN, 발급기관 정책 OID를 조합하여 표준 계층 경로(`NPKI/{Issuer}/USER/cn=...` 또는 `GPKI/Certificate/class1/...`)를 자동 생성하고 1클릭으로 정규화 복구.
+- 소유자 DN, 발급기관 정책 OID를 조합하여 표준 계층 경로(`NPKI/{Issuer}/USER/cn=...` 또는 `GPKI/Certificate/class1/...`)를 자동 생성하고 1클릭으로 정규화 복구 (원본과 대상이 동일 폴더/파일인 경우 조기 반환 및 자기덮어쓰기 `IOException` 방지 가드 내장).
+- `KCertAntiDuplicationEngine`은 PC 로컬 표준 경로를 USB 사본보다 우선(`PrimaryInstance` 점수화) 보존하며, `DerSha256` 해시가 비어 있는 경우에도 `SerialNumber|Issuer|CommonName` 폴백 키로 중복 그룹을 누락 없이 분석.
 
 ---
 

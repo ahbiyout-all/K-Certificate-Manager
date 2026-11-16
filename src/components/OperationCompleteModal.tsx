@@ -66,11 +66,17 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
   const [copiedSummary, setCopiedSummary] = useState(false);
   const [showUsageGuide, setShowUsageGuide] = useState(false);
   const [ejectFeedback, setEjectFeedback] = useState<{ statusTitle: string; message: string } | null>(null);
+  const [openedFolderNotice, setOpenedFolderNotice] = useState<{
+    path: string;
+    title: string;
+    description: string;
+  } | null>(null);
 
   useEffect(() => {
     if (isOpen && data) {
       playCompletionSound();
       setEjectFeedback(null);
+      setOpenedFolderNotice(null);
     }
   }, [isOpen, data]);
 
@@ -150,6 +156,192 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
     safeCopyText(summaryText, () => {
       setCopiedSummary(true);
       setTimeout(() => setCopiedSummary(false), 2000);
+    });
+  };
+
+  const resolveCopiedFolderPath = (): string => {
+    const rawInput = (data.targetPath || '').trim().replace(/\//g, '\\');
+    // Remove trailing display suffixes such as " (표준 경로)", " (이동식 USB)", " (로컬 디스크)"
+    const cleanedTarget = rawInput
+      .replace(/\s*\([^)]*(?:표준|이동식|USB|로컬|외장|디스크|보관)[^)]*\)\s*$/i, '')
+      .replace(/\\Users\\\.\.\.\\/gi, '\\Users\\Admin\\')
+      .trim();
+
+    const isPlaceholderTarget =
+      !cleanedTarget ||
+      cleanedTarget === '원래 보관 디렉터리' ||
+      cleanedTarget === '표준 인증서 폴더' ||
+      cleanedTarget === '대상 저장소';
+
+    const rawTarget = isPlaceholderTarget ? '' : cleanedTarget;
+
+    const firstCert = data.transferredCerts?.[0];
+    const inferDriveFromDiskLabel = (label?: string): string | null => {
+      if (!label) return null;
+      const withColon = extractDriveLetterFromPathOrLabel(label);
+      if (withColon) return withColon;
+      const parenMatch = label.match(/\(([A-Za-z])\)/);
+      return parenMatch ? `${parenMatch[1].toUpperCase()}:` : null;
+    };
+
+    const resolvedDrive =
+      extractDriveLetterFromPathOrLabel(rawTarget) ||
+      inferDriveFromDiskLabel(data.targetDiskName) ||
+      extractDriveLetterFromPathOrLabel(firstCert?.sourceLocation) ||
+      inferDriveFromDiskLabel(firstCert?.sourceDrive) ||
+      (isPcTarget ? 'C:' : 'E:');
+
+    const inferDefaultSubdir = (): string => {
+      const cat = String(firstCert?.category || '').toUpperCase();
+      const srcUpper = `${data.sourcePath || ''} ${rawInput}`.toUpperCase();
+      if (cat.startsWith('GPKI') || srcUpper.includes('GPKI')) return 'GPKI\\Certificate\\class2';
+      if (cat.startsWith('EPKI') || srcUpper.includes('EPKI')) return 'EPKI\\Certificate\\class2';
+      return 'NPKI';
+    };
+
+    const defaultSubdir = inferDefaultSubdir();
+    let folder =
+      isPcTarget && resolvedDrive === 'C:' && !defaultSubdir.startsWith('GPKI')
+        ? `${resolvedDrive}\\Users\\Admin\\AppData\\LocalLow\\${defaultSubdir}`
+        : `${resolvedDrive}\\${defaultSubdir}`;
+
+    if (rawTarget) {
+      if (/^\\\\/.test(rawTarget)) {
+        // Preserve UNC network share prefix while collapsing inner duplicate slashes
+        folder = '\\\\' + rawTarget.slice(2).replace(/\\{2,}/g, '\\');
+      } else if (/^USB:[\\/]*/i.test(rawTarget)) {
+        const sub = rawTarget.replace(/^USB:[\\/]*/i, '').replace(/^[\\/]+/, '');
+        folder = sub ? `${resolvedDrive}\\${sub}` : `${resolvedDrive}\\${defaultSubdir}`;
+      } else if (/^[A-Za-z]:/.test(rawTarget)) {
+        const targetDrive = `${rawTarget[0].toUpperCase()}:`;
+        const rest = rawTarget.slice(2).replace(/^[\\/]+/, '');
+        if (!rest) {
+          folder = `${targetDrive}\\${defaultSubdir}`;
+        } else {
+          folder = `${targetDrive}\\${rest}`;
+        }
+      } else {
+        const sub = rawTarget.replace(/^[\\/]+/, '');
+        folder = sub ? `${resolvedDrive}\\${sub}` : `${resolvedDrive}\\${defaultSubdir}`;
+      }
+    }
+
+    // Normalize duplicate backslashes (excluding leading UNC \\)
+    if (!folder.startsWith('\\\\')) {
+      folder = folder.replace(/\\{2,}/g, '\\');
+    }
+    return folder;
+  };
+
+  const handleOpenCopiedFolder = async () => {
+    const folder = resolveCopiedFolderPath();
+
+    // Always copy resolved OS path to clipboard for instant Explorer / Win+R access
+    safeCopyText(folder, () => {
+      setCopiedPath(true);
+      setTimeout(() => setCopiedPath(false), 2000);
+    });
+
+    // 1. Native Desktop Host Bridge (WPF WebView2 / Electron / Custom Desktop Shell)
+    const win = window as any;
+    try {
+      if (win?.chrome?.webview && typeof win.chrome.webview.postMessage === 'function') {
+        win.chrome.webview.postMessage({
+          type: 'OPEN_FOLDER',
+          action: 'openFolder',
+          path: folder,
+        });
+        setOpenedFolderNotice({
+          path: folder,
+          title: '시스템 파일 탐색기 호출 완료',
+          description: 'Windows 파일 탐색기에서 해당 드라이브 경로를 열었습니다.',
+        });
+        return;
+      }
+
+      if (typeof win?.kcertDesktop?.openFolder === 'function') {
+        await win.kcertDesktop.openFolder(folder);
+        setOpenedFolderNotice({
+          path: folder,
+          title: '시스템 파일 탐색기 호출 완료',
+          description: '데스크톱 파일 탐색기에서 복사된 폴더를 열었습니다.',
+        });
+        return;
+      }
+
+      const electronOpen = win?.electronAPI?.openFolder || win?.electronAPI?.openPath || win?.electron?.shell?.openPath;
+      if (typeof electronOpen === 'function') {
+        await electronOpen(folder);
+        setOpenedFolderNotice({
+          path: folder,
+          title: '시스템 파일 탐색기 호출 완료',
+          description: '운영체제 파일 탐색기에서 복사된 폴더를 열었습니다.',
+        });
+        return;
+      }
+    } catch {
+      // Fall through to browser explorer / clipboard guidance
+    }
+
+    // 2. Local file:// bundle execution (launched via run-web.cmd / launch-web.vbs on Windows)
+    if (typeof window !== 'undefined' && window.location?.protocol === 'file:') {
+      try {
+        const normalizedUriPath = folder.replace(/\\/g, '/').replace(/^\/+/, '');
+        const fileUri = encodeURI(`file:///${normalizedUriPath}`);
+        const link = document.createElement('a');
+        link.href = fileUri;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setOpenedFolderNotice({
+          path: folder,
+          title: '로컬 파일 탐색기 호출 시도 완료 (경로 복사됨)',
+          description: '브라우저 보안 설정에 따라 새 창이 차단된 경우 아래 복사된 경로를 Win+R 또는 탐색기 주소창에 붙여넣어 여세요.',
+        });
+        return;
+      } catch {
+        // Fall through to Web File System Access API / clipboard guidance
+      }
+    }
+
+    // 3. Top-level Browser File System Access API (opens native OS folder explorer window outside cross-origin iframe)
+    let isTopLevel = false;
+    try {
+      isTopLevel = window.self === window.top;
+    } catch {
+      isTopLevel = false;
+    }
+
+    if (isTopLevel && 'showDirectoryPicker' in window) {
+      try {
+        await win.showDirectoryPicker({ mode: 'read' });
+        setOpenedFolderNotice({
+          path: folder,
+          title: '시스템 폴더 탐색기 창 열림 (대상 경로 복사됨)',
+          description: '탐색기 창 주소란에 복사된 경로를 붙여넣으면 해당 드라이브 폴더로 바로 이동합니다.',
+        });
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') {
+          setOpenedFolderNotice({
+            path: folder,
+            title: '탐색기 대상 경로 준비됨 (클립보드에 복사됨)',
+            description: '폴더 선택이 취소되었습니다. Win+R 또는 파일 탐색기 주소창에 붙여넣어 여세요.',
+          });
+          return;
+        }
+      }
+    }
+
+    // 4. Web sandbox / cross-origin iframe fallback: exact OS path copied cleanly
+    setOpenedFolderNotice({
+      path: folder,
+      title: '탐색기 대상 경로 준비됨 (클립보드에 복사됨)',
+      description: '웹 브라우저 샌드박스 정책상 로컬 파일 탐색기를 직접 실행할 수 없으므로, Win+R 또는 파일 탐색기 주소창에 붙여넣어 열어주세요. (Windows 데스크톱 앱에서는 즉시 탐색기가 열립니다.)',
     });
   };
 
@@ -419,6 +611,32 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* 6. Inline Copyable Target Folder Path Banner */}
+          {openedFolderNotice && (
+            <div className="bg-blue-50 border border-blue-300 rounded-xl px-3.5 py-2.5 text-xs text-blue-950 flex items-start justify-between gap-2.5 animate-fadeIn">
+              <div className="flex items-start gap-2 min-w-0 flex-1">
+                <FolderOpen className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="font-bold">{openedFolderNotice.title}</div>
+                  <code className="block text-[11px] font-mono bg-white border border-blue-200 rounded px-2 py-1 text-blue-900 break-all select-all">
+                    {openedFolderNotice.path}
+                  </code>
+                  <p className="text-[11px] text-blue-800 leading-relaxed">
+                    {openedFolderNotice.description}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpenedFolderNotice(null)}
+                className="text-blue-500 hover:text-blue-800 p-1 rounded cursor-pointer shrink-0"
+                aria-label="경로 안내 닫기"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Modal Footer */}
@@ -445,15 +663,9 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
 
             <button
               type="button"
-              onClick={() => {
-                const rawPath = data.targetPath || data.targetDiskName || '';
-                const match = rawPath.match(/([A-Za-z]:)/);
-                const drive = match ? match[1].toUpperCase() + '\\' : 'E:\\';
-                const folder = data.targetPath && data.targetPath.includes(':') ? data.targetPath : `${drive}NPKI`;
-                alert(`[복사된 폴더 열기]\n시스템 파일 탐색기 대상 경로: ${folder}`);
-              }}
+              onClick={handleOpenCopiedFolder}
               className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg border border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-900 transition-colors cursor-pointer"
-              title="시스템 파일 탐색기로 복사된 드라이브 및 폴더 열기"
+              title="실제 드라이브 루트 경로(예: E:\NPKI\...)로 시스템 파일 탐색기 열기"
             >
               <FolderOpen className="w-3.5 h-3.5 text-blue-700" />
               <span>복사된 폴더 열기</span>

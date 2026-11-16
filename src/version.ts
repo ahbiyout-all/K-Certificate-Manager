@@ -1,5 +1,5 @@
-export const APP_VERSION = '2.1.0';
-export const APP_RELEASE_DATE = '2026-11-13';
+export const APP_VERSION = '2.1.1';
+export const APP_RELEASE_DATE = '2026-11-16';
 
 export interface DeveloperInfo {
   author: string;

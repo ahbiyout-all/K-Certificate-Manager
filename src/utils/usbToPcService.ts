@@ -62,12 +62,15 @@ let debounceTimer: any = null;
 /**
  * 기본 시뮬레이션: USB 드라이브(E:, F:, G:, H: 등)에 저장되어 있는 인증서 목록 반환
  */
+const extractCleanDriveColon = (raw: string, fallback = 'E:'): string => {
+  const m = (raw || '').trim().match(/\b([A-Za-z]):/) || (raw || '').trim().match(/([A-Za-z])/);
+  return m ? `${m[1].toUpperCase()}:` : fallback;
+};
+
 export function getAvailableUsbCertificates(drives: DiskDrive[] = activeDrivesState, filterDriveLetter?: string): UsbDetectedCert[] {
   const usbDrives = drives.filter(d => d.type === 'removable');
-  const driveE = usbDrives.find(d => d.letter.startsWith('E'))?.letter || 'E:';
-  const driveG = usbDrives.find(d => d.letter.startsWith('G'))?.letter || 'G:';
-  const driveF = usbDrives.find(d => d.letter.startsWith('F'))?.letter || 'F:';
-  const driveH = usbDrives.find(d => d.letter.startsWith('H'))?.letter || 'H:';
+  const driveE = extractCleanDriveColon(usbDrives.find(d => extractCleanDriveColon(d.letter, '') === 'E:')?.letter || '', 'E:');
+  const driveG = extractCleanDriveColon(usbDrives.find(d => extractCleanDriveColon(d.letter, '') === 'G:')?.letter || '', 'G:');
 
   const allUsbCerts: UsbDetectedCert[] = [
     {
@@ -165,7 +168,8 @@ export function getAvailableUsbCertificates(drives: DiskDrive[] = activeDrivesSt
   ];
 
   if (filterDriveLetter && filterDriveLetter !== 'ALL') {
-    const cleanLetter = filterDriveLetter.replace(':', '').toUpperCase() + ':';
+    const m = filterDriveLetter.trim().match(/\b([A-Za-z]):/) || filterDriveLetter.trim().match(/([A-Za-z])/);
+    const cleanLetter = (m ? m[1] : filterDriveLetter.replace(':', '')).toUpperCase() + ':';
     const matched = allUsbCerts.filter(c => c.usbDriveLetter.toUpperCase().startsWith(cleanLetter));
     if (matched.length > 0) {
       return matched;
@@ -247,13 +251,17 @@ export function getAvailableUsbCertificates(drives: DiskDrive[] = activeDrivesSt
   }
 
   // 전체 드라이브 목록에서 E:, G: 외에 다른 이동식 드라이브(I:, J:, U: 등)가 있으면 그 드라이브의 인증서도 추가
-  const extraRemovableLetters = usbDrives
-    .map(d => d.letter.toUpperCase())
-    .filter(letter => letter !== driveE.toUpperCase() && letter !== driveG.toUpperCase());
+  const extraRemovableLetters = Array.from(
+    new Set(
+      usbDrives
+        .map(d => extractCleanDriveColon(d.letter, ''))
+        .filter(letter => Boolean(letter) && letter !== driveE.toUpperCase() && letter !== driveG.toUpperCase())
+    )
+  );
 
   let combinedCerts = [...allUsbCerts];
   extraRemovableLetters.forEach(cleanLetter => {
-    if (!combinedCerts.some(c => c.usbDriveLetter.toUpperCase().startsWith(cleanLetter))) {
+    if (!combinedCerts.some(c => extractCleanDriveColon(c.usbDriveLetter, '') === cleanLetter)) {
       combinedCerts.push({
         id: `usb-cert-npki-${cleanLetter.toLowerCase().replace(':', '')}`,
         name: '최재호',
@@ -534,71 +542,106 @@ export interface LocalDriveScanSummary {
  * - 디렉터리 미존재(DIRECTORY_NOT_FOUND) 시 자동 폴백 및 예외 우회 로그 남김
  * - 권한 거부(ACCESS_DENIED/EACCES/EPERM) 발생 시 예외 수집 및 사용자 권한 가이드/AppData 대체 경로 제공
  */
-export function verifyAndScanLocalDriveGpkiEpkiPaths(targetUsername: string = 'Admin'): LocalDriveScanSummary {
+export function verifyAndScanLocalDriveGpkiEpkiPaths(
+  targetUsername: string = 'Admin',
+  targetDriveLetter: string = 'C:'
+): LocalDriveScanSummary {
   const now = new Date();
   const scannedAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ` +
                     `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
-  const userAppDataBase = `C:\\Users\\${targetUsername}\\AppData\\LocalLow`;
+  const cleanDrive = extractCleanDriveColon(targetDriveLetter, 'C:');
+  const isSystemDrive = cleanDrive === 'C:';
+  const userAppDataBase = isSystemDrive
+    ? `${cleanDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`
+    : cleanDrive;
 
-  const targetPaths: { path: string; type: 'GPKI' | 'EPKI' | 'NPKI' | 'SYSTEM_ROOT'; description: string; isProtectedSystemPath?: boolean }[] = [
-    {
-      path: `C:\\GPKI`,
-      type: 'GPKI',
-      description: '행정안전부 행정전자서명 C: 루트 기본 경로',
-      isProtectedSystemPath: true,
-    },
-    {
-      path: `C:\\GPKI\\Certificate\\class2`,
-      type: 'GPKI',
-      description: '행정전자서명 인증서 보관 핵심 계층',
-      isProtectedSystemPath: true,
-    },
-    {
-      path: `C:\\EPKI`,
-      type: 'EPKI',
-      description: '교육부 전자서명인증센터 C: 루트 경로',
-      isProtectedSystemPath: true,
-    },
-    {
-      path: `C:\\EPKI\\Certificate\\class2`,
-      type: 'EPKI',
-      description: '교육부 NEIS/K-에듀파인 인증서 보관 계층',
-      isProtectedSystemPath: true,
-    },
-    {
-      path: `${userAppDataBase}\\GPKI`,
-      type: 'GPKI',
-      description: '사용자 프로필 기반 GPKI 표준 세이프가드 디렉터리',
-    },
-    {
-      path: `${userAppDataBase}\\EPKI`,
-      type: 'EPKI',
-      description: '사용자 프로필 기반 EPKI 표준 세이프가드 디렉터리',
-    },
-    {
-      path: `${userAppDataBase}\\NPKI`,
-      type: 'NPKI',
-      description: '사용자 프로필 기반 금융 NPKI 표준 보관소',
-    },
-    {
-      path: `C:\\Program Files\\GPKI`,
-      type: 'GPKI',
-      description: 'GPKI Client 클라이언트 설치 디렉터리',
-      isProtectedSystemPath: true,
-    },
-    {
-      path: `C:\\Program Files (x86)\\GPKI`,
-      type: 'GPKI',
-      description: 'GPKI 32비트 모듈 설치 디렉터리',
-      isProtectedSystemPath: true,
-    },
-  ];
+  const targetPaths: { path: string; type: 'GPKI' | 'EPKI' | 'NPKI' | 'SYSTEM_ROOT'; description: string; isProtectedSystemPath?: boolean }[] = isSystemDrive
+    ? [
+        {
+          path: `${cleanDrive}\\GPKI`,
+          type: 'GPKI',
+          description: '행정안전부 행정전자서명 C: 루트 기본 경로',
+          isProtectedSystemPath: true,
+        },
+        {
+          path: `${cleanDrive}\\GPKI\\Certificate\\class2`,
+          type: 'GPKI',
+          description: '행정전자서명 인증서 보관 핵심 계층',
+          isProtectedSystemPath: true,
+        },
+        {
+          path: `${cleanDrive}\\EPKI`,
+          type: 'EPKI',
+          description: '교육부 전자서명인증센터 C: 루트 경로',
+          isProtectedSystemPath: true,
+        },
+        {
+          path: `${cleanDrive}\\EPKI\\Certificate\\class2`,
+          type: 'EPKI',
+          description: '교육부 NEIS/K-에듀파인 인증서 보관 계층',
+          isProtectedSystemPath: true,
+        },
+        {
+          path: `${userAppDataBase}\\GPKI`,
+          type: 'GPKI',
+          description: '사용자 프로필 기반 GPKI 표준 세이프가드 디렉터리',
+        },
+        {
+          path: `${userAppDataBase}\\EPKI`,
+          type: 'EPKI',
+          description: '사용자 프로필 기반 EPKI 표준 세이프가드 디렉터리',
+        },
+        {
+          path: `${userAppDataBase}\\NPKI`,
+          type: 'NPKI',
+          description: '사용자 프로필 기반 금융 NPKI 표준 보관소',
+        },
+        {
+          path: `${cleanDrive}\\Program Files\\GPKI`,
+          type: 'GPKI',
+          description: 'GPKI Client 클라이언트 설치 디렉터리',
+          isProtectedSystemPath: true,
+        },
+        {
+          path: `${cleanDrive}\\Program Files (x86)\\GPKI`,
+          type: 'GPKI',
+          description: 'GPKI 32비트 모듈 설치 디렉터리',
+          isProtectedSystemPath: true,
+        },
+      ]
+    : [
+        {
+          path: `${cleanDrive}\\NPKI`,
+          type: 'NPKI',
+          description: `${cleanDrive} 드라이브 루트 NPKI 보관 경로`,
+        },
+        {
+          path: `${cleanDrive}\\GPKI`,
+          type: 'GPKI',
+          description: `${cleanDrive} 드라이브 루트 GPKI 보관 경로`,
+        },
+        {
+          path: `${cleanDrive}\\GPKI\\Certificate\\class2`,
+          type: 'GPKI',
+          description: `${cleanDrive} 드라이브 GPKI class2 보관 계층`,
+        },
+        {
+          path: `${cleanDrive}\\EPKI`,
+          type: 'EPKI',
+          description: `${cleanDrive} 드라이브 루트 EPKI 보관 경로`,
+        },
+        {
+          path: `${cleanDrive}\\EPKI\\Certificate\\class2`,
+          type: 'EPKI',
+          description: `${cleanDrive} 드라이브 EPKI class2 보관 계층`,
+        },
+      ];
 
   const pathResults: LocalDrivePathCheckResult[] = [];
   const logs: string[] = [];
 
-  logs.push(`[C: 드라이브 GPKI/EPKI 경로 스캔 시작] 시간: ${scannedAt}`);
+  logs.push(`[${cleanDrive} 드라이브 GPKI/EPKI/NPKI 경로 스캔 시작] 시간: ${scannedAt}`);
   logs.push(`[검사 조건] 사용자 계정: ${targetUsername} | 대상 디렉터리 수: ${targetPaths.length}개`);
 
   let existingCount = 0;
@@ -695,23 +738,27 @@ export function getLocalPcStandardPath(
   targetUsername: string = 'Admin',
   targetDriveLetter: string = 'C:'
 ): string {
-  const cleanDrive = (targetDriveLetter || 'C:').replace(/[^a-zA-Z]/g, '').toUpperCase() + ':';
+  const driveMatch = (targetDriveLetter || '').match(/\b([A-Za-z]):/) || (targetDriveLetter || '').match(/([A-Za-z])/);
+  const cleanDrive = (driveMatch ? driveMatch[1] : 'C').toUpperCase() + ':';
   const isSystemDrive = cleanDrive.startsWith('C');
   const userFolder = `${cleanDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`;
 
   const subjectDn = (cert.subjectDn || '').trim();
   const hasCnPrefix = subjectDn.toLowerCase().startsWith('cn=');
 
+  const lowerUsbPath = (cert.usbPath || '').toLowerCase();
+  const classTier = lowerUsbPath.includes('\\class1') || lowerUsbPath.includes('/class1') ? 'class1' : 'class2';
+
   if (cert.category === 'GPKI_GOV') {
     const cn = hasCnPrefix ? subjectDn.split(',')[0].trim() : `cn=${cert.name}`;
-    // 공무원 행정전자서명(GPKI) 정부 공식 표준 경로: {cleanDrive}\GPKI\Certificate\class2
-    return `${cleanDrive}\\GPKI\\Certificate\\class2\\${cn}`;
+    // 공무원 행정전자서명(GPKI) 정부 공식 표준 경로: {cleanDrive}\GPKI\Certificate\class2 (class1은 class1 유지)
+    return `${cleanDrive}\\GPKI\\Certificate\\${classTier}\\${cn}`;
   }
 
   if (cert.category === 'EPKI_EDU') {
     const cn = hasCnPrefix ? subjectDn.split(',')[0].trim() : `cn=${cert.name}`;
     const baseFolder = isSystemDrive ? userFolder : cleanDrive;
-    return `${baseFolder}\\EPKI\\Certificate\\class2\\${cn}`;
+    return `${baseFolder}\\EPKI\\Certificate\\${classTier}\\${cn}`;
   }
 
   // NPKI (은행/금융)
@@ -749,7 +796,9 @@ export async function copyUsbCertificatesToComputer(
     typeof overwriteExistingOrStrategy === 'boolean'
       ? (overwriteExistingOrStrategy ? 'overwrite' : 'skip')
       : overwriteExistingOrStrategy;
-  const cleanTargetDrive = (targetDriveLetter || 'C:').replace(/[^a-zA-Z]/g, '').toUpperCase() + ':';
+  const targetDriveMatch = (targetDriveLetter || '').match(/\b([A-Za-z]):/) || (targetDriveLetter || '').match(/([A-Za-z])/);
+  const cleanTargetDrive = (targetDriveMatch ? targetDriveMatch[1] : 'C').toUpperCase() + ':';
+  const isSystemTargetDrive = cleanTargetDrive.startsWith('C');
 
   const retryResult = await executeUsbOperationWithRetry<UsbImportResult>(
     'USB ➔ PC 인증서 역방향 복사',
@@ -761,7 +810,11 @@ export async function copyUsbCertificatesToComputer(
       let totalFilesCopied = 0;
 
       logs.push(`[1단계: 준비] USB ➔ 컴퓨터(PC) 인증서 역방향 복사 프로세스 시작 (시도: ${attempt}/3)`);
-      logs.push(`[1단계: 도착 디스크] ${cleanTargetDrive} 드라이브 지정 (${cleanTargetDrive}\\Users\\${targetUsername}\\AppData\\LocalLow\\ 및 ${cleanTargetDrive}\\GPKI)`);
+      logs.push(
+        isSystemTargetDrive
+          ? `[1단계: 도착 디스크] ${cleanTargetDrive} 드라이브 지정 (${cleanTargetDrive}\\Users\\${targetUsername}\\AppData\\LocalLow\\ 및 ${cleanTargetDrive}\\GPKI)`
+          : `[1단계: 도착 디스크] ${cleanTargetDrive} 드라이브 지정 (${cleanTargetDrive}\\NPKI, ${cleanTargetDrive}\\EPKI 및 ${cleanTargetDrive}\\GPKI)`
+      );
       logs.push(`[1단계: 중복 처리 방침] ${
         duplicateStrategy === 'overwrite' ? '⚡ 최신 덮어쓰기 (스마트 갱신)' :
         duplicateStrategy === 'rename' ? '📁 이름 변경 보존 (원본+복사본 모두 유지)' :
@@ -770,7 +823,7 @@ export async function copyUsbCertificatesToComputer(
 
       // 대상 드라이브 GPKI/EPKI 경로 스캔 및 디렉터리 존재/권한 사전 예외 검증
       try {
-        const pathScanSummary = verifyAndScanLocalDriveGpkiEpkiPaths(targetUsername);
+        const pathScanSummary = verifyAndScanLocalDriveGpkiEpkiPaths(targetUsername, cleanTargetDrive);
         logs.push(`[1단계: ${cleanTargetDrive} 드라이브 사전 검증] GPKI/EPKI/NPKI 경로 ${pathScanSummary.totalPathsChecked}개 스캔 완료 (정상: ${pathScanSummary.existingPathsCount}, 세이프가드 폴백 지원)`);
       } catch (scanErr: any) {
         logs.push(`[1단계: 경고] ${cleanTargetDrive} 드라이브 경로 검증 예외 발생 (자동 폴백 적용): ${scanErr?.message || 'I/O 경고'}`);
@@ -778,9 +831,11 @@ export async function copyUsbCertificatesToComputer(
 
       for (const usbCert of selectedCerts) {
         let localPath = getLocalPcStandardPath(usbCert, targetUsername, cleanTargetDrive);
+        const normalizedLocalUpper = localPath.replace(/\//g, '\\').replace(/\\+$/, '').trim().toUpperCase();
+        const normalizedUsbUpper = (usbCert.usbPath || '').replace(/\//g, '\\').replace(/\\+$/, '').trim().toUpperCase();
 
         // 자가 복사 금지 검증: USB 원본 경로와 PC 대상 경로가 완전히 동일한 경우
-        if (usbCert.usbPath && usbCert.usbPath.replace(/\//g, '\\').trim().toUpperCase() === localPath.replace(/\//g, '\\').trim().toUpperCase()) {
+        if (normalizedUsbUpper && normalizedUsbUpper === normalizedLocalUpper) {
           logs.push(`[⏭️ 건너뜀 (자가 복사 금지)] ${usbCert.name} - 이미 컴퓨터 로컬 저장소(${localPath})의 동일 위치에 보관 중인 원본입니다.`);
           importedCount++;
           continue;
@@ -789,14 +844,20 @@ export async function copyUsbCertificatesToComputer(
         // Strictly search existing PC certificates on the selected target drive only (never match USB certs or another local drive)
         const existingIndex = existingCerts.findIndex(c => {
           if (!isPcCertificate(c)) return false;
-          const locUpper = (c.sourceLocation || '').trim().toUpperCase();
+          const locUpper = (c.sourceLocation || '').replace(/\//g, '\\').replace(/\\+$/, '').trim().toUpperCase();
           const drvUpper = (c.sourceDrive || '').trim().toUpperCase();
           const isOnTargetDrive = locUpper.startsWith(cleanTargetDrive) || drvUpper.includes(cleanTargetDrive);
           if (!isOnTargetDrive) return false;
+
+          const cSerial = (c.serialNumber || '').trim().toUpperCase();
+          const uSerial = (usbCert.serialNumber || '').trim().toUpperCase();
+          const cIssuer = (c.issuer || '').trim().toUpperCase();
+          const uIssuer = (usbCert.issuer || '').trim().toUpperCase();
+
           return (
-            locUpper === localPath.trim().toUpperCase() ||
-            c.serialNumber === usbCert.serialNumber ||
-            (c.name === usbCert.name && c.category === usbCert.category)
+            locUpper === normalizedLocalUpper ||
+            (Boolean(cSerial && uSerial) && cSerial === uSerial && cIssuer === uIssuer) ||
+            (c.name.trim() === usbCert.name.trim() && c.category === usbCert.category && cIssuer === uIssuer)
           );
         });
 
@@ -868,6 +929,10 @@ export async function copyUsbCertificatesToComputer(
       logs.push(`[4단계: 완료] 총 ${importedCount + updatedCount}건의 인증서 (${totalFilesCopied}개 파일)가 컴퓨터 ${cleanTargetDrive} 드라이브에 안전하게 복사되었습니다.`);
       logs.push(`[안내] 이제 인터넷뱅킹, 정부24, 온-나라, 나이스(NEIS)에서 '하드디스크' 선택 시 바로 사용할 수 있습니다.`);
 
+      const resolvedTargetBaseFolder = isSystemTargetDrive
+        ? `${cleanTargetDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`
+        : `${cleanTargetDrive}\\`;
+
       return {
         success: true,
         importedCount,
@@ -875,7 +940,7 @@ export async function copyUsbCertificatesToComputer(
         totalFilesCopied,
         importedCerts,
         logs,
-        targetBaseFolder: `${cleanTargetDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`,
+        targetBaseFolder: resolvedTargetBaseFolder,
         checksum: selectedCerts[0]?.files.sha256.slice(0, 16) || 'SECURE_HASH_OK',
       };
     },
@@ -893,7 +958,9 @@ export async function copyUsbCertificatesToComputer(
     totalFilesCopied: 0,
     importedCerts: [],
     logs: retryResult.logs,
-    targetBaseFolder: `${cleanTargetDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`,
+    targetBaseFolder: isSystemTargetDrive
+      ? `${cleanTargetDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`
+      : `${cleanTargetDrive}\\`,
     checksum: 'FAILED',
   };
 }

@@ -39,14 +39,14 @@
    - **Native File System Access API (`showDirectoryPicker`)**: 브라우저 보안 샌드박스를 준수하면서 사용자 동의 하에 USB 폴더 내 `signCert.der`, `signPri.key` 파일 쌍 추출.
    - **Client-side ZIP Streaming Engine (`jszip`)**: 압축된 백업 파일의 구조를 바이너리 수준에서 파싱하여 인증서 디렉터리 구조 자동 해석.
 2. **대상 PC 표준 경로 매핑 및 배치 규칙**
-   - NPKI: `C:\Users\{TargetUser}\AppData\LocalLow\NPKI\{Issuer}\USER\{Subject}`
-   - GPKI: `C:\Users\{TargetUser}\AppData\LocalLow\gpki\certificate\class1\{Subject}`
-   - EPKI: `C:\Users\{TargetUser}\AppData\LocalLow\epki\{Subject}`
-3. **충돌 처리 정책 (3-Way Duplicate Conflict Resolution)**
-   - 동일한 Subject DN 또는 이름이 목적지에 존재하는 경우:
+   - NPKI: `C:\Users\{TargetUser}\AppData\LocalLow\NPKI\{Issuer}\USER\{Subject}` (비-C 로컬 드라이브 지정 시 `{Drive}:\NPKI\{Issuer}\USER\{Subject}`)
+   - GPKI: `{SystemDrive}:\GPKI\Certificate\class1\{Subject}` (또는 `AppData\LocalLow\gpki\certificate\class1\{Subject}`, `class1` 계층 보존)
+   - EPKI: `{TargetLocalLowOrDrive}:\EPKI\Certificate\class1\{Subject}` (`class1` 계층 보존)
+3. **충돌 처리 정책 및 0건 건너뛰기 가드 (3-Way Duplicate Conflict Resolution)**
+   - 동일한 발급기관·일련번호 또는 Subject DN이 목적지에 존재하는 경우:
      - **`overwrite` (스마트 덮어쓰기)**: 유효기간 및 시리얼 번호를 비교하여 최신 인증서로 자동 교체.
      - **`rename` (이름 변경 보존)**: 원본을 삭제하지 않고 `_복사본_날짜` 타임스탬프 또는 버전을 붙여 원본과 대상 모두 안전하게 보존.
-     - **`skip` (동일 파일 건너뛰기)**: 무의미한 중복 복사를 방지하도록 스킵.
+     - **`skip` (동일 파일 건너뛰기)**: 무의미한 중복 복사를 방지하도록 스킵하며, 선택 항목 전부가 건너뛰어져 실제 복사 건수가 `0`건인 경우 완료 모달 대신 `INFO` 활동 로그와 토스트 알림으로 명확히 안내합니다.
 
 ---
 
@@ -66,10 +66,11 @@
 1. **대상 디스크 지정 팝업 모달 (`TargetDrivePickerModal.tsx` / `TargetDrivePickerDialog.xaml.cs`)**:
    - 일괄 복사 요청 시 타깃 드라이브를 먼저 선택하는 전용 UI 컴포넌트를 렌더링.
    - 물리 드라이브 목록을 실시간으로 가져와 카드 형태로 제공하며, 이동식 미연결 시 C: 드라이브 오복사 경고 및 안내 카드를 표출.
-2. **자가 복사(Self-Copy) 사전 차단 규칙 (`isSameDriveSelfCopy` / `ResolveEffectiveDestinationRoot`)**:
+2. **자가 복사(Self-Copy) 사전 차단 규칙 & 복사된 폴더 열기 (`isSameDriveSelfCopy` / `ResolveEffectiveDestinationRoot` / `resolveCopiedFolderPath`)**:
    - 원본 인증서가 위치한 루트/표준 보관 경로와 목적지 실제 저장 경로를 정규화 대조.
-   - **WPF 실제 목적지 판별 (`ResolveEffectiveDestinationRoot`)**: `CertificateBackupService.BackupCertificateToDrive`와 동일하게 `C:` 선택 시 `NPKI`/`EPKI`는 `%USERPROFILE%\AppData\LocalLow`, `GPKI`는 `C:\` 실제 경로로 환산하여 `C:\Users\...\AppData\LocalLow\NPKI` 인증서가 `C:`로 중복 자가 복사되는 현상을 원천 차단.
+   - **WPF 실제 목적지 판별 (`ResolveEffectiveDestinationRoot`)**: `CertificateBackupService.BackupCertificateToDrive`와 동일하게 `C:` 선택 시 `NPKI`/`EPKI`는 `%USERPROFILE%\AppData\LocalLow`, `GPKI`는 동적 시스템 드라이브 루트(`Environment.SystemDirectory` 기반)로 환산하여 `C:\Users\...\AppData\LocalLow\NPKI` 인증서가 `C:`로 중복 자가 복사되는 현상을 원천 차단.
    - 동일 드라이브인 경우 복사 엔진 진입을 차단하고 `🚫 자가 복사 금지` 잠금 상태를 유지하여 원본 덮어쓰기 데이터 손상을 원천 방지.
+   - **복사된 폴더 탐색기 타겟팅 (`OperationCompleteModal`, `BackupModal`, `OperationCompleteDialog`)**: `resolveCopiedFolderPath`로 드라이브 문자(`E:`)와 하위 경로(`NPKI\...`) 사이의 누락 백슬래시를 보정하여 실제 드라이브 루트(`E:\NPKI\...`)를 정확히 조합하고 탐색기(`explorer.exe`) 또는 Web 브리지·로컬 경로 폴백으로 안전하게 연결.
 
 ---
 
@@ -84,18 +85,18 @@
    - `signCert.der` + `signPri.key` 키 쌍 정합성 및 만료 임박(30일) 정밀 판별기 (`CertPairValidator.cs`)
    - 원클릭 고속 메타데이터 추출기 (`KCertParser.cs`)
 2. **`KCert.Core.Discovery` (2단계 초고속 탐색 서브시스템)**:
-   - 2단계 분리형(Fast-Pass 0.1초 즉시 로딩 + Deep-Pass 백그라운드 스트리밍) 스캔 파이프라인 (`FastScanPipeline.cs`)
-   - `AppData\LocalLow`, 사용자 홈, C:\ 루트, 연결된 USB 표준 경로 지능형 자동 탐색 (`CertLocationScanner.cs`)
+   - 2단계 분리형(Fast-Pass 0.1초 즉시 로딩 + Deep-Pass 백그라운드 스트리밍) 스캔 파이프라인 (`FastScanPipeline.cs`, 말단 `\MPKI`/`/MPKI` 포함 GPKI/EPKI 자동 분류)
+   - `AppData\LocalLow`, 사용자 홈, 시스템 드라이브 루트, 연결된 USB 표준 경로 지능형 자동 탐색 (`CertLocationScanner.cs`)
    - 권한 거부 및 시스템 특수 폴더 자동 스킵 안전 BFS 재귀 탐색기
 3. **`KCert.Core.Diagnostics` (지능형 진단 & 중복 탐지 서브시스템)**:
-   - 비표준/중첩 디렉터리 정밀 진단 및 표준 계층 경로 자동 복구(Auto-Repair) 엔진 (`CertIntegrityDoctor.cs`)
-   - 시스템 전역 드라이브(C/D/E/USB) 중복 인증서 클러스터링 및 잉여 복사본 분석 엔진 (`KCertAntiDuplicationEngine.cs`)
+   - 비표준/중첩 디렉터리 정밀 진단 및 표준 계층 경로 자동 복구(Auto-Repair) 엔진 (`CertIntegrityDoctor.cs` — 동일 경로/동일 파일 자기덮어쓰기 `IOException` 방지 가드 포함; Web `handleRepairFolders` 및 WPF `DiagnosticsRepairDialog`에서 표준 복사 완료 후 원본 비표준 폴더 즉시 안전 휴지통 격리 + 활동 로그·토스트 연동)
+   - 시스템 전역 드라이브(C/D/E/USB) 중복 인증서 클러스터링 및 잉여 복사본 분석 엔진 (`KCertAntiDuplicationEngine.cs` — PC 표준 경로를 USB 사본보다 우선 보존하는 `ScorePrimary` 및 `DerSha256` 누락 시 일련번호·발급기관·CN 폴백 그룹핑 적용)
    - 만료 위험 5단계 평가 및 인증기관별 공식 갱신 포털 자동 라우팅 엔진 (`CertExpirationAlarmEngine.cs`)
 4. **`KCert.Core.Vault` (보안 금고 & 원자적 트랜잭션 서브시스템)**:
-   - 원본-대상 해시 검증 및 실패 시 자동 롤백을 지원하는 원자적 전송기 (`CertTransferEngine.cs`)
+   - 원본-대상 해시 검증 및 실패 시 자동 롤백을 지원하는 원자적 전송기 (`CertTransferEngine.cs` — `class1` 계층 보존 및 말단 `\GPKI`/`\EPKI` 판별)
    - AES-256-GCM + PBKDF2(10만 회) 기반 독자 보안 금고 패키징/복원 엔진 (`CertVaultPacker.cs`, `.kcertpack`)
    - 국제 표준 PKCS#12 (.pfx / .p12) 상호 변환 및 추출 엔진 (`CertBundleSecurityEngine.cs`)
-   - 오삭제 방지 로컬 격리소 및 원클릭 복구 관리자 (`SafetyTrashManager.cs`)
+   - 오삭제 방지 로컬 격리소 및 원클릭 복구 관리자 (`SafetyTrashManager.cs` — 볼륨 간 이동·덮어쓰기 전 `ClearReadOnlyAttributesRecursive` 읽기 전용 속성 해제)
 5. **`KCert.Core.HardwareGuard` & `Common` (하드웨어 감시 & 개인정보 보호)**:
    - Win32 `DeviceIoControl` 기반 물리 스토리지 버스(USB, NVMe, SATA) 네이티브 쿼리 (`NativeStorageInterop.cs`)
    - WMI `Win32_VolumeChangeEvent` 기반 실시간 USB 핫플러그 비동기 감시 (`UsbStorageGuard.cs`, 300ms 디바운스)
@@ -201,5 +202,5 @@
 - **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **소속**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr)
 - **소속회사**: (주)청운정보시스템 ( cisnet.co.kr )
-- **버전**: `v2.1.0` (SemVer 2.0.0)
+- **버전**: `v2.1.1` (SemVer 2.0.0)
 

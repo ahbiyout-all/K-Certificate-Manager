@@ -265,15 +265,21 @@ namespace KCertManager.Wpf.ViewModels
                 try
                 {
                     var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                    var sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\');
+                    var progFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
                     var pcPaths = new List<string>
                     {
                         Path.Combine(userProfile, "AppData", "LocalLow", "NPKI"),
                         Path.Combine(userProfile, "AppData", "LocalLow", "GPKI"),
                         Path.Combine(userProfile, "AppData", "LocalLow", "EPKI"),
-                        @"C:\NPKI",
-                        @"C:\GPKI",
-                        @"C:\Program Files\NPKI"
+                        $@"{sysRoot}\NPKI",
+                        $@"{sysRoot}\GPKI",
+                        $@"{sysRoot}\EPKI"
                     };
+                    if (!string.IsNullOrWhiteSpace(progFiles))
+                    {
+                        pcPaths.Add(Path.Combine(progFiles, "NPKI"));
+                    }
 
                     var scanned = _scannerService.ScanCertificates(pcPaths);
                     list.AddRange(scanned.Where(c => !c.IsRemovableMedia && c.Status != ExpiryStatus.Expired));
@@ -338,12 +344,13 @@ namespace KCertManager.Wpf.ViewModels
                     // 2순위: IsStandardPath && AppData\LocalLow
                     // 3순위: 기타 IsStandardPath
                     // 4순위: 첫 번째 항목
+                    var sysDriveUpper = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\').ToUpperInvariant();
                     var primary = grp.OrderByDescending(c =>
                     {
                         int score = 0;
                         var dir = (c.DirectoryPath ?? string.Empty).ToUpperInvariant();
                         if (c.IsStandardPath) score += 100;
-                        if (dir.StartsWith(@"C:\GPKI") || dir.StartsWith(@"C:\EPKI")) score += 50;
+                        if (dir.StartsWith(sysDriveUpper + @"\GPKI") || dir.StartsWith(sysDriveUpper + @"\EPKI")) score += 50;
                         else if (dir.Contains(@"APPDATA\LOCALLOW")) score += 30;
                         return score;
                     }).First();

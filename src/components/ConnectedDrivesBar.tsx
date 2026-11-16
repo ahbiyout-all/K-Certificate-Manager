@@ -179,7 +179,7 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
           const isSelected = selectedDriveId === drive.id;
           const isUsb = drive.type === 'removable' || drive.busType === 'USB';
           const dColor = getDriveColorInfo(drive.letter);
-          const letterClean = drive.letter.replace(':', '').toUpperCase();
+          const letterClean = (drive.letter.match(/\b([A-Za-z]):/)?.[1] || drive.letter.match(/([A-Za-z])/)?.[1] || '').toUpperCase();
           const certCount = certificates.filter(c => {
             const loc = (c.sourceLocation || '').toUpperCase();
             const drv = (c.sourceDrive || '').toUpperCase();

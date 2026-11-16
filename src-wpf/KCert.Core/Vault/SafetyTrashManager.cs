@@ -314,6 +314,38 @@ namespace KCert.Core.Vault
             return upper.Contains("NPKI") || upper.Contains("GPKI") || upper.Contains("EPKI") || upper.Contains("MPKI") || upper.Contains("CERT");
         }
 
+        private static void ClearReadOnlyAttributesRecursive(string dirPath)
+        {
+            if (string.IsNullOrWhiteSpace(dirPath) || !Directory.Exists(dirPath)) return;
+            try
+            {
+                var dirInfo = new DirectoryInfo(dirPath);
+                if ((dirInfo.Attributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                {
+                    dirInfo.Attributes &= ~FileAttributes.ReadOnly;
+                }
+
+                foreach (var file in Directory.GetFiles(dirPath))
+                {
+                    try
+                    {
+                        var attrs = File.GetAttributes(file);
+                        if ((attrs & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                        {
+                            File.SetAttributes(file, attrs & ~FileAttributes.ReadOnly);
+                        }
+                    }
+                    catch { }
+                }
+
+                foreach (var subDir in Directory.GetDirectories(dirPath))
+                {
+                    ClearReadOnlyAttributesRecursive(subDir);
+                }
+            }
+            catch { }
+        }
+
         private static void SafeMoveDirectory(string sourceDir, string targetDir)
         {
             if (string.IsNullOrWhiteSpace(sourceDir) || !Directory.Exists(sourceDir)) return;
@@ -321,6 +353,7 @@ namespace KCert.Core.Vault
             {
                 if (Directory.Exists(targetDir))
                 {
+                    ClearReadOnlyAttributesRecursive(targetDir);
                     try { Directory.Delete(targetDir, true); } catch { }
                 }
 
@@ -331,10 +364,11 @@ namespace KCert.Core.Vault
             {
                 try
                 {
-                    // 다른 드라이브(볼륨) 간 이동이거나 잠금 등의 이유로 실패 시 복사 후 삭제 fallback
+                    // 다른 드라이브(볼륨) 간 이동이거나 잠금 등의 이유로 실패 시 복사 후 읽기 전용 해제 + 삭제 fallback
                     CopyDirectoryRecursive(sourceDir, targetDir);
                     if (Directory.Exists(sourceDir))
                     {
+                        ClearReadOnlyAttributesRecursive(sourceDir);
                         Directory.Delete(sourceDir, true);
                     }
                 }
@@ -354,7 +388,19 @@ namespace KCert.Core.Vault
             foreach (var file in Directory.GetFiles(sourceDir))
             {
                 var destFile = Path.Combine(targetDir, Path.GetFileName(file));
-                try { File.Copy(file, destFile, true); } catch { }
+                try
+                {
+                    if (File.Exists(destFile))
+                    {
+                        var attrs = File.GetAttributes(destFile);
+                        if ((attrs & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                        {
+                            File.SetAttributes(destFile, attrs & ~FileAttributes.ReadOnly);
+                        }
+                    }
+                    File.Copy(file, destFile, true);
+                }
+                catch { }
             }
 
             foreach (var subDir in Directory.GetDirectories(sourceDir))

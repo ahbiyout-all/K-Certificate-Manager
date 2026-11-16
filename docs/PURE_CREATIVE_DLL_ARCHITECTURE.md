@@ -24,11 +24,11 @@
 ### 2.2 신규 창작 엔진으로 해결된 사항
 - **`KCertAsn1Reader` 도입**: `extension.RawData` 바이너리 바이트를 직접 순회하여 Tag `0x06`(OID)을 디코딩하는 0-Allocation 고속 ASN.1 파서를 신규 개발하여 로케일에 무관한 100% 정확도 확보.
 - **`KCertKeyAnalyzer` 도입**: PKCS#8 `EncryptedPrivateKeyInfo`를 파싱하여 KISA SEED-CBC, ARIA-128/256-CBC, 3DES, AES 대칭키 암호화 알고리즘 및 PBKDF2 솔트와 반복수를 정밀 판별.
-- **`KCertAntiDuplicationEngine` 도입**: 시스템 전역(모든 내장/외장 드라이브) 인증서 지문(SHA-256) 클러스터링 기반 중복 분석 및 잉여 복사본 식별 엔진 구축.
+- **`KCertAntiDuplicationEngine` 도입**: 시스템 전역(모든 내장/외장 드라이브) 인증서 지문(SHA-256) 및 일련번호·발급기관·CN 폴백 클러스터링 기반 중복 분석과 PC 로컬 표준 경로 우선(`ScorePrimary`) 잉여 복사본 식별 엔진 구축.
 - **`CertBundleSecurityEngine` 도입**: signCert+signPri와 PFX 간 원클릭 변환/추출 기능 지원.
 - **`CertSanitizer` 도입**: 주민등록번호, 사업자등록번호 및 VID 개인 식별 코드 안전 마스킹 및 RDN 정제.
 - **`CertExpirationAlarmEngine` 도입**: 만료 위험도(D-30, D-14, D-7, D-Day, 만료됨) 및 기관별 공식 갱신 포털 URL 자동 매칭.
-- **`CertIntegrityDoctor` & `NativeStorageInterop` 고도화**: Win32 `DeviceIoControl` 기반 물리 스토리지 버스(`BusTypeUsb`, `BusTypeNvme`) 식별 및 비표준 중첩 경로 자동 치료(Auto-Repair).
+- **`CertIntegrityDoctor` & `NativeStorageInterop` 고도화**: Win32 `DeviceIoControl` 기반 물리 스토리지 버스(`BusTypeUsb`, `BusTypeNvme`) 식별 및 비표준 중첩 경로 자동 치료(Auto-Repair, 동일 경로/파일 자기덮어쓰기 `IOException` 방지 가드 포함).
 
 ---
 

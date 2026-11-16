@@ -64,10 +64,11 @@ namespace KCert.Core.Discovery
                 if (Directory.Exists(dir)) roots.Add(dir);
             }
 
-            // 2. C:\ 루트 직하 GPKI / EPKI / NPKI
+            // 2. 시스템 드라이브(C:\ 등) 루트 직하 GPKI / EPKI / NPKI
+            var systemDriveRoot = Path.GetPathRoot(Environment.SystemDirectory) ?? @"C:\";
             foreach (var name in FastDirNames)
             {
-                var dir = Path.Combine(@"C:\", name);
+                var dir = Path.Combine(systemDriveRoot, name);
                 if (Directory.Exists(dir)) roots.Add(dir);
             }
 
@@ -258,8 +259,12 @@ namespace KCert.Core.Discovery
                     return true;
                 }
 
-                // 5. NPKI 이동식 USB 표준 ([USB]:\NPKI) - 고정 디스크(C:\NPKI 등)는 비표준 처리
-                if (IsRemovableDrive(normPath) && System.Text.RegularExpressions.Regex.IsMatch(upper, @"^[A-Z]:\\NPKI($|\\)"))
+                // 5. NPKI 이동식 USB 표준 ([USB]:\NPKI) 또는 비-시스템 드라이브(D:, E: 등) 루트 \NPKI 표준 (시스템 드라이브 C:\NPKI는 비표준)
+                var sysDrive = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\');
+                bool isNonSystemDrive = normPath.Length >= 2 && normPath[1] == ':' &&
+                                        !normPath.Substring(0, 2).Equals(sysDrive, StringComparison.OrdinalIgnoreCase);
+                if ((IsRemovableDrive(normPath) || isNonSystemDrive) &&
+                    System.Text.RegularExpressions.Regex.IsMatch(upper, @"^[A-Z]:\\NPKI($|\\)"))
                 {
                     return true;
                 }

@@ -224,10 +224,10 @@ export function parseDerBasic(derBytes: Uint8Array): {
     caSignatureName = '한국전자인증 전자인증센터 (CrossCert CA)';
     policy = '범용공동인증서 (개인)';
   } else if (rawText.includes('TradeSign') || rawText.includes('한국무역정보통신')) {
-    category = 'NPKI_BANK';
+    category = rawText.includes('법인') || rawText.toLowerCase().includes('corp') ? 'NPKI_CORP' : 'NPKI_BANK';
     issuer = '한국무역정보통신 (TradeSign)';
     caSignatureName = '한국무역정보통신 무역인증센터 (TradeSign CA)';
-    policy = '무역 및 전자상거래용 (TradeSign)';
+    policy = category === 'NPKI_CORP' ? '무역 및 전자상거래용 (법인·TradeSign)' : '무역 및 전자상거래용 (TradeSign)';
   }
 
   // CN= 추출
@@ -447,6 +447,11 @@ export async function scanDirectoryHandle(
 
       const validity = extractDerValidityDates(bytes);
 
+      const normalizedDirPath = (currentPath || dirHandle.name || 'Root').replace(/\//g, '\\');
+      const isUsbDrivePath =
+        /^(USB|[E-Z]:)/i.test(normalizedDirPath) ||
+        normalizedDirPath.toUpperCase().includes('USB');
+
       certs.push({
         id: `custom-scanned-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
         name: parsed.name,
@@ -460,8 +465,9 @@ export async function scanDirectoryHandle(
         validTo: validity.validTo,
         status: validity.status,
         daysRemaining: validity.daysRemaining,
-        sourceLocation: `${currentPath || dirHandle.name}/${certFileHandle.name}`,
-          sourceDrive: currentPath.startsWith('E:') || currentPath.startsWith('F:') ? '이동식 USB' : '로컬 디스크',
+        sourceLocation: normalizedDirPath,
+          sourceDrive: isUsbDrivePath ? '이동식 USB' : '로컬 디스크',
+          isRemovableMedia: isUsbDrivePath,
           departmentOrOrg: parsed.departmentOrOrg,
           isSystemCa: parsed.isSystemCa,
           isInstitutional: parsed.isInstitutional,
@@ -580,7 +586,7 @@ export async function groupUploadedCertFiles(fileList: FileList): Promise<Certif
           validTo: validity.validTo,
           status: validity.status,
           daysRemaining: validity.daysRemaining,
-          sourceLocation: `${dirPath}/${group.certFile.name}`,
+          sourceLocation: dirPath.replace(/\//g, '\\'),
           sourceDrive: '업로드된 파일 폴더',
           departmentOrOrg: parsed.departmentOrOrg,
           isSystemCa: parsed.isSystemCa,

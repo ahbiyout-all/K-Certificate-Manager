@@ -113,18 +113,18 @@
 
 | 클래스/타입 | 주요 메서드 및 인터페이스 | 기능 설명 |
 | :--- | :--- | :--- |
-| **`CertIntegrityDoctor`** | `Diagnose(string folderPath)`<br/>`RepairToStandardHierarchy(string source, string destRoot)` | - **진단**: 중첩 폴더(`.../NPKI/NPKI/...`), 개인키 누락, 0바이트 손상, ASN.1 헤더 깨짐, 만료, 비표준 경로 등 9대 이상 징후(`CertAnomalyFlags`) 판별.<br/>- **치료**: 비표준/중첩 폴더를 표준 계층 구조(`NPKI/{Issuer}/USER/cn=...`)로 재배치하고 읽기 전용 속성 자동 해제. |
-| **`KCertAntiDuplicationEngine`**| `AnalyzeDuplicates(IEnumerable<KCertMetadata> certs)` | 전체 드라이브에 걸쳐 산재된 동일 인증서(SHA-256 지문 및 일련번호 일치)를 그룹화하고 중복 잉여 파일 정리 시 회수 가능한 디스크 용량 계산. |
+| **`CertIntegrityDoctor`** | `Diagnose(string folderPath)`<br/>`RepairToStandardHierarchy(string source, string destRoot)` | - **진단**: 중첩 폴더(`.../NPKI/NPKI/...`), 개인키 누락, 0바이트 손상, ASN.1 헤더 깨짐, 만료, 비표준 경로 등 9대 이상 징후(`CertAnomalyFlags`) 판별.<br/>- **치료**: 비표준/중첩 폴더를 표준 계층 구조(`NPKI/{Issuer}/USER/cn=...`)로 재배치하고 읽기 전용 속성 자동 해제 (원본과 대상 폴더·파일 경로 동일 시 자기덮어쓰기 `IOException` 방지 가드 적용). |
+| **`KCertAntiDuplicationEngine`**| `AnalyzeDuplicates(IEnumerable<KCertMetadata> certs)` | 전체 드라이브에 걸쳐 산재된 동일 인증서(SHA-256 지문 및 일련번호·발급기관·CN 폴백 일치)를 그룹화하고, PC 로컬 표준 경로를 USB 사본보다 우선(`PrimaryInstance` 점수화) 보존하여 잉여 정리 용량 계산. |
 | **`CertExpirationAlarmEngine`** | `EvaluateRisk(DateTime validTo)` | 만료일까지 남은 일수를 기준으로 위험 등급(만료, 7일 이내 임박, 30일 이내 주의, 정상) 판정 및 사용자 경고 플래그 생성. |
 
 ### 2.4 Vault 서브시스템 (`KCert.Core.Vault`)
 
 | 클래스/타입 | 주요 메서드 및 인터페이스 | 기능 설명 |
 | :--- | :--- | :--- |
-| **`CertTransferEngine`** | `Transfer(string srcDir, string targetDrive, string relPath)`<br/>`ResolveRelativePath(string fullPath)` | - **원자적 전송**: 임시 파일(`.tmp`) 복사 ➔ 읽기 전용 속성 해제 ➔ 원자적 이동 ➔ SHA-256 무결성 전수 검증.<br/>- **보안 하드닝**: 확장자 화이트리스트 검사, 상위 경로 조작(Path Traversal `..`) 차단, 자가 복사 금지. |
+| **`CertTransferEngine`** | `Transfer(string srcDir, string targetDrive, string relPath)`<br/>`ResolveRelativePath(string fullPath)` | - **원자적 전송**: 임시 파일(`.tmp`) 복사 ➔ 읽기 전용 속성 해제 ➔ 원자적 이동 ➔ SHA-256 무결성 전수 검증 (`GPKI`/`EPKI` `class1` 계층 및 말단 경로 보존).<br/>- **보안 하드닝**: 확장자 화이트리스트 검사, 상위 경로 조작(Path Traversal `..`) 차단, 자가 복사 금지. |
 | **`CertBundleSecurityEngine`**| `ExportToPfx(string der, string key, string pfx, string pass)`<br/>`ExtractDerFromPfx(string pfx, string pass, string outDir)` | - 분리형 한국 인증서(`signCert.der` + `signPri.key`)를 국제 표준 PKCS#12 (`.pfx` / `.p12`) 포맷으로 결합 내보내기 (`KCert.Crypto` 복호화 연동).<br/>- PFX 번들에서 공개키 및 개인키를 무손실 분리 추출. |
 | **`CertVaultPacker`** | `Pack(IEnumerable<string> certDirs, string vaultPath, string pass)`<br/>`Unpack(string vaultPath, string pass, string targetRoot)` | PBKDF2(100,000회 스트레칭) 및 AES-256-GCM 인증 암호화 기반 보안 금고(`.kcertpack`) 패키징 및 복원. |
-| **`SafetyTrashManager`** | `MoveToTrash(string certDir)`<br/>`RestoreFromTrash(TrashItem item)`<br/>`PurgeTrash()` | 인증서 오삭제 시 즉시 삭제하지 않고 안전 격리 보관소(`SafetyTrash`)로 이동하여 1클릭 원위치 복원 및 감사 로그 기록 지원. |
+| **`SafetyTrashManager`** | `MoveToTrash(string certDir)`<br/>`RestoreFromTrash(TrashItem item)`<br/>`PurgeTrash()` | 인증서 오삭제 시 즉시 삭제하지 않고 안전 격리 보관소(`SafetyTrash`)로 이동(볼륨 간 이동/덮어쓰기 전 `ClearReadOnlyAttributesRecursive` 읽기 전용 속성 해제 포함)하여 1클릭 원위치 복원 및 감사 로그 기록 지원. |
 
 ### 2.5 HardwareGuard 서브시스템 (`KCert.Core.HardwareGuard`)
 

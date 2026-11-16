@@ -32,17 +32,20 @@ export function isStandardCertPath(sourceLocation: string, isRemovableMedia?: bo
   }
 
   // 3. GPKI 표준 (C:\GPKI\Certificate 또는 [USB]:\GPKI\Certificate)
-  if (/^[A-Z]:\\GPKI\\CERTIFICATE($|\\)/i.test(p)) {
+  if (/^([A-Z]|USB):\\GPKI\\CERTIFICATE($|\\)/i.test(p)) {
     return true;
   }
 
   // 4. EPKI 표준 (C:\EPKI\Certificate 또는 [USB]:\EPKI\Certificate)
-  if (/^[A-Z]:\\EPKI\\CERTIFICATE($|\\)/i.test(p)) {
+  if (/^([A-Z]|USB):\\EPKI\\CERTIFICATE($|\\)/i.test(p)) {
     return true;
   }
 
-  // 5. NPKI 이동식 USB 표준 ([USB]:\NPKI)
-  if (isRemovableMedia && /^[A-Z]:\\NPKI($|\\)/i.test(p)) {
+  // 5. NPKI 이동식 USB 표준 ([USB]:\NPKI) 또는 비-시스템 드라이브(D:, E: 등) 루트 \NPKI 표준
+  const driveMatch = p.match(/^([A-Z]|USB):\\/i);
+  const isUsbPrefix = Boolean(driveMatch && driveMatch[1].toUpperCase() === 'USB');
+  const isNonSystemDrive = Boolean(driveMatch && driveMatch[1].toUpperCase() !== 'C');
+  if ((isRemovableMedia || isNonSystemDrive || isUsbPrefix) && /^([A-Z]|USB):\\NPKI($|\\)/i.test(p)) {
     return true;
   }
 

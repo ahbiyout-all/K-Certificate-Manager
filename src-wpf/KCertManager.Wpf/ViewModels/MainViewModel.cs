@@ -544,19 +544,25 @@ namespace KCertManager.Wpf.ViewModels
                 SearchKeyword = string.Empty;
                 ApplyFilter();
 
-                // 2. PC 로컬 보관 인증서 (C: 드라이브 및 내장 디스크) 중 유효한 인증서만 수집 (만료 ExpiryStatus.Expired 제외)
+                // 2. PC 로컬 보관 인증서 (시스템 드라이브 및 내장 디스크) 중 유효한 인증서만 수집 (만료 ExpiryStatus.Expired 제외)
+                var sysDrivePrefix = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\').ToUpperInvariant();
+                bool IsLocalPcCert(CertificateItem c) =>
+                    !c.IsRemovableMedia ||
+                    string.Equals(c.DriveLetter?.TrimEnd('\\'), sysDrivePrefix, StringComparison.OrdinalIgnoreCase) ||
+                    (!string.IsNullOrEmpty(c.DirectoryPath) && c.DirectoryPath.StartsWith(sysDrivePrefix, StringComparison.OrdinalIgnoreCase));
+
                 var pcCerts = _allCertificates
-                    .Where(c => (!c.IsRemovableMedia || c.DriveLetter == "C:" || (!string.IsNullOrEmpty(c.DirectoryPath) && c.DirectoryPath.StartsWith("C:", StringComparison.OrdinalIgnoreCase))) && c.Status != ExpiryStatus.Expired)
+                    .Where(c => IsLocalPcCert(c) && c.Status != ExpiryStatus.Expired)
                     .ToList();
 
-                // _allCertificates가 아직 비어 있거나 스캔 대기 중인 경우 표준 C: 경로 즉시 고속 스캔 보장
+                // _allCertificates가 아직 비어 있거나 스캔 대기 중인 경우 표준 PC 경로 즉시 고속 스캔 보장
                 if (!pcCerts.Any())
                 {
                     try
                     {
                         var fastList = _scannerService.ScanCertificates(CertLocationScanner.GetFastStandardRoots());
                         pcCerts = fastList
-                            .Where(c => (!c.IsRemovableMedia || c.DriveLetter == "C:" || (!string.IsNullOrEmpty(c.DirectoryPath) && c.DirectoryPath.StartsWith("C:", StringComparison.OrdinalIgnoreCase))) && c.Status != ExpiryStatus.Expired)
+                            .Where(c => IsLocalPcCert(c) && c.Status != ExpiryStatus.Expired)
                             .ToList();
                         foreach (var item in fastList)
                         {
@@ -570,14 +576,14 @@ namespace KCertManager.Wpf.ViewModels
                     catch { }
                 }
 
-                // 3. PC 원본 C: 유효 인증서들을 모두 체크하여 한 번에 백업할 수 있도록 지원
+                // 3. PC 원본 유효 인증서들을 모두 체크하여 한 번에 백업할 수 있도록 지원
                 foreach (var c in pcCerts)
                 {
                     c.IsSelected = true;
                 }
                 foreach (var c in FilteredCertificates)
                 {
-                    c.IsSelected = (c.Status != ExpiryStatus.Expired) && (!c.IsRemovableMedia || c.DriveLetter == "C:" || (!string.IsNullOrEmpty(c.DirectoryPath) && c.DirectoryPath.StartsWith("C:", StringComparison.OrdinalIgnoreCase)));
+                    c.IsSelected = (c.Status != ExpiryStatus.Expired) && IsLocalPcCert(c);
                 }
 
                 if (pcCerts.Any())
@@ -1815,12 +1821,18 @@ namespace KCertManager.Wpf.ViewModels
                               f.EndsWith(".cer", StringComparison.OrdinalIgnoreCase) || 
                               f.EndsWith(".key", StringComparison.OrdinalIgnoreCase));
 
-                // 또는 현재 로드된 인증서 목록 중 대상 드라이브에 동일한 CN/발급자 인증서가 이미 보관 중인 경우
+                // 또는 현재 로드된 인증서 목록 중 대상 드라이브에 동일한 인증서(경로/일련번호+발급자/구분+CN+발급자)가 이미 보관 중인 경우
                 bool matchInLoadedCerts = _allCertificates.Any(c =>
                     !string.Equals(c.DirectoryPath, cert.DirectoryPath, StringComparison.OrdinalIgnoreCase) &&
-                    (c.DriveLetter?.TrimEnd('\\').ToUpperInvariant() == cleanTarget || c.DirectoryPath?.ToUpperInvariant().StartsWith(cleanTarget) == true) &&
-                    (string.Equals(c.CommonName, cert.CommonName, StringComparison.OrdinalIgnoreCase) ||
-                     string.Equals(c.DirectoryPath?.TrimEnd('\\'), expectedDstDir, StringComparison.OrdinalIgnoreCase)));
+                    (c.DriveLetter?.TrimEnd('\\').ToUpperInvariant() == cleanTarget ||
+                     c.DirectoryPath?.ToUpperInvariant().StartsWith(cleanTarget + "\\") == true) &&
+                    (string.Equals(c.DirectoryPath?.TrimEnd('\\'), expectedDstDir, StringComparison.OrdinalIgnoreCase) ||
+                     (!string.IsNullOrWhiteSpace(cert.SerialNumber) &&
+                      string.Equals(c.SerialNumber, cert.SerialNumber, StringComparison.OrdinalIgnoreCase) &&
+                      string.Equals(c.IssuerName, cert.IssuerName, StringComparison.OrdinalIgnoreCase)) ||
+                     (c.Category == cert.Category &&
+                      string.Equals(c.CommonName, cert.CommonName, StringComparison.OrdinalIgnoreCase) &&
+                      string.Equals(c.IssuerName, cert.IssuerName, StringComparison.OrdinalIgnoreCase))));
 
                 if (hasCertFiles || matchInLoadedCerts)
                 {

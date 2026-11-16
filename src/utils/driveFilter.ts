@@ -142,11 +142,12 @@ export function isSameDriveSelfCopy(
 ): boolean {
   if (!cert || !targetDriveLetterOrObj) return false;
 
-  let targetLetter = typeof targetDriveLetterOrObj === 'string' 
-    ? targetDriveLetterOrObj 
+  const rawTarget = typeof targetDriveLetterOrObj === 'string'
+    ? targetDriveLetterOrObj
     : targetDriveLetterOrObj.letter || '';
 
-  targetLetter = targetLetter.trim().replace(':', '').toUpperCase();
+  const targetMatch = rawTarget.trim().match(/\b([A-Za-z]):/) || rawTarget.trim().match(/([A-Za-z])/);
+  const targetLetter = (targetMatch ? targetMatch[1] : '').toUpperCase();
   if (!targetLetter) return false;
 
   const sourceDriveClean = (cert.sourceDrive || '').trim().toUpperCase();
@@ -184,6 +185,8 @@ export function isPcCertificate(
   // Explicit removable flags
   if (
     sourceDrive.includes('이동식') ||
+    sourceDrive.includes('외장') ||
+    sourceDrive.includes('EXTERNAL') ||
     sourceDrive.includes('USB') ||
     sourceDrive.includes('REMOVABLE') ||
     sourceLoc.startsWith('USB:\\') ||

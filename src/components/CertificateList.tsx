@@ -44,9 +44,8 @@ export function filterCertificatesByCriteria(
     if (categoryFilter === 'EPKI' && cert.category !== 'EPKI_EDU') return false;
     if (categoryFilter === 'NPKI' && cert.category !== 'NPKI_BANK' && cert.category !== 'NPKI_CORP') return false;
     if (categoryFilter === 'EXPIRED' && !isCertificateExpired(cert)) return false;
-    if (categoryFilter === 'NON_STANDARD' && !cert.isCustomPath && !isNonStandardCertPath(cert.sourceLocation)) return false;
-
     const isUsb = isUsbCertHelper(cert);
+    if (categoryFilter === 'NON_STANDARD' && !cert.isCustomPath && !isNonStandardCertPath(cert.sourceLocation, isUsb)) return false;
     if (sourceFilter === 'LOCAL' && isUsb) return false;
     if (sourceFilter === 'REMOVABLE' && !isUsb) return false;
 
@@ -681,7 +680,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                 const driveLetter = getDriveLetter(cert);
                 const dColor = getDriveColorInfo(driveLetter);
                 const isRareGpki = isRareLocalLowGpkiPath(cert.sourceLocation);
-                const isNonStandard = isRareGpki || cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation);
+                const isNonStandard = isRareGpki || cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation, isUsb);
                 const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);
 
                 const cardBg = isRecentlyCopied
@@ -1121,7 +1120,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                   const driveLetter = getDriveLetter(cert);
                   const dColor = getDriveColorInfo(driveLetter);
                   const isRareGpki = isRareLocalLowGpkiPath(cert.sourceLocation);
-                  const isNonStandard = isRareGpki || cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation);
+                  const isNonStandard = isRareGpki || cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation, isUsb);
                   const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);
 
                   const rowBg = isRecentlyCopied

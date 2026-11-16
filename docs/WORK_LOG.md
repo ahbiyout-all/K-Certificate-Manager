@@ -7,7 +7,7 @@
 ## 📌 프로젝트 기본 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v2.1.0` (Semantic Versioning 2.0.0 MINOR Release)
+- **현재 버전**: `v2.1.1` (Semantic Versioning 2.0.0 PATCH Release)
 - **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
 - **구글 공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **공식 홈페이지**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr) ((주)청운정보시스템)
@@ -16,6 +16,55 @@
 ---
 
 ## 📅 작업 기록 상세 내역
+
+### 📝 [작업 차수 186] SemVer `v2.1.1` (PATCH) 버전 승격 및 전역 8대 영역·문서·블로그 동기화 완료
+- **작업 일시**: 2026-11-16 10:10 KST
+- **요청 사항**:
+  - 최근 안정화 및 오류 수정(작업 차수 185) 반영에 따른 SemVer 버전업 승인(`네`) 및 `docs/VERSIONING_POLICY.md` 기준 전역 동기화
+- **SemVer 2.0.0 버전업 판단 근거 (`v2.1.0` ➔ `v2.1.1`, `PATCH`)**:
+  - 신규 대형 기능 추가나 호환성 파괴 없이 기존 기능(`v2.1.0`)의 하위 호환성을 유지하면서 ▲복사된 폴더 실제 드라이브 루트(`E:\NPKI\...`) 탐색기 타겟팅 보정 ▲비표준 정위치 복구 후 안전 휴지통 격리 및 활동 로그·토스트 연동 ▲중복 `skip` 0건 가드, `USB:\` 표준 경로·`certParser` 폴더 정규화, `KCertAntiDuplicationEngine` PC 원본 우선 정렬, `CertIntegrityDoctor` 자기덮어쓰기 방어, `SafetyTrashManager` `ReadOnly` 해제 등 버그 수정 및 안정화를 수행하였으므로 **`PATCH`(`v2.1.1`)** 버전 승격 확정.
+- **수행 내역**:
+  1. **런타임 · WPF · 빌드/배포 스크립트 8대 영역 `2.1.1` (`2026-11-16`) 전역 동기화**:
+     - Web: `package.json`, `src/version.ts`, `src/components/TrashModal.tsx`.
+     - WPF: `KCertManager.Wpf.csproj`, `KCert.Core.csproj`, `KCert.Crypto.csproj`, `UpdateCheckerService.cs`, `AboutDialog.xaml/.cs`, `UpdateNotificationDialog.xaml`, `MainWindow.xaml`.
+     - Build/CI: `installer.iss`, `build.ps1`, `build.bat`, `build.cmd`, `.github/workflows/build.yml`.
+  2. **루트 및 `/docs/` 기술·운영 문서 최신화**:
+     - `README.md`, `docs/README.md`, `docs/PATCHNOTES.md`(`### 🚀 [v2.1.1] - 2026-11-16` 신설), `docs/GITHUB_DOCS.md`, `docs/GITHUB_GUIDE.md`, `docs/BUILD_GUIDE.md`, `docs/AUTO_UPDATE_GUIDE.md`, `docs/USER_GUIDE.md`, `docs/WPF_NATIVE_GUIDE.md`, `docs/ARCHITECTURE.md` 동기화.
+  3. **구글 블로거(Blogger) 배포 문서 동기화 및 신규 생성**:
+     - `docs/BLOGGER_POST_COMPOSE_MODE.md`, `docs/BLOGGER_POST_HTML_MODE.html`, 통합 문서 `docs/BLOG_v2.1.1.md` 업데이트 완료.
+- **검증 결과**:
+  - 전 파일 `2.1.1` 교차 일관성 검증, `compile_applet`(`vite build`) 및 `lint_applet`(`tsc --noEmit`) 동시 검증, Markdown 링크 무결성 및 HTML 태그 밸런스 검증, WPF XAML/C# 정적 감사 완료.
+
+---
+
+### 📝 [작업 차수 185] 폴더 열기 드라이브 루트 정규화, 비표준 정위치 복구 마법사 및 전수 감사·오류 수정 동기화 (`v2.1.0` 안정화)
+- **작업 일시**: 2026-11-16 03:20 KST
+- **요청 사항**:
+  - `OperationCompleteModal` '복사된 폴더 열기' 시 실제 드라이브 루트(`E:\NPKI\...`) 정확한 타겟팅 및 탐색기 호출 보완
+  - 비표준 위치 인증서 정위치 복구(`App.tsx` `handleRepairFolders`) 시 복사 후 원본 즉시 안전 휴지통 이동, 활동 로그 기록 및 성공 토스트 알림 구현
+  - 반복 자아성찰 및 오류 수정(Web & WPF) 결과를 `/docs` 문서에 최신 반영
+- **수정 및 구현 내역**:
+  1. **복사된 폴더 열기 경로 조합 및 탐색기 연동 강화 (`OperationCompleteModal.tsx`, `BackupModal.tsx`, `OperationCompleteDialog.xaml.cs`)**:
+     - `resolveCopiedFolderPath`로 드라이브 문자와 하위 경로(`targetPath`) 조합 시 누락된 `\` 및 `C:`/`AppData\LocalLow` 경로를 정규화해 `E:\NPKI\...` 등 실제 드라이브 루트를 정확히 지정.
+     - WebView2/Electron 네이티브 브리지 ➔ `file:///` 링크 ➔ 디렉터리 피커 ➔ 클립보드 복사 폴백까지 `window.open`/`alert` 없이 안전하게 처리하고, WPF에서는 `explorer.exe`에 정규화 경로를 직접 전달.
+  2. **비표준 인증서 정위치 복구 마법사·휴지통 격리 완성 (`src/App.tsx` `handleRepairFolders`, `DiagnosticsRepairDialog.xaml.cs`, `CertIntegrityDoctor.cs`)**:
+     - 표준 위치 복사 성공 직후 원본 인증서 목록을 중복 ID 제거 후 안전 휴지통(`SafetyTrash`)으로 즉시 격리 이동하고 `RESTORE`·`DELETE` 로그 및 성공 토스트를 일관되게 기록·표시.
+     - WPF `CertIntegrityDoctor.RepairToStandardHierarchy`에 원본=대상 동일 폴더 조기 반환 및 동일 파일 자기덮어쓰기 `IOException` 방지 가드 추가.
+  3. **Web 경로/전송/스캔/중복skip 정합성 교정 (`usbToPcService.ts`, `driveFilter.ts`, `backupService.ts`, `certPathUtils.ts`, `certParser.ts`, `UsbToPcModal.tsx`, `src/App.tsx`)**:
+     - 이동식 드라이브 문자 정제(`extractCleanDriveColon`), `GPKI`/`EPKI` `class1` 계층 유지, `targetDriveLetter` 파라미터 기반 스캔 및 비-C `targetBaseFolder` 정합화, 발급기관+일련번호 중복 검사 정밀화.
+     - `isPcCertificate`의 `외장`/`EXTERNAL` 판별 보강 및 `certPathUtils.ts`의 `USB:\NPKI|GPKI\Certificate|EPKI\Certificate` 표준 경로 인식.
+     - `certParser.ts`의 `scanDirectoryHandle`·`groupUploadedCertFiles` `sourceLocation`에서 파일명 제거 및 `\` 통일, `TradeSign` 법인(`NPKI_CORP`) 분류 추가.
+     - `UsbToPcModal.tsx` 및 `handleImportFromUsbSuccess`에서 `skip` 등으로 실제 복사 건수가 `0`건인 경우 `"0건 복사 완료"` 모달 대신 `중복 건너뛰기 완료` 화면과 `INFO` 로그·토스트를 출력하도록 수정하고 외장 SSD/고속 USB 필터 통일.
+  4. **WPF 코어 엔진 보강 (`SafetyTrashManager.cs`, `CertTransferEngine.cs`, `CertificateBackupService.cs`, `UsbTransferViewModel.cs`, `KCertAntiDuplicationEngine.cs`, `FastScanPipeline.cs`)**:
+     - `SafetyTrashManager.cs`: 볼륨 간 이동/덮어쓰기 전 `ClearReadOnlyAttributesRecursive` 호출로 읽기 전용 파일 충돌 해소.
+     - `CertTransferEngine.cs`, `CertificateBackupService.cs`, `UsbTransferViewModel.cs`: `class1` 계층 보존, 말단 `\GPKI`/`\EPKI` 판별, 동적 `Environment.SystemDirectory` 루트 적용.
+     - `KCertAntiDuplicationEngine.cs`: `ScorePrimary` 도입으로 PC 표준 경로를 USB 사본보다 우선(`PrimaryInstance`) 보존하고, `DerSha256` 누락 시 일련번호·발급기관·CN 폴백 그룹핑 적용.
+     - `FastScanPipeline.cs`: 말단 `\MPKI`·`/MPKI` 경로까지 `GPKI` 범주로 일관 인식.
+- **검증 결과**:
+  - Web SPA `compile_applet`(`vite build`) 및 `lint_applet`(`tsc --noEmit`) 0 Errors 통과, `alert()`·`window.open()` 미사용 확인.
+  - WPF 전체 20개 XAML XML 파싱/이벤트 연결 및 69개 C# 파일 중괄호 밸런스 정적 감사 오류 0건 확인(컨테이너 내 `.NET SDK` 미설치로 정적 검증 수행).
+
+---
 
 ### 📝 [작업 차수 184] SemVer `v2.1.0` (MINOR) 버전업 및 전체 GitHub 기술 문서 · 구글 블로거(작성 모드 / HTML 편집 모드) 동기화 완료
 - **작업 일시**: 2026-11-13 09:05 KST

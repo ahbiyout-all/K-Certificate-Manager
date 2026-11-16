@@ -95,13 +95,18 @@ namespace KCertManager.Wpf.Services
                 string cleanDrive = (string.IsNullOrWhiteSpace(targetDriveLetter) ? "C" : targetDriveLetter.TrimEnd(':', '\\', '/')).ToUpperInvariant() + ":\\";
                 string targetRoot;
 
+                string normSrc = (sourceDirectory ?? string.Empty).Replace('/', '\\').TrimEnd('\\');
                 bool isGpki = string.Equals(targetCategory, "GPKI", StringComparison.OrdinalIgnoreCase) ||
-                              sourceDirectory.IndexOf(@"\GPKI\", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                              sourceDirectory.IndexOf(@"/GPKI/", StringComparison.OrdinalIgnoreCase) >= 0;
+                              normSrc.IndexOf(@"\GPKI\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                              normSrc.EndsWith(@"\GPKI", StringComparison.OrdinalIgnoreCase);
 
                 bool isEpki = string.Equals(targetCategory, "EPKI", StringComparison.OrdinalIgnoreCase) ||
-                              sourceDirectory.IndexOf(@"\EPKI\", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                              sourceDirectory.IndexOf(@"/EPKI/", StringComparison.OrdinalIgnoreCase) >= 0;
+                              normSrc.IndexOf(@"\EPKI\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                              normSrc.EndsWith(@"\EPKI", StringComparison.OrdinalIgnoreCase);
+
+                string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\').ToUpperInvariant() + "\\";
+                var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                bool isSystemDrive = string.Equals(cleanDrive, sysRoot, StringComparison.OrdinalIgnoreCase);
 
                 if (isGpki)
                 {
@@ -114,23 +119,28 @@ namespace KCertManager.Wpf.Services
                     }
                     catch
                     {
-                        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
                         targetRoot = Path.Combine(userProfile, "AppData", "LocalLow");
                     }
                 }
+                else if (!isSystemDrive)
+                {
+                    // 비-시스템 드라이브(D:, E: 등)가 선택된 경우 드라이브 루트(예: D:\NPKI, D:\EPKI)에 직접 배치
+                    targetRoot = Directory.Exists(cleanDrive)
+                        ? cleanDrive
+                        : Path.Combine(userProfile, "AppData", "LocalLow");
+                }
                 else
                 {
-                    // 선택된 도착 디스크 (C:, D:, E: 등)의 Users AppData 경로로 안전 배치
-                    string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\').ToUpperInvariant() + "\\";
-                    string driveUsersDir = Path.Combine(cleanDrive, "Users", username, "AppData", "LocalLow");
-                    if (string.Equals(cleanDrive, sysRoot, StringComparison.OrdinalIgnoreCase) || !Directory.Exists(cleanDrive))
+                    // 시스템 드라이브(C:)인 경우 사용자 프로필 AppData\LocalLow 표준 경로 사용
+                    if (!Directory.Exists(cleanDrive) ||
+                        string.IsNullOrWhiteSpace(username) ||
+                        string.Equals(username, Environment.UserName, StringComparison.OrdinalIgnoreCase))
                     {
-                        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
                         targetRoot = Path.Combine(userProfile, "AppData", "LocalLow");
                     }
                     else
                     {
-                        targetRoot = driveUsersDir;
+                        targetRoot = Path.Combine(cleanDrive, "Users", username, "AppData", "LocalLow");
                     }
                 }
 

@@ -226,11 +226,11 @@ namespace KCert.Core.Vault
 
             string normalized = fullPath.Replace('/', '\\');
 
-            // 1. 표준 디렉터리 토큰 검색 (\NPKI\, \GPKI\, \EPKI\, \MPKI\)
+            // 1. 표준 디렉터리 토큰 검색 (\NPKI\, \GPKI\, \EPKI\, \MPKI\) - 중첩 복사(NPKI\NPKI 등) 시 최내부 표준 계층 선택
             string[] standards = { @"\NPKI\", @"\GPKI\", @"\EPKI\", @"\MPKI\" };
             foreach (var marker in standards)
             {
-                int index = normalized.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+                int index = normalized.LastIndexOf(marker, StringComparison.OrdinalIgnoreCase);
                 if (index >= 0)
                 {
                     return normalized.Substring(index + 1);
@@ -250,13 +250,14 @@ namespace KCert.Core.Vault
             // 3. 마커가 없는 경우 (예: 임의 백업 폴더) 체계 감지 후 표준 경로 배치
             var folderName = Path.GetFileName(fullPath.TrimEnd('\\', '/'));
             var upper = fullPath.ToUpperInvariant();
+            string classTier = (upper.Contains(@"\CLASS1") || upper.Contains("/CLASS1")) ? "class1" : "class2";
             if (upper.Contains("GPKI"))
             {
-                return Path.Combine("GPKI", "Certificate", "class2", folderName);
+                return Path.Combine("GPKI", "Certificate", classTier, folderName);
             }
             if (upper.Contains("EPKI"))
             {
-                return Path.Combine("EPKI", "Certificate", "class2", folderName);
+                return Path.Combine("EPKI", "Certificate", classTier, folderName);
             }
 
             return Path.Combine("NPKI", "yessign", "User", folderName);

@@ -50,7 +50,7 @@ export const QuickTransferConfigCard: React.FC<QuickTransferConfigCardProps> = (
 
   const removableDrivesWithStats = useMemo(() => {
     const list = availableDrives.filter(d => d.type === 'removable' || d.busType === 'USB').map(drive => {
-      const letterClean = drive.letter.replace(':', '').toUpperCase();
+      const letterClean = (drive.letter.match(/\b([A-Za-z]):/)?.[1] || drive.letter.match(/([A-Za-z])/)?.[1] || '').toUpperCase();
       const certs = getAvailableUsbCertificates(availableDrives, letterClean);
       return { drive, letterClean, certs, certCount: certs.length };
     });

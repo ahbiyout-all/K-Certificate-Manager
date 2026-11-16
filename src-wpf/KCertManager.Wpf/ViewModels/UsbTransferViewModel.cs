@@ -177,25 +177,27 @@ namespace KCertManager.Wpf.ViewModels
 
         public void RefreshTargetDrives()
         {
+            string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\').ToUpperInvariant() + "\\";
+            string sysLetter = sysRoot.TrimEnd('\\');
             try
             {
                 var localDrives = UsbDriveWatcher.GetAvailableDrives()
-                    .Where(d => d.IsFixed || d.Name.StartsWith("C", StringComparison.OrdinalIgnoreCase))
+                    .Where(d => d.IsFixed || d.Name.StartsWith(sysLetter, StringComparison.OrdinalIgnoreCase))
                     .ToList();
 
-                if (!localDrives.Any(d => d.Name.StartsWith("C", StringComparison.OrdinalIgnoreCase)))
+                if (!localDrives.Any(d => d.Name.StartsWith(sysLetter, StringComparison.OrdinalIgnoreCase)))
                 {
-                    localDrives.Insert(0, new DriveItem { Name = "C:\\", VolumeLabel = "로컬 디스크 (C:)", DriveType = DriveType.Fixed, IsReady = true });
+                    localDrives.Insert(0, new DriveItem { Name = sysRoot, VolumeLabel = $"로컬 디스크 ({sysLetter})", DriveType = DriveType.Fixed, IsReady = true });
                 }
 
                 AvailableTargetDrives = new ObservableCollection<DriveItem>(localDrives);
-                SelectedTargetDrive = AvailableTargetDrives.FirstOrDefault(d => d.Name.StartsWith("C", StringComparison.OrdinalIgnoreCase)) ?? AvailableTargetDrives.FirstOrDefault();
+                SelectedTargetDrive = AvailableTargetDrives.FirstOrDefault(d => d.Name.StartsWith(sysLetter, StringComparison.OrdinalIgnoreCase)) ?? AvailableTargetDrives.FirstOrDefault();
             }
             catch
             {
                 AvailableTargetDrives = new ObservableCollection<DriveItem>
                 {
-                    new DriveItem { Name = "C:\\", VolumeLabel = "로컬 디스크 (C:)", DriveType = DriveType.Fixed, IsReady = true }
+                    new DriveItem { Name = sysRoot, VolumeLabel = $"로컬 디스크 ({sysLetter})", DriveType = DriveType.Fixed, IsReady = true }
                 };
                 SelectedTargetDrive = AvailableTargetDrives.FirstOrDefault();
             }
@@ -317,27 +319,32 @@ namespace KCertManager.Wpf.ViewModels
 
             bool isSystemDrive = string.Equals(cleanDrive, sysRoot, StringComparison.OrdinalIgnoreCase);
 
-            if (!isSystemDrive)
-            {
-                return cleanDrive;
-            }
-
             bool isGpki = string.Equals(category, "GPKI", StringComparison.OrdinalIgnoreCase) ||
                           (!string.IsNullOrWhiteSpace(sourceDirectory) &&
                            (sourceDirectory.IndexOf(@"\GPKI\", StringComparison.OrdinalIgnoreCase) >= 0 ||
                             sourceDirectory.IndexOf(@"/GPKI/", StringComparison.OrdinalIgnoreCase) >= 0));
+
+            if (!isSystemDrive)
+            {
+                if (Directory.Exists(cleanDrive))
+                {
+                    return cleanDrive;
+                }
+                return isGpki ? sysRoot : Path.Combine(userProfile, "AppData", "LocalLow");
+            }
 
             if (isGpki)
             {
                 return Directory.Exists(cleanDrive) ? cleanDrive : sysRoot;
             }
 
-            if (!Directory.Exists(cleanDrive))
+            string effectiveUser = string.IsNullOrWhiteSpace(username) ? Environment.UserName : username;
+            if (!Directory.Exists(cleanDrive) ||
+                string.Equals(effectiveUser, Environment.UserName, StringComparison.OrdinalIgnoreCase))
             {
                 return Path.Combine(userProfile, "AppData", "LocalLow");
             }
 
-            string effectiveUser = string.IsNullOrWhiteSpace(username) ? Environment.UserName : username;
             return Path.Combine(cleanDrive, "Users", effectiveUser, "AppData", "LocalLow");
         }
 

@@ -92,15 +92,10 @@ namespace KCertManager.Wpf.Views
                 {
                     if (!string.IsNullOrWhiteSpace(_targetPath))
                     {
-                        string folderToOpen = Directory.Exists(_targetPath) ? _targetPath : (Path.GetDirectoryName(_targetPath) ?? _targetPath);
-                        if (Directory.Exists(folderToOpen))
+                        var folderToOpen = ResolveExistingTargetDirectory(_targetPath);
+                        if (!string.IsNullOrWhiteSpace(folderToOpen) && Directory.Exists(folderToOpen))
                         {
-                            Process.Start(new ProcessStartInfo
-                            {
-                                FileName = "explorer.exe",
-                                Arguments = $"\"{folderToOpen}\"",
-                                UseShellExecute = true
-                            });
+                            OpenDirectoryInExplorer(folderToOpen);
                         }
                     }
                 }
@@ -147,72 +142,91 @@ namespace KCertManager.Wpf.Views
             }
         }
 
+        private static string ExtractDrivePrefix(string? path)
+        {
+            string defaultDrive = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\').ToUpperInvariant();
+            if (!defaultDrive.EndsWith(":")) defaultDrive = "C:";
+            if (string.IsNullOrWhiteSpace(path)) return defaultDrive;
+
+            var match = System.Text.RegularExpressions.Regex.Match(path.Trim(), @"(?:^|[^A-Za-z])([A-Za-z]:)");
+            if (match.Success)
+            {
+                return match.Groups[1].Value.ToUpperInvariant();
+            }
+            return defaultDrive;
+        }
+
+        private static string ResolveExistingTargetDirectory(string? rawPath)
+        {
+            string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\') + "\\";
+            string path = string.IsNullOrWhiteSpace(rawPath) ? Path.Combine(sysRoot, "NPKI") : rawPath.Trim().Replace('/', '\\');
+            string driveLetter = ExtractDrivePrefix(path);
+            string driveRoot = driveLetter + "\\";
+
+            string candidate = path;
+            if (System.Text.RegularExpressions.Regex.IsMatch(candidate, @"^[A-Za-z]:[^\\]"))
+            {
+                candidate = candidate.Substring(0, 2) + "\\" + candidate.Substring(2);
+            }
+            if (!Path.IsPathRooted(candidate))
+            {
+                string trimmedSub = System.Text.RegularExpressions.Regex.Replace(candidate, @"^USB:[\\/]*", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase)
+                    .TrimStart('\\', '/');
+                candidate = string.IsNullOrWhiteSpace(trimmedSub) ? driveRoot : Path.Combine(driveRoot, trimmedSub);
+            }
+
+            if (File.Exists(candidate))
+            {
+                candidate = Path.GetDirectoryName(candidate) ?? driveRoot;
+            }
+
+            // 가장 가까운 기존 상위 폴더까지 순회 탐색
+            string? probe = candidate;
+            while (!string.IsNullOrWhiteSpace(probe))
+            {
+                if (Directory.Exists(probe))
+                {
+                    return probe;
+                }
+                probe = Path.GetDirectoryName(probe);
+            }
+
+            // 드라이브 내 표준 인증서 루트 폴백
+            if (path.Contains("NPKI", StringComparison.OrdinalIgnoreCase))
+            {
+                var npkiPath = Path.Combine(driveRoot, "NPKI");
+                if (Directory.Exists(npkiPath)) return npkiPath;
+            }
+            else if (path.Contains("EPKI", StringComparison.OrdinalIgnoreCase))
+            {
+                var epkiPath = Path.Combine(driveRoot, "EPKI");
+                if (Directory.Exists(epkiPath)) return epkiPath;
+            }
+            else if (path.Contains("GPKI", StringComparison.OrdinalIgnoreCase))
+            {
+                var gpkiPath = Path.Combine(driveRoot, "GPKI");
+                if (Directory.Exists(gpkiPath)) return gpkiPath;
+            }
+
+            return Directory.Exists(driveRoot) ? driveRoot : sysRoot;
+        }
+
+        private static void OpenDirectoryInExplorer(string folderPath)
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"\"{folderPath}\"",
+                UseShellExecute = true
+            });
+        }
+
         private void BtnOpenFolder_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                string path = _targetPath;
-                if (string.IsNullOrWhiteSpace(path))
-                {
-                    path = "C:\\NPKI";
-                }
-
-                // Extract drive letter e.g. E: or C:
-                string driveLetter = "C:";
-                if (path.Length >= 2 && char.IsLetter(path[0]) && path[1] == ':')
-                {
-                    driveLetter = path.Substring(0, 2).ToUpperInvariant();
-                }
-                else if (path.Contains(":"))
-                {
-                    int idx = path.IndexOf(":");
-                    if (idx >= 1)
-                    {
-                        driveLetter = path.Substring(idx - 1, 2).ToUpperInvariant();
-                    }
-                }
-
-                string targetFolder = path;
-                if (!Path.IsPathRooted(targetFolder) && !string.IsNullOrEmpty(driveLetter))
-                {
-                    targetFolder = Path.Combine(driveLetter + "\\", path.TrimStart('\\', '/'));
-                }
-
-                if (!Directory.Exists(targetFolder) && !File.Exists(targetFolder))
-                {
-                    string parentDir = Path.GetDirectoryName(targetFolder) ?? string.Empty;
-                    if (Directory.Exists(parentDir))
-                    {
-                        targetFolder = parentDir;
-                    }
-                    else
-                    {
-                        string rootFallback = driveLetter + "\\";
-                        if (path.Contains("NPKI", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var npkiPath = Path.Combine(rootFallback, "NPKI");
-                            if (Directory.Exists(npkiPath)) rootFallback = npkiPath;
-                        }
-                        else if (path.Contains("GPKI", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var gpkiPath = Path.Combine(rootFallback, "GPKI");
-                            if (Directory.Exists(gpkiPath)) rootFallback = gpkiPath;
-                        }
-                        targetFolder = rootFallback;
-                    }
-                }
-
-                string folderToOpen = Directory.Exists(targetFolder) ? targetFolder : (Path.GetDirectoryName(targetFolder) ?? driveLetter + "\\");
-                if (!Directory.Exists(folderToOpen))
-                {
-                    folderToOpen = driveLetter + "\\";
-                }
-
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = folderToOpen,
-                    UseShellExecute = true
-                });
+                string folderToOpen = ResolveExistingTargetDirectory(_targetPath);
+                OpenDirectoryInExplorer(folderToOpen);
             }
             catch (Exception ex)
             {
@@ -223,11 +237,10 @@ namespace KCertManager.Wpf.Views
         private static string? DetectRemovableUsbDrive(string targetPath)
         {
             if (string.IsNullOrWhiteSpace(targetPath)) return null;
-            string trimmed = targetPath.Trim();
-            if (trimmed.Length < 2 || !char.IsLetter(trimmed[0]) || trimmed[1] != ':')
-                return null;
+            var match = System.Text.RegularExpressions.Regex.Match(targetPath.Trim(), @"(?:^|[^A-Za-z])([A-Za-z]:)");
+            if (!match.Success) return null;
 
-            string driveLetter = char.ToUpperInvariant(trimmed[0]) + ":";
+            string driveLetter = match.Groups[1].Value.ToUpperInvariant();
             try
             {
                 var info = new DriveInfo(driveLetter + "\\");

@@ -56,7 +56,8 @@ export function detectDuplicateCertificates(
   targetDrive: DiskDrive
 ): DuplicateDetectionResult {
   // Find all certs currently residing on targetDrive
-  const targetLetterClean = targetDrive.letter.replace(':', '').toUpperCase();
+  const targetMatch = (targetDrive.letter || '').match(/\b([A-Za-z]):/) || (targetDrive.letter || '').match(/([A-Za-z])/);
+  const targetLetterClean = (targetMatch ? targetMatch[1] : '').toUpperCase();
   const targetDriveCerts = existingCerts.filter(c => {
     const sDrive = (c.sourceDrive || '').toUpperCase();
     const sLoc = (c.sourceLocation || '').toUpperCase();
@@ -73,15 +74,29 @@ export function detectDuplicateCertificates(
   for (const cert of selectedCerts) {
     const stdPath = getStandardDirectoryPath(cert);
     
-    // Check if targetDrive has a certificate with the same subjectDn, name, or standard directory path
+    // Check if targetDrive has the same certificate by path, SHA-256, serial+issuer, subjectDn, or category+name+issuer
+    const normalizedStdLower = stdPath.replace(/\//g, '\\').toLowerCase();
     const match = targetDriveCerts.find(tc => {
       if (tc.id === cert.id) return false;
       const tcStdPath = getStandardDirectoryPath(tc);
       const isPathMatch = tcStdPath.toLowerCase() === stdPath.toLowerCase();
-      const isNameMatch = tc.name.trim() === cert.name.trim();
-      const isDnMatch = tc.subjectDn.toLowerCase() === cert.subjectDn.toLowerCase();
-      const isLocMatch = tc.sourceLocation.toLowerCase().includes(stdPath.toLowerCase());
-      return isPathMatch || isNameMatch || isDnMatch || isLocMatch;
+      const isShaMatch =
+        Boolean(cert.files?.sha256 && tc.files?.sha256) &&
+        cert.files.sha256.length >= 12 &&
+        cert.files.sha256 === tc.files.sha256;
+      const isSerialIssuerMatch =
+        Boolean(cert.serialNumber && tc.serialNumber) &&
+        tc.serialNumber.trim().toUpperCase() === cert.serialNumber.trim().toUpperCase() &&
+        tc.issuer.trim().toUpperCase() === cert.issuer.trim().toUpperCase();
+      const isSameCertNameAndIssuer =
+        tc.category === cert.category &&
+        tc.name.trim() === cert.name.trim() &&
+        tc.issuer.trim() === cert.issuer.trim();
+      const isDnMatch =
+        Boolean(cert.subjectDn && tc.subjectDn) &&
+        tc.subjectDn.toLowerCase() === cert.subjectDn.toLowerCase();
+      const isLocMatch = (tc.sourceLocation || '').replace(/\//g, '\\').toLowerCase().includes(normalizedStdLower);
+      return isPathMatch || isShaMatch || isSerialIssuerMatch || isSameCertNameAndIssuer || isDnMatch || isLocMatch;
     });
 
     if (match) {
@@ -284,13 +299,15 @@ function sanitizePathSegment(segment: string): string {
 export function getStandardDirectoryPath(cert: CertificateItem): string {
   const subjectDn = (cert.subjectDn || '').trim();
   const hasCn = subjectDn.toLowerCase().includes('cn=');
+  const srcLower = (cert.sourceLocation || '').toLowerCase();
+  const classTier = srcLower.includes('\\class1') || srcLower.includes('/class1') ? 'class1' : 'class2';
 
   // 공무원 인증서 (GPKI)
   if (cert.category === 'GPKI_GOV') {
     const rawCn = hasCn
       ? subjectDn.split(',')[0].trim()
       : `cn=${cert.name}`;
-    return `GPKI/Certificate/class2/${sanitizePathSegment(rawCn)}`;
+    return `GPKI/Certificate/${classTier}/${sanitizePathSegment(rawCn)}`;
   }
 
   // 교육행정 인증서 (EPKI)
@@ -298,7 +315,7 @@ export function getStandardDirectoryPath(cert: CertificateItem): string {
     const rawCn = hasCn
       ? subjectDn.split(',')[0].trim()
       : `cn=${cert.name}`;
-    return `EPKI/Certificate/class2/${sanitizePathSegment(rawCn)}`;
+    return `EPKI/Certificate/${classTier}/${sanitizePathSegment(rawCn)}`;
   }
 
   // 은행/법인 공동인증서 (NPKI)

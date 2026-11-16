@@ -253,6 +253,21 @@ namespace KCert.Core.Diagnostics
             try
             {
                 string targetDir = Path.Combine(destinationRoot, diag.CanonicalSubPath);
+                string normSrcDir = Path.GetFullPath(sourceFolder).TrimEnd('\\', '/');
+                string normDstDir = Path.GetFullPath(targetDir).TrimEnd('\\', '/');
+
+                if (string.Equals(normSrcDir, normDstDir, StringComparison.OrdinalIgnoreCase))
+                {
+                    return new CertRepairResult
+                    {
+                        IsSuccess = true,
+                        SourcePath = sourceFolder,
+                        RepairedPath = targetDir,
+                        RepairedFileCount = 0,
+                        Message = $"이미 표준 계층 구조({diag.CanonicalSubPath})에 위치해 있습니다."
+                    };
+                }
+
                 if (!Directory.Exists(targetDir))
                 {
                     Directory.CreateDirectory(targetDir);
@@ -264,7 +279,6 @@ namespace KCert.Core.Diagnostics
                 foreach (var file in files)
                 {
                     string fileName = Path.GetFileName(file);
-                    string targetFilePath = Path.Combine(targetDir, fileName);
 
                     // 표준 대소문자 파일명 보정
                     if (fileName.Equals("signcert.der", StringComparison.OrdinalIgnoreCase)) fileName = "signCert.der";
@@ -272,7 +286,12 @@ namespace KCert.Core.Diagnostics
                     if (fileName.Equals("kmcert.der", StringComparison.OrdinalIgnoreCase)) fileName = "kmCert.der";
                     if (fileName.Equals("kmpri.key", StringComparison.OrdinalIgnoreCase)) fileName = "kmPri.key";
 
-                    targetFilePath = Path.Combine(targetDir, fileName);
+                    string targetFilePath = Path.Combine(targetDir, fileName);
+
+                    if (string.Equals(Path.GetFullPath(file), Path.GetFullPath(targetFilePath), StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
 
                     // 기존 파일이 읽기 전용인 경우 속성 해제
                     if (File.Exists(targetFilePath))
@@ -332,13 +351,17 @@ namespace KCert.Core.Diagnostics
             // Subject DN 내 특수문자 정리
             string safeUserFolder = SanitizeFolderName(userFolder);
 
+            bool isClass1 = !string.IsNullOrEmpty(folderPath) &&
+                            folderPath.Replace('/', '\\').Contains(@"\class1", StringComparison.OrdinalIgnoreCase);
+            string classTier = isClass1 ? "class1" : "class2";
+
             if (sysType == CertSystemType.GPKI)
             {
-                return Path.Combine("GPKI", "Certificate", "class2", safeUserFolder);
+                return Path.Combine("GPKI", "Certificate", classTier, safeUserFolder);
             }
             if (sysType == CertSystemType.EPKI)
             {
-                return Path.Combine("EPKI", "Certificate", "class2", safeUserFolder);
+                return Path.Combine("EPKI", "Certificate", classTier, safeUserFolder);
             }
 
             // NPKI 기본

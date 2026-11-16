@@ -14,6 +14,23 @@
 
 ---
 
+### 🚀 [v2.1.1] - 2026-11-16
+**변경 구분**: `PATCH` (복사 완료 폴더 실제 드라이브 루트 탐색기 타겟팅 보강, 비표준 정위치 복구 후 안전 휴지통 격리 워크플로우 완성, 중복 `skip` 0건 가드 및 Web/WPF 전수 감사 경로·무결성 결함 일괄 수정)
+#### 🛠️ 버그 수정 및 안정화 (Bug Fixes & Stability)
+- **복사 완료 폴더 탐색기 타겟팅 보강 (`OperationCompleteModal.tsx`, `BackupModal.tsx`, `OperationCompleteDialog.xaml.cs`)**:
+  - `'복사된 폴더 열기'` 클릭 시 `resolveCopiedFolderPath`로 드라이브 문자 뒤 누락 백슬래시(`\`)와 `targetPath`·`targetDiskName` 조합을 정규화해 실제 드라이브 루트(`E:\NPKI\...` 등)를 정확히 열도록 개선하고, Web 환경에서 `window.open`/`alert` 없이 안전 브리지·로컬 링크·폴더 피커·클립보드 폴백을 지원.
+- **비표준 경로 정위치 복구 마법사·휴지통 격리 워크플로우 완성 (`App.tsx` `handleRepairFolders`, `DiagnosticsRepairDialog.xaml.cs`, `CertIntegrityDoctor.cs`)**:
+  - 표준 경로 복사 완료 후 중복 방지 및 ID 기준 검증을 거쳐 원본 비표준 폴더를 즉시 안전 휴지통(`SafetyTrash`)으로 이동하고, 복구·격리 결과를 활동 로그(`RESTORE`/`DELETE`)와 성공 토스트 알림에 기록·노출.
+  - WPF `CertIntegrityDoctor.RepairToStandardHierarchy`에 동일 폴더 조기 반환 및 동일 파일 자기덮어쓰기 `IOException` 방지 가드 추가.
+- **전수 감사 및 경로·중복·무결성 버그 일괄 교정**:
+  - `usbToPcService.ts` / `backupService.ts` / `driveFilter.ts`: 이동식 드라이브 문자 정제, `GPKI`/`EPKI` `class1` 계층 보존, `targetDriveLetter` 기반 로컬 스캔·비-C `targetBaseFolder` 정합화, 발급기관+일련번호 중복 검증 정밀화 및 `isPcCertificate` 외장(`외장`/`EXTERNAL`) 판별 일관화.
+  - `certPathUtils.ts` / `certParser.ts`: `USB:\NPKI`, `USB:\GPKI\Certificate`, `USB:\EPKI\Certificate` 표준 경로 인식; 디렉터리 핸들·업로드 스캔의 `sourceLocation`을 파일명 제외 백슬래시(`\`) 폴더 경로로 정규화 및 TradeSign 법인(`NPKI_CORP`) 분류 추가.
+  - `UsbToPcModal.tsx` / `App.tsx`: `skip` 전략으로 실제 복사 `0`건일 때 허위 `"0건 완료"` 모달 대신 `중복 건너뛰기 완료` 화면과 `INFO` 로그·토스트만 표시하도록 보완 및 외장 SSD/고속 USB 필터 일관화.
+  - `KCert.Core` (`SafetyTrashManager.cs`, `CertTransferEngine.cs`, `KCertAntiDuplicationEngine.cs`, `FastScanPipeline.cs`) & `CertificateBackupService.cs` / `UsbTransferViewModel.cs`: 볼륨 간 이동·덮어쓰기 전 `ReadOnly` 속성 재귀 해제, `class1` 계층 보존·동적 시스템 드라이브 루트 적용, 중복 판정 시 PC 표준 경로 우선(`PrimaryInstance`) + SHA-256 누락 폴백 그룹핑, 말단 `\MPKI`/`/MPKI` GPKI 분류 보완.
+  - **8대 영역 버전 동기화**: `package.json`, `src/version.ts`, WPF 3종 `.csproj`, `UpdateCheckerService.cs`, XAML/CS UI, `installer.iss`, `build.ps1/.bat/.cmd`, `.github/workflows/build.yml`, `/docs` 및 블로그 원고 전체를 `v2.1.1`로 일괄 동기화.
+
+---
+
 ### 🚀 [v2.1.0] - 2026-11-13
 **변경 구분**: `MINOR` (앱 내 직접 다운로드·무인 셀프 설치 자동 업데이트 엔진 탑재, WPF-Web 다크 테마 통합 및 반응형 CSS Grid `auto-fill` 인증서 카드 레이아웃 적용, 전역 UI 쉬운 일상 표현 우선 개편, 3차 심층 전수 감사 버그 일괄 수정)
 #### ✨ 주요 개선 및 신규 기능 (Improvements & Features)

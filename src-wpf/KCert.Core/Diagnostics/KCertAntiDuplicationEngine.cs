@@ -19,9 +19,21 @@ namespace KCert.Core.Diagnostics
         public int TotalCopies => Instances.Count;
         public List<KCertMetadata> Instances { get; set; } = new();
 
-        /// <summary>표준 경로에 위치한 기본 인스턴스 (Primary Instance)</summary>
-        public KCertMetadata? PrimaryInstance => Instances.FirstOrDefault(i => Discovery.CertLocationScanner.IsStandardPath(i.DirectoryPath)) 
-                                                ?? Instances.FirstOrDefault();
+        private static int ScorePrimary(KCertMetadata i)
+        {
+            int score = 0;
+            if (Discovery.CertLocationScanner.IsStandardPath(i.DirectoryPath)) score += 100;
+            bool isUsb = i.IsOnRemovableMedia || Discovery.CertLocationScanner.IsRemovableDrive(i.DerFilePath);
+            if (!isUsb) score += 40;
+            if (i.DaysRemaining > 0) score += 20;
+            if (i.HasPrivateKey) score += 10;
+            return score;
+        }
+
+        /// <summary>표준 경로에 위치한 기본 인스턴스 (Primary Instance — PC 로컬 우선)</summary>
+        public KCertMetadata? PrimaryInstance => Instances
+            .OrderByDescending(ScorePrimary)
+            .FirstOrDefault();
 
         /// <summary>중복 정리 가능한 잉여 복사본 목록 (Redundant Copies)</summary>
         public List<KCertMetadata> RedundantInstances => Instances.Where(i => i != PrimaryInstance).ToList();
@@ -57,10 +69,13 @@ namespace KCert.Core.Diagnostics
                 TotalScannedCertCount = certList.Count
             };
 
-            // SHA256 해시 및 시리얼 번호 기준으로 그룹핑
+            // SHA256 해시 우선 + 누락 시 일련번호/발급기관/소유자 기준 그룹핑
             var groupedByHash = certList
-                .Where(c => !string.IsNullOrEmpty(c.DerSha256))
-                .GroupBy(c => c.DerSha256, StringComparer.OrdinalIgnoreCase);
+                .GroupBy(
+                    c => !string.IsNullOrWhiteSpace(c.DerSha256)
+                        ? "SHA:" + c.DerSha256
+                        : $"SIG:{c.SerialNumber}|{c.Issuer}|{c.CommonName}",
+                    StringComparer.OrdinalIgnoreCase);
 
             var duplicateGroups = new List<DuplicateCertGroup>();
             int uniqueCount = 0;
@@ -74,7 +89,9 @@ namespace KCert.Core.Diagnostics
                     var first = items[0];
                     duplicateGroups.Add(new DuplicateCertGroup
                     {
-                        FingerprintSha256 = grp.Key,
+                        FingerprintSha256 = grp.Key.StartsWith("SHA:", StringComparison.OrdinalIgnoreCase)
+                            ? grp.Key.Substring(4)
+                            : grp.Key,
                         SerialNumber = first.SerialNumber,
                         CommonName = first.CommonName,
                         Issuer = first.Issuer,
