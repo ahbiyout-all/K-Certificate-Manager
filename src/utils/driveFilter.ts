@@ -146,7 +146,7 @@ export function isSameDriveSelfCopy(
     ? targetDriveLetterOrObj
     : targetDriveLetterOrObj.letter || '';
 
-  const targetMatch = rawTarget.trim().match(/\b([A-Za-z]):/) || rawTarget.trim().match(/([A-Za-z])/);
+  const targetMatch = rawTarget.trim().match(/(?:^|[^A-Za-z])([A-Za-z]):/) || rawTarget.trim().match(/([A-Za-z])/);
   const targetLetter = (targetMatch ? targetMatch[1] : '').toUpperCase();
   if (!targetLetter) return false;
 

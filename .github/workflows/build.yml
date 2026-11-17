@@ -89,6 +89,9 @@ jobs:
       - name: Build KCert.Core DLL
         run: dotnet build src-wpf/KCert.Core/KCert.Core.csproj -c Release -p:Version=${{ env.APP_VER }} -p:AssemblyVersion=${{ env.APP_VER }}.0 -p:FileVersion=${{ env.APP_VER }}.0 -o dist/v${{ env.APP_VER }}/core-dll
 
+      - name: Build KCert.Crypto DLL
+        run: dotnet build src-wpf/KCert.Crypto/KCert.Crypto.csproj -c Release -p:Version=${{ env.APP_VER }} -p:AssemblyVersion=${{ env.APP_VER }}.0 -p:FileVersion=${{ env.APP_VER }}.0 -o dist/v${{ env.APP_VER }}/core-dll
+
       - name: Build & Publish WPF Desktop App (x64 Standalone Single-File)
         shell: pwsh
         run: |
@@ -189,14 +192,12 @@ jobs:
               - Windows 방화벽 인바운드 규칙 자동/사전 등록
             
             ### ✨ 주요 기능 및 업데이트 (v${{ env.APP_VER }})
-            - 상단 헤더 가로 볼륨 슬라이더 바 (Horizontal Sound Slider Bar) 상시 탑재 (원클릭 음소거 토글, 0%~100% 범위 슬라이더, 볼륨 수치, 미리듣기 버튼)
-            - 눈에 잘 띄는 [⚙️ 환경 설정] 버튼 상단 헤더 상시 노출로 환경 설정 창 호출 직관성 극대화
-            - Windows C# WPF 데스크톱 전용 `SettingsDialog.xaml` 신설 (알림음, 미리듣기, 4대 테마, 모드 전환)
-            - 로컬 환경 설정 영구 저장 서비스 (`SettingsService.cs`) 구축 (`%LocalAppData%\KCertManager\kcert_settings.json`)
-            - '다시 표시하지 않음' CheckBox Two-Way 양방향 바인딩 및 XAML Spacing 제거로 CI 빌드 무결성 확보
-            - 만료 인증서 안전 정리 시 삭제 수량과 안전 격리 휴지통 수량 100% 일치화 및 메타데이터 복원 (v1.7.1 계승)
-            - 보안 영구 삭제 증적 감사 로그 (SubjectDN 포렌식) 감사 시스템 및 .log 보고서 내보내기
-            - Node.js 24 Next-Gen 및 Node.js 22 LTS 런타임 최신화
+            - **복사 완료 폴더 탐색기 타겟팅 보강**: 완료 모달의 `'복사된 폴더 열기'` 시 실제 드라이브 루트(`E:\NPKI\...` 등) 정규화 및 탐색기 직접 호출 지원
+            - **비표준 경로 정위치 복구 + 안전 휴지통 격리 워크플로우**: 표준 경로 복사 완료 후 비표준 원본 폴더 안전 격리(SafetyTrash) 및 자기덮어쓰기 방지 가드 탑재
+            - **중복 인증서 `skip` 0건 가드 및 경로·무결성 일괄 교정**: USB ➔ PC 복사 시 중복 건너뛰기 정밀 카운트 및 `class1` 계층·발급기관+일련번호 판별 고도화
+            - **앱 내 직접 다운로드·무인 셀프 업데이트 엔진 (WPF & Web)**: GitHub 릴리스 자동 탐색, 스트리밍 다운로드, PE/SHA-256 무결성 검증 및 무인 설치 지원
+            - **WPF-Web 다크 테마 통합 & 반응형 CSS Grid `auto-fill` 카드**: 통일된 다크 UI, 직관적인 일상 표현 개편, DPAPI + AES-256 암호화 보호 보관소 제공
+            - **멀티 타겟 .NET (10.0 / 8.0) & Node.js 22/24 빌드 파이프라인**: `KCert.Core.dll` / `KCert.Crypto.dll` 분리 패키징 및 Inno Setup 정식 설치 프로그램 제공
 
             상세 변경 내역은 저장소 내 `docs/PATCHNOTES.md`를 참고해 주시기 바랍니다.
           files: |

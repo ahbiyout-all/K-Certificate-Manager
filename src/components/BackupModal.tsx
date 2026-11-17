@@ -565,13 +565,15 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           copiedCerts.length > 0
             ? getStandardDirectoryPath(copiedCerts[0]).replace(/\//g, '\\')
             : 'NPKI';
-        const driveCharMatch = targetDrive.letter.trim().match(/\b([A-Za-z]):/) || targetDrive.letter.trim().match(/([A-Za-z])/);
+        const driveCharMatch = targetDrive.letter.trim().match(/(?:^|[^A-Za-z])([A-Za-z]):/) || targetDrive.letter.trim().match(/([A-Za-z])/);
         const resolvedDriveRoot = driveCharMatch ? `${driveCharMatch[1].toUpperCase()}:` : targetDrive.letter.trim().replace(/[\\/]+$/, '');
         const isSystemC = resolvedDriveRoot.toUpperCase() === 'C:';
         const isGpkiFirst = copiedCerts[0]?.category === 'GPKI_GOV';
+        const srcUserMatch = (copiedCerts[0]?.sourceLocation || '').match(/\\Users\\([^\\]+)\\/i);
+        const resolvedWinUser = srcUserMatch && srcUserMatch[1] && srcUserMatch[1] !== '...' ? srcUserMatch[1] : 'Admin';
         const resolvedTargetPath =
           isSystemC && !isGpkiFirst
-            ? `C:\\Users\\Admin\\AppData\\LocalLow\\${firstCopiedSubPath}`
+            ? `C:\\Users\\${resolvedWinUser}\\AppData\\LocalLow\\${firstCopiedSubPath}`
             : `${resolvedDriveRoot}\\${firstCopiedSubPath}`;
         onBackupSuccess({
           id: `backup-${Date.now()}`,

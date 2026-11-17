@@ -158,6 +158,9 @@ if ($dotnetCmd -and (-not $SkipWpf)) {
     if (Test-Path $cryptoProj) {
         Write-Host " [INFO] KCert.Crypto 독립 DLL 빌드 중 ($resolvedTfm, v$appVersion)..." -ForegroundColor Yellow
         & dotnet build $cryptoProj -c Release -p:TargetFramework=$resolvedTfm -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 -o $dirCore
+        if ($LASTEXITCODE -ne 0) {
+            & dotnet build $cryptoProj -c Release -p:Version=$appVersion -p:AssemblyVersion=$appVersion.0 -p:FileVersion=$appVersion.0 -o $dirCore
+        }
         if (Test-Path "$dirCore\KCert.Crypto.dll") {
             Copy-Item -Path "$dirCore\KCert.Crypto.dll" -Destination "$scriptDir\KCert.Crypto.dll" -Force
             Write-Host " [OK] KCert.Crypto.dll 생성 완료: $dirCore\KCert.Crypto.dll" -ForegroundColor Green
@@ -300,6 +303,9 @@ if (Test-Path "$dirWinX64\KCertManager-Lite.exe") {
 }
 if (Test-Path "$dirCore\KCert.Core.dll") {
     Write-Host "   4. [Core DLL]        $dirCore\KCert.Core.dll" -ForegroundColor White
+}
+if (Test-Path "$dirCore\KCert.Crypto.dll") {
+    Write-Host "      [Crypto DLL]      $dirCore\KCert.Crypto.dll" -ForegroundColor White
 }
 Write-Host "   5. [무설치 패키지]   $dirUnpacked\" -ForegroundColor White
 if (Test-Path "$dirInstaller\$artifactName-setup.exe") {

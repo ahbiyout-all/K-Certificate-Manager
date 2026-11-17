@@ -89,9 +89,16 @@ export function extractDerValidityDates(derBytes: Uint8Array): {
     notAfterDate = new Date(today.getTime() + 365 * 24 * 60 * 60 * 1000);
   }
 
-  // 한국 인증서 유효기간은 만료일자 23:59:59까지 유효함
-  const endOfDay = new Date(notAfterDate);
-  endOfDay.setHours(23, 59, 59, 999);
+  // 한국 인증서 유효기간은 만료일자 23:59:59까지 유효함 (UTC 파싱 날짜와 로컬 달력 일자 불일치 방지)
+  const endOfDay = new Date(
+    notAfterDate.getUTCFullYear(),
+    notAfterDate.getUTCMonth(),
+    notAfterDate.getUTCDate(),
+    23,
+    59,
+    59,
+    999
+  );
 
   const diffMs = endOfDay.getTime() - today.getTime();
   const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
@@ -105,9 +112,12 @@ export function extractDerValidityDates(derBytes: Uint8Array): {
     status = 'valid';
   }
 
+  const formatUtcDateStr = (d: Date): string =>
+    `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+
   return {
-    validFrom: notBeforeDate.toISOString().split('T')[0],
-    validTo: notAfterDate.toISOString().split('T')[0],
+    validFrom: formatUtcDateStr(notBeforeDate),
+    validTo: formatUtcDateStr(notAfterDate),
     daysRemaining,
     status,
   };

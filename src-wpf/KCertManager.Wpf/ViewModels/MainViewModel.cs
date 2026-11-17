@@ -1556,12 +1556,16 @@ namespace KCertManager.Wpf.ViewModels
 
             foreach (var drive in drivesToUpdate)
             {
-                var driveLetter = drive.Name.TrimEnd('\\').ToUpperInvariant();
+                var driveLetter = drive.Name.TrimEnd('\\', '/').ToUpperInvariant();
                 var driveSlash = driveLetter + "\\";
-                var count = _allCertificates.Count(c => 
-                    (!string.IsNullOrEmpty(c.DriveLetter) && c.DriveLetter.TrimEnd('\\').Equals(driveLetter, StringComparison.OrdinalIgnoreCase)) || 
-                    (!string.IsNullOrEmpty(c.DirectoryPath) && (c.DirectoryPath.StartsWith(driveSlash, StringComparison.OrdinalIgnoreCase) || c.DirectoryPath.StartsWith(drive.Name, StringComparison.OrdinalIgnoreCase))) ||
-                    (drive.IsRemovable && c.IsRemovableMedia && !string.IsNullOrEmpty(c.DirectoryPath) && c.DirectoryPath.Contains(driveLetter, StringComparison.OrdinalIgnoreCase)));
+                var driveFwdSlash = driveLetter + "/";
+                var count = _allCertificates.Count(c =>
+                    (!string.IsNullOrEmpty(c.DriveLetter) && c.DriveLetter.TrimEnd('\\', '/').Equals(driveLetter, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(c.DirectoryPath) && (
+                        c.DirectoryPath.StartsWith(driveSlash, StringComparison.OrdinalIgnoreCase) ||
+                        c.DirectoryPath.StartsWith(driveFwdSlash, StringComparison.OrdinalIgnoreCase) ||
+                        c.DirectoryPath.Equals(driveLetter, StringComparison.OrdinalIgnoreCase) ||
+                        c.DirectoryPath.StartsWith(drive.Name, StringComparison.OrdinalIgnoreCase))));
                 drive.CertificateCount = count;
             }
 

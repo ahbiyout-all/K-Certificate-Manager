@@ -95,7 +95,7 @@ namespace KCertManager.Wpf.Services
                 catch { }
 
                 // -------------------------------------------------------------
-                // Tier 2: /releases (List all)
+                // Tier 2: /releases (List all - prefer latest stable, non-draft)
                 // -------------------------------------------------------------
                 try
                 {
@@ -106,7 +106,35 @@ namespace KCertManager.Wpf.Services
                         using var doc = JsonDocument.Parse(json);
                         if (doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.GetArrayLength() > 0)
                         {
-                            if (PopulateFromReleaseElement(doc.RootElement[0], result, "releases_list"))
+                            JsonElement? bestStable = null;
+                            string bestStableVer = "";
+                            JsonElement? bestAnyNonDraft = null;
+                            string bestAnyVer = "";
+
+                            foreach (var rel in doc.RootElement.EnumerateArray())
+                            {
+                                bool isDraft = rel.TryGetProperty("draft", out var dProp) && dProp.ValueKind == JsonValueKind.True;
+                                if (isDraft) continue;
+
+                                string rawTag = rel.TryGetProperty("tag_name", out var tProp) ? (tProp.GetString() ?? "") : "";
+                                string ver = CleanVersion(rawTag);
+                                if (string.IsNullOrWhiteSpace(ver)) continue;
+
+                                bool isPre = rel.TryGetProperty("prerelease", out var pProp) && pProp.ValueKind == JsonValueKind.True;
+                                if (!isPre && (bestStable == null || IsVersionNewer(ver, bestStableVer)))
+                                {
+                                    bestStable = rel;
+                                    bestStableVer = ver;
+                                }
+                                if (bestAnyNonDraft == null || IsVersionNewer(ver, bestAnyVer))
+                                {
+                                    bestAnyNonDraft = rel;
+                                    bestAnyVer = ver;
+                                }
+                            }
+
+                            var chosen = bestStable ?? bestAnyNonDraft;
+                            if (chosen.HasValue && PopulateFromReleaseElement(chosen.Value, result, "releases_list"))
                             {
                                 return result;
                             }

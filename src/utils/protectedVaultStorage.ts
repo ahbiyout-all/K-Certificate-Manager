@@ -196,7 +196,7 @@ export async function getVaultSecurityDiagnostics(items: RestoredTrashItem[]): P
     }
   } catch (err) {
     selfTestPassed = false;
-    diagnosticMessage = `자가진단 오류: ${err}`;
+    diagnosticMessage = `자가진단 오류: ${err instanceof Error ? err.message : String(err)}`;
   }
 
   return {
@@ -225,5 +225,5 @@ export function exportVaultBackupFile(items: RestoredTrashItem[]): void {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }

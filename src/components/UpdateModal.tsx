@@ -60,8 +60,10 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
       setUpdateProgress(null);
       setSelfUpdateResult(null);
       setSelfUpdateError(null);
+      setCurrentInfo(updateInfo);
+      setCustomTestVer('');
     }
-  }, [isOpen]);
+  }, [isOpen, updateInfo]);
 
   if (!isOpen || !currentInfo) return null;
 

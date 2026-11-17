@@ -199,10 +199,21 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
       return 'NPKI';
     };
 
+    const extractUserFromPath = (p?: string): string | null => {
+      if (!p) return null;
+      const m = p.match(/\\Users\\([^\\]+)\\/i);
+      return m && m[1] && m[1] !== '...' ? m[1] : null;
+    };
+    const resolvedWinUser =
+      extractUserFromPath(rawInput) ||
+      extractUserFromPath(firstCert?.sourceLocation) ||
+      extractUserFromPath(data.sourcePath) ||
+      'Admin';
+
     const defaultSubdir = inferDefaultSubdir();
     let folder =
       isPcTarget && resolvedDrive === 'C:' && !defaultSubdir.startsWith('GPKI')
-        ? `${resolvedDrive}\\Users\\Admin\\AppData\\LocalLow\\${defaultSubdir}`
+        ? `${resolvedDrive}\\Users\\${resolvedWinUser}\\AppData\\LocalLow\\${defaultSubdir}`
         : `${resolvedDrive}\\${defaultSubdir}`;
 
     if (rawTarget) {

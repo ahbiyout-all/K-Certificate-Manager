@@ -34,6 +34,7 @@ export interface UsbImportResult {
   success: boolean;
   importedCount: number;
   updatedCount: number;
+  skippedCount: number;
   totalFilesCopied: number;
   importedCerts: CertificateItem[];
   logs: string[];
@@ -63,7 +64,7 @@ let debounceTimer: any = null;
  * 기본 시뮬레이션: USB 드라이브(E:, F:, G:, H: 등)에 저장되어 있는 인증서 목록 반환
  */
 const extractCleanDriveColon = (raw: string, fallback = 'E:'): string => {
-  const m = (raw || '').trim().match(/\b([A-Za-z]):/) || (raw || '').trim().match(/([A-Za-z])/);
+  const m = (raw || '').trim().match(/(?:^|[^A-Za-z])([A-Za-z]):/) || (raw || '').trim().match(/([A-Za-z])/);
   return m ? `${m[1].toUpperCase()}:` : fallback;
 };
 
@@ -168,7 +169,7 @@ export function getAvailableUsbCertificates(drives: DiskDrive[] = activeDrivesSt
   ];
 
   if (filterDriveLetter && filterDriveLetter !== 'ALL') {
-    const m = filterDriveLetter.trim().match(/\b([A-Za-z]):/) || filterDriveLetter.trim().match(/([A-Za-z])/);
+    const m = filterDriveLetter.trim().match(/(?:^|[^A-Za-z])([A-Za-z]):/) || filterDriveLetter.trim().match(/([A-Za-z])/);
     const cleanLetter = (m ? m[1] : filterDriveLetter.replace(':', '')).toUpperCase() + ':';
     const matched = allUsbCerts.filter(c => c.usbDriveLetter.toUpperCase().startsWith(cleanLetter));
     if (matched.length > 0) {
@@ -738,7 +739,7 @@ export function getLocalPcStandardPath(
   targetUsername: string = 'Admin',
   targetDriveLetter: string = 'C:'
 ): string {
-  const driveMatch = (targetDriveLetter || '').match(/\b([A-Za-z]):/) || (targetDriveLetter || '').match(/([A-Za-z])/);
+  const driveMatch = (targetDriveLetter || '').match(/(?:^|[^A-Za-z])([A-Za-z]):/) || (targetDriveLetter || '').match(/([A-Za-z])/);
   const cleanDrive = (driveMatch ? driveMatch[1] : 'C').toUpperCase() + ':';
   const isSystemDrive = cleanDrive.startsWith('C');
   const userFolder = `${cleanDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`;
@@ -796,7 +797,7 @@ export async function copyUsbCertificatesToComputer(
     typeof overwriteExistingOrStrategy === 'boolean'
       ? (overwriteExistingOrStrategy ? 'overwrite' : 'skip')
       : overwriteExistingOrStrategy;
-  const targetDriveMatch = (targetDriveLetter || '').match(/\b([A-Za-z]):/) || (targetDriveLetter || '').match(/([A-Za-z])/);
+  const targetDriveMatch = (targetDriveLetter || '').match(/(?:^|[^A-Za-z])([A-Za-z]):/) || (targetDriveLetter || '').match(/([A-Za-z])/);
   const cleanTargetDrive = (targetDriveMatch ? targetDriveMatch[1] : 'C').toUpperCase() + ':';
   const isSystemTargetDrive = cleanTargetDrive.startsWith('C');
 
@@ -807,6 +808,7 @@ export async function copyUsbCertificatesToComputer(
       const importedCerts: CertificateItem[] = [];
       let importedCount = 0;
       let updatedCount = 0;
+      let skippedCount = 0;
       let totalFilesCopied = 0;
 
       logs.push(`[1단계: 준비] USB ➔ 컴퓨터(PC) 인증서 역방향 복사 프로세스 시작 (시도: ${attempt}/3)`);
@@ -837,7 +839,7 @@ export async function copyUsbCertificatesToComputer(
         // 자가 복사 금지 검증: USB 원본 경로와 PC 대상 경로가 완전히 동일한 경우
         if (normalizedUsbUpper && normalizedUsbUpper === normalizedLocalUpper) {
           logs.push(`[⏭️ 건너뜀 (자가 복사 금지)] ${usbCert.name} - 이미 컴퓨터 로컬 저장소(${localPath})의 동일 위치에 보관 중인 원본입니다.`);
-          importedCount++;
+          skippedCount++;
           continue;
         }
 
@@ -868,6 +870,7 @@ export async function copyUsbCertificatesToComputer(
         if (isDuplicate) {
           if (duplicateStrategy === 'skip') {
             logs.push(`[⏭️ 건너뜀] ${usbCert.name} (${usbCert.category}) - ${cleanTargetDrive}에 동일 인증서가 존재하여 복사를 건너뜁니다.`);
+            skippedCount++;
             continue;
           } else if (duplicateStrategy === 'rename') {
             const timeTag = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -937,6 +940,7 @@ export async function copyUsbCertificatesToComputer(
         success: true,
         importedCount,
         updatedCount,
+        skippedCount,
         totalFilesCopied,
         importedCerts,
         logs,
@@ -955,6 +959,7 @@ export async function copyUsbCertificatesToComputer(
     success: false,
     importedCount: 0,
     updatedCount: 0,
+    skippedCount: 0,
     totalFilesCopied: 0,
     importedCerts: [],
     logs: retryResult.logs,
@@ -1337,9 +1342,11 @@ export function startUsbDriveWatcher(options?: UsbWatcherOptions): () => void {
     if (e.key === 'kcert_usb_drives_state' && e.newValue) {
       try {
         const synced = JSON.parse(e.newValue);
-        activeDrivesState = synced;
-        if (options?.onDrivesChanged) {
-          options.onDrivesChanged(activeDrivesState);
+        if (Array.isArray(synced)) {
+          activeDrivesState = synced;
+          if (options?.onDrivesChanged) {
+            options.onDrivesChanged(activeDrivesState);
+          }
         }
       } catch (err) {
         console.warn('Storage sync error:', err);
@@ -1614,8 +1621,7 @@ export function clearWmiQueryLogs(): void {
  * 시스템 내 연결된 디스크 드라이브별 WMI 정밀 진단 보고서 생성
  */
 export function getWindowsWmiDiagnosticReports(drives: DiskDrive[] = activeDrivesState): UsbDiagnosticDeviceReport[] {
-  return drives.map(drive => {
-    if (!drive) return null as any;
+  return drives.filter((drive): drive is DiskDrive => Boolean(drive)).map(drive => {
     const vsn = getVolumeSerialNumber(drive);
     const isRemovable = drive.type === 'removable';
     const driveName = (drive.name || '').toLowerCase();

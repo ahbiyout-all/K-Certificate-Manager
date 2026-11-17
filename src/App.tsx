@@ -1478,7 +1478,8 @@ export default function App() {
             policy: c.policy,
             validTo: c.validTo
           }))
-        : record.certNames.map(name => ({ name, issuer: '공동인증서 (전자서명 키 페어)' }))
+        : record.certNames.map(name => ({ name, issuer: '공동인증서 (전자서명 키 페어)' })),
+      transferredCerts: copiedCertObjects
     });
     setIsOperationCompleteOpen(true);
   };
@@ -1570,7 +1571,8 @@ export default function App() {
         issuer: c.issuer,
         policy: c.policy,
         validTo: c.validTo
-      }))
+      })),
+      transferredCerts: importedCerts
     });
     setIsOperationCompleteOpen(true);
   };

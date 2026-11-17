@@ -97,20 +97,65 @@ namespace KCert.Core.Diagnostics
                     issues.Add("폴더 복사 실수 또는 백업/임시 경로 저장으로 인증서 계층 구조가 표준과 달라 정부/은행 서명 모듈에서 인식되지 않습니다.");
                 }
 
-                // 2. 파일 목록 검사
-                var derFile = files.FirstOrDefault(f => Path.GetFileName(f).Equals("signCert.der", StringComparison.OrdinalIgnoreCase) ||
-                                                        Path.GetFileName(f).Equals("sigCert.der", StringComparison.OrdinalIgnoreCase));
-                var keyFile = files.FirstOrDefault(f => Path.GetFileName(f).Equals("signPri.key", StringComparison.OrdinalIgnoreCase) ||
-                                                        Path.GetFileName(f).Equals("sigPri.key", StringComparison.OrdinalIgnoreCase));
-                var kmDerFile = files.FirstOrDefault(f => Path.GetFileName(f).Equals("kmCert.der", StringComparison.OrdinalIgnoreCase));
-                var kmKeyFile = files.FirstOrDefault(f => Path.GetFileName(f).Equals("kmPri.key", StringComparison.OrdinalIgnoreCase));
+                // 2. 파일 목록 검사 (GPKI/EPKI/NPKI 표준 및 확장 파일명 포함)
+                var derFile =
+                    files.FirstOrDefault(f =>
+                    {
+                        var fn = Path.GetFileName(f);
+                        return fn.Equals("signCert.der", StringComparison.OrdinalIgnoreCase) ||
+                               fn.Equals("sigCert.der", StringComparison.OrdinalIgnoreCase) ||
+                               fn.Equals("signCert.cer", StringComparison.OrdinalIgnoreCase) ||
+                               fn.Equals("sigCert.cer", StringComparison.OrdinalIgnoreCase) ||
+                               fn.Equals("user.der", StringComparison.OrdinalIgnoreCase) ||
+                               fn.EndsWith("_sig.cer", StringComparison.OrdinalIgnoreCase) ||
+                               fn.EndsWith("_sig.der", StringComparison.OrdinalIgnoreCase);
+                    }) ??
+                    files.FirstOrDefault(f =>
+                    {
+                        var fn = Path.GetFileName(f);
+                        return (fn.EndsWith(".der", StringComparison.OrdinalIgnoreCase) || fn.EndsWith(".cer", StringComparison.OrdinalIgnoreCase)) &&
+                               !fn.StartsWith("km", StringComparison.OrdinalIgnoreCase) &&
+                               !fn.EndsWith("_env.cer", StringComparison.OrdinalIgnoreCase) &&
+                               !fn.EndsWith("_env.der", StringComparison.OrdinalIgnoreCase);
+                    });
+
+                var keyFile =
+                    files.FirstOrDefault(f =>
+                    {
+                        var fn = Path.GetFileName(f);
+                        return fn.Equals("signPri.key", StringComparison.OrdinalIgnoreCase) ||
+                               fn.Equals("sigPri.key", StringComparison.OrdinalIgnoreCase) ||
+                               fn.Equals("user.key", StringComparison.OrdinalIgnoreCase) ||
+                               fn.EndsWith("_sig.key", StringComparison.OrdinalIgnoreCase);
+                    }) ??
+                    files.FirstOrDefault(f =>
+                    {
+                        var fn = Path.GetFileName(f);
+                        return fn.EndsWith(".key", StringComparison.OrdinalIgnoreCase) &&
+                               !fn.StartsWith("km", StringComparison.OrdinalIgnoreCase) &&
+                               !fn.EndsWith("_env.key", StringComparison.OrdinalIgnoreCase);
+                    });
+
+                var kmDerFile = files.FirstOrDefault(f =>
+                {
+                    var fn = Path.GetFileName(f);
+                    return fn.Equals("kmCert.der", StringComparison.OrdinalIgnoreCase) ||
+                           fn.Equals("kmCert.cer", StringComparison.OrdinalIgnoreCase) ||
+                           fn.EndsWith("_env.cer", StringComparison.OrdinalIgnoreCase);
+                });
+                var kmKeyFile = files.FirstOrDefault(f =>
+                {
+                    var fn = Path.GetFileName(f);
+                    return fn.Equals("kmPri.key", StringComparison.OrdinalIgnoreCase) ||
+                           fn.EndsWith("_env.key", StringComparison.OrdinalIgnoreCase);
+                });
 
                 if (derFile == null)
                 {
                     if (keyFile != null)
                     {
                         flags |= CertAnomalyFlags.OrphanedKeyWithoutDer;
-                        issues.Add("개인키(signPri.key)만 존재하고 공개키 인증서(signCert.der)가 누락되었습니다.");
+                        issues.Add($"개인키({Path.GetFileName(keyFile)})만 존재하고 공개키 인증서(signCert.der/.cer)가 누락되었습니다.");
                     }
                     else
                     {
@@ -122,10 +167,11 @@ namespace KCert.Core.Diagnostics
                 {
                     // DER 파일 크기 및 ASN.1 검증
                     var fi = new FileInfo(derFile);
+                    var derName = Path.GetFileName(derFile);
                     if (fi.Length == 0)
                     {
                         flags |= CertAnomalyFlags.ZeroByteFile;
-                        issues.Add("인증서 파일(signCert.der) 크기가 0바이트로 손상되었습니다.");
+                        issues.Add($"인증서 파일({derName}) 크기가 0바이트로 손상되었습니다.");
                     }
                     else
                     {
@@ -133,7 +179,7 @@ namespace KCert.Core.Diagnostics
                         if (bytes.Length < 32 || bytes[0] != 0x30)
                         {
                             flags |= CertAnomalyFlags.CorruptedAsn1Header;
-                            issues.Add("signCert.der 파일의 ASN.1 SEQUENCE 헤더(0x30)가 깨져 유효한 인증서가 아닙니다.");
+                            issues.Add($"{derName} 파일의 ASN.1 SEQUENCE 헤더(0x30)가 깨져 유효한 인증서가 아닙니다.");
                         }
                     }
 

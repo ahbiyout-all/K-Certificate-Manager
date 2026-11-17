@@ -74,7 +74,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
     );
     const existingLetters = new Set(
       fixed
-        .map(d => (d.letter.match(/\b([A-Za-z]):/)?.[1] || d.letter.match(/([A-Za-z])/)?.[1] || '').toUpperCase())
+        .map(d => (d.letter.match(/(?:^|[^A-Za-z])([A-Za-z]):/)?.[1] || d.letter.match(/([A-Za-z])/)?.[1] || '').toUpperCase())
         .filter(Boolean)
     );
     if (!existingLetters.has('C')) {
@@ -95,14 +95,14 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
   }, [availableDrives]);
 
   const cleanTargetPcDrive = useMemo(() => {
-    const match = (targetPcDrive || '').match(/\b([A-Za-z]):/) || (targetPcDrive || '').match(/([A-Za-z])/);
+    const match = (targetPcDrive || '').match(/(?:^|[^A-Za-z])([A-Za-z]):/) || (targetPcDrive || '').match(/([A-Za-z])/);
     return (match ? match[1] : 'C').toUpperCase() + ':';
   }, [targetPcDrive]);
 
   const selectedTargetDriveObj = useMemo(
     () =>
       pcLocalTargetDrives.find(d => {
-        const m = d.letter.match(/\b([A-Za-z]):/) || d.letter.match(/([A-Za-z])/);
+        const m = d.letter.match(/(?:^|[^A-Za-z])([A-Za-z]):/) || d.letter.match(/([A-Za-z])/);
         return ((m ? m[1] : 'C').toUpperCase() + ':') === cleanTargetPcDrive;
       }) || pcLocalTargetDrives[0],
     [pcLocalTargetDrives, cleanTargetPcDrive]
@@ -170,7 +170,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
     );
 
     const drivesWithData = removableDrives.map(d => {
-      const lm = d.letter.match(/\b([A-Za-z]):/) || d.letter.match(/([A-Za-z])/);
+      const lm = d.letter.match(/(?:^|[^A-Za-z])([A-Za-z]):/) || d.letter.match(/([A-Za-z])/);
       const letterClean = (lm ? lm[1] : d.letter.replace(':', '')).toUpperCase();
       const certsInThisDrive = getAvailableUsbCertificates(availableDrives, letterClean);
       const hasGov = certsInThisDrive.some(c => c.category === 'GPKI_GOV');
@@ -216,12 +216,12 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       const initMatch = initialDriveLetter
-        ? initialDriveLetter.match(/\b([A-Za-z]):/) || initialDriveLetter.match(/([A-Za-z])/)
+        ? initialDriveLetter.match(/(?:^|[^A-Za-z])([A-Za-z]):/) || initialDriveLetter.match(/([A-Za-z])/)
         : null;
       let nextDrive = initMatch ? initMatch[1].toUpperCase() : selectedUsbDriveRef.current;
       if (!initialDriveLetter && nextDrive !== 'ALL') {
         const stillMounted = availableDrives.some(d => {
-          const dm = d.letter.match(/\b([A-Za-z]):/) || d.letter.match(/([A-Za-z])/);
+          const dm = d.letter.match(/(?:^|[^A-Za-z])([A-Za-z]):/) || d.letter.match(/([A-Za-z])/);
           const clean = (dm ? dm[1] : d.letter.replace(':', '')).toUpperCase();
           return (d.type === 'removable' || d.deviceKind === 'external_ssd' || d.deviceKind === 'fast_usb') && clean === nextDrive.toUpperCase();
         });
@@ -484,8 +484,8 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                 </h4>
                 <p className="text-xs sm:text-sm text-emerald-800 mt-1 max-w-lg mx-auto">
                   {importResult.importedCount + importResult.updatedCount > 0
-                    ? `인증서 ${importResult.importedCount + importResult.updatedCount}건을 내 컴퓨터(${cleanTargetPcDrive})에 복사했습니다.${importResult.skippedCount > 0 ? ` (중복 ${importResult.skippedCount}건 건너뜀)` : ''}`
-                    : `동일한 인증서 ${importResult.skippedCount}건이 이미 내 컴퓨터(${cleanTargetPcDrive})에 존재하여 복사를 건너뛰었습니다.`}
+                    ? `인증서 ${importResult.importedCount + importResult.updatedCount}건을 내 컴퓨터(${cleanTargetPcDrive})에 복사했습니다.${(importResult.skippedCount ?? 0) > 0 ? ` (중복 ${importResult.skippedCount ?? 0}건 건너뜀)` : ''}`
+                    : `동일한 인증서 ${importResult.skippedCount ?? 0}건이 이미 내 컴퓨터(${cleanTargetPcDrive})에 존재하여 복사를 건너뛰었습니다.`}
                 </p>
                 <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
                   <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full border border-emerald-300 text-xs font-mono text-emerald-900">
@@ -1088,7 +1088,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     {pcLocalTargetDrives.map(drive => {
-                      const dMatch = drive.letter.match(/\b([A-Za-z]):/) || drive.letter.match(/([A-Za-z])/);
+                      const dMatch = drive.letter.match(/(?:^|[^A-Za-z])([A-Za-z]):/) || drive.letter.match(/([A-Za-z])/);
                       const driveLetterClean = (dMatch ? dMatch[1] : 'C').toUpperCase() + ':';
                       const isTargetSelected = cleanTargetPcDrive === driveLetterClean;
                       const driveBadge = getDriveBadgeStyle(drive);

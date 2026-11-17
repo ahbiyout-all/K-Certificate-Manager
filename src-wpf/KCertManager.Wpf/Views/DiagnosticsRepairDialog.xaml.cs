@@ -239,7 +239,9 @@ namespace KCertManager.Wpf.Views
             }
             catch { }
 
-            return $"SIG:{cert.SerialNumber}|{cert.IssuerName}|{cert.CommonName}";
+            string serial = (cert.SerialNumber ?? string.Empty).Trim();
+            string expirySuffix = string.IsNullOrWhiteSpace(serial) ? $"|{cert.NotAfter:yyyyMMdd}" : string.Empty;
+            return $"SIG:{serial}|{cert.IssuerName}|{cert.CommonName}{expirySuffix}";
         }
 
         private static int ScorePrimaryPriority(CertificateItem cert)
@@ -338,6 +340,8 @@ namespace KCertManager.Wpf.Views
             }
 
             int moved = 0;
+            int failed = 0;
+            var failMessages = new List<string>();
             foreach (var item in targets)
             {
                 try
@@ -345,7 +349,11 @@ namespace KCertManager.Wpf.Views
                     _backupService.MoveToTrash(item.Cert);
                     moved++;
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    failed++;
+                    failMessages.Add($"{item.Cert.CommonName}: {ex.Message}");
+                }
             }
 
             if (moved > 0)
@@ -362,7 +370,17 @@ namespace KCertManager.Wpf.Views
 
                 await _refreshCallback();
                 RebuildDiagnostics();
-                ShowFeedback($"✅ 중복 사본 {moved}건을 안전하게 휴지통으로 이동했습니다.");
+                ShowFeedback(failed > 0
+                    ? $"✅ 중복 사본 {moved}건을 휴지통으로 이동했습니다. (실패 {failed}건)"
+                    : $"✅ 중복 사본 {moved}건을 안전하게 휴지통으로 이동했습니다.");
+            }
+            else if (failed > 0)
+            {
+                MessageBox.Show(
+                    $"중복 사본 휴지통 이동 중 오류가 발생했습니다 ({failed}건):\n" + string.Join("\n", failMessages.Take(5)),
+                    "오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
             }
         }
 

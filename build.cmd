@@ -38,7 +38,7 @@ echo ===========================================================================
 echo [INFO] Working Directory: %CD%
 echo.
 
-echo [1/7] Checking Node.js and NPM...
+echo [1/5] Checking Node.js and NPM...
 where node >nul 2>&1
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] Node.js is not installed or not in PATH.
@@ -59,7 +59,7 @@ if not exist "%~dp0node_modules" (
 )
 
 echo.
-echo [1/6] Building Web Production Bundle...
+echo [2/5] Building Web Production Bundle...
 call npm run build
 if not exist "%~dp0dist\index.html" (
     echo [ERROR] Web build failed.
@@ -79,21 +79,29 @@ if exist "%~dp0dist\assets" xcopy "%~dp0dist\assets" "%DIR_WEB%\assets" /E /I /Y
 echo [OK] Web bundle output to: %DIR_WEB%
 
 echo.
-echo [2/6] Building C# WPF Native Desktop Edition (.NET 10 / .NET 8, v%APP_VER%)...
+echo [3/5] Building C# WPF Native Desktop Edition (.NET 10 / .NET 8, v%APP_VER%)...
 where dotnet >nul 2>&1
 if %ERRORLEVEL% equ 0 (
     dotnet publish "%~dp0src-wpf\KCertManager.Wpf\KCertManager.Wpf.csproj" -c Release -r win-x64 -p:Version=%APP_VER% -p:AssemblyVersion=%APP_VER%.0 -p:FileVersion=%APP_VER%.0 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -p:DebugSymbols=false -o "%DIR_WINX64%"
-    if exist "%DIR_WINX64%\KCertManager.Wpf.exe" (
-        copy /Y "%DIR_WINX64%\KCertManager.Wpf.exe" "%DIR_WINX64%\KCertManager.exe" >nul 2>&1
-        copy /Y "%DIR_WINX64%\KCertManager.Wpf.exe" "%~dp0KCertManager.exe" >nul 2>&1
+    if %ERRORLEVEL% neq 0 (
+        echo [WARNING] WPF desktop publish failed.
+    ) else (
+        if exist "%DIR_WINX64%\KCertManager.Wpf.exe" (
+            copy /Y "%DIR_WINX64%\KCertManager.Wpf.exe" "%DIR_WINX64%\KCertManager.exe" >nul 2>&1
+        )
+        if exist "%DIR_WINX64%\KCertManager.exe" (
+            copy /Y "%DIR_WINX64%\KCertManager.exe" "%~dp0KCertManager.exe" >nul 2>&1
+            echo [OK] WPF desktop output to: %DIR_WINX64%\KCertManager.exe
+        ) else (
+            echo [WARNING] Expected executable KCertManager.exe was not found in %DIR_WINX64%.
+        )
     )
-    echo [OK] WPF desktop output to: %DIR_WINX64%\KCertManager.exe
 ) else (
     echo [NOTICE] .NET SDK is not installed. Skipping WPF desktop build.
 )
 
 echo.
-echo [3/6] Building Core DLLs (KCert.Core.dll, KCert.Crypto.dll)...
+echo [4/5] Building Core DLLs (KCert.Core.dll, KCert.Crypto.dll)...
 if exist "%~dp0src-wpf\KCert.Core\KCert.Core.csproj" (
     dotnet build "%~dp0src-wpf\KCert.Core\KCert.Core.csproj" -c Release -p:Version=%APP_VER% -p:AssemblyVersion=%APP_VER%.0 -p:FileVersion=%APP_VER%.0 -o "%DIR_CORE%" >nul 2>&1
     if exist "%DIR_CORE%\KCert.Core.dll" copy /Y "%DIR_CORE%\KCert.Core.dll" "%~dp0KCert.Core.dll" >nul 2>&1
@@ -105,7 +113,7 @@ if exist "%~dp0src-wpf\KCert.Crypto\KCert.Crypto.csproj" (
 echo [OK] Core DLLs output to: %DIR_CORE%
 
 echo.
-echo [4/6] Creating Unpacked Application Package (Unpacked Multi-File)...
+echo [5/5] Creating Unpacked Application Package (Unpacked Multi-File)...
 if exist "%~dp0run-web.cmd" copy /Y "%~dp0run-web.cmd" "%DIR_UNPACKED%\" >nul 2>&1
 if exist "%~dp0launch-web.vbs" copy /Y "%~dp0launch-web.vbs" "%DIR_UNPACKED%\" >nul 2>&1
 if exist "%~dp0LICENSE.txt" copy /Y "%~dp0LICENSE.txt" "%DIR_UNPACKED%\" >nul 2>&1

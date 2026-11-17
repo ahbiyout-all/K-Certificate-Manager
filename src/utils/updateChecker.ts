@@ -238,29 +238,40 @@ export async function checkForAppUpdates(appVersionOverride?: string): Promise<U
     if (releasesResp && releasesResp.ok) {
       const releases = await releasesResp.json();
       if (Array.isArray(releases) && releases.length > 0) {
-        const firstRelease = releases[0];
-        const tagName = (firstRelease.tag_name || '').replace(/^v/i, '').trim();
-        if (tagName) {
-          const compResult = compareSemver(tagName, currentVer);
-          const hasUpdate = compResult > 0;
-          const asset = extractReleaseAsset(firstRelease.assets, tagName);
+        const nonDrafts = releases.filter((r: any) => r && !r.draft && (r.tag_name || '').trim());
+        const stableOnly = nonDrafts.filter((r: any) => !r.prerelease);
+        const candidates = stableOnly.length > 0 ? stableOnly : nonDrafts;
 
-          return {
-            hasUpdate,
-            currentVersion: currentVer,
-            latestVersion: tagName,
-            releaseName: firstRelease.name || `v${tagName}`,
-            releaseNotes: firstRelease.body || '새로운 기능 추가 및 보안 안정성 패치가 적용된 최신 릴리스입니다.',
-            releaseUrl: firstRelease.html_url || `${RELEASES_PAGE_URL}/tag/v${tagName}`,
-            downloadUrl: asset.downloadUrl,
-            assetName: asset.assetName,
-            assetSizeBytes: asset.assetSizeBytes,
-            assetApiUrl: asset.assetApiUrl,
-            publishedAt: firstRelease.published_at ? new Date(firstRelease.published_at).toLocaleDateString('ko-KR') : undefined,
-            isPreRelease: !!firstRelease.prerelease,
-            detectionSource: 'releases_list',
-            checkedAt: checkedAtStr,
-          };
+        if (candidates.length > 0) {
+          const bestRelease = candidates.reduce((best: any, curr: any) => {
+            const bestTag = (best.tag_name || '').replace(/^v/i, '').trim();
+            const currTag = (curr.tag_name || '').replace(/^v/i, '').trim();
+            return compareSemver(currTag, bestTag) > 0 ? curr : best;
+          }, candidates[0]);
+
+          const tagName = (bestRelease.tag_name || '').replace(/^v/i, '').trim();
+          if (tagName) {
+            const compResult = compareSemver(tagName, currentVer);
+            const hasUpdate = compResult > 0;
+            const asset = extractReleaseAsset(bestRelease.assets, tagName);
+
+            return {
+              hasUpdate,
+              currentVersion: currentVer,
+              latestVersion: tagName,
+              releaseName: bestRelease.name || `v${tagName}`,
+              releaseNotes: bestRelease.body || '새로운 기능 추가 및 보안 안정성 패치가 적용된 최신 릴리스입니다.',
+              releaseUrl: bestRelease.html_url || `${RELEASES_PAGE_URL}/tag/v${tagName}`,
+              downloadUrl: asset.downloadUrl,
+              assetName: asset.assetName,
+              assetSizeBytes: asset.assetSizeBytes,
+              assetApiUrl: asset.assetApiUrl,
+              publishedAt: bestRelease.published_at ? new Date(bestRelease.published_at).toLocaleDateString('ko-KR') : undefined,
+              isPreRelease: !!bestRelease.prerelease,
+              detectionSource: 'releases_list',
+              checkedAt: checkedAtStr,
+            };
+          }
         }
       }
     }

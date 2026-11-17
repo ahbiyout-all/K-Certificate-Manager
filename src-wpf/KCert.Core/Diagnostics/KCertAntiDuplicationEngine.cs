@@ -69,12 +69,12 @@ namespace KCert.Core.Diagnostics
                 TotalScannedCertCount = certList.Count
             };
 
-            // SHA256 해시 우선 + 누락 시 일련번호/발급기관/소유자 기준 그룹핑
+            // SHA256 해시 우선 + 누락 시 일련번호/발급기관/소유자(일련번호 부재 시 만료일 포함) 기준 그룹핑
             var groupedByHash = certList
                 .GroupBy(
                     c => !string.IsNullOrWhiteSpace(c.DerSha256)
                         ? "SHA:" + c.DerSha256
-                        : $"SIG:{c.SerialNumber}|{c.Issuer}|{c.CommonName}",
+                        : $"SIG:{c.SerialNumber}|{c.Issuer}|{c.CommonName}{(string.IsNullOrWhiteSpace(c.SerialNumber) ? $"|{c.ValidTo:yyyyMMdd}" : string.Empty)}",
                     StringComparer.OrdinalIgnoreCase);
 
             var duplicateGroups = new List<DuplicateCertGroup>();

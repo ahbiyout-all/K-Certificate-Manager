@@ -159,7 +159,11 @@ namespace KCertManager.Wpf.Views
         private static string ResolveExistingTargetDirectory(string? rawPath)
         {
             string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\') + "\\";
-            string path = string.IsNullOrWhiteSpace(rawPath) ? Path.Combine(sysRoot, "NPKI") : rawPath.Trim().Replace('/', '\\');
+            string localLow = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "AppData", "LocalLow");
+            string defaultNpki = Path.Combine(localLow, "NPKI");
+            string path = string.IsNullOrWhiteSpace(rawPath)
+                ? (Directory.Exists(defaultNpki) ? defaultNpki : Path.Combine(sysRoot, "NPKI"))
+                : rawPath.Trim().Replace('/', '\\');
             string driveLetter = ExtractDrivePrefix(path);
             string driveRoot = driveLetter + "\\";
 
@@ -191,14 +195,18 @@ namespace KCertManager.Wpf.Views
                 probe = Path.GetDirectoryName(probe);
             }
 
-            // 드라이브 내 표준 인증서 루트 폴백
+            // 드라이브 내 표준 인증서 루트 폴백 (시스템 드라이브는 AppData\LocalLow 우선)
+            bool isSysDrive = string.Equals(driveRoot, sysRoot, StringComparison.OrdinalIgnoreCase);
             if (path.Contains("NPKI", StringComparison.OrdinalIgnoreCase))
             {
+                if (isSysDrive && Directory.Exists(defaultNpki)) return defaultNpki;
                 var npkiPath = Path.Combine(driveRoot, "NPKI");
                 if (Directory.Exists(npkiPath)) return npkiPath;
             }
             else if (path.Contains("EPKI", StringComparison.OrdinalIgnoreCase))
             {
+                var localLowEpki = Path.Combine(localLow, "EPKI");
+                if (isSysDrive && Directory.Exists(localLowEpki)) return localLowEpki;
                 var epkiPath = Path.Combine(driveRoot, "EPKI");
                 if (Directory.Exists(epkiPath)) return epkiPath;
             }

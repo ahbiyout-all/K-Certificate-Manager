@@ -172,9 +172,10 @@ export function analyzeDuplicateCertificates(certs: CertificateItem[]): Deduplic
   for (const cert of certs) {
     const sha = (cert.files?.sha256 || '').trim().toLowerCase();
     const hasReliableSha = sha.length >= 12 && !sha.startsWith('mock');
+    const serialTrimmed = (cert.serialNumber || '').trim().toUpperCase();
     const key = hasReliableSha
       ? `sha:${sha}`
-      : `sig:${(cert.serialNumber || '').trim().toUpperCase()}|${(cert.issuer || '').trim().toUpperCase()}|${(cert.name || '').trim().toUpperCase()}`;
+      : `sig:${serialTrimmed}|${(cert.issuer || '').trim().toUpperCase()}|${(cert.name || '').trim().toUpperCase()}${!serialTrimmed ? `|${(cert.validTo || '').trim()}` : ''}`;
 
     const list = groupsMap.get(key) || [];
     list.push(cert);
@@ -351,7 +352,7 @@ export function evaluateExpiryAlerts(certs: CertificateItem[]): ExpiryAlertSumma
 
 export function extractDriveLetterFromPathOrLabel(input?: string): string | null {
   if (!input) return null;
-  const match = input.match(/\b([A-Z]):/i);
+  const match = input.match(/(?:^|[^A-Za-z])([A-Za-z]):/);
   if (match && match[1]) {
     return `${match[1].toUpperCase()}:`;
   }

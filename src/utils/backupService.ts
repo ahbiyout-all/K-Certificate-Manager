@@ -56,7 +56,7 @@ export function detectDuplicateCertificates(
   targetDrive: DiskDrive
 ): DuplicateDetectionResult {
   // Find all certs currently residing on targetDrive
-  const targetMatch = (targetDrive.letter || '').match(/\b([A-Za-z]):/) || (targetDrive.letter || '').match(/([A-Za-z])/);
+  const targetMatch = (targetDrive.letter || '').match(/(?:^|[^A-Za-z])([A-Za-z]):/) || (targetDrive.letter || '').match(/([A-Za-z])/);
   const targetLetterClean = (targetMatch ? targetMatch[1] : '').toUpperCase();
   const targetDriveCerts = existingCerts.filter(c => {
     const sDrive = (c.sourceDrive || '').toUpperCase();
