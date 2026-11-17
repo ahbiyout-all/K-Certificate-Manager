@@ -67,6 +67,16 @@ export const TrashModal: React.FC<TrashModalProps> = ({
     setSelectedIds(prev => prev.filter(id => trashItems.some(item => item.id === id)));
   }, [trashItems]);
 
+  // Reset transient sub-dialogs and search query when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setShowEmptyConfirm(false);
+      setSelectedProofItem(null);
+      setShowSelfTestModal(false);
+      setSearchQuery('');
+    }
+  }, [isOpen]);
+
   // Load diagnostics when restored tab is opened
   useEffect(() => {
     if (activeTab === 'restored') {
@@ -350,6 +360,18 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                 <Archive className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                 <p>격리 휴지통이 비어 있습니다.</p>
               </div>
+            ) : filteredTrashItems.length === 0 ? (
+              <div className="py-16 text-center text-slate-400 text-xs space-y-2">
+                <Archive className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                <p>검색 조건과 일치하는 휴지통 항목이 없습니다.</p>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold cursor-pointer"
+                >
+                  검색어 초기화
+                </button>
+              </div>
             ) : (
               <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
                 {filteredTrashItems.map((item, idx) => (
@@ -388,10 +410,25 @@ export const TrashModal: React.FC<TrashModalProps> = ({
               </div>
             )
           ) : (
-            filteredRestoredItems.length === 0 ? (
+            restoredTrashItems.length === 0 ? (
               <div className="py-16 text-center text-slate-400 text-xs">
                 <Shield className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                 <p>복원 보관소가 비어 있습니다.</p>
+              </div>
+            ) : filteredRestoredItems.length === 0 ? (
+              <div className="py-16 text-center text-slate-400 text-xs space-y-2">
+                <Shield className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                <p>검색 또는 분류 필터와 일치하는 복원 기록이 없습니다.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setCategoryFilter('ALL');
+                  }}
+                  className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold cursor-pointer"
+                >
+                  필터/검색 초기화
+                </button>
               </div>
             ) : (
               <div className="space-y-3">

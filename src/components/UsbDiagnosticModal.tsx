@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   DiskDrive, 
   WmiQueryLogItem, 
   UsbDiagnosticDeviceReport 
 } from '../types';
+import { extractDriveLetterFromPathOrLabel } from '../utils/certDiagnostics';
 import { 
   getWindowsWmiDiagnosticReports, 
   getStoredWmiQueryLogs, 
@@ -63,19 +64,52 @@ export const UsbDiagnosticModal: React.FC<UsbDiagnosticModalProps> = ({
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'SUCCESS' | 'WARNING' | 'ERROR'>('ALL');
   const [copiedVsn, setCopiedVsn] = useState<string | null>(null);
   const [copiedLogs, setCopiedLogs] = useState(false);
+  const wasOpenRef = useRef(false);
+  const copiedVsnTimerRef = useRef<number | null>(null);
+  const copiedLogsTimerRef = useRef<number | null>(null);
+
+  const normalizeDriveKey = (val?: string) =>
+    (extractDriveLetterFromPathOrLabel(val) || val || '').replace(/[:\\/]+$/g, '').toUpperCase();
 
   useEffect(() => {
-    if (isOpen) {
-      setReports(getWindowsWmiDiagnosticReports(drives));
-      setWmiLogs(getStoredWmiQueryLogs());
-      if (drives.length > 0 && !drives.some(d => d.letter === selectedDriveLetter)) {
-        setSelectedDriveLetter(drives[0].letter);
-      }
+    return () => {
+      if (copiedVsnTimerRef.current !== null) window.clearTimeout(copiedVsnTimerRef.current);
+      if (copiedLogsTimerRef.current !== null) window.clearTimeout(copiedLogsTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      wasOpenRef.current = false;
+      return;
     }
-  }, [isOpen, drives, selectedDriveLetter]);
+
+    const nextReports = getWindowsWmiDiagnosticReports(drives);
+    setReports(nextReports);
+    setWmiLogs(getStoredWmiQueryLogs());
+
+    const justOpened = !wasOpenRef.current;
+    wasOpenRef.current = true;
+
+    if (drives.length > 0) {
+      setSelectedDriveLetter(prev => {
+        const prevKey = normalizeDriveKey(prev);
+        const matchesDrive = drives.some(d => normalizeDriveKey(d.letter) === prevKey);
+        const matchesReport = nextReports.some(r => normalizeDriveKey(r.driveLetter) === prevKey);
+        if (!justOpened && (matchesDrive || matchesReport)) {
+          return prev;
+        }
+        if (matchesDrive || matchesReport) {
+          return prev;
+        }
+        return drives[0].letter;
+      });
+    }
+  }, [isOpen, drives]);
 
   const selectedReport = useMemo(() => {
-    return reports.find(r => r.driveLetter.startsWith(selectedDriveLetter)) || reports[0];
+    const targetKey = normalizeDriveKey(selectedDriveLetter);
+    return reports.find(r => normalizeDriveKey(r.driveLetter) === targetKey) || reports[0];
   }, [reports, selectedDriveLetter]);
 
   const selectedDriveIssues = useMemo(() => {
@@ -98,16 +132,22 @@ export const UsbDiagnosticModal: React.FC<UsbDiagnosticModalProps> = ({
   if (!isOpen) return null;
 
   const handleCopyVsn = (vsn: string) => {
-    navigator.clipboard.writeText(vsn);
-    setCopiedVsn(vsn);
-    setTimeout(() => setCopiedVsn(null), 2000);
+    try {
+      navigator.clipboard?.writeText(vsn);
+      setCopiedVsn(vsn);
+      if (copiedVsnTimerRef.current !== null) window.clearTimeout(copiedVsnTimerRef.current);
+      copiedVsnTimerRef.current = window.setTimeout(() => setCopiedVsn(null), 2000);
+    } catch {}
   };
 
   const handleCopyAllLogs = () => {
-    const text = exportWmiDiagnosticLogAsText(drives);
-    navigator.clipboard.writeText(text);
-    setCopiedLogs(true);
-    setTimeout(() => setCopiedLogs(false), 2000);
+    try {
+      const text = exportWmiDiagnosticLogAsText(drives);
+      navigator.clipboard?.writeText(text);
+      setCopiedLogs(true);
+      if (copiedLogsTimerRef.current !== null) window.clearTimeout(copiedLogsTimerRef.current);
+      copiedLogsTimerRef.current = window.setTimeout(() => setCopiedLogs(false), 2000);
+    } catch {}
   };
 
   const handleDownloadLogs = () => {

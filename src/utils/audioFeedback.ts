@@ -61,14 +61,32 @@ function getAudioContext(): AudioContext | null {
   }
 }
 
-// Automatically unlock Web Audio API AudioContext on any user gesture
+// Automatically unlock Web Audio API AudioContext on first user gesture and clean up listeners once active
 if (typeof window !== 'undefined') {
+  const unlockEvents = ['click', 'touchstart', 'pointerdown', 'keydown'] as const;
+  const removeUnlockListeners = () => {
+    unlockEvents.forEach(evt => {
+      window.removeEventListener(evt, unlockAudio, { capture: true });
+    });
+  };
   const unlockAudio = () => {
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {});
+    if (!audioCtx) return;
+    if (audioCtx.state === 'running') {
+      removeUnlockListeners();
+      return;
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx
+        .resume()
+        .then(() => {
+          if (audioCtx?.state === 'running') {
+            removeUnlockListeners();
+          }
+        })
+        .catch(() => {});
     }
   };
-  ['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
+  unlockEvents.forEach(evt => {
     window.addEventListener(evt, unlockAudio, { capture: true, passive: true });
   });
 }

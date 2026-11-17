@@ -101,7 +101,9 @@ export function extractDerValidityDates(derBytes: Uint8Array): {
   );
 
   const diffMs = endOfDay.getTime() - today.getTime();
-  const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const daysRemaining = diffMs < 0
+    ? Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    : Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
   let status: CertStatus = 'valid';
   if (diffMs <= 0 || daysRemaining < 0) {
@@ -224,7 +226,7 @@ export function parseDerBasic(derBytes: Uint8Array): {
     caSignatureName = '코스콤 공인인증센터 (SignKorea CA)';
     policy = '증권거래용 (개인)';
   } else if (rawText.includes('KICA') || rawText.includes('한국정보인증')) {
-    category = rawText.includes('법인') || rawText.includes('corp') ? 'NPKI_CORP' : 'NPKI_BANK';
+    category = rawText.includes('법인') || rawText.toLowerCase().includes('corp') ? 'NPKI_CORP' : 'NPKI_BANK';
     issuer = '한국정보인증 (KICA)';
     caSignatureName = '한국정보인증 공인인증센터 (KICA CA)';
     policy = category === 'NPKI_CORP' ? '전자세금용 (법인)' : '범용/은행용 (개인)';
@@ -436,46 +438,45 @@ export async function scanDirectoryHandle(
   if (certFileHandle) {
     try {
       const file = await certFileHandle.getFile();
-      // 보안 검증: 512KB 초과 비정상 대용량 파일 메모리 로드 방지 (DoS 방어)
-      if (file.size <= 0 || file.size > 512 * 1024) {
-        return certs;
-      }
-      const buffer = await file.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      const sha256 = await calculateSha256(bytes);
-      const parsed = parseDerBasic(bytes);
+      // 보안 검증: 512KB 초과 비정상 대용량 파일 메모리 로드 방지 (DoS 방어) — 해당 파일만 건너뛰고 하위 폴더 탐색은 계속 진행
+      if (file.size > 0 && file.size <= 512 * 1024) {
+        const buffer = await file.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        const sha256 = await calculateSha256(bytes);
+        const parsed = parseDerBasic(bytes);
 
-      let keySize = 0;
-      let keyData: Uint8Array | undefined;
-      if (keyFileHandle) {
-        const keyFile = await keyFileHandle.getFile();
-        if (keyFile.size > 0 && keyFile.size <= 512 * 1024) {
-          keySize = keyFile.size;
-          keyData = new Uint8Array(await keyFile.arrayBuffer());
+        let keySize = 0;
+        let keyData: Uint8Array | undefined;
+        if (keyFileHandle) {
+          const keyFile = await keyFileHandle.getFile();
+          if (keyFile.size > 0 && keyFile.size <= 512 * 1024) {
+            keySize = keyFile.size;
+            keyData = new Uint8Array(await keyFile.arrayBuffer());
+          }
         }
-      }
 
-      const validity = extractDerValidityDates(bytes);
+        const validity = extractDerValidityDates(bytes);
 
-      const normalizedDirPath = (currentPath || dirHandle.name || 'Root').replace(/\//g, '\\');
-      const isUsbDrivePath =
-        /^(USB|[E-Z]:)/i.test(normalizedDirPath) ||
-        normalizedDirPath.toUpperCase().includes('USB');
+        const normalizedDirPath = (currentPath || dirHandle.name || 'Root').replace(/\//g, '\\');
+        const hasLocalFixedDrive = /^[CD]:(?:\\|$)/i.test(normalizedDirPath);
+        const isUsbDrivePath =
+          /^(?:USB(?::|\\|$)|[E-Z]:)/i.test(normalizedDirPath) ||
+          (!hasLocalFixedDrive && /(?:^|\\)(?:USB|REMOVABLE|이동식)(?:\\|$|\s)/i.test(normalizedDirPath));
 
-      certs.push({
-        id: `custom-scanned-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-        name: parsed.name,
-        subjectDn: parsed.subjectDn,
-        category: parsed.category,
-        issuer: parsed.issuer,
-        caSignatureName: parsed.caSignatureName,
-        policy: parsed.policy,
-        serialNumber: parsed.serialNumber,
-        validFrom: validity.validFrom,
-        validTo: validity.validTo,
-        status: validity.status,
-        daysRemaining: validity.daysRemaining,
-        sourceLocation: normalizedDirPath,
+        certs.push({
+          id: `custom-scanned-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          name: parsed.name,
+          subjectDn: parsed.subjectDn,
+          category: parsed.category,
+          issuer: parsed.issuer,
+          caSignatureName: parsed.caSignatureName,
+          policy: parsed.policy,
+          serialNumber: parsed.serialNumber,
+          validFrom: validity.validFrom,
+          validTo: validity.validTo,
+          status: validity.status,
+          daysRemaining: validity.daysRemaining,
+          sourceLocation: normalizedDirPath,
           sourceDrive: isUsbDrivePath ? '이동식 USB' : '로컬 디스크',
           isRemovableMedia: isUsbDrivePath,
           departmentOrOrg: parsed.departmentOrOrg,
@@ -495,6 +496,7 @@ export async function scanDirectoryHandle(
           },
           isCustomAdded: true,
         });
+      }
     } catch (err) {
       console.error('Error reading cert file:', err);
     }

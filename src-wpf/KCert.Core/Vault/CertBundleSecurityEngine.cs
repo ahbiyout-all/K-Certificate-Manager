@@ -111,9 +111,30 @@ namespace KCert.Core.Vault
             if (!File.Exists(pfxPath))
                 return new BundleOperationResult { IsSuccess = false, Message = "PFX 파일이 존재하지 않습니다." };
 
+            var collection = new X509Certificate2Collection();
             try
             {
-                using var cert = new X509Certificate2(pfxPath, pfxPassword, X509KeyStorageFlags.Exportable);
+                collection.Import(pfxPath, pfxPassword, X509KeyStorageFlags.Exportable);
+                X509Certificate2? cert = null;
+                foreach (X509Certificate2 candidate in collection)
+                {
+                    if (candidate.HasPrivateKey)
+                    {
+                        cert = candidate;
+                        break;
+                    }
+                    cert ??= candidate;
+                }
+
+                if (cert == null)
+                {
+                    return new BundleOperationResult
+                    {
+                        IsSuccess = false,
+                        Message = "PFX 파일에서 추출할 인증서를 찾지 못했습니다."
+                    };
+                }
+
                 if (!Directory.Exists(outputDirectory))
                 {
                     Directory.CreateDirectory(outputDirectory);
@@ -138,6 +159,13 @@ namespace KCert.Core.Vault
                     IsSuccess = false,
                     Message = $"PFX 인증서 추출 실패: {ex.Message}"
                 };
+            }
+            finally
+            {
+                foreach (X509Certificate2 c in collection)
+                {
+                    c.Dispose();
+                }
             }
         }
     }

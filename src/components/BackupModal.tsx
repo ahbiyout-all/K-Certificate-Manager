@@ -60,6 +60,7 @@ import { playStartSound, playCompletionSound, playErrorSound } from '../utils/au
 import { SuccessCelebration } from './SuccessCelebration';
 import { isSameDriveSelfCopy } from '../utils/driveFilter';
 import { getDriveBadgeStyle } from '../utils/driveBadgeUtils';
+import { extractDriveLetterChar } from '../utils/driveColors';
 
 interface BackupModalProps {
   isOpen: boolean;
@@ -131,12 +132,21 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const [colWidths, setColWidths] = useState<Record<string, number>>(DEFAULT_BACKUP_COL_WIDTHS);
   const [resizingCol, setResizingCol] = useState<string | null>(null);
   const [activeSelectedCertIds, setActiveSelectedCertIds] = useState<string[]>(() => selectedCerts.map(c => c.id));
+  const wasSelectionInitRef = useRef(false);
 
   useEffect(() => {
-    if (selectedCerts) {
-      setActiveSelectedCertIds(selectedCerts.map(c => c.id));
+    if (!isOpen) {
+      wasSelectionInitRef.current = false;
+      return;
     }
-  }, [selectedCerts]);
+    const incomingIds = selectedCerts.map(c => c.id);
+    if (!wasSelectionInitRef.current) {
+      wasSelectionInitRef.current = true;
+      setActiveSelectedCertIds(incomingIds);
+    } else {
+      setActiveSelectedCertIds(prev => prev.filter(id => incomingIds.includes(id)));
+    }
+  }, [isOpen, selectedCerts]);
 
   const effectiveSelectedCerts = useMemo(
     () => selectedCerts.filter(c => activeSelectedCertIds.includes(c.id)),
@@ -189,6 +199,23 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     const currentStillExists = Boolean(selectedDriveId && availableDrives.some(d => d.id === selectedDriveId));
 
     if (justOpened) {
+      setIsProcessing(false);
+      setProgress(0);
+      setLogs([]);
+      setBackupResult(null);
+      setDirectWriteError(null);
+      setWriteProtectionError(null);
+      setShowDuplicateModal(false);
+      setIsRetrying(false);
+      setRetryReason(null);
+      setRetryDelayMs(0);
+      setRetryHistory([]);
+      setCurrentAttempt(1);
+      setRetryAttemptsUsed(1);
+      setShowCelebration(false);
+      setCopyErrorModalInfo(null);
+      setShowTroubleshootingGuide(false);
+
       if (initialDriveId && availableDrives.some(d => d.id === initialDriveId)) {
         setSelectedDriveId(initialDriveId);
       } else if (preferredUsbDrive) {
@@ -352,10 +379,15 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       }
     });
 
-    // If all selected certs are skipped
-    if (effectiveSelectedCerts.length > 0 && skippedCertIds.length === effectiveSelectedCerts.length) {
+    // If all selected certs are skipped or same-drive self-copy
+    const actualCopyable = effectiveSelectedCerts.filter(
+      c => !skippedCertIds.includes(c.id) && !isSameDriveSelfCopy(c, targetDrive)
+    );
+    if (effectiveSelectedCerts.length > 0 && actualCopyable.length === 0) {
       setLogs([
-        '[복사 취소] 모든 중복 인증서가 "건너뛰기(Skip)"로 지정되어 복사할 대상 파일이 없습니다.',
+        skippedCertIds.length === effectiveSelectedCerts.length
+          ? '[복사 취소] 모든 중복 인증서가 "건너뛰기(Skip)"로 지정되어 복사할 대상 파일이 없습니다.'
+          : '[복사 취소] 복사할 수 있는 대상 인증서가 없습니다 (중복 건너뛰기 또는 동일 드라이브 자가 복사 제외됨).',
       ]);
       return;
     }
@@ -461,7 +493,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           const copyLogs: string[] = [];
           effectiveSelectedCerts.forEach(cert => {
             const stdPath = getStandardDirectoryPath(cert);
-            if (skippedCertIds.includes(cert.id)) {
+            if (isSameDriveSelfCopy(cert, targetDrive)) {
+              copyLogs.push(`[자가 복사 제외] ⏭️ ${cert.name} (${cert.category}) -> 대상 드라이브(${targetDrive.letter})와 동일하여 복사 제외`);
+            } else if (skippedCertIds.includes(cert.id)) {
               copyLogs.push(`[중복 건너뜀] ⏭️ ${cert.name} (${cert.category}) -> 이미 존재하여 복사 건너뜀`);
             } else if (archivedCertIds.includes(cert.id)) {
               copyLogs.push(`[기존 백업 보존] 📦 ${cert.name} -> 기존 폴더를 ${targetDrive.letter}\\${stdPath}_backup_${backupDateTag} 로 보존 후 새 파일 복사`);
@@ -494,6 +528,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               setLogs(prev => [...prev, `[디스크 쓰기] 선택된 폴더: ${dirHandle.name}에 NPKI/GPKI 구조 직접 기록 시작...`]);
               const res = await writeCertificatesToDirectoryHandle(effectiveSelectedCerts, dirHandle, {
                 skippedCertIds,
+                targetDrive,
               });
               if (!res.success) {
                 throw new Error(res.error || '디스크 쓰기 실패');
@@ -565,8 +600,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           copiedCerts.length > 0
             ? getStandardDirectoryPath(copiedCerts[0]).replace(/\//g, '\\')
             : 'NPKI';
-        const driveCharMatch = targetDrive.letter.trim().match(/(?:^|[^A-Za-z])([A-Za-z]):/) || targetDrive.letter.trim().match(/([A-Za-z])/);
-        const resolvedDriveRoot = driveCharMatch ? `${driveCharMatch[1].toUpperCase()}:` : targetDrive.letter.trim().replace(/[\\/]+$/, '');
+        const resolvedDriveRoot = `${extractDriveLetterChar(targetDrive.letter)}:`;
         const isSystemC = resolvedDriveRoot.toUpperCase() === 'C:';
         const isGpkiFirst = copiedCerts[0]?.category === 'GPKI_GOV';
         const srcUserMatch = (copiedCerts[0]?.sourceLocation || '').match(/\\Users\\([^\\]+)\\/i);

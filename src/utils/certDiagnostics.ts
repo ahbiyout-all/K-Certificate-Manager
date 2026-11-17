@@ -65,15 +65,11 @@ export interface UsbSafeEjectResult {
 }
 
 function getDriveLetterFromCert(cert: CertificateItem): string {
-  const loc = (cert.sourceLocation || '').trim();
-  if (loc.length >= 2 && loc[1] === ':') {
-    return loc.substring(0, 2).toUpperCase();
-  }
-  const drv = (cert.sourceDrive || '').trim();
-  if (drv.length >= 2 && drv[1] === ':') {
-    return drv.substring(0, 2).toUpperCase();
-  }
-  return cert.isRemovableMedia ? 'E:' : 'C:';
+  return (
+    extractDriveLetterFromPathOrLabel(cert.sourceLocation) ||
+    extractDriveLetterFromPathOrLabel(cert.sourceDrive) ||
+    (cert.isRemovableMedia ? 'E:' : 'C:')
+  );
 }
 
 function extractUsernameFromPath(pathStr: string): string {
@@ -130,13 +126,13 @@ export function buildCanonicalCertPath(cert: CertificateItem): string {
   const pathUpper = (cert.sourceLocation || '').replace(/\//g, '\\').toUpperCase();
 
   if (cert.category === 'GPKI_GOV') {
-    const classTier = pathUpper.includes('\\CLASS1') ? 'class1' : 'class2';
+    const classTier = /(?:^|[\\/])CLASS1(?:$|[\\/])/.test(pathUpper) ? 'class1' : 'class2';
     const cleanCn = leaf.toLowerCase().startsWith('cn=') ? leaf : `cn=${cert.name}`;
     return `${drive}\\GPKI\\Certificate\\${classTier}\\${cleanCn}`;
   }
 
   if (cert.category === 'EPKI_EDU') {
-    const classTier = pathUpper.includes('\\CLASS1') ? 'class1' : 'class2';
+    const classTier = /(?:^|[\\/])CLASS1(?:$|[\\/])/.test(pathUpper) ? 'class1' : 'class2';
     const cleanCn = leaf.toLowerCase().startsWith('cn=') ? leaf : `cn=${cert.name}`;
     if (isUsb || drive !== 'C:') {
       return `${drive}\\EPKI\\Certificate\\${classTier}\\${cleanCn}`;
@@ -271,11 +267,7 @@ export function analyzePathRepairs(certs: CertificateItem[]): PathRepairCandidat
     let issueTitle = '비표준 보관 위치';
     let issueDescription = '은행·정부 프로그램이 기본으로 인식하지 못하는 폴더에 저장되어 있습니다.';
 
-    if (
-      upper.includes('\\GPKI\\GPKI') ||
-      upper.includes('\\NPKI\\NPKI') ||
-      upper.includes('\\EPKI\\EPKI')
-    ) {
+    if (/\\(?:GPKI\\GPKI|NPKI\\NPKI|EPKI\\EPKI)(?:\\|$)/.test(upper)) {
       issueType = 'NESTED_FOLDER';
       issueTitle = '중첩 폴더 오류 (GPKI\\GPKI / NPKI\\NPKI)';
       issueDescription = '수동 복사 중 폴더가 두 번 겹쳐서 인증서 프로그램이 찾지 못합니다.';
@@ -283,14 +275,7 @@ export function analyzePathRepairs(certs: CertificateItem[]): PathRepairCandidat
       issueType = 'LOCALLOW_GPKI';
       issueTitle = 'GPKI 비권장 위치 (AppData\\LocalLow\\GPKI)';
       issueDescription = '공무원 행정전자서명(GPKI)은 C:\\GPKI\\Certificate\\class2 경로를 사용해야 인식됩니다.';
-    } else if (
-      upper.includes('\\BACKUP') ||
-      upper.includes('\\TEMP') ||
-      upper.includes('\\백업') ||
-      upper.includes('\\인증서') ||
-      upper.includes('\\DOWNLOAD') ||
-      upper.includes('\\DESKTOP')
-    ) {
+    } else if (/\\(?:BACKUP|TEMP|TEMPORARY|백업|인증서|DOWNLOADS?|DESKTOP)(?:\\|$)/.test(upper)) {
       issueType = 'BACKUP_TEMP';
       issueTitle = '임시·백업 폴더 보관';
       issueDescription = '바탕화면·임시·백업 폴더에 있어 인증서 창 목록에 나타나지 않을 수 있습니다.';
@@ -352,9 +337,18 @@ export function evaluateExpiryAlerts(certs: CertificateItem[]): ExpiryAlertSumma
 
 export function extractDriveLetterFromPathOrLabel(input?: string): string | null {
   if (!input) return null;
-  const match = input.match(/(?:^|[^A-Za-z])([A-Za-z]):/);
-  if (match && match[1]) {
-    return `${match[1].toUpperCase()}:`;
+  const trimmed = input.trim();
+  const colonMatch = trimmed.match(/(?:^|[^A-Za-z])([A-Za-z]):/);
+  if (colonMatch && colonMatch[1]) {
+    return `${colonMatch[1].toUpperCase()}:`;
+  }
+  const parenMatch = trimmed.match(/\(([A-Za-z])\)/);
+  if (parenMatch && parenMatch[1]) {
+    return `${parenMatch[1].toUpperCase()}:`;
+  }
+  const singleMatch = trimmed.match(/^([A-Za-z])$/);
+  if (singleMatch && singleMatch[1]) {
+    return `${singleMatch[1].toUpperCase()}:`;
   }
   return null;
 }

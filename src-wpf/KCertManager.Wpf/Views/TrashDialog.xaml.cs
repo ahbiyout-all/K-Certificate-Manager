@@ -176,11 +176,14 @@ namespace KCertManager.Wpf.Views
             try
             {
                 var status = _backupService.GetVaultSecurityStatus();
+                string lastModifiedText = (status.FileSizeBytes > 0 && status.LastModifiedUtc != default)
+                    ? status.LastModifiedUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                    : "신규 (기록 없음)";
                 string details = 
                     $"• 암호화 방식: {status.EncryptionAlgorithm}\n" +
                     $"• 기록 파일 위치: {status.ManifestFilePath}\n" +
                     $"• 파일 크기: {status.FileSizeBytes:N0} 바이트\n" +
-                    $"• 마지막 저장 시각: {status.LastModifiedUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}\n" +
+                    $"• 마지막 저장 시각: {lastModifiedText}\n" +
                     $"• 파일 검사값 (SHA-256): {status.Sha256Checksum}\n" +
                     $"• 보관된 복원 기록: {status.TotalItemsCount}건\n" +
                     $"• 보안 점검 결과: {(status.IsSelfTestPassed ? "✓ 파일 손상 검사 통과" : "⚠️ 점검 필요")}\n\n" +
@@ -477,7 +480,20 @@ namespace KCertManager.Wpf.Views
                         var unpack = CertVaultPacker.Unpack(zipPath, pass, tempDir);
                         if (unpack.IsSuccess && System.IO.Directory.Exists(tempDir))
                         {
-                            sourceToCopy = tempDir;
+                            var hasDirectCert = System.IO.Directory.GetFiles(tempDir)
+                                .Any(f => f.EndsWith(".der", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".cer", StringComparison.OrdinalIgnoreCase));
+                            if (!hasDirectCert)
+                            {
+                                var nestedCert = System.IO.Directory.GetFiles(tempDir, "*.*", System.IO.SearchOption.AllDirectories)
+                                    .FirstOrDefault(f => f.EndsWith(".der", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".cer", StringComparison.OrdinalIgnoreCase));
+                                sourceToCopy = !string.IsNullOrEmpty(nestedCert)
+                                    ? (System.IO.Path.GetDirectoryName(nestedCert) ?? tempDir)
+                                    : tempDir;
+                            }
+                            else
+                            {
+                                sourceToCopy = tempDir;
+                            }
                             tempDirToDelete = tempDir;
                         }
                     }
@@ -523,7 +539,6 @@ namespace KCertManager.Wpf.Views
                         destDir,
                         1);
 
-                    SoundService.PlayCompletionSound();
                     UserFriendlyMessageHelper.ShowOperationComplete(
                         "USB 복원 완료!",
                         1,

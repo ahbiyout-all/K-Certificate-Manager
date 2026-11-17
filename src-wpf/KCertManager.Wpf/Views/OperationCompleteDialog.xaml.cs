@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using KCert.Core.HardwareGuard;
 using KCertManager.Wpf.Models;
@@ -197,20 +198,20 @@ namespace KCertManager.Wpf.Views
 
             // 드라이브 내 표준 인증서 루트 폴백 (시스템 드라이브는 AppData\LocalLow 우선)
             bool isSysDrive = string.Equals(driveRoot, sysRoot, StringComparison.OrdinalIgnoreCase);
-            if (path.Contains("NPKI", StringComparison.OrdinalIgnoreCase))
+            if (Regex.IsMatch(path, @"(?:^|[\\/\s])NPKI(?:$|[\\/\s])", RegexOptions.IgnoreCase))
             {
                 if (isSysDrive && Directory.Exists(defaultNpki)) return defaultNpki;
                 var npkiPath = Path.Combine(driveRoot, "NPKI");
                 if (Directory.Exists(npkiPath)) return npkiPath;
             }
-            else if (path.Contains("EPKI", StringComparison.OrdinalIgnoreCase))
+            else if (Regex.IsMatch(path, @"(?:^|[\\/\s])EPKI(?:$|[\\/\s])", RegexOptions.IgnoreCase))
             {
                 var localLowEpki = Path.Combine(localLow, "EPKI");
                 if (isSysDrive && Directory.Exists(localLowEpki)) return localLowEpki;
                 var epkiPath = Path.Combine(driveRoot, "EPKI");
                 if (Directory.Exists(epkiPath)) return epkiPath;
             }
-            else if (path.Contains("GPKI", StringComparison.OrdinalIgnoreCase))
+            else if (Regex.IsMatch(path, @"(?:^|[\\/\s])GPKI(?:$|[\\/\s])", RegexOptions.IgnoreCase))
             {
                 var gpkiPath = Path.Combine(driveRoot, "GPKI");
                 if (Directory.Exists(gpkiPath)) return gpkiPath;

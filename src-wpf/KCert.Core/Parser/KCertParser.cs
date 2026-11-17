@@ -129,25 +129,26 @@ namespace KCert.Core.Parser
 
                 var policyInfo = KoreanCertPolicyOids.LookupPolicy(cert);
 
-                // 경로 기반 체계 보정 (폴더 또는 파일 경로에 GPKI, EPKI, MPKI가 포함된 경우)
-                var upperDir = (dirPath + " " + derPath).ToUpperInvariant();
-                if (upperDir.Contains(@"\GPKI\") || upperDir.Contains(@"/GPKI/") || upperDir.Contains(@"\GPKI") || upperDir.Contains(@"/GPKI") || upperDir.Contains("GPKI"))
+                // 경로 기반 체계 보정 (폴더 또는 파일 경로 세그먼트에 GPKI, EPKI, MPKI가 포함된 경우)
+                var normalizedPath = (dirPath + " " + derPath).Replace('/', '\\');
+                if (Regex.IsMatch(normalizedPath, @"(?:^|[\\\s])GPKI(?:$|[\\\s])", RegexOptions.IgnoreCase))
                 {
                     policyInfo = policyInfo with { SystemType = CertSystemType.GPKI, UsageDescription = policyInfo.UsageDescription.Contains("공무원") || policyInfo.UsageDescription.Contains("기관") ? policyInfo.UsageDescription : "행정전자서명 (GPKI)" };
                 }
-                else if (upperDir.Contains(@"\EPKI\") || upperDir.Contains(@"/EPKI/") || upperDir.Contains(@"\EPKI") || upperDir.Contains(@"/EPKI") || upperDir.Contains("EPKI"))
+                else if (Regex.IsMatch(normalizedPath, @"(?:^|[\\\s])EPKI(?:$|[\\\s])", RegexOptions.IgnoreCase))
                 {
                     policyInfo = policyInfo with { SystemType = CertSystemType.EPKI, UsageDescription = policyInfo.UsageDescription.Contains("교원") || policyInfo.UsageDescription.Contains("교육") ? policyInfo.UsageDescription : "교육부 전자서명용 (나이스/에듀파인)" };
                 }
-                else if (upperDir.Contains(@"\MPKI\") || upperDir.Contains(@"/MPKI/") || upperDir.Contains("MPKI"))
+                else if (Regex.IsMatch(normalizedPath, @"(?:^|[\\\s])MPKI(?:$|[\\\s])", RegexOptions.IgnoreCase))
                 {
                     policyInfo = policyInfo with { SystemType = CertSystemType.GPKI, UsageDescription = "국방전자서명 군인/군기관용" };
                 }
                 else if (policyInfo.SystemType == CertSystemType.Unknown)
                 {
                     // OID도 없고 한국 CA 발급자도 아닌 경우, 폴더명이나 Issuer/Subject에 한국 공인인증 키워드가 없으면 제외
-                    bool isKoreanFolder = upperDir.Contains("NPKI") || upperDir.Contains("GPKI") || upperDir.Contains("EPKI") ||
-                                          upperDir.Contains("공인인증") || upperDir.Contains("인증서");
+                    bool isKoreanFolder = Regex.IsMatch(normalizedPath, @"(?:^|[\\\s])(NPKI|GPKI|EPKI)(?:$|[\\\s])", RegexOptions.IgnoreCase) ||
+                                          normalizedPath.Contains("공인인증", StringComparison.OrdinalIgnoreCase) ||
+                                          normalizedPath.Contains("인증서", StringComparison.OrdinalIgnoreCase);
                     bool hasKoreanText = Regex.IsMatch(cert.Subject ?? "", @"[가-힣]") || Regex.IsMatch(cert.Issuer ?? "", @"[가-힣]");
 
                     if (!isKoreanFolder && !hasKoreanText)
@@ -213,16 +214,10 @@ namespace KCert.Core.Parser
                                 (cert.Issuer != null && cert.Issuer.Contains("KISA RootCA", StringComparison.OrdinalIgnoreCase) && !hasKey);
 
                 bool isInSystemCaFolder = dirName == "ca" || dirName == "root" || dirName == "crl" ||
-                                          dirPath.IndexOf(@"\GPKI\CA", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                          dirPath.IndexOf(@"\GPKI\root", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                          dirPath.IndexOf(@"\GPKI\CRL", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                          dirPath.IndexOf(@"\EPKI\CA", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                          dirPath.IndexOf(@"/GPKI/CA", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                          dirPath.IndexOf(@"/EPKI/CA", StringComparison.OrdinalIgnoreCase) >= 0;
+                                          Regex.IsMatch(dirPath, @"[\\/](?:GPKI|EPKI)[\\/](?:CA|root|CRL)(?:$|[\\/])", RegexOptions.IgnoreCase);
 
-                bool isClass1 = upperDir.Contains(@"\CLASS1\") || upperDir.Contains(@"/CLASS1/") ||
-                                upperDir.Contains(@"\CLASS1") || upperDir.Contains(@"/CLASS1") ||
-                                dirName == "class1";
+                bool isClass1 = dirName == "class1" ||
+                                Regex.IsMatch(dirPath, @"(?:^|[\\/])class1(?:$|[\\/])", RegexOptions.IgnoreCase);
 
                 bool isSystemCa = false;
                 if (isCaExtension || isCaName || isInSystemCaFolder)

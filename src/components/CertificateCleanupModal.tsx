@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Trash2, 
   AlertTriangle, 
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { CertificateItem } from '../types';
 import { isCertificateExpired } from '../utils/certParser';
+import { extractDriveLetterFromPathOrLabel } from '../utils/certDiagnostics';
 import { isUsbCertificate } from '../utils/driveFilter';
 
 export type CleanupModalMode = 'EXPIRED' | 'OTHER_USERS' | 'SELECTED' | 'SINGLE';
@@ -47,18 +48,35 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
+  const isMountedRef = useRef(true);
+  const deleteAbortRef = useRef(false);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      deleteAbortRef.current = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      deleteAbortRef.current = true;
+      setIsDeleting(false);
+    } else {
+      deleteAbortRef.current = false;
+    }
+  }, [isOpen]);
 
   // Helper to determine if a cert is on removable USB
   const isUsbCert = (cert: CertificateItem): boolean => isUsbCertificate(cert);
 
   const getDriveBadge = (cert: CertificateItem) => {
     const isUsb = isUsbCert(cert);
-    let driveLetter = 'C:';
-    if (cert.sourceLocation && cert.sourceLocation.length >= 2 && cert.sourceLocation[1] === ':') {
-      driveLetter = cert.sourceLocation.substring(0, 2);
-    } else if (cert.sourceDrive && cert.sourceDrive.length >= 2 && cert.sourceDrive[1] === ':') {
-      driveLetter = cert.sourceDrive.substring(0, 2);
-    }
+    const driveLetter =
+      extractDriveLetterFromPathOrLabel(cert.sourceLocation) ||
+      extractDriveLetterFromPathOrLabel(cert.sourceDrive) ||
+      (isUsb ? 'USB' : 'C:');
 
     if (isUsb) {
       return (
@@ -142,9 +160,17 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
   const currentTargetIds = useMemo(() => new Set(currentTargetCerts.map(c => c.id)), [currentTargetCerts]);
   const effectiveCheckedIds = useMemo(() => checkedIds.filter(id => currentTargetIds.has(id)), [checkedIds, currentTargetIds]);
 
-  // Synchronize modal state reliably upon open
+  const wasOpenRef = React.useRef(false);
+
+  // Synchronize modal state reliably upon open without resetting user edits on prop updates
   React.useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) {
+      wasOpenRef.current = false;
+      return;
+    }
+
+    if (!wasOpenRef.current) {
+      wasOpenRef.current = true;
       setActiveTab(initialMode);
       setIsConfirmed(false);
       setIsDeleting(false);
@@ -170,6 +196,9 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
         initialCands = [singleCert];
       }
       setCheckedIds(initialCands.map(c => c.id));
+    } else {
+      const validIds = new Set(certificates.map(c => c.id));
+      setCheckedIds(prev => prev.filter(id => validIds.has(id)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, initialMode, singleCert, certificates, selectedIds]);
@@ -226,10 +255,14 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
   };
 
   const handleExecuteDelete = async () => {
-    if (effectiveCheckedIds.length === 0) return;
+    if (effectiveCheckedIds.length === 0 || isDeleting) return;
 
+    deleteAbortRef.current = false;
     setIsDeleting(true);
     await new Promise(r => setTimeout(r, 500));
+    if (!isMountedRef.current || deleteAbortRef.current) {
+      return;
+    }
     setIsDeleting(false);
 
     let storageLabel = '전체 매체';
@@ -270,7 +303,8 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            disabled={isDeleting}
+            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label="닫기"
           >
             <X className="w-5 h-5" />
@@ -453,11 +487,26 @@ export const CertificateCleanupModal: React.FC<CertificateCleanupModalProps> = (
                   onChange={e => handleMyUserChange(e.target.value)}
                   className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 >
-                  {distinctUsers.map(user => (
-                    <option key={user.name} value={user.name}>
-                      👤 {user.name} (보유 인증서: {user.count}건 - {user.certs.map(c => c.category === 'GPKI_GOV' ? '공무원' : '은행').join(', ')})
-                    </option>
-                  ))}
+                  {distinctUsers.map(user => {
+                    const catLabels = Array.from(
+                      new Set(
+                        user.certs.map(c =>
+                          c.category === 'GPKI_GOV'
+                            ? '공무원'
+                            : c.category === 'EPKI_EDU'
+                              ? '교육'
+                              : c.category === 'NPKI_CORP'
+                                ? '법인'
+                                : '은행'
+                        )
+                      )
+                    );
+                    return (
+                      <option key={user.name} value={user.name}>
+                        👤 {user.name} (보유 인증서: {user.count}건 - {catLabels.join(', ')})
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
             </div>

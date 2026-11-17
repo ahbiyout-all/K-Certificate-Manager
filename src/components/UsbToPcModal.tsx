@@ -37,6 +37,8 @@ import { SuccessCelebration } from './SuccessCelebration';
 import { getDriveBadgeStyle } from '../utils/driveBadgeUtils';
 import { CopyErrorAlertModal, CopyErrorContext } from './CopyErrorAlertModal';
 import { isPcCertificate } from '../utils/driveFilter';
+import { extractDriveLetterChar } from '../utils/driveColors';
+import { extractDriveLetterFromPathOrLabel } from '../utils/certDiagnostics';
 
 interface UsbToPcModalProps {
   isOpen: boolean;
@@ -74,7 +76,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
     );
     const existingLetters = new Set(
       fixed
-        .map(d => (d.letter.match(/(?:^|[^A-Za-z])([A-Za-z]):/)?.[1] || d.letter.match(/([A-Za-z])/)?.[1] || '').toUpperCase())
+        .map(d => extractDriveLetterChar(d.letter))
         .filter(Boolean)
     );
     if (!existingLetters.has('C')) {
@@ -95,16 +97,12 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
   }, [availableDrives]);
 
   const cleanTargetPcDrive = useMemo(() => {
-    const match = (targetPcDrive || '').match(/(?:^|[^A-Za-z])([A-Za-z]):/) || (targetPcDrive || '').match(/([A-Za-z])/);
-    return (match ? match[1] : 'C').toUpperCase() + ':';
+    return `${extractDriveLetterChar(targetPcDrive)}:`;
   }, [targetPcDrive]);
 
   const selectedTargetDriveObj = useMemo(
     () =>
-      pcLocalTargetDrives.find(d => {
-        const m = d.letter.match(/(?:^|[^A-Za-z])([A-Za-z]):/) || d.letter.match(/([A-Za-z])/);
-        return ((m ? m[1] : 'C').toUpperCase() + ':') === cleanTargetPcDrive;
-      }) || pcLocalTargetDrives[0],
+      pcLocalTargetDrives.find(d => `${extractDriveLetterChar(d.letter)}:` === cleanTargetPcDrive) || pcLocalTargetDrives[0],
     [pcLocalTargetDrives, cleanTargetPcDrive]
   );
   
@@ -170,8 +168,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
     );
 
     const drivesWithData = removableDrives.map(d => {
-      const lm = d.letter.match(/(?:^|[^A-Za-z])([A-Za-z]):/) || d.letter.match(/([A-Za-z])/);
-      const letterClean = (lm ? lm[1] : d.letter.replace(':', '')).toUpperCase();
+      const letterClean = extractDriveLetterChar(d.letter);
       const certsInThisDrive = getAvailableUsbCertificates(availableDrives, letterClean);
       const hasGov = certsInThisDrive.some(c => c.category === 'GPKI_GOV');
       const hasEdu = certsInThisDrive.some(c => c.category === 'EPKI_EDU');
@@ -215,14 +212,11 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
   // Load default simulated USB certs on open or drive filter change, and listen for live events
   useEffect(() => {
     if (isOpen) {
-      const initMatch = initialDriveLetter
-        ? initialDriveLetter.match(/(?:^|[^A-Za-z])([A-Za-z]):/) || initialDriveLetter.match(/([A-Za-z])/)
-        : null;
-      let nextDrive = initMatch ? initMatch[1].toUpperCase() : selectedUsbDriveRef.current;
+      const parsedInit = initialDriveLetter ? extractDriveLetterFromPathOrLabel(initialDriveLetter) : null;
+      let nextDrive = parsedInit ? parsedInit.replace(':', '') : selectedUsbDriveRef.current;
       if (!initialDriveLetter && nextDrive !== 'ALL') {
         const stillMounted = availableDrives.some(d => {
-          const dm = d.letter.match(/(?:^|[^A-Za-z])([A-Za-z]):/) || d.letter.match(/([A-Za-z])/);
-          const clean = (dm ? dm[1] : d.letter.replace(':', '')).toUpperCase();
+          const clean = extractDriveLetterChar(d.letter);
           return (d.type === 'removable' || d.deviceKind === 'external_ssd' || d.deviceKind === 'fast_usb') && clean === nextDrive.toUpperCase();
         });
         if (!stillMounted) {
@@ -237,10 +231,12 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
       setDetectedCerts(initialUsb);
       setSelectedCertIds(initialUsb.map(c => c.id));
       setImportResult(null);
+      setIsProcessing(false);
       setProgress(0);
       setLogs([]);
       setErrorMessage(null);
       setShowCelebration(false);
+      setCopyErrorModalInfo(null);
 
       const unsubscribe = subscribeUsbDriveChanges((event) => {
         if (event.type === 'mount' || event.type === 'unmount' || event.type === 'update') {
@@ -990,9 +986,10 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                           const isSelected = selectedCertIds.includes(cert.id);
                           const isAlreadyInPc = existingCertificates.some(c => {
                             if (!isPcCertificate(c)) return false;
-                            const locUpper = (c.sourceLocation || '').trim().toUpperCase();
-                            const drvUpper = (c.sourceDrive || '').trim().toUpperCase();
-                            const onTargetDrive = locUpper.startsWith(cleanTargetPcDrive) || drvUpper.includes(cleanTargetPcDrive);
+                            const resolvedDrive =
+                              extractDriveLetterFromPathOrLabel(c.sourceLocation || '') ||
+                              extractDriveLetterFromPathOrLabel(c.sourceDrive || '');
+                            const onTargetDrive = resolvedDrive === cleanTargetPcDrive;
                             if (!onTargetDrive) return false;
                             return c.serialNumber === cert.serialNumber || (c.name === cert.name && c.category === cert.category);
                           });

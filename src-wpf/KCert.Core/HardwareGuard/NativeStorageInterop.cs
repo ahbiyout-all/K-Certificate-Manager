@@ -471,10 +471,20 @@ namespace KCert.Core.HardwareGuard
                 };
             }
 
-            string cleanLetter = driveLetter.Trim().TrimEnd('\\', '/');
-            if (cleanLetter.Length >= 1 && char.IsLetter(cleanLetter[0]))
+            string trimmedInput = driveLetter.Trim();
+            var driveMatch = System.Text.RegularExpressions.Regex.Match(
+                trimmedInput,
+                @"(?:^|[^A-Za-z])([A-Za-z]):|\(([A-Za-z])\)|^([A-Za-z])(?:[\\/]|$)");
+            string matchedChar = driveMatch.Success
+                ? (!string.IsNullOrEmpty(driveMatch.Groups[1].Value) ? driveMatch.Groups[1].Value
+                    : !string.IsNullOrEmpty(driveMatch.Groups[2].Value) ? driveMatch.Groups[2].Value
+                    : driveMatch.Groups[3].Value)
+                : string.Empty;
+
+            string cleanLetter;
+            if (matchedChar.Length == 1)
             {
-                cleanLetter = char.ToUpperInvariant(cleanLetter[0]) + ":";
+                cleanLetter = char.ToUpperInvariant(matchedChar[0]) + ":";
             }
             else
             {

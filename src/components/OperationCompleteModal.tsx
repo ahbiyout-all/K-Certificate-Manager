@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { playCompletionSound } from '../utils/audioFeedback';
 import {
   X,
@@ -72,6 +72,16 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
     description: string;
   } | null>(null);
 
+  const copiedPathTimerRef = useRef<number | null>(null);
+  const copiedSummaryTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copiedPathTimerRef.current !== null) window.clearTimeout(copiedPathTimerRef.current);
+      if (copiedSummaryTimerRef.current !== null) window.clearTimeout(copiedSummaryTimerRef.current);
+    };
+  }, []);
+
   useEffect(() => {
     if (isOpen && data) {
       playCompletionSound();
@@ -138,7 +148,8 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
     if (data.targetPath) {
       safeCopyText(data.targetPath, () => {
         setCopiedPath(true);
-        setTimeout(() => setCopiedPath(false), 2000);
+        if (copiedPathTimerRef.current !== null) window.clearTimeout(copiedPathTimerRef.current);
+        copiedPathTimerRef.current = window.setTimeout(() => setCopiedPath(false), 2000);
       });
     }
   };
@@ -155,7 +166,8 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
 
     safeCopyText(summaryText, () => {
       setCopiedSummary(true);
-      setTimeout(() => setCopiedSummary(false), 2000);
+      if (copiedSummaryTimerRef.current !== null) window.clearTimeout(copiedSummaryTimerRef.current);
+      copiedSummaryTimerRef.current = window.setTimeout(() => setCopiedSummary(false), 2000);
     });
   };
 
@@ -194,8 +206,8 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
     const inferDefaultSubdir = (): string => {
       const cat = String(firstCert?.category || '').toUpperCase();
       const srcUpper = `${data.sourcePath || ''} ${rawInput}`.toUpperCase();
-      if (cat.startsWith('GPKI') || srcUpper.includes('GPKI')) return 'GPKI\\Certificate\\class2';
-      if (cat.startsWith('EPKI') || srcUpper.includes('EPKI')) return 'EPKI\\Certificate\\class2';
+      if (cat.startsWith('GPKI') || /(?:^|[\\/\s])GPKI(?:$|[\\/\s])/.test(srcUpper)) return 'GPKI\\Certificate\\class2';
+      if (cat.startsWith('EPKI') || /(?:^|[\\/\s])EPKI(?:$|[\\/\s])/.test(srcUpper)) return 'EPKI\\Certificate\\class2';
       return 'NPKI';
     };
 
@@ -250,7 +262,8 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
     // Always copy resolved OS path to clipboard for instant Explorer / Win+R access
     safeCopyText(folder, () => {
       setCopiedPath(true);
-      setTimeout(() => setCopiedPath(false), 2000);
+      if (copiedPathTimerRef.current !== null) window.clearTimeout(copiedPathTimerRef.current);
+      copiedPathTimerRef.current = window.setTimeout(() => setCopiedPath(false), 2000);
     });
 
     // 1. Native Desktop Host Bridge (WPF WebView2 / Electron / Custom Desktop Shell)
@@ -297,8 +310,9 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
     // 2. Local file:// bundle execution (launched via run-web.cmd / launch-web.vbs on Windows)
     if (typeof window !== 'undefined' && window.location?.protocol === 'file:') {
       try {
+        const isUnc = folder.startsWith('\\\\') || folder.startsWith('//');
         const normalizedUriPath = folder.replace(/\\/g, '/').replace(/^\/+/, '');
-        const fileUri = encodeURI(`file:///${normalizedUriPath}`);
+        const fileUri = encodeURI(isUnc ? `file://${normalizedUriPath}` : `file:///${normalizedUriPath}`);
         const link = document.createElement('a');
         link.href = fileUri;
         link.target = '_blank';

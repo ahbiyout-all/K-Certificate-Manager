@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   HardDrive, 
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { DiskDrive, CertificateItem } from '../types';
 import { filterPhysicalDrivesOnly, isSameDriveSelfCopy } from '../utils/driveFilter';
+import { extractDriveLetterFromPathOrLabel } from '../utils/certDiagnostics';
 import { getDriveColorInfo } from '../utils/driveColors';
 import { getDriveBadgeStyle } from '../utils/driveBadgeUtils';
 import { detectDuplicateCertificates } from '../utils/backupService';
@@ -47,21 +48,28 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
 
   const [selectedId, setSelectedId] = useState<string>('');
   const [pickerError, setPickerError] = useState<string | null>(null);
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
-    if (isOpen) {
+    const justOpened = isOpen && !wasOpenRef.current;
+    wasOpenRef.current = isOpen;
+
+    if (!isOpen) return;
+
+    const currentStillExists = selectedId ? physicalDrives.some(d => d.id === selectedId) : false;
+    if (justOpened || !currentStillExists) {
       setPickerError(null);
       if (preferredUsb) {
         setSelectedId(preferredUsb.id);
       } else if (physicalDrives.length > 0) {
         // If no USB is attached, don't auto-select C: drive, but clear or pick non-C drive
-        const nonC = physicalDrives.find(d => !d.letter.toUpperCase().startsWith('C:'));
+        const nonC = physicalDrives.find(d => extractDriveLetterFromPathOrLabel(d.letter) !== 'C:');
         setSelectedId(nonC ? nonC.id : '');
       } else {
         setSelectedId('');
       }
     }
-  }, [isOpen, availableDrives]);
+  }, [isOpen, availableDrives, selectedId]);
 
   if (!isOpen) return null;
 

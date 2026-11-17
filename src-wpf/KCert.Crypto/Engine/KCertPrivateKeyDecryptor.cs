@@ -263,23 +263,47 @@ namespace KCert.Crypto.Engine
                 // 전체 바이트에서 OID 검색
                 string contentStr = BitConverter.ToString(keyBytes).Replace("-", "");
 
-                // OID 판별
-                if (contentStr.Contains("2A831A8C180104")) // 1.2.410.200004.1.4 (SEED-CBC)
+                // OID 판별 (1.2.410.200004.1.* = 2A 83 1A 8C 9A 44 01 ...)
+                if (contentStr.Contains("2A831A8C9A440104") || contentStr.Contains("2A831A8C180104")) // 1.2.410.200004.1.4 (SEED-CBC)
                 {
                     param.AlgorithmOid = OidSeedCbc;
                     param.AlgorithmName = "KISA SEED-CBC (128-bit)";
                     param.KeyLengthBytes = 16;
                 }
-                else if (contentStr.Contains("2A831A8C18010B")) // 1.2.410.200004.1.11 (ARIA-128-CBC)
+                else if (contentStr.Contains("2A831A8C9A440107") || contentStr.Contains("2A831A8C180107")) // 1.2.410.200004.1.7 (SEED-CBC-ALT)
+                {
+                    param.AlgorithmOid = OidSeedCbcAlt;
+                    param.AlgorithmName = "KISA SEED-CBC (128-bit Alt)";
+                    param.KeyLengthBytes = 16;
+                }
+                else if (contentStr.Contains("2A831A8C9A44010B") || contentStr.Contains("2A831A8C18010B")) // 1.2.410.200004.1.11 (ARIA-128-CBC)
                 {
                     param.AlgorithmOid = OidAria128Cbc;
                     param.AlgorithmName = "KISA ARIA-128-CBC";
                     param.KeyLengthBytes = 16;
                 }
-                else if (contentStr.Contains("2A831A8C18010D")) // 1.2.410.200004.1.13 (ARIA-256-CBC)
+                else if (contentStr.Contains("2A831A8C9A44010C") || contentStr.Contains("2A831A8C18010C")) // 1.2.410.200004.1.12 (ARIA-192-CBC)
+                {
+                    param.AlgorithmOid = OidAria192Cbc;
+                    param.AlgorithmName = "KISA ARIA-192-CBC";
+                    param.KeyLengthBytes = 24;
+                }
+                else if (contentStr.Contains("2A831A8C9A44010D") || contentStr.Contains("2A831A8C18010D")) // 1.2.410.200004.1.13 (ARIA-256-CBC)
                 {
                     param.AlgorithmOid = OidAria256Cbc;
                     param.AlgorithmName = "KISA ARIA-256-CBC";
+                    param.KeyLengthBytes = 32;
+                }
+                else if (contentStr.Contains("608648016503040102")) // 2.16.840.1.101.3.4.1.2 (AES-128-CBC)
+                {
+                    param.AlgorithmOid = OidAes128Cbc;
+                    param.AlgorithmName = "AES-128-CBC";
+                    param.KeyLengthBytes = 16;
+                }
+                else if (contentStr.Contains("60864801650304012A")) // 2.16.840.1.101.3.4.1.42 (AES-256-CBC)
+                {
+                    param.AlgorithmOid = OidAes256Cbc;
+                    param.AlgorithmName = "AES-256-CBC";
                     param.KeyLengthBytes = 32;
                 }
                 else if (contentStr.Contains("2A864886F70D0307")) // 3DES-CBC

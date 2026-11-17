@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   FileText,
   Copy,
@@ -17,6 +17,7 @@ import { getDriveColorInfo } from '../utils/driveColors';
 import { isUsbCertificate } from '../utils/driveFilter';
 import { isNonStandardCertPath } from '../utils/certPathUtils';
 import { getAccurateIssuerInfo } from '../utils/issuerUtils';
+import { extractDriveLetterFromPathOrLabel } from '../utils/certDiagnostics';
 
 interface CertificateDetailSidebarProps {
   cert: CertificateItem | null;
@@ -36,6 +37,13 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
   onNotifyCopy,
 }) => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const copyTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current !== null) window.clearTimeout(copyTimerRef.current);
+    };
+  }, []);
 
   const handleCopyText = (key: string, value: string, label: string) => {
     if (!value) return;
@@ -43,7 +51,8 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
       navigator.clipboard.writeText(value);
       setCopiedKey(key);
       onNotifyCopy?.(`📋 ${label}이(가) 클립보드에 복사되었습니다.`);
-      setTimeout(() => setCopiedKey(null), 1500);
+      if (copyTimerRef.current !== null) window.clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = window.setTimeout(() => setCopiedKey(null), 1500);
     } catch {}
   };
 
@@ -132,10 +141,10 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
         {cert ? (
           (() => {
             const isUsb = isUsbCertificate(cert);
-            const driveMatch =
-              cert.sourceLocation?.match(/^([A-Za-z]:)/) ||
-              cert.sourceDrive?.match(/([A-Za-z]:)/);
-            const driveLetter = driveMatch ? driveMatch[1].toUpperCase() : 'C:';
+            const driveLetter =
+              extractDriveLetterFromPathOrLabel(cert.sourceLocation) ||
+              extractDriveLetterFromPathOrLabel(cert.sourceDrive) ||
+              'C:';
             const dColor = getDriveColorInfo(driveLetter);
             const isNonStandard = cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation, isUsb);
             const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);

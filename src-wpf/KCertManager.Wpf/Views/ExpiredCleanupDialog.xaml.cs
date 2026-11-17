@@ -104,7 +104,7 @@ namespace KCertManager.Wpf.Views
                     SelectedMediumName = "내 컴퓨터(PC)";
                     if (TxtSafetyNotice != null) TxtSafetyNotice.Text = "🛡️ 내 컴퓨터(PC)의 만료 인증서만 정리합니다. USB 인증서는 유지됩니다.";
                     if (BorderAlert != null) BorderAlert.BorderBrush = DesktopAlertBorder;
-                    if (TxtSafetyNotice != null) TxtSafetyNotice.Foreground = (Brush)Application.Current.FindResource("AccentTextBrush") ?? DesktopAlertText;
+                    if (TxtSafetyNotice != null) TxtSafetyNotice.Foreground = (Application.Current?.TryFindResource("AccentTextBrush") as Brush) ?? DesktopAlertText;
                 }
                 else if (target == MediumTarget.Usb)
                 {

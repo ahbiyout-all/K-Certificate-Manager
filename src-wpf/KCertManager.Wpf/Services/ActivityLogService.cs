@@ -64,10 +64,17 @@ namespace KCertManager.Wpf.Services
             }
             else
             {
-                _logs.Insert(0, item);
-                for (int i = 0; i < _logs.Count; i++)
+                lock (_lock)
                 {
-                    _logs[i].IndexNumber = i + 1;
+                    _logs.Insert(0, item);
+                    if (_logs.Count > 1000)
+                    {
+                        _logs.RemoveAt(_logs.Count - 1);
+                    }
+                    for (int i = 0; i < _logs.Count; i++)
+                    {
+                        _logs[i].IndexNumber = i + 1;
+                    }
                 }
             }
 
@@ -85,12 +92,44 @@ namespace KCertManager.Wpf.Services
 
         public void Clear()
         {
-            _logs.Clear();
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null)
+            {
+                if (dispatcher.CheckAccess())
+                {
+                    _logs.Clear();
+                }
+                else
+                {
+                    dispatcher.Invoke(() => _logs.Clear());
+                }
+            }
+            else
+            {
+                lock (_lock)
+                {
+                    _logs.Clear();
+                }
+            }
             Log(LogCategory.SECURITY, LogLevel.INFO, "로그 기록 비우기", "사용자 요청으로 메모리 작업 로그가 초기화되었습니다.");
         }
 
         public string ExportLogsToText()
         {
+            List<AppLogItem> snapshot;
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                snapshot = dispatcher.Invoke(() => new List<AppLogItem>(_logs));
+            }
+            else
+            {
+                lock (_lock)
+                {
+                    snapshot = new List<AppLogItem>(_logs);
+                }
+            }
+
             var sb = new StringBuilder();
             sb.AppendLine("================================================================================");
             sb.AppendLine("                 KCert Manager 작업 및 보안 감사 로그 내역");
@@ -98,7 +137,7 @@ namespace KCertManager.Wpf.Services
             sb.AppendLine("================================================================================");
             sb.AppendLine();
 
-            foreach (var log in _logs)
+            foreach (var log in snapshot)
             {
                 sb.AppendLine($"[{log.FormattedTime}] [{log.Level,-7}] [{log.CategoryBadgeText,-6}] {log.Action}");
                 sb.AppendLine($"  - 세부내용: {log.Details}");

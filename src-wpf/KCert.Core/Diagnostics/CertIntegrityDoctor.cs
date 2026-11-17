@@ -86,12 +86,7 @@ namespace KCert.Core.Diagnostics
                 foundFiles.AddRange(files.Select(Path.GetFileName).Where(f => !string.IsNullOrEmpty(f))!);
 
                 // 1. 중첩 폴더 및 백업/임시 폴더 검사 (GPKI\GPKI, NPKI\NPKI, EPKI\EPKI, Backup, Temp 등)
-                string upperPath = folderPath.Replace('/', '\\').ToUpperInvariant();
-                if (upperPath.Contains(@"\GPKI\GPKI") || upperPath.Contains(@"\NPKI\NPKI") || upperPath.Contains(@"\EPKI\EPKI") ||
-                    upperPath.Contains(@"\GPKI\BACKUP") || upperPath.Contains(@"\NPKI\BACKUP") || upperPath.Contains(@"\EPKI\BACKUP") ||
-                    upperPath.Contains(@"\BACKUP\NPKI") || upperPath.Contains(@"\인증서\NPKI") ||
-                    upperPath.Contains(@"\백업\") || upperPath.EndsWith(@"\백업") ||
-                    upperPath.Contains(@"\TEMP\") || upperPath.EndsWith(@"\TEMP"))
+                if (Regex.IsMatch(folderPath, @"[\\/](?:GPKI[\\/]GPKI|NPKI[\\/]NPKI|EPKI[\\/]EPKI|GPKI[\\/]BACKUP|NPKI[\\/]BACKUP|EPKI[\\/]BACKUP|BACKUP[\\/]NPKI|인증서[\\/]NPKI|백업|TEMP)(?:$|[\\/])", RegexOptions.IgnoreCase))
                 {
                     flags |= CertAnomalyFlags.NestedFolderError;
                     issues.Add("폴더 복사 실수 또는 백업/임시 경로 저장으로 인증서 계층 구조가 표준과 달라 정부/은행 서명 모듈에서 인식되지 않습니다.");
@@ -172,6 +167,11 @@ namespace KCert.Core.Diagnostics
                     {
                         flags |= CertAnomalyFlags.ZeroByteFile;
                         issues.Add($"인증서 파일({derName}) 크기가 0바이트로 손상되었습니다.");
+                    }
+                    else if (fi.Length > 512 * 1024)
+                    {
+                        flags |= CertAnomalyFlags.CorruptedAsn1Header;
+                        issues.Add($"인증서 파일({derName}) 크기가 비정상적으로 큽니다 ({fi.Length:N0} bytes).");
                     }
                     else
                     {
@@ -398,7 +398,7 @@ namespace KCert.Core.Diagnostics
             string safeUserFolder = SanitizeFolderName(userFolder);
 
             bool isClass1 = !string.IsNullOrEmpty(folderPath) &&
-                            folderPath.Replace('/', '\\').Contains(@"\class1", StringComparison.OrdinalIgnoreCase);
+                            Regex.IsMatch(folderPath, @"(?:^|[\\/])class1(?:$|[\\/])", RegexOptions.IgnoreCase);
             string classTier = isClass1 ? "class1" : "class2";
 
             if (sysType == CertSystemType.GPKI)

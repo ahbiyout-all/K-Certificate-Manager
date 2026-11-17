@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -233,22 +234,20 @@ namespace KCert.Core.Discovery
                 var upper = normPath.ToUpperInvariant();
 
                 // 1. 중첩 폴더(복사 오류) 또는 백업/임시 폴더는 명백한 비표준
-                if (upper.Contains(@"\GPKI\GPKI") || upper.Contains(@"\NPKI\NPKI") || upper.Contains(@"\EPKI\EPKI") ||
-                    upper.Contains(@"\GPKI\BACKUP") || upper.Contains(@"\NPKI\BACKUP") || upper.Contains(@"\EPKI\BACKUP") ||
-                    upper.Contains(@"\BACKUP\NPKI") || upper.Contains(@"\인증서") || upper.Contains(@"\백업") || upper.Contains(@"\TEMP"))
+                if (Regex.IsMatch(upper, @"\\(?:GPKI\\GPKI|NPKI\\NPKI|EPKI\\EPKI|GPKI\\BACKUP|NPKI\\BACKUP|EPKI\\BACKUP|BACKUP\\NPKI|인증서|백업|TEMP)(?:$|\\)"))
                 {
                     return false;
                 }
 
                 // 2. AppData\LocalLow\GPKI는 공무원 행정전자서명(GPKI) 정부 공식 표준(C:\GPKI\Certificate\class2)이 아니며
                 // 실무 행정망(온-나라, 새올 등)에서 미인식되는 예외 경로이므로 표준에서 제외
-                if (upper.Contains(@"\APPDATA\LOCALLOW\GPKI"))
+                if (Regex.IsMatch(upper, @"\\APPDATA\\LOCALLOW\\GPKI(?:$|\\)"))
                 {
                     return false;
                 }
 
                 // 3. AppData\LocalLow (금융결제원 NPKI, 교육부 EPKI 표준) - 경로 경계 포함
-                if (System.Text.RegularExpressions.Regex.IsMatch(upper, @"\\APPDATA\\LOCALLOW\\(NPKI|EPKI)($|\\)"))
+                if (Regex.IsMatch(upper, @"\\APPDATA\\LOCALLOW\\(?:NPKI|EPKI)(?:$|\\)"))
                 {
                     return true;
                 }
@@ -280,7 +279,7 @@ namespace KCert.Core.Discovery
         {
             if (string.IsNullOrWhiteSpace(path)) return false;
             var upper = path.Replace('/', '\\').ToUpperInvariant();
-            return upper.Contains(@"\APPDATA\LOCALLOW\GPKI");
+            return Regex.IsMatch(upper, @"\\APPDATA\\LOCALLOW\\GPKI(?:$|\\)");
         }
 
         /// <summary>
@@ -388,18 +387,21 @@ namespace KCert.Core.Discovery
                             }
                             if (string.IsNullOrEmpty(key))
                             {
-                                var anyKeys = Directory.GetFiles(dir, "*.key");
-                                key = anyKeys.FirstOrDefault(k => !Path.GetFileName(k).StartsWith("km", StringComparison.OrdinalIgnoreCase)) ?? anyKeys.FirstOrDefault() ?? string.Empty;
+                                try
+                                {
+                                    var anyKeys = Directory.GetFiles(dir, "*.key");
+                                    key = anyKeys.FirstOrDefault(k => !Path.GetFileName(k).StartsWith("km", StringComparison.OrdinalIgnoreCase)) ?? anyKeys.FirstOrDefault() ?? string.Empty;
+                                }
+                                catch { }
                             }
 
                             string category = "NPKI";
-                            var upper = (der + " " + dir).ToUpperInvariant();
-                            if (upper.Contains(@"\GPKI\") || upper.Contains(@"/GPKI/") || upper.Contains(@"\GPKI") || upper.Contains(@"/GPKI"))
+                            if (Regex.IsMatch(der, @"(?:^|[\\/])(?:GPKI|MPKI)(?:$|[\\/])", RegexOptions.IgnoreCase) ||
+                                Regex.IsMatch(dir, @"(?:^|[\\/])(?:GPKI|MPKI)(?:$|[\\/])", RegexOptions.IgnoreCase))
                                 category = "GPKI";
-                            else if (upper.Contains(@"\EPKI\") || upper.Contains(@"/EPKI/") || upper.Contains(@"\EPKI") || upper.Contains(@"/EPKI"))
+                            else if (Regex.IsMatch(der, @"(?:^|[\\/])EPKI(?:$|[\\/])", RegexOptions.IgnoreCase) ||
+                                     Regex.IsMatch(dir, @"(?:^|[\\/])EPKI(?:$|[\\/])", RegexOptions.IgnoreCase))
                                 category = "EPKI";
-                            else if (upper.Contains(@"\MPKI\") || upper.Contains(@"/MPKI/"))
-                                category = "GPKI";
 
                             list.Add(new DiscoveredCertLocation
                             {
@@ -437,20 +439,19 @@ namespace KCert.Core.Discovery
 
                 var (current, depth) = queue.Dequeue();
 
+                // GPKI Certificate\class1 디렉터리는 비개인(기관/관인/서버용) 전용 경로이므로 파일/하위폴더 스캔 모두 제외
+                var curDirName = Path.GetFileName(current).ToLowerInvariant();
+                if (curDirName == "class1" ||
+                    Regex.IsMatch(current, @"[\\/]GPKI[\\/]Certificate[\\/]class1(?:$|[\\/])", RegexOptions.IgnoreCase))
+                {
+                    continue;
+                }
+
                 try
                 {
                     var derFiles = Directory.GetFiles(current, "*.der");
                     var cerFiles = Directory.GetFiles(current, "*.cer");
                     var candidateFiles = derFiles.Concat(cerFiles).ToList();
-
-                    // GPKI Certificate\class1 디렉터리는 비개인(기관/관인/서버용) 전용 경로이므로 개인 인증서 스캔 제외
-                    var curDirName = Path.GetFileName(current).ToLowerInvariant();
-                    if (curDirName == "class1" ||
-                        current.IndexOf(@"\GPKI\Certificate\class1", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        current.IndexOf(@"/GPKI/Certificate/class1", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        continue;
-                    }
 
                     if (candidateFiles.Count > 0)
                     {
@@ -483,17 +484,19 @@ namespace KCert.Core.Discovery
 
                             if (isEnvFile && hasAnySignFile)
                             {
-                                // 매칭되는 서명 파일 검색 (예: 865김병석001_sig.cer 또는 signCert.der)
-                                string sigVariant = fn.Replace("_env.", "_sig.").Replace("_km.", "_sig.")
-                                                      .Replace("_env_", "_sig_").Replace("_km_", "_sig_")
-                                                      .Replace("envcert", "signcert").Replace("kmcert", "signcert")
-                                                      .Replace("envcert", "sigcert").Replace("kmcert", "sigcert");
+                                // 매칭되는 서명 파일 검색 (예: 865김병석001_sig.cer 또는 signCert.der / sigCert.der)
+                                string sigVariant1 = fn.Replace("_env.", "_sig.").Replace("_km.", "_sig.")
+                                                       .Replace("_env_", "_sig_").Replace("_km_", "_sig_")
+                                                       .Replace("envcert", "signcert").Replace("kmcert", "signcert");
+                                string sigVariant2 = fn.Replace("_env.", "_sig.").Replace("_km.", "_sig.")
+                                                       .Replace("_env_", "_sig_").Replace("_km_", "_sig_")
+                                                       .Replace("envcert", "sigcert").Replace("kmcert", "sigcert");
 
                                 bool hasMatchingSign = candidateFiles.Any(other =>
                                 {
                                     var ofn = Path.GetFileName(other).ToLowerInvariant();
                                     if (ofn == fn) return false;
-                                    if (ofn == sigVariant) return true;
+                                    if (ofn == sigVariant1 || ofn == sigVariant2) return true;
                                     if (ofn.Contains("_sig.") || ofn.Contains("signcert") || ofn.Contains("sigcert") || ofn.Equals("user.der")) return true;
                                     return false;
                                 });

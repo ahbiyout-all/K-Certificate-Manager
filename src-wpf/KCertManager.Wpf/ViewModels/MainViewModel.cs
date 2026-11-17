@@ -1348,31 +1348,45 @@ namespace KCertManager.Wpf.ViewModels
                 {
                     try
                     {
-                        var seenDers = new HashSet<string>(fastList.Select(x => Path.GetFullPath(x.DerFilePath)), StringComparer.OrdinalIgnoreCase);
-                        var seenSigs = new HashSet<string>(fastList.Select(x => $"{x.DriveLetter}|{x.SerialNumber}|{x.IssuerName}|{x.SubjectDn}"), StringComparer.OrdinalIgnoreCase);
+                        var seenDers = new HashSet<string>(
+                            fastList.Where(x => !string.IsNullOrWhiteSpace(x.DerFilePath))
+                                    .Select(x => Path.GetFullPath(x.DerFilePath)),
+                            StringComparer.OrdinalIgnoreCase);
+                        var seenSigs = new HashSet<string>(
+                            fastList.Where(x => !string.IsNullOrWhiteSpace(x.DerFilePath))
+                                    .Select(x =>
+                                    {
+                                        var dir = Path.GetDirectoryName(Path.GetFullPath(x.DerFilePath)) ?? string.Empty;
+                                        return $"{dir}|{x.SerialNumber}|{x.SubjectDn}";
+                                    }),
+                            StringComparer.OrdinalIgnoreCase);
 
                         int newDiscovered = await _scannerService.ScanDeepPassBackgroundAsync(newItem =>
                         {
                             if (scanGen != _scanGeneration) return;
                             AttachCertEvent(newItem);
-                            var dispatcher = Application.Current?.Dispatcher;
-                            if (dispatcher != null)
+                            Action addAction = () =>
                             {
-                                dispatcher.BeginInvoke(new Action(() =>
+                                if (scanGen != _scanGeneration) return;
+                                string? newDer = string.IsNullOrWhiteSpace(newItem.DerFilePath) ? null : Path.GetFullPath(newItem.DerFilePath);
+                                if (newDer != null && _allCertificates.Any(x => !string.IsNullOrWhiteSpace(x.DerFilePath) && string.Equals(Path.GetFullPath(x.DerFilePath), newDer, StringComparison.OrdinalIgnoreCase)))
                                 {
-                                    if (scanGen != _scanGeneration) return;
-                                    _allCertificates.Add(newItem);
-                                    UpdateDriveCertificateCounts();
-                                    ApplyFilter();
-                                    UpdateCounts();
-                                }));
-                            }
-                            else
-                            {
+                                    return;
+                                }
                                 _allCertificates.Add(newItem);
                                 UpdateDriveCertificateCounts();
                                 ApplyFilter();
                                 UpdateCounts();
+                            };
+
+                            var dispatcher = Application.Current?.Dispatcher;
+                            if (dispatcher != null)
+                            {
+                                dispatcher.BeginInvoke(addAction);
+                            }
+                            else
+                            {
+                                addAction();
                             }
                         }, seenDers, seenSigs);
 
@@ -1801,6 +1815,32 @@ namespace KCertManager.Wpf.ViewModels
             bool isTargetUsb = targetDrive.IsRemovable;
             string cleanTarget = targetDriveName.TrimEnd('\\').ToUpperInvariant();
 
+            // 0. 전체 자가 복사(동일 폴더 복사) 사전 차단
+            bool isAllSelfCopy = selected.All(cert =>
+            {
+                if (string.IsNullOrWhiteSpace(cert?.DirectoryPath)) return false;
+                string destRoot = ResolveBackupDestinationRoot(targetDriveName, cert);
+                string safeRel = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
+                string expectedDstDir = Path.GetFullPath(Path.Combine(destRoot, safeRel)).TrimEnd('\\');
+                string currentSrcDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd('\\');
+                return string.Equals(currentSrcDir, expectedDstDir, StringComparison.OrdinalIgnoreCase);
+            });
+
+            if (isAllSelfCopy)
+            {
+                PlayErrorSound();
+                if (IsGuidedWorkflowActive)
+                {
+                    GuidedWorkflowStepTitle = "⚠️ 같은 위치 복사 불가";
+                    GuidedWorkflowStepDescription = $"선택한 인증서가 이미 {targetDriveName}의 같은 폴더에 있습니다. 다른 드라이브를 선택하세요.";
+                }
+                UserFriendlyMessageHelper.ShowWarning(
+                    $"선택한 인증서가 이미 대상 드라이브({targetDriveName})의 같은 폴더에 있습니다.\n\n다른 드라이브(USB 메모리 등)를 선택해 주세요.",
+                    "같은 위치 복사 불가",
+                    "• 원본과 같은 드라이브·폴더로는 자가 복사를 할 수 없습니다.\n• 다른 드라이브(예: USB 메모리)를 선택해 다시 시도하세요.");
+                return;
+            }
+
             // 1. 복사 대상 드라이브에 원본과 동일한 인증서가 이미 존재하는지 '중복 방지 체크' 사전 검사
             var duplicateConflicts = new List<Views.DuplicateConflictEntry>();
             var conflictCertPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -1937,9 +1977,7 @@ namespace KCertManager.Wpf.ViewModels
                                 _backupHistory.Insert(0, sameResult);
                                 UpdateBackupHistoryIndices();
                             }));
-                            success++;
-                            copiedTargets.Add(cert);
-                            highlightDirs.Add(currentSrcDir);
+                            skippedCount++;
                             continue;
                         }
 
@@ -1978,22 +2016,41 @@ namespace KCertManager.Wpf.ViewModels
                         {
                             try
                             {
-                                string backupDir = $"{expectedDstDir}_backup_{DateTime.Now:yyyyMMdd_HHmmss}";
-                                if (!Directory.Exists(backupDir))
+                                string baseBackupDir = $"{expectedDstDir}_backup_{DateTime.Now:yyyyMMdd_HHmmss}";
+                                string backupDir = baseBackupDir;
+                                int backupSuffix = 1;
+                                while (Directory.Exists(backupDir))
                                 {
-                                    Directory.Move(expectedDstDir, backupDir);
-                                    ActivityLogService.Instance.Log(
-                                        LogCategory.BACKUP,
-                                        LogLevel.INFO,
-                                        $"기존 인증서 백업 폴더 보존",
-                                        $"기존 폴더를 안전하게 '{Path.GetFileName(backupDir)}'로 보존 후 최신 인증서를 복사합니다.",
-                                        expectedDstDir,
-                                        backupDir);
+                                    backupDir = $"{baseBackupDir}_{backupSuffix++}";
                                 }
+                                Directory.Move(expectedDstDir, backupDir);
+                                ActivityLogService.Instance.Log(
+                                    LogCategory.BACKUP,
+                                    LogLevel.INFO,
+                                    $"기존 인증서 백업 폴더 보존",
+                                    $"기존 폴더를 안전하게 '{Path.GetFileName(backupDir)}'로 보존 후 최신 인증서를 복사합니다.",
+                                    expectedDstDir,
+                                    backupDir);
                             }
                             catch (Exception ex)
                             {
                                 System.Diagnostics.Debug.WriteLine($"[Rename Backup Error] {ex.Message}");
+                                failedCount++;
+                                var renameFailResult = new BackupHistoryItem
+                                {
+                                    CertCommonName = cert.CommonName,
+                                    SourcePath = cert.DirectoryPath,
+                                    TargetDrive = targetDriveName,
+                                    DestinationPath = expectedDstDir,
+                                    IsSuccess = false,
+                                    Message = $"기존 폴더 백업 이름 변경 실패로 덮어쓰기를 중단했습니다: {ex.Message}"
+                                };
+                                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                                {
+                                    _backupHistory.Insert(0, renameFailResult);
+                                    UpdateBackupHistoryIndices();
+                                }));
+                                continue;
                             }
                         }
 

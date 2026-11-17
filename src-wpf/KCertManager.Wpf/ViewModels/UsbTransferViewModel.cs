@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -28,6 +29,7 @@ namespace KCertManager.Wpf.ViewModels
         private string _targetCategory = "NPKI";
         private bool _isBusy;
         private bool _hasUsbDrives;
+        private int _scanGeneration;
         private string _statusMessage = "USB 드라이브를 선택하세요.";
 
         public event Action? TransferCompleted;
@@ -220,89 +222,124 @@ namespace KCertManager.Wpf.ViewModels
                 return;
             }
 
+            var sourceDrive = SelectedSourceDrive;
+            var driveRoot = sourceDrive.Name;
+            int scanGen = System.Threading.Interlocked.Increment(ref _scanGeneration);
+
             IsBusy = true;
-            StatusMessage = $"{SelectedSourceDrive.Name} 드라이브 내 인증서(NPKI, GPKI, EPKI) 검색 중...";
+            StatusMessage = $"{driveRoot} 드라이브 내 인증서(NPKI, GPKI, EPKI) 검색 중...";
             FoundUsbCertificates.Clear();
 
-            await Task.Run(() =>
+            try
             {
-                try
+                await Task.Run(async () =>
                 {
-                    var driveRoot = SelectedSourceDrive.Name;
-                    var paths = new List<string>
+                    try
                     {
-                        driveRoot,
-                        Path.Combine(driveRoot, "NPKI"),
-                        Path.Combine(driveRoot, "GPKI"),
-                        Path.Combine(driveRoot, "EPKI"),
-                        Path.Combine(driveRoot, "공인인증서"),
-                        Path.Combine(driveRoot, "공인인증서백업"),
-                        Path.Combine(driveRoot, "인증서"),
-                        Path.Combine(driveRoot, "인증서백업"),
-                        Path.Combine(driveRoot, "Cert"),
-                        Path.Combine(driveRoot, "Certificates"),
-                        Path.Combine(driveRoot, "Backup"),
-                        Path.Combine(driveRoot, "만료인증서"),
-                        Path.Combine(driveRoot, "인증서_만료")
-                    };
-
-                    var certs = _scannerService.ScanCertificates(paths);
-                    var validCerts = certs.Where(c =>
-                    {
-                        var cn = (c.CommonName ?? "").ToUpperInvariant();
-                        var issuer = (c.IssuerName ?? "").ToUpperInvariant();
-                        if (cn.Contains("WINDOWS OEM") || cn.Contains("WINDOWS PHONE") ||
-                            issuer.Contains("WINDOWS OEM") || issuer.Contains("WINDOWS PHONE") ||
-                            cn.Contains("OEM TEST") || cn.Contains("TEST ONLY"))
+                        var paths = new List<string>
                         {
-                            return false;
-                        }
-                        return true;
-                    }).ToList();
-
-                    for (int i = 0; i < validCerts.Count; i++)
-                    {
-                        var c = validCerts[i];
-                        c.IndexNumber = i + 1;
-                        c.IsRemovableMedia = true;
-                        c.IsSelected = true;
-                        c.PropertyChanged += (s, e) =>
-                        {
-                            if (e.PropertyName == nameof(CertificateItem.IsSelected))
-                            {
-                                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                                {
-                                    (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
-                                }));
-                            }
+                            driveRoot,
+                            Path.Combine(driveRoot, "NPKI"),
+                            Path.Combine(driveRoot, "GPKI"),
+                            Path.Combine(driveRoot, "EPKI"),
+                            Path.Combine(driveRoot, "공인인증서"),
+                            Path.Combine(driveRoot, "공인인증서백업"),
+                            Path.Combine(driveRoot, "인증서"),
+                            Path.Combine(driveRoot, "인증서백업"),
+                            Path.Combine(driveRoot, "Cert"),
+                            Path.Combine(driveRoot, "Certificates"),
+                            Path.Combine(driveRoot, "Backup"),
+                            Path.Combine(driveRoot, "만료인증서"),
+                            Path.Combine(driveRoot, "인증서_만료")
                         };
-                    }
 
-                    Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                    {
-                        FoundUsbCertificates = new ObservableCollection<CertificateItem>(validCerts);
-                        if (FoundUsbCertificates.Count == 0)
+                        var certs = _scannerService.ScanCertificates(paths);
+                        if (scanGen != _scanGeneration) return;
+
+                        var validCerts = certs.Where(c =>
                         {
-                            StatusMessage = $"{driveRoot}에서 인증서(NPKI·GPKI·EPKI)를 찾지 못했습니다.";
+                            var cn = (c.CommonName ?? "").ToUpperInvariant();
+                            var issuer = (c.IssuerName ?? "").ToUpperInvariant();
+                            if (cn.Contains("WINDOWS OEM") || cn.Contains("WINDOWS PHONE") ||
+                                issuer.Contains("WINDOWS OEM") || issuer.Contains("WINDOWS PHONE") ||
+                                cn.Contains("OEM TEST") || cn.Contains("TEST ONLY"))
+                            {
+                                return false;
+                            }
+                            return true;
+                        }).ToList();
+
+                        for (int i = 0; i < validCerts.Count; i++)
+                        {
+                            var c = validCerts[i];
+                            c.IndexNumber = i + 1;
+                            c.IsRemovableMedia = true;
+                            c.IsSelected = true;
+                            c.PropertyChanged += (s, e) =>
+                            {
+                                if (e.PropertyName == nameof(CertificateItem.IsSelected))
+                                {
+                                    Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                                    {
+                                        (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                                    }));
+                                }
+                            };
+                        }
+
+                        Action applyResults = () =>
+                        {
+                            if (scanGen != _scanGeneration) return;
+                            FoundUsbCertificates = new ObservableCollection<CertificateItem>(validCerts);
+                            if (FoundUsbCertificates.Count == 0)
+                            {
+                                StatusMessage = $"{driveRoot}에서 인증서(NPKI·GPKI·EPKI)를 찾지 못했습니다.";
+                            }
+                            else
+                            {
+                                StatusMessage = $"{driveRoot}에서 인증서 {FoundUsbCertificates.Count}건을 찾았습니다. [가져오기 시작]을 눌러주세요.";
+                            }
+                            (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                        };
+
+                        var dispatcher = Application.Current?.Dispatcher;
+                        if (dispatcher != null)
+                        {
+                            await dispatcher.InvokeAsync(applyResults);
                         }
                         else
                         {
-                            StatusMessage = $"{driveRoot}에서 인증서 {FoundUsbCertificates.Count}건을 찾았습니다. [가져오기 시작]을 눌러주세요.";
+                            applyResults();
                         }
-                        (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
-                    }));
-                }
-                catch (Exception ex)
-                {
-                    var userErr = KCert.Core.Common.UserFriendlyError.Explain(ex, "USB 인증서 탐색");
-                    Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                    }
+                    catch (Exception ex)
                     {
-                        StatusMessage = $"USB 인증서 검색 안내: {userErr.Summary} ({userErr.ActionTip.Replace("\n", " ")})";
-                    }));
+                        if (scanGen != _scanGeneration) return;
+                        var userErr = KCert.Core.Common.UserFriendlyError.Explain(ex, "USB 인증서 탐색");
+                        var dispatcher = Application.Current?.Dispatcher;
+                        Action setErrStatus = () =>
+                        {
+                            if (scanGen != _scanGeneration) return;
+                            StatusMessage = $"USB 인증서 검색 안내: {userErr.Summary} ({userErr.ActionTip.Replace("\n", " ")})";
+                        };
+                        if (dispatcher != null)
+                        {
+                            await dispatcher.InvokeAsync(setErrStatus);
+                        }
+                        else
+                        {
+                            setErrStatus();
+                        }
+                    }
+                });
+            }
+            finally
+            {
+                if (scanGen == _scanGeneration)
+                {
+                    IsBusy = false;
                 }
-            });
-
-            IsBusy = false;
+            }
         }
 
         private static string ResolveTargetRootForCategory(
@@ -321,8 +358,7 @@ namespace KCertManager.Wpf.ViewModels
 
             bool isGpki = string.Equals(category, "GPKI", StringComparison.OrdinalIgnoreCase) ||
                           (!string.IsNullOrWhiteSpace(sourceDirectory) &&
-                           (sourceDirectory.IndexOf(@"\GPKI\", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            sourceDirectory.IndexOf(@"/GPKI/", StringComparison.OrdinalIgnoreCase) >= 0));
+                           Regex.IsMatch(sourceDirectory, @"(?:^|[\\/])GPKI(?:$|[\\/])", RegexOptions.IgnoreCase));
 
             if (!isSystemDrive)
             {
@@ -390,6 +426,7 @@ namespace KCertManager.Wpf.ViewModels
             StatusMessage = $"PC 보관함({selectedDriveShort})으로 {selected.Count}개 인증서 가져오는 중...";
 
             int success = 0;
+            int selfCopySkipped = 0;
             var successfulDestinations = new List<string>();
             var destinationCategories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -410,8 +447,7 @@ namespace KCertManager.Wpf.ViewModels
 
                         if (fullSourceDir.Equals(fullTargetDir, StringComparison.OrdinalIgnoreCase))
                         {
-                            success++;
-                            successfulDestinations.Add(fullTargetDir);
+                            selfCopySkipped++;
                             continue;
                         }
 
@@ -430,14 +466,16 @@ namespace KCertManager.Wpf.ViewModels
             });
 
             IsBusy = false;
-            StatusMessage = $"PC({selectedDriveShort}) 가져오기 완료: {selected.Count}개 중 {success}개 성공 (자동 새로고침 반영)";
+            StatusMessage = $"PC({selectedDriveShort}) 가져오기 완료: {selected.Count}개 중 {success}개 성공" +
+                            (selfCopySkipped > 0 ? $", {selfCopySkipped}개 동일 위치 건너뜀" : string.Empty) +
+                            " (자동 새로고침 반영)";
             if (success > 0)
             {
                 SoundService.PlayCompletionSound();
                 TransferCompleted?.Invoke();
             }
 
-            if (success == selected.Count)
+            if (success + selfCopySkipped == selected.Count && success > 0)
             {
                 var completeItems = selected.Select(c => new OperationCompleteItem
                 {
@@ -450,10 +488,10 @@ namespace KCertManager.Wpf.ViewModels
 
                 bool isAnyGpki = destinationCategories.Contains("GPKI") ||
                                  selected.Any(c => c.Category == CertCategory.GPKI) ||
-                                 (!string.IsNullOrEmpty(firstDest) && firstDest.IndexOf(@"\GPKI\", StringComparison.OrdinalIgnoreCase) >= 0);
+                                 (!string.IsNullOrEmpty(firstDest) && Regex.IsMatch(firstDest, @"(?:^|[\\/])GPKI(?:$|[\\/])", RegexOptions.IgnoreCase));
                 bool isAnyEpki = destinationCategories.Contains("EPKI") ||
                                  selected.Any(c => c.Category == CertCategory.EPKI) ||
-                                 (!string.IsNullOrEmpty(firstDest) && firstDest.IndexOf(@"\EPKI\", StringComparison.OrdinalIgnoreCase) >= 0);
+                                 (!string.IsNullOrEmpty(firstDest) && Regex.IsMatch(firstDest, @"(?:^|[\\/])EPKI(?:$|[\\/])", RegexOptions.IgnoreCase));
 
                 string gpkiTargetRoot = ResolveTargetRootForCategory("GPKI", null, targetDrive, effectiveUsername, sysRoot, userProfile);
                 string localLowTargetRoot = ResolveTargetRootForCategory("NPKI", null, targetDrive, effectiveUsername, sysRoot, userProfile);
@@ -502,10 +540,18 @@ namespace KCertManager.Wpf.ViewModels
                     completeItems,
                     guideTip);
             }
+            else if (selfCopySkipped == selected.Count)
+            {
+                UserFriendlyMessageHelper.ShowInfo(
+                    $"선택한 인증서 {selfCopySkipped}개는 이미 대상 폴더({selectedDriveShort})와 동일한 위치에 있어 복사를 건너뛰었습니다.",
+                    "동일 위치 건너뜀 안내");
+            }
             else
             {
+                int failedCount = Math.Max(0, selected.Count - success - selfCopySkipped);
                 UserFriendlyMessageHelper.ShowWarning(
-                    $"인증서 {selected.Count}개 중 {success}개 성공, {selected.Count - success}개 실패했습니다.",
+                    $"인증서 {selected.Count}개 중 {success}개 성공, {failedCount}개 실패했습니다." +
+                    (selfCopySkipped > 0 ? $" (동일 위치 {selfCopySkipped}개 건너뜀)" : string.Empty),
                     "가져오기 결과 안내",
                     $"• PC 저장 폴더({selectedDriveShort})에 쓰기 권한이 있는지 확인하세요.\n• 필요하면 관리자 권한으로 프로그램을 다시 실행하세요.");
             }

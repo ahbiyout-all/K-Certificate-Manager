@@ -146,15 +146,19 @@ export function isSameDriveSelfCopy(
     ? targetDriveLetterOrObj
     : targetDriveLetterOrObj.letter || '';
 
-  const targetMatch = rawTarget.trim().match(/(?:^|[^A-Za-z])([A-Za-z]):/) || rawTarget.trim().match(/([A-Za-z])/);
+  const trimmedTarget = rawTarget.trim();
+  const targetMatch =
+    trimmedTarget.match(/(?:^|[^A-Za-z])([A-Za-z]):/) ||
+    trimmedTarget.match(/\(([A-Za-z]):?\)/) ||
+    trimmedTarget.match(/(?:^|[^A-Za-z])([A-Za-z])(?=$|[^A-Za-z])/);
   const targetLetter = (targetMatch ? targetMatch[1] : '').toUpperCase();
   if (!targetLetter) return false;
 
   const sourceDriveClean = (cert.sourceDrive || '').trim().toUpperCase();
   const sourceLocClean = (cert.sourceLocation || '').trim().toUpperCase();
 
-  // Check if sourceLocation starts with "E:" or "E:\"
-  if (sourceLocClean.startsWith(`${targetLetter}:`) || sourceLocClean.startsWith(`${targetLetter}\\`)) {
+  // Check if sourceLocation starts with "E:"
+  if (sourceLocClean.startsWith(`${targetLetter}:`)) {
     return true;
   }
 
@@ -195,19 +199,20 @@ export function isPcCertificate(
     return false;
   }
 
-  const removableDrivePrefixes = ['E:', 'F:', 'G:', 'H:', 'I:', 'J:', 'K:', 'U:', 'M:'];
-  if (removableDrivePrefixes.some(prefix => sourceLoc.startsWith(prefix) || sourceDrive.startsWith(prefix))) {
+  const removableDriveLocRegex = /^[EFGHIJKUM]:/;
+  const removableDriveLabelRegex = /(?:^|[^A-Z])[EFGHIJKUM]:|\([EFGHIJKUM]\)/;
+  if (removableDriveLocRegex.test(sourceLoc) || removableDriveLabelRegex.test(sourceDrive)) {
     // Only treat as PC if explicitly labeled as internal/local disk without USB cues
     if (!sourceDrive.includes('내장') && !sourceDrive.includes('로컬 디스크')) {
       return false;
     }
   }
 
-  // PC / C: / D: standard indicators
-  if (sourceDrive.includes('C:') || sourceDrive.includes('컴퓨터') || sourceDrive.includes('로컬')) {
+  // PC / C: / D: standard indicators (avoid matching "PC:" as "C:")
+  if (/(?:^|[^A-Z])C:|\(C\)/.test(sourceDrive) || sourceDrive.includes('컴퓨터') || sourceDrive.includes('로컬')) {
     return true;
   }
-  if (sourceLoc.startsWith('C:') || sourceLoc.startsWith('D:') || sourceLoc.includes('APPDATA') || sourceLoc.includes('LOCALLOW') || sourceLoc.includes('PROGRAMDATA') || sourceLoc.includes('USERS')) {
+  if (/^[CD]:/.test(sourceLoc) || sourceLoc.includes('APPDATA') || sourceLoc.includes('LOCALLOW') || sourceLoc.includes('PROGRAMDATA') || sourceLoc.includes('USERS')) {
     return true;
   }
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using KCert.Core.Vault;
 using KCertManager.Wpf.Models;
 
@@ -30,11 +31,11 @@ namespace KCertManager.Wpf.Services
                 // KCert.Core.Vault의 상대 경로 해석 및 원자적 무결성 전송 엔진 호출
                 string relativePath = CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
                 string destinationRoot = targetDriveLetter;
-                string cleanTarget = targetDriveLetter.TrimEnd('\\').ToUpperInvariant();
-                string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\').ToUpperInvariant();
+                string cleanTarget = targetDriveLetter.TrimEnd('\\', '/').ToUpperInvariant();
+                string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\', '/').ToUpperInvariant();
 
                 // 대상 드라이브가 윈도우 시스템 드라이브(C:)인 경우
-                // 1) GPKI인 경우: 공무원 행정전자서명 정부 정규 표준 위치는 C:\GPKI\Certificate\class2 이므로
+                // 1) GPKI인 경우: 공무원 행정전자서명 정부 정규 표준 위치는 C:\GPKI\Certificate\{class1|class2} 이므로
                 //    destinationRoot는 C:\ 루트 유지 (권한 제한 등 예외 발생 시에만 LocalLow 폴백)
                 // 2) NPKI/기타인 경우: 윈도우 공인인증서 보관 표준인 AppData\LocalLow 경로로 안전 배치
                 if (string.Equals(cleanTarget, sysRoot, StringComparison.OrdinalIgnoreCase))
@@ -43,7 +44,8 @@ namespace KCertManager.Wpf.Services
                     {
                         try
                         {
-                            var gpkiDir = Path.Combine(sysRoot + "\\", "GPKI", "Certificate", "class2");
+                            string gpkiClass = Regex.IsMatch(relativePath, @"(?:^|[\\/])class1(?:$|[\\/])", RegexOptions.IgnoreCase) ? "class1" : "class2";
+                            var gpkiDir = Path.Combine(sysRoot + "\\", "GPKI", "Certificate", gpkiClass);
                             if (!Directory.Exists(gpkiDir)) Directory.CreateDirectory(gpkiDir);
                             destinationRoot = sysRoot + "\\";
                         }
@@ -97,12 +99,10 @@ namespace KCertManager.Wpf.Services
 
                 string normSrc = (sourceDirectory ?? string.Empty).Replace('/', '\\').TrimEnd('\\');
                 bool isGpki = string.Equals(targetCategory, "GPKI", StringComparison.OrdinalIgnoreCase) ||
-                              normSrc.IndexOf(@"\GPKI\", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                              normSrc.EndsWith(@"\GPKI", StringComparison.OrdinalIgnoreCase);
+                              Regex.IsMatch(normSrc, @"(?:^|[\\/])GPKI(?:$|[\\/])", RegexOptions.IgnoreCase);
 
                 bool isEpki = string.Equals(targetCategory, "EPKI", StringComparison.OrdinalIgnoreCase) ||
-                              normSrc.IndexOf(@"\EPKI\", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                              normSrc.EndsWith(@"\EPKI", StringComparison.OrdinalIgnoreCase);
+                              Regex.IsMatch(normSrc, @"(?:^|[\\/])EPKI(?:$|[\\/])", RegexOptions.IgnoreCase);
 
                 string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\').ToUpperInvariant() + "\\";
                 var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -110,10 +110,11 @@ namespace KCertManager.Wpf.Services
 
                 if (isGpki)
                 {
-                    // GPKI 공무원 행정전자서명의 정부 정규 표준 위치는 {cleanDrive}GPKI\Certificate\class2
+                    // GPKI 공무원 행정전자서명의 정부 정규 표준 위치는 {cleanDrive}GPKI\Certificate\{class1|class2}
                     try
                     {
-                        var gpkiDir = Path.Combine(cleanDrive, "GPKI", "Certificate", "class2");
+                        string gpkiClass = Regex.IsMatch(normSrc, @"(?:^|[\\/])class1(?:$|[\\/])", RegexOptions.IgnoreCase) ? "class1" : "class2";
+                        var gpkiDir = Path.Combine(cleanDrive, "GPKI", "Certificate", gpkiClass);
                         if (!Directory.Exists(gpkiDir)) Directory.CreateDirectory(gpkiDir);
                         targetRoot = cleanDrive;
                     }
@@ -165,7 +166,7 @@ namespace KCertManager.Wpf.Services
         {
             if (cert == null)
             {
-                return new TrashItem { CertCommonName = "알 수 없음" };
+                throw new ArgumentNullException(nameof(cert));
             }
 
             string certDir = cert.DirectoryPath ?? string.Empty;
@@ -176,20 +177,27 @@ namespace KCertManager.Wpf.Services
             DateTime notAfter = cert.NotAfter != default ? cert.NotAfter : DateTime.Now.AddYears(1);
 
             var (success, msg, item) = _trashManager.MoveToTrash(
-                certDir, 
-                commonName, 
-                relPath, 
-                issuerName, 
-                categoryStr, 
+                certDir,
+                commonName,
+                relPath,
+                issuerName,
+                categoryStr,
                 notAfter);
+
+            if (!success || item == null)
+            {
+                throw new IOException(string.IsNullOrWhiteSpace(msg)
+                    ? "인증서를 안전 휴지통으로 이동하지 못했습니다."
+                    : msg);
+            }
 
             return new TrashItem
             {
-                Id = item?.Id ?? Guid.NewGuid().ToString("N"),
-                DeletedAt = item?.DeletedAtUtc.ToLocalTime() ?? DateTime.Now,
+                Id = item.Id,
+                DeletedAt = item.DeletedAtUtc.ToLocalTime(),
                 CertCommonName = commonName,
                 OriginalDirectoryPath = certDir,
-                TrashDirectoryPath = item?.QuarantinedFolderPath ?? string.Empty,
+                TrashDirectoryPath = item.QuarantinedFolderPath ?? string.Empty,
                 IssuerName = issuerName,
                 Category = cert.Category,
                 NotAfter = notAfter

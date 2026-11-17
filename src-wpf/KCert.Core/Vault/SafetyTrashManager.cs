@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace KCert.Core.Vault
 {
@@ -124,7 +125,20 @@ namespace KCert.Core.Vault
 
                     if (!string.IsNullOrWhiteSpace(certDirectory) && Directory.Exists(certDirectory))
                     {
-                        SafeMoveDirectory(certDirectory, targetFolder);
+                        bool moved = SafeMoveDirectory(certDirectory, targetFolder);
+                        if (!moved)
+                        {
+                            if (Directory.Exists(targetFolder))
+                            {
+                                try
+                                {
+                                    ClearReadOnlyAttributesRecursive(targetFolder);
+                                    Directory.Delete(targetFolder, true);
+                                }
+                                catch { }
+                            }
+                            return (false, "원본 인증서 폴더를 안전 휴지통으로 이동하지 못했습니다. 다른 프로그램에서 파일이 사용 중인지 또는 권한을 확인해 주세요.", null);
+                        }
                     }
                     else
                     {
@@ -152,30 +166,7 @@ namespace KCert.Core.Vault
                 }
                 catch (Exception ex)
                 {
-                    string id = DateTime.Now.ToString("yyyyMMdd_HHmmss_") + Guid.NewGuid().ToString("N").Substring(0, 6);
-                    string targetFolder = Path.Combine(_trashRoot, id);
-                    var item = new TrashQuarantineItem
-                    {
-                        Id = id,
-                        CertCommonName = commonName,
-                        OriginalDirectoryPath = certDirectory,
-                        QuarantinedFolderPath = targetFolder,
-                        DeletedAtUtc = DateTime.UtcNow,
-                        RelativeSubPath = relativeSubPath,
-                        IssuerName = !string.IsNullOrEmpty(issuerName) ? issuerName : "알 수 없음",
-                        Category = !string.IsNullOrEmpty(category) ? category : "NPKI",
-                        NotAfter = notAfter ?? DateTime.Now.AddYears(1)
-                    };
-
-                    try
-                    {
-                        var items = LoadIndexInternal();
-                        items.Add(item);
-                        SaveIndexInternal(items);
-                    }
-                    catch { }
-
-                    return (true, $"휴지통 이동 완료 (기록 보존): {ex.Message}", item);
+                    return (false, $"휴지통 이동 실패: {ex.Message}", null);
                 }
             }
         }
@@ -242,7 +233,10 @@ namespace KCert.Core.Vault
                     catch { }
 
                     // 2. 원래 인증서 디렉터리로 안전 이동 복원
-                    SafeMoveDirectory(fullQuarantined, fullOriginal);
+                    if (!SafeMoveDirectory(fullQuarantined, fullOriginal))
+                    {
+                        return (false, "격리 폴더에서 원래 위치로 인증서 파일을 복원하지 못했습니다. 대상 폴더 권한이나 사용 여부를 확인해 주세요.");
+                    }
 
                     items.Remove(item);
                     SaveIndexInternal(items);
@@ -299,19 +293,21 @@ namespace KCert.Core.Vault
         {
             if (string.IsNullOrWhiteSpace(fullPath)) return false;
 
-            var root = Path.GetPathRoot(fullPath);
-            if (string.Equals(fullPath.TrimEnd('\\', '/'), root?.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase))
+            string normalized = fullPath.Replace('/', '\\');
+            var root = Path.GetPathRoot(normalized);
+            if (string.Equals(normalized.TrimEnd('\\'), root?.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
                 return false;
 
-            string upper = fullPath.ToUpperInvariant();
-            if (upper.Contains(@"\WINDOWS\") || upper.EndsWith(@"\WINDOWS") ||
-                upper.Contains(@"\SYSTEM32\") || upper.EndsWith(@"\SYSTEM32"))
+            if (Regex.IsMatch(normalized, @"[\\/](?:WINDOWS|SYSTEM32|SYSWOW64)(?:$|[\\/])", RegexOptions.IgnoreCase))
             {
                 return false;
             }
 
-            // 표준 인증서 경로 토큰(NPKI, GPKI, EPKI, MPKI, Cert)이 포함되어야 안전 삭제/복원 허용
-            return upper.Contains("NPKI") || upper.Contains("GPKI") || upper.Contains("EPKI") || upper.Contains("MPKI") || upper.Contains("CERT");
+            // 표준 인증서 경로 토큰(NPKI, GPKI, EPKI, MPKI, Cert, 인증서, 공인인증)이 포함되어야 안전 삭제/복원 허용
+            string upper = normalized.ToUpperInvariant();
+            return upper.Contains("NPKI") || upper.Contains("GPKI") || upper.Contains("EPKI") ||
+                   upper.Contains("MPKI") || upper.Contains("CERT") ||
+                   upper.Contains("인증서") || upper.Contains("공인인증");
         }
 
         private static void ClearReadOnlyAttributesRecursive(string dirPath)
@@ -346,9 +342,9 @@ namespace KCert.Core.Vault
             catch { }
         }
 
-        private static void SafeMoveDirectory(string sourceDir, string targetDir)
+        private static bool SafeMoveDirectory(string sourceDir, string targetDir)
         {
-            if (string.IsNullOrWhiteSpace(sourceDir) || !Directory.Exists(sourceDir)) return;
+            if (string.IsNullOrWhiteSpace(sourceDir) || !Directory.Exists(sourceDir)) return false;
             try
             {
                 if (Directory.Exists(targetDir))
@@ -359,26 +355,63 @@ namespace KCert.Core.Vault
 
                 // 동일 볼륨(드라이브)인 경우 빠른 Directory.Move 시도
                 Directory.Move(sourceDir, targetDir);
+                return Directory.Exists(targetDir);
             }
             catch
             {
                 try
                 {
                     // 다른 드라이브(볼륨) 간 이동이거나 잠금 등의 이유로 실패 시 복사 후 읽기 전용 해제 + 삭제 fallback
-                    CopyDirectoryRecursive(sourceDir, targetDir);
+                    bool sourceHadEntries = Directory.EnumerateFileSystemEntries(sourceDir).Any();
+                    bool copiedAll = CopyDirectoryRecursive(sourceDir, targetDir);
+                    bool targetCreated = copiedAll && Directory.Exists(targetDir) && (!sourceHadEntries || Directory.EnumerateFileSystemEntries(targetDir).Any());
+                    if (!targetCreated)
+                    {
+                        if (Directory.Exists(targetDir))
+                        {
+                            try
+                            {
+                                ClearReadOnlyAttributesRecursive(targetDir);
+                                Directory.Delete(targetDir, true);
+                            }
+                            catch { }
+                        }
+                        return false;
+                    }
+
                     if (Directory.Exists(sourceDir))
                     {
-                        ClearReadOnlyAttributesRecursive(sourceDir);
-                        Directory.Delete(sourceDir, true);
+                        try
+                        {
+                            ClearReadOnlyAttributesRecursive(sourceDir);
+                            Directory.Delete(sourceDir, true);
+                        }
+                        catch
+                        {
+                            if (Directory.Exists(sourceDir) && Directory.EnumerateFileSystemEntries(sourceDir).Any())
+                            {
+                                try
+                                {
+                                    ClearReadOnlyAttributesRecursive(targetDir);
+                                    Directory.Delete(targetDir, true);
+                                }
+                                catch { }
+                                return false;
+                            }
+                        }
                     }
+                    return true;
                 }
-                catch { }
+                catch
+                {
+                    return false;
+                }
             }
         }
 
-        private static void CopyDirectoryRecursive(string sourceDir, string targetDir)
+        private static bool CopyDirectoryRecursive(string sourceDir, string targetDir)
         {
-            if (string.IsNullOrWhiteSpace(sourceDir) || !Directory.Exists(sourceDir)) return;
+            if (string.IsNullOrWhiteSpace(sourceDir) || !Directory.Exists(sourceDir)) return false;
 
             if (!Directory.Exists(targetDir))
             {
@@ -400,14 +433,22 @@ namespace KCert.Core.Vault
                     }
                     File.Copy(file, destFile, true);
                 }
-                catch { }
+                catch
+                {
+                    return false;
+                }
             }
 
             foreach (var subDir in Directory.GetDirectories(sourceDir))
             {
                 var destSubDir = Path.Combine(targetDir, Path.GetFileName(subDir));
-                CopyDirectoryRecursive(subDir, destSubDir);
+                if (!CopyDirectoryRecursive(subDir, destSubDir))
+                {
+                    return false;
+                }
             }
+
+            return true;
         }
 
         /// <summary>
@@ -575,9 +616,15 @@ namespace KCert.Core.Vault
                 {
                     if (Directory.Exists(_trashRoot))
                     {
+                        string normalizedVaultRoot = Path.GetFullPath(_restoredVaultRoot).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
                         var dirs = Directory.GetDirectories(_trashRoot);
                         foreach (var d in dirs)
                         {
+                            string normalizedDir = Path.GetFullPath(d).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                            if (string.Equals(normalizedDir, normalizedVaultRoot, StringComparison.OrdinalIgnoreCase))
+                            {
+                                continue;
+                            }
                             try { Directory.Delete(d, true); } catch { }
                         }
                     }
@@ -722,8 +769,9 @@ namespace KCert.Core.Vault
 
                 foreach (var item in validList)
                 {
-                    string targetZipDat = Path.Combine(archivesDir, $"{item.TrashId}_encrypted_vault.zip.dat");
-                    string targetZip = Path.Combine(archivesDir, $"{item.TrashId}_encrypted_vault.zip");
+                    string archiveKey = string.IsNullOrEmpty(item.TrashId) ? item.Id : item.TrashId;
+                    string targetZipDat = Path.Combine(archivesDir, $"{archiveKey}_encrypted_vault.zip.dat");
+                    string targetZip = Path.Combine(archivesDir, $"{archiveKey}_encrypted_vault.zip");
 
                     if (File.Exists(targetZipDat))
                     {

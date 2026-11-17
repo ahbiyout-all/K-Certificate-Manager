@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using KCert.Core.Discovery;
@@ -71,11 +72,34 @@ namespace KCertManager.Wpf.Services
             HashSet<string> existingSignatures,
             CancellationToken ct = default)
         {
-            var seenDerPaths = new ConcurrentDictionary<string, bool>(
-                existingDerPaths.ToDictionary(k => k, v => true, StringComparer.OrdinalIgnoreCase));
+            var seenDerPaths = new ConcurrentDictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            if (existingDerPaths != null)
+            {
+                foreach (var p in existingDerPaths)
+                {
+                    if (string.IsNullOrWhiteSpace(p)) continue;
+                    try
+                    {
+                        seenDerPaths.TryAdd(Path.GetFullPath(p), true);
+                    }
+                    catch
+                    {
+                        seenDerPaths.TryAdd(p, true);
+                    }
+                }
+            }
 
-            var seenSignatures = new ConcurrentDictionary<string, bool>(
-                existingSignatures.ToDictionary(k => k, v => true, StringComparer.OrdinalIgnoreCase));
+            var seenSignatures = new ConcurrentDictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            if (existingSignatures != null)
+            {
+                foreach (var s in existingSignatures)
+                {
+                    if (!string.IsNullOrWhiteSpace(s))
+                    {
+                        seenSignatures.TryAdd(s, true);
+                    }
+                }
+            }
 
             return await _pipeline.ScanDeepBackgroundAsync(loc =>
             {
@@ -153,11 +177,10 @@ namespace KCertManager.Wpf.Services
                 // 사용자 관리 인증서 목록에는 실제 사용자 이름(개인) 또는 기관이름(법인/공공기관)이 유효한 인증서만 표시합니다.
                 // 인증서 발급 대행 회사 정보(INIPASS CA, yessignCA, SignKorea CA, CrossCertCA, signGATE CA, KISA RootCA 등)의 무키 CA/중계/루트 인증서는
                 // 사용자가 소유한 인증서가 아니므로 목록에서 완전히 제외합니다.
-                var dirUpper = meta.DirectoryPath.ToUpperInvariant();
-                bool isDedicatedCaFolder = dirUpper.EndsWith(@"\CA") || dirUpper.EndsWith(@"/CA") ||
-                                           dirUpper.Contains(@"\GPKI\CA\") || dirUpper.Contains(@"/GPKI/CA/") ||
-                                           dirUpper.Contains(@"\EPKI\CA\") || dirUpper.Contains(@"/EPKI/CA/") ||
-                                           dirUpper.EndsWith(@"\ROOT") || dirUpper.EndsWith(@"/ROOT");
+                bool isDedicatedCaFolder = Regex.IsMatch(
+                    meta.DirectoryPath ?? string.Empty,
+                    @"[\\/](?:CA|ROOT)$|[\\/](?:GPKI|EPKI)[\\/]CA(?:$|[\\/])",
+                    RegexOptions.IgnoreCase);
 
                 bool isCaVendorCompanyCert = meta.IsSystemCa ||
                                             meta.CommonName.StartsWith("INIPASS", StringComparison.OrdinalIgnoreCase) ||

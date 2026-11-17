@@ -266,6 +266,11 @@ namespace KCert.Core.Vault
                 byte[] salt = reader.ReadBytes(SaltSizeBytes);
                 byte[] nonce = reader.ReadBytes(NonceSizeBytes);
                 byte[] tag = reader.ReadBytes(TagSizeBytes);
+                if (salt.Length != SaltSizeBytes || nonce.Length != NonceSizeBytes || tag.Length != TagSizeBytes || fs.Length - fs.Position < sizeof(int))
+                {
+                    return new VaultUnpackResult { IsSuccess = false, Message = "금고 파일 헤더가 손상되었거나 불완전하게 잘렸습니다." };
+                }
+
                 int ciphertextLen = reader.ReadInt32();
 
                 if (ciphertextLen <= 0 || ciphertextLen > 50 * 1024 * 1024) // 50MB 상한
@@ -274,6 +279,10 @@ namespace KCert.Core.Vault
                 }
 
                 byte[] ciphertext = reader.ReadBytes(ciphertextLen);
+                if (ciphertext.Length != ciphertextLen)
+                {
+                    return new VaultUnpackResult { IsSuccess = false, Message = "금고 파일 페이로드가 불완전하게 잘려 있습니다(Truncated Vault)." };
+                }
 
                 // 2. 키 파생
                 byte[] key = DeriveKey(password, salt);
@@ -393,6 +402,11 @@ namespace KCert.Core.Vault
                 byte[] salt = reader.ReadBytes(SaltSizeBytes);
                 byte[] nonce = reader.ReadBytes(NonceSizeBytes);
                 byte[] tag = reader.ReadBytes(TagSizeBytes);
+                if (salt.Length != SaltSizeBytes || nonce.Length != NonceSizeBytes || tag.Length != TagSizeBytes || fsVault.Length - fsVault.Position < sizeof(int))
+                {
+                    return (false, "금고 파일 헤더가 손상되었거나 불완전하게 잘렸습니다.", null, fi.Length, sha256);
+                }
+
                 int ciphertextLen = reader.ReadInt32();
 
                 if (ciphertextLen <= 0 || ciphertextLen > 50 * 1024 * 1024)
@@ -401,6 +415,10 @@ namespace KCert.Core.Vault
                 }
 
                 byte[] ciphertext = reader.ReadBytes(ciphertextLen);
+                if (ciphertext.Length != ciphertextLen)
+                {
+                    return (false, "금고 파일 페이로드가 불완전하게 잘려 있습니다(Truncated Vault).", null, fi.Length, sha256);
+                }
                 byte[] key = DeriveKey(password, salt);
                 byte[] decryptedBytes = new byte[ciphertext.Length];
 

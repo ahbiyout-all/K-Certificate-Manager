@@ -233,9 +233,22 @@ const DRIVE_COLOR_MAP: Record<string, Omit<DriveColorInfo, 'letter'>> = {
  */
 export function extractDriveLetterChar(input: string | undefined | null): string {
   if (!input) return 'C';
-  const match = input.match(/([a-zA-Z]):?/);
-  if (match && match[1]) {
-    return match[1].toUpperCase();
+  const trimmed = input.trim();
+  const colonMatch = trimmed.match(/(?:^|[^A-Za-z])([A-Za-z]):/);
+  if (colonMatch && colonMatch[1]) {
+    return colonMatch[1].toUpperCase();
+  }
+  const parenMatch = trimmed.match(/\(([A-Za-z])\)/);
+  if (parenMatch && parenMatch[1]) {
+    return parenMatch[1].toUpperCase();
+  }
+  const singleMatch = trimmed.match(/^([A-Za-z])$/);
+  if (singleMatch && singleMatch[1]) {
+    return singleMatch[1].toUpperCase();
+  }
+  const fallback = trimmed.match(/([A-Za-z])/);
+  if (fallback && fallback[1]) {
+    return fallback[1].toUpperCase();
   }
   return 'C';
 }

@@ -348,10 +348,11 @@ namespace KCertManager.Wpf.ViewModels
                     var primary = grp.OrderByDescending(c =>
                     {
                         int score = 0;
-                        var dir = (c.DirectoryPath ?? string.Empty).ToUpperInvariant();
+                        var dir = (c.DirectoryPath ?? string.Empty).Replace('/', '\\').ToUpperInvariant();
                         if (c.IsStandardPath) score += 100;
-                        if (dir.StartsWith(sysDriveUpper + @"\GPKI") || dir.StartsWith(sysDriveUpper + @"\EPKI")) score += 50;
-                        else if (dir.Contains(@"APPDATA\LOCALLOW")) score += 30;
+                        if (dir.StartsWith(sysDriveUpper + @"\GPKI\") || dir.Equals(sysDriveUpper + @"\GPKI") ||
+                            dir.StartsWith(sysDriveUpper + @"\EPKI\") || dir.Equals(sysDriveUpper + @"\EPKI")) score += 50;
+                        else if (dir.Contains(@"\APPDATA\LOCALLOW\") || dir.EndsWith(@"\APPDATA\LOCALLOW")) score += 30;
                         return score;
                     }).First();
 
@@ -429,16 +430,17 @@ namespace KCertManager.Wpf.ViewModels
             if (!selected.Any() || SelectedTargetDrive == null) return;
 
             string targetDriveName = SelectedTargetDrive.Name;
+            string targetDriveRoot = targetDriveName.TrimEnd('\\', '/') + "\\";
             bool isTargetUsb = SelectedTargetDrive.IsRemovable;
             string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\').ToUpperInvariant();
-            string cleanTarget = targetDriveName.TrimEnd('\\').ToUpperInvariant();
+            string cleanTarget = targetDriveName.TrimEnd('\\', '/').ToUpperInvariant();
 
             // 0. 자가 복사(동일 위치 복사) 사전 전체 검증
             bool isAllSelfCopy = selected.All(cert =>
             {
                 if (string.IsNullOrWhiteSpace(cert.DirectoryPath)) return false;
                 string relativePath = CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
-                string destinationRoot = targetDriveName;
+                string destinationRoot = targetDriveRoot;
                 if (string.Equals(cleanTarget, sysRoot, StringComparison.OrdinalIgnoreCase))
                 {
                     if (cert.Category == CertCategory.GPKI)
@@ -492,7 +494,7 @@ namespace KCertManager.Wpf.ViewModels
                         }
 
                         string relativePath = CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
-                        string destinationRoot = targetDriveName;
+                        string destinationRoot = targetDriveRoot;
 
                         // 대상이 C: 시스템 드라이브인 경우 표준 AppData\LocalLow로 안전 매핑
                         if (string.Equals(cleanTarget, sysRoot, StringComparison.OrdinalIgnoreCase))
@@ -515,10 +517,7 @@ namespace KCertManager.Wpf.ViewModels
                         string fullTargetDir = Path.GetFullPath(destDir).TrimEnd(Path.DirectorySeparatorChar);
                         if (fullSourceDir.Equals(fullTargetDir, StringComparison.OrdinalIgnoreCase))
                         {
-                            success++;
-                            copiedTargets.Add(cert);
-                            cert.IsRecentlyCopied = true;
-                            successfulDestinations.Add(fullTargetDir);
+                            skipped++;
                             continue;
                         }
 
@@ -531,8 +530,23 @@ namespace KCertManager.Wpf.ViewModels
                             }
                             else if (ConflictOption == "rename")
                             {
-                                string backupName = $"{destDir}_backup_{DateTime.Now:yyyyMMdd_HHmmss}";
-                                try { Directory.Move(destDir, backupName); } catch { }
+                                string baseBackupName = $"{destDir}_backup_{DateTime.Now:yyyyMMdd_HHmmss}";
+                                string backupName = baseBackupName;
+                                int suffix = 1;
+                                while (Directory.Exists(backupName))
+                                {
+                                    backupName = $"{baseBackupName}_{suffix++}";
+                                }
+                                try
+                                {
+                                    Directory.Move(destDir, backupName);
+                                }
+                                catch (Exception ex)
+                                {
+                                    failed++;
+                                    errorList.Add($"{cert.CommonName}: 기존 폴더 백업 이동 실패 ({ex.Message})");
+                                    continue;
+                                }
                             }
                         }
 
@@ -575,10 +589,10 @@ namespace KCertManager.Wpf.ViewModels
                 string targetPath = !string.IsNullOrEmpty(firstDest)
                     ? firstDest
                     : (selected.Any(c => c.Category == CertCategory.GPKI)
-                        ? Path.Combine(targetDriveName, "GPKI", "Certificate", "class2")
+                        ? Path.Combine(targetDriveRoot, "GPKI", "Certificate", "class2")
                         : (selected.Any(c => c.Category == CertCategory.EPKI)
-                            ? Path.Combine(targetDriveName, "EPKI")
-                            : (targetDriveName.EndsWith("\\") ? $"{targetDriveName}NPKI" : $"{targetDriveName}\\NPKI")));
+                            ? Path.Combine(targetDriveRoot, "EPKI")
+                            : Path.Combine(targetDriveRoot, "NPKI")));
 
                 string subtitle = skipped > 0
                     ? $"{targetDriveName} ({targetDesc})에 인증서 {success}개를 안전하게 복사했습니다. (중복 {skipped}개 건너뜀)"

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 
 namespace KCert.Core.Vault
 {
@@ -60,8 +61,9 @@ namespace KCert.Core.Vault
                 DestinationDirectory = targetDir
             };
 
-            // 보안 검증: 최종 목적지 경로가 반드시 대상 루트 디렉터리 하위에 속하는지 검증 (Path Traversal 원천 차단)
-            if (!targetDir.StartsWith(fullTargetRoot, StringComparison.OrdinalIgnoreCase))
+            // 보안 검증: 최종 목적지 경로가 반드시 대상 루트 디렉터리 하위에 속하는지 검증 (디렉터리 경계 포함 Path Traversal 원천 차단)
+            string normalizedTargetRoot = fullTargetRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            if (!targetDir.StartsWith(normalizedTargetRoot, StringComparison.OrdinalIgnoreCase))
             {
                 return result with { IsSuccess = false, Message = "보안 경고: 비정상적인 상위 경로 접근(Path Traversal)이 감지되어 전송을 차단했습니다." };
             }
@@ -250,12 +252,12 @@ namespace KCert.Core.Vault
             // 3. 마커가 없는 경우 (예: 임의 백업 폴더) 체계 감지 후 표준 경로 배치
             var folderName = Path.GetFileName(fullPath.TrimEnd('\\', '/'));
             var upper = fullPath.ToUpperInvariant();
-            string classTier = (upper.Contains(@"\CLASS1") || upper.Contains("/CLASS1")) ? "class1" : "class2";
-            if (upper.Contains("GPKI"))
+            string classTier = Regex.IsMatch(upper, @"(?:^|[\\/])CLASS1(?:$|[\\/])") ? "class1" : "class2";
+            if (Regex.IsMatch(upper, @"(?:^|[\\/])GPKI(?:$|[\\/])"))
             {
                 return Path.Combine("GPKI", "Certificate", classTier, folderName);
             }
-            if (upper.Contains("EPKI"))
+            if (Regex.IsMatch(upper, @"(?:^|[\\/])EPKI(?:$|[\\/])"))
             {
                 return Path.Combine("EPKI", "Certificate", classTier, folderName);
             }

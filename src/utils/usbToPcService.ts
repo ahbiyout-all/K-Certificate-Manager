@@ -64,7 +64,11 @@ let debounceTimer: any = null;
  * 기본 시뮬레이션: USB 드라이브(E:, F:, G:, H: 등)에 저장되어 있는 인증서 목록 반환
  */
 const extractCleanDriveColon = (raw: string, fallback = 'E:'): string => {
-  const m = (raw || '').trim().match(/(?:^|[^A-Za-z])([A-Za-z]):/) || (raw || '').trim().match(/([A-Za-z])/);
+  const trimmed = (raw || '').trim();
+  const m =
+    trimmed.match(/(?:^|[^A-Za-z])([A-Za-z]):/) ||
+    trimmed.match(/\(([A-Za-z]):?\)/) ||
+    trimmed.match(/(?:^|[^A-Za-z])([A-Za-z])(?=$|[^A-Za-z])/);
   return m ? `${m[1].toUpperCase()}:` : fallback;
 };
 
@@ -169,9 +173,10 @@ export function getAvailableUsbCertificates(drives: DiskDrive[] = activeDrivesSt
   ];
 
   if (filterDriveLetter && filterDriveLetter !== 'ALL') {
-    const m = filterDriveLetter.trim().match(/(?:^|[^A-Za-z])([A-Za-z]):/) || filterDriveLetter.trim().match(/([A-Za-z])/);
-    const cleanLetter = (m ? m[1] : filterDriveLetter.replace(':', '')).toUpperCase() + ':';
-    const matched = allUsbCerts.filter(c => c.usbDriveLetter.toUpperCase().startsWith(cleanLetter));
+    const cleanLetter = extractCleanDriveColon(filterDriveLetter, '');
+    const matched = cleanLetter
+      ? allUsbCerts.filter(c => extractCleanDriveColon(c.usbDriveLetter, '') === cleanLetter)
+      : [];
     if (matched.length > 0) {
       return matched;
     }
@@ -739,16 +744,14 @@ export function getLocalPcStandardPath(
   targetUsername: string = 'Admin',
   targetDriveLetter: string = 'C:'
 ): string {
-  const driveMatch = (targetDriveLetter || '').match(/(?:^|[^A-Za-z])([A-Za-z]):/) || (targetDriveLetter || '').match(/([A-Za-z])/);
-  const cleanDrive = (driveMatch ? driveMatch[1] : 'C').toUpperCase() + ':';
+  const cleanDrive = extractCleanDriveColon(targetDriveLetter, 'C:');
   const isSystemDrive = cleanDrive.startsWith('C');
   const userFolder = `${cleanDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`;
 
   const subjectDn = (cert.subjectDn || '').trim();
   const hasCnPrefix = subjectDn.toLowerCase().startsWith('cn=');
 
-  const lowerUsbPath = (cert.usbPath || '').toLowerCase();
-  const classTier = lowerUsbPath.includes('\\class1') || lowerUsbPath.includes('/class1') ? 'class1' : 'class2';
+  const classTier = /[\\/]class1(?:$|[\\/])/i.test(cert.usbPath || '') ? 'class1' : 'class2';
 
   if (cert.category === 'GPKI_GOV') {
     const cn = hasCnPrefix ? subjectDn.split(',')[0].trim() : `cn=${cert.name}`;
@@ -797,8 +800,7 @@ export async function copyUsbCertificatesToComputer(
     typeof overwriteExistingOrStrategy === 'boolean'
       ? (overwriteExistingOrStrategy ? 'overwrite' : 'skip')
       : overwriteExistingOrStrategy;
-  const targetDriveMatch = (targetDriveLetter || '').match(/(?:^|[^A-Za-z])([A-Za-z]):/) || (targetDriveLetter || '').match(/([A-Za-z])/);
-  const cleanTargetDrive = (targetDriveMatch ? targetDriveMatch[1] : 'C').toUpperCase() + ':';
+  const cleanTargetDrive = extractCleanDriveColon(targetDriveLetter, 'C:');
   const isSystemTargetDrive = cleanTargetDrive.startsWith('C');
 
   const retryResult = await executeUsbOperationWithRetry<UsbImportResult>(
@@ -847,8 +849,9 @@ export async function copyUsbCertificatesToComputer(
         const existingIndex = existingCerts.findIndex(c => {
           if (!isPcCertificate(c)) return false;
           const locUpper = (c.sourceLocation || '').replace(/\//g, '\\').replace(/\\+$/, '').trim().toUpperCase();
-          const drvUpper = (c.sourceDrive || '').trim().toUpperCase();
-          const isOnTargetDrive = locUpper.startsWith(cleanTargetDrive) || drvUpper.includes(cleanTargetDrive);
+          const isOnTargetDrive =
+            extractCleanDriveColon(c.sourceLocation || '', '') === cleanTargetDrive ||
+            extractCleanDriveColon(c.sourceDrive || '', '') === cleanTargetDrive;
           if (!isOnTargetDrive) return false;
 
           const cSerial = (c.serialNumber || '').trim().toUpperCase();
@@ -1443,10 +1446,12 @@ export function getVolumeSerialNumber(driveOrLetter: DiskDrive | string): string
     return generateVolumeSerialNumber(driveOrLetter.letter + driveOrLetter.name);
   }
   const str = typeof driveOrLetter === 'string' ? driveOrLetter : '';
-  const letterClean = str.toUpperCase().trim();
-  const matched = activeDrivesState.find(d => d.letter.toUpperCase().startsWith(letterClean));
+  const cleanTarget = extractCleanDriveColon(str, '');
+  const matched = cleanTarget
+    ? activeDrivesState.find(d => extractCleanDriveColon(d.letter, '') === cleanTarget)
+    : undefined;
   if (matched?.volumeSerialNumber) return matched.volumeSerialNumber;
-  return generateVolumeSerialNumber(letterClean || 'USB-STORAGE');
+  return generateVolumeSerialNumber(cleanTarget || str.trim().toUpperCase() || 'USB-STORAGE');
 }
 
 /**
@@ -1687,8 +1692,9 @@ export async function runInteractiveUsbDiagnostic(targetDriveLetter?: string): P
   summary: string;
 }> {
   const currentDrives = activeDrivesState;
-  const filtered = targetDriveLetter 
-    ? currentDrives.filter(d => d.letter.toUpperCase().startsWith(targetDriveLetter.toUpperCase()))
+  const cleanTargetDrive = targetDriveLetter ? extractCleanDriveColon(targetDriveLetter, '') : '';
+  const filtered = cleanTargetDrive
+    ? currentDrives.filter(d => extractCleanDriveColon(d.letter, '') === cleanTargetDrive)
     : currentDrives;
 
   const targetLabel = targetDriveLetter || '전체 연결 드라이브';
@@ -1776,7 +1782,13 @@ export function detectUnrecognizedUsbReasons(driveOrLetter: DiskDrive | string):
 }[] {
   const vsn = getVolumeSerialNumber(driveOrLetter);
   const letter = typeof driveOrLetter === 'string' ? driveOrLetter : driveOrLetter.letter;
-  const drive = typeof driveOrLetter === 'object' ? driveOrLetter : activeDrivesState.find(d => d.letter.startsWith(letter));
+  const cleanTarget = extractCleanDriveColon(letter, '');
+  const drive =
+    typeof driveOrLetter === 'object'
+      ? driveOrLetter
+      : cleanTarget
+        ? activeDrivesState.find(d => extractCleanDriveColon(d.letter, '') === cleanTarget)
+        : undefined;
 
   const issues: { reason: string; severity: 'high' | 'medium' | 'low'; solution: string }[] = [];
 

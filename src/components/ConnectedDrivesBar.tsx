@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { HardDrive, Cpu, Check, Copy, ArrowDownLeft, Save, Usb } from 'lucide-react';
 import { DiskDrive, CertificateItem } from '../types';
 import { filterPhysicalDrivesOnly } from '../utils/driveFilter';
-import { getDriveColorInfo } from '../utils/driveColors';
+import { getDriveColorInfo, extractDriveLetterChar } from '../utils/driveColors';
+import { extractDriveLetterFromPathOrLabel } from '../utils/certDiagnostics';
 
 interface ConnectedDrivesBarProps {
   availableDrives: DiskDrive[];
@@ -36,6 +37,15 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
   });
   const [filterType, setFilterType] = useState<'removable' | 'all'>('removable');
   const [copiedVsnId, setCopiedVsnId] = useState<string | null>(null);
+  const copiedVsnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copiedVsnTimerRef.current) {
+        clearTimeout(copiedVsnTimerRef.current);
+      }
+    };
+  }, []);
 
   const physicalOnlyDrives = useMemo(() => filterPhysicalDrivesOnly(availableDrives), [availableDrives]);
 
@@ -60,7 +70,10 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
     try {
       navigator.clipboard.writeText(vsn);
       setCopiedVsnId(driveId);
-      setTimeout(() => setCopiedVsnId(null), 1500);
+      if (copiedVsnTimerRef.current) {
+        clearTimeout(copiedVsnTimerRef.current);
+      }
+      copiedVsnTimerRef.current = setTimeout(() => setCopiedVsnId(null), 1500);
     } catch {}
   };
 
@@ -179,12 +192,23 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
           const isSelected = selectedDriveId === drive.id;
           const isUsb = drive.type === 'removable' || drive.busType === 'USB';
           const dColor = getDriveColorInfo(drive.letter);
-          const letterClean = (drive.letter.match(/(?:^|[^A-Za-z])([A-Za-z]):/)?.[1] || drive.letter.match(/([A-Za-z])/)?.[1] || '').toUpperCase();
-          const certCount = certificates.filter(c => {
-            const loc = (c.sourceLocation || '').toUpperCase();
-            const drv = (c.sourceDrive || '').toUpperCase();
-            return loc.startsWith(`${letterClean}:`) || drv.startsWith(`${letterClean}:`) || drv.includes(`(${letterClean}:)`);
-          }).length;
+          const letterClean = extractDriveLetterChar(drive.letter);
+          const normalizedDriveColon = extractDriveLetterFromPathOrLabel(drive.letter);
+          const certCount = normalizedDriveColon
+            ? certificates.filter(c => {
+                const locDrive = extractDriveLetterFromPathOrLabel(c.sourceLocation);
+                const srcDrive = extractDriveLetterFromPathOrLabel(c.sourceDrive);
+                const loc = (c.sourceLocation || '').toUpperCase();
+                const drv = (c.sourceDrive || '').toUpperCase();
+                return (
+                  locDrive === normalizedDriveColon ||
+                  srcDrive === normalizedDriveColon ||
+                  loc.startsWith(normalizedDriveColon) ||
+                  drv.startsWith(normalizedDriveColon) ||
+                  drv.includes(`(${normalizedDriveColon})`)
+                );
+              }).length
+            : 0;
           const hasCerts = certCount > 0;
 
           return (

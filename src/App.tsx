@@ -278,12 +278,18 @@ export default function App() {
   const historyPanelRef = useRef<HTMLDivElement>(null);
   const copyPanelRef = useRef<HTMLDivElement>(null);
 
+  const copiedHighlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const triggerCopiedHighlight = (certIds: string[]) => {
     if (!certIds || certIds.length === 0) return;
+    if (copiedHighlightTimerRef.current) {
+      clearTimeout(copiedHighlightTimerRef.current);
+    }
     setRecentlyCopiedIds(certIds);
     playSuccessChime();
-    setTimeout(() => {
+    copiedHighlightTimerRef.current = setTimeout(() => {
       setRecentlyCopiedIds([]);
+      copiedHighlightTimerRef.current = null;
     }, 2800);
   };
 
@@ -605,9 +611,11 @@ export default function App() {
         const expiryMs = new Date(dateStr).getTime();
         if (!isNaN(expiryMs)) {
           const diffMs = expiryMs - nowMs;
-          const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+          const days = diffMs < 0
+            ? Math.floor(diffMs / (1000 * 60 * 60 * 24))
+            : Math.ceil(diffMs / (1000 * 60 * 60 * 24));
           const status: 'valid' | 'expiring' | 'expired' =
-            diffMs < 0 ? 'expired' : days <= 30 ? 'expiring' : 'valid';
+            diffMs <= 0 ? 'expired' : days <= 30 ? 'expiring' : 'valid';
           return {
             ...cert,
             daysRemaining: days,
@@ -980,8 +988,10 @@ export default function App() {
 
   const handleEjectUsb = (driveTarget: string) => {
     const res = prepareSafeUsbEject(driveTarget, availableDrives);
+    const ejectedLetter = extractDriveLetterFromPathOrLabel(res.driveLetter);
     const matched = availableDrives.find(
       d =>
+        (ejectedLetter && extractDriveLetterFromPathOrLabel(d.letter) === ejectedLetter) ||
         d.letter.toUpperCase().startsWith(res.driveLetter.toUpperCase()) ||
         d.id === driveTarget
     );
@@ -1417,9 +1427,15 @@ export default function App() {
     const copiedIds = copiedCertObjects.map(c => c.id);
     triggerCopiedHighlight(copiedIds.length > 0 ? copiedIds : selectedIds);
 
+    const targetDiskLetter = extractDriveLetterFromPathOrLabel(record.targetDisk) || extractDriveLetterFromPathOrLabel(record.targetPath);
+
     // 대상 드라이브 보관 상태 즉시 업데이트
     setAvailableDrives(prevDrives => prevDrives.map(drive => {
-      if (record.targetDisk.includes(drive.letter)) {
+      const driveLetterNorm = extractDriveLetterFromPathOrLabel(drive.letter);
+      const isMatch = driveLetterNorm && targetDiskLetter
+        ? driveLetterNorm === targetDiskLetter
+        : Boolean(drive.letter) && record.targetDisk.includes(drive.letter);
+      if (isMatch) {
         return {
           ...drive,
           isEmpty: false,
@@ -1431,16 +1447,23 @@ export default function App() {
     }));
 
     const matchedTargetDrive = availableDrives.find(
-      d =>
-        record.targetDisk.includes(d.letter) ||
-        (record.targetPath && record.targetPath.toUpperCase().startsWith(d.letter.toUpperCase()))
+      d => {
+        const dLetter = extractDriveLetterFromPathOrLabel(d.letter);
+        return (
+          (dLetter && targetDiskLetter && dLetter === targetDiskLetter) ||
+          (Boolean(d.letter) && record.targetDisk.includes(d.letter)) ||
+          (Boolean(d.letter) && Boolean(record.targetPath) && record.targetPath.toUpperCase().startsWith(d.letter.toUpperCase()))
+        );
+      }
     );
     const isUsbTargetDrive = matchedTargetDrive
       ? matchedTargetDrive.type === 'removable' ||
         matchedTargetDrive.busType === 'USB' ||
         matchedTargetDrive.deviceKind === 'fast_usb' ||
         matchedTargetDrive.deviceKind === 'external_ssd'
-      : !/^(C|D):/i.test(record.targetDisk.trim()) && !record.targetDisk.includes('로컬 디스크');
+      : targetDiskLetter !== 'C:' &&
+        targetDiskLetter !== 'D:' &&
+        !record.targetDisk.includes('로컬 디스크');
 
     const newLog = logActivity({
       category: 'BACKUP',

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -88,7 +89,22 @@ namespace KCert.Core.Discovery
             await Task.Run(() =>
             {
                 var deepRoots = CertLocationScanner.GetDeepSearchRoots();
-                var seenDers = new ConcurrentDictionary<string, bool>(alreadyFoundDerPaths.ToDictionary(k => k, v => true, StringComparer.OrdinalIgnoreCase));
+                var seenDers = new ConcurrentDictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+                if (alreadyFoundDerPaths != null)
+                {
+                    foreach (var p in alreadyFoundDerPaths)
+                    {
+                        if (string.IsNullOrWhiteSpace(p)) continue;
+                        try
+                        {
+                            seenDers.TryAdd(Path.GetFullPath(p), true);
+                        }
+                        catch
+                        {
+                            seenDers.TryAdd(p, true);
+                        }
+                    }
+                }
 
                 Parallel.ForEach(deepRoots, new ParallelOptions
                 {
@@ -167,13 +183,12 @@ namespace KCert.Core.Discovery
                 }
 
                 string category = "NPKI";
-                var upper = (derFilePath + " " + dir).ToUpperInvariant();
-                if (upper.Contains(@"\GPKI\") || upper.Contains(@"/GPKI/") || upper.Contains(@"\GPKI") || upper.Contains(@"/GPKI"))
+                if (Regex.IsMatch(derFilePath, @"(?:^|[\\/])(?:GPKI|MPKI)(?:$|[\\/])", RegexOptions.IgnoreCase) ||
+                    Regex.IsMatch(dir, @"(?:^|[\\/])(?:GPKI|MPKI)(?:$|[\\/])", RegexOptions.IgnoreCase))
                     category = "GPKI";
-                else if (upper.Contains(@"\EPKI\") || upper.Contains(@"/EPKI/") || upper.Contains(@"\EPKI") || upper.Contains(@"/EPKI"))
+                else if (Regex.IsMatch(derFilePath, @"(?:^|[\\/])EPKI(?:$|[\\/])", RegexOptions.IgnoreCase) ||
+                         Regex.IsMatch(dir, @"(?:^|[\\/])EPKI(?:$|[\\/])", RegexOptions.IgnoreCase))
                     category = "EPKI";
-                else if (upper.Contains(@"\MPKI\") || upper.Contains(@"/MPKI/") || upper.EndsWith(@"\MPKI") || upper.EndsWith(@"/MPKI"))
-                    category = "GPKI";
 
                 return new DiscoveredCertLocation
                 {

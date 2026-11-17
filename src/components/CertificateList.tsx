@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   CertificateItem,
   CertCategory,
@@ -9,7 +9,7 @@ import { isCertificateExpired } from '../utils/certParser';
 import { isUsbCertificate as isUsbCertHelper } from '../utils/driveFilter';
 import { getDriveColorInfo } from '../utils/driveColors';
 import { getAccurateIssuerInfo } from '../utils/issuerUtils';
-import { evaluateExpiryAlerts } from '../utils/certDiagnostics';
+import { evaluateExpiryAlerts, extractDriveLetterFromPathOrLabel } from '../utils/certDiagnostics';
 import {
   Search,
   Copy,
@@ -181,6 +181,27 @@ export const CertificateList: React.FC<CertificateListProps> = ({
   const [sortBy, setSortBy] = useState<'category' | 'storage' | 'name' | 'issuer' | 'notAfter' | 'status'>('notAfter');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [copiedPathId, setCopiedPathId] = useState<string | null>(null);
+  const copiedPathTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copiedPathTimerRef.current !== null) {
+        window.clearTimeout(copiedPathTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleCopyCertPath = (certId: string, sourceLocation: string) => {
+    try {
+      navigator.clipboard.writeText(sourceLocation);
+      setCopiedPathId(certId);
+      onNotifyCopy?.(`📋 경로가 클립보드에 복사되었습니다: ${sourceLocation}`);
+      if (copiedPathTimerRef.current !== null) {
+        window.clearTimeout(copiedPathTimerRef.current);
+      }
+      copiedPathTimerRef.current = window.setTimeout(() => setCopiedPathId(null), 1500);
+    } catch {}
+  };
 
   const handleStartResize = (colKey: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -236,13 +257,11 @@ export const CertificateList: React.FC<CertificateListProps> = ({
   }, [colWidths]);
 
   const getDriveLetter = (cert: CertificateItem): string => {
-    if (cert.sourceLocation && cert.sourceLocation.length >= 2 && cert.sourceLocation[1] === ':') {
-      return cert.sourceLocation.substring(0, 2);
-    }
-    if (cert.sourceDrive && cert.sourceDrive.length >= 2 && cert.sourceDrive[1] === ':') {
-      return cert.sourceDrive.substring(0, 2);
-    }
-    return 'C:';
+    return (
+      extractDriveLetterFromPathOrLabel(cert.sourceLocation) ||
+      extractDriveLetterFromPathOrLabel(cert.sourceDrive) ||
+      'C:'
+    );
   };
 
   const getCategoryShortBadge = (cat: CertCategory) => {
@@ -298,9 +317,16 @@ export const CertificateList: React.FC<CertificateListProps> = ({
 
   const handleToggleSelectAllFiltered = () => {
     if (allFilteredSelected) {
-      onClearSelection();
+      const filteredSet = new Set(sortedFilteredCerts.map(c => c.id));
+      const remainingSelected = selectedIds.filter(id => !filteredSet.has(id));
+      if (onSelectFilteredIds && remainingSelected.length > 0) {
+        onSelectFilteredIds(remainingSelected);
+      } else {
+        onClearSelection();
+      }
     } else if (onSelectFilteredIds) {
-      onSelectFilteredIds(sortedFilteredCerts.map(c => c.id));
+      const merged = Array.from(new Set([...selectedIds, ...sortedFilteredCerts.map(c => c.id)]));
+      onSelectFilteredIds(merged);
     } else {
       onSelectAll();
     }
@@ -855,12 +881,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              try {
-                                navigator.clipboard.writeText(cert.sourceLocation);
-                                setCopiedPathId(cert.id);
-                                onNotifyCopy?.(`📋 경로가 클립보드에 복사되었습니다: ${cert.sourceLocation}`);
-                                setTimeout(() => setCopiedPathId(null), 1500);
-                              } catch {}
+                              handleCopyCertPath(cert.id, cert.sourceLocation);
                             }}
                             className="p-1 rounded-[4px] shrink-0 cursor-pointer hover:opacity-80"
                             title="경로 복사"
@@ -1292,12 +1313,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              try {
-                                navigator.clipboard.writeText(cert.sourceLocation);
-                                setCopiedPathId(cert.id);
-                                onNotifyCopy?.(`📋 경로가 클립보드에 복사되었습니다: ${cert.sourceLocation}`);
-                                setTimeout(() => setCopiedPathId(null), 1500);
-                              } catch {}
+                              handleCopyCertPath(cert.id, cert.sourceLocation);
                             }}
                             className="opacity-0 group-hover/path:opacity-100 transition-opacity p-0.5 rounded shrink-0 cursor-pointer"
                             title="경로 복사"

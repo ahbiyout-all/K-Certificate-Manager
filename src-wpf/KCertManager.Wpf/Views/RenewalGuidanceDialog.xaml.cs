@@ -151,9 +151,16 @@ namespace KCertManager.Wpf.Views
                     bool isMatch = false;
                     string combined = $"{cert.IssuerName} {cert.SubjectDn} {cert.CommonName} {cert.Organization}".ToLower();
 
+                    bool isOtherNpki =
+                        combined.Contains("kica") || combined.Contains("한국정보인증") || combined.Contains("signgate") ||
+                        combined.Contains("crosscert") || combined.Contains("한국전자인증") ||
+                        combined.Contains("signkorea") || combined.Contains("코스콤") || combined.Contains("증권") ||
+                        combined.Contains("tradesign") || combined.Contains("한국무역정보통신") || combined.Contains("무역") ||
+                        combined.Contains("inipass") || combined.Contains("이니텍");
+
                     if (inst.Id == "GPKI" && (cert.Category == CertCategory.GPKI || combined.Contains("gpki") || combined.Contains("행정"))) isMatch = true;
                     else if (inst.Id == "EPKI" && (cert.Category == CertCategory.EPKI || combined.Contains("epki") || combined.Contains("교육"))) isMatch = true;
-                    else if (inst.Id == "YESSIGN" && (cert.Category == CertCategory.NPKI || combined.Contains("yessign") || combined.Contains("금융결제원") || combined.Contains("은행"))) isMatch = true;
+                    else if (inst.Id == "YESSIGN" && (combined.Contains("yessign") || combined.Contains("금융결제원") || combined.Contains("은행") || (cert.Category == CertCategory.NPKI && !isOtherNpki))) isMatch = true;
                     else if (inst.Id == "KICA" && (combined.Contains("kica") || combined.Contains("한국정보인증") || combined.Contains("signgate"))) isMatch = true;
                     else if (inst.Id == "CROSSCERT" && (combined.Contains("crosscert") || combined.Contains("한국전자인증"))) isMatch = true;
                     else if (inst.Id == "SIGNKOREA" && (combined.Contains("signkorea") || combined.Contains("코스콤") || combined.Contains("증권"))) isMatch = true;

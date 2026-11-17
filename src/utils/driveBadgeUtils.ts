@@ -35,13 +35,14 @@ export function getDriveBadgeStyle(drive: DiskDrive | null | undefined): DriveBa
   }
 
   const driveLetter = (drive.letter || '').toUpperCase().trim();
+  const driveChar = resolveDriveChar(driveLetter);
   const driveName = (drive.name || '').toLowerCase();
   const driveDesc = (drive.description || '').toLowerCase();
   const isCdRom = drive.isCdRom || drive.type === 'cdrom' || drive.deviceKind === 'cdrom' || drive.deviceKind === 'virtual_cd' || driveName.includes('cd-rom') || driveName.includes('dvd') || drive.fileSystem === 'UDF' || drive.fileSystem === 'CDFS';
   const isUsb = !isCdRom && (drive.type === 'removable' || drive.busType === 'USB');
   const isExternalSsd = drive.deviceKind === 'external_ssd' || (isUsb && (driveName.includes('ssd') || driveDesc.includes('ssd')));
   const isFastUsb = drive.deviceKind === 'fast_usb' || (isUsb && (driveName.includes('3.0') || driveName.includes('3.1') || driveName.includes('ultra') || driveName.includes('extreme')));
-  const isCDrive = driveLetter === 'C:' || (driveLetter.startsWith('C') && drive.type === 'fixed');
+  const isCDrive = driveLetter === 'C:' || (driveChar === 'C' && drive.type === 'fixed');
 
   // 1. C: Main Computer System Drive (Deep Royal Blue)
   if (isCDrive) {
@@ -138,19 +139,30 @@ export function getDriveBadgeStyle(drive: DiskDrive | null | undefined): DriveBa
   };
 }
 
+function resolveDriveChar(input: string): string {
+  const trimmed = (input || '').trim();
+  const colonMatch = trimmed.match(/(?:^|[^A-Za-z])([A-Za-z]):/);
+  if (colonMatch && colonMatch[1]) return colonMatch[1].toUpperCase();
+  const parenMatch = trimmed.match(/\(([A-Za-z])\)/);
+  if (parenMatch && parenMatch[1]) return parenMatch[1].toUpperCase();
+  const singleMatch = trimmed.match(/^([A-Za-z])$/);
+  if (singleMatch && singleMatch[1]) return singleMatch[1].toUpperCase();
+  return '';
+}
+
 /**
  * Get quick inline drive letter badge (e.g. [C:], [E:], [F:]) with bold typography & solid background color
  */
 export function getInlineDriveBadge(letter: string): { bgClass: string; textClass: string; fullBadgeClass: string } {
-  const cleanLetter = (letter || '').toUpperCase().trim();
-  if (cleanLetter.startsWith('C')) {
+  const driveChar = resolveDriveChar(letter);
+  if (driveChar === 'C') {
     return {
       bgClass: 'bg-blue-700',
       textClass: 'text-white font-extrabold',
       fullBadgeClass: 'bg-blue-700 text-white font-extrabold text-xs px-2 py-0.5 rounded font-mono shadow-2xs inline-flex items-center gap-1',
     };
   }
-  if (cleanLetter.startsWith('D')) {
+  if (driveChar === 'D') {
     return {
       bgClass: 'bg-indigo-700',
       textClass: 'text-white font-extrabold',

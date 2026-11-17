@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { DiskDrive, SearchPath } from '../types';
 import { getAvailableUsbCertificates } from '../utils/usbToPcService';
+import { extractDriveLetterChar } from '../utils/driveColors';
 
 interface QuickTransferConfigCardProps {
   searchPaths: SearchPath[];
@@ -50,7 +51,7 @@ export const QuickTransferConfigCard: React.FC<QuickTransferConfigCardProps> = (
 
   const removableDrivesWithStats = useMemo(() => {
     const list = availableDrives.filter(d => d.type === 'removable' || d.busType === 'USB').map(drive => {
-      const letterClean = (drive.letter.match(/(?:^|[^A-Za-z])([A-Za-z]):/)?.[1] || drive.letter.match(/([A-Za-z])/)?.[1] || '').toUpperCase();
+      const letterClean = extractDriveLetterChar(drive.letter);
       const certs = getAvailableUsbCertificates(availableDrives, letterClean);
       return { drive, letterClean, certs, certCount: certs.length };
     });

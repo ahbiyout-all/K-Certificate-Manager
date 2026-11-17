@@ -315,7 +315,9 @@ namespace KCertManager.Wpf.Services
 
                 var fileName = !string.IsNullOrWhiteSpace(info.AssetName)
                     ? Path.GetFileName(info.AssetName!)
-                    : Path.GetFileName(new Uri(downloadUrl).AbsolutePath);
+                    : (Uri.TryCreate(downloadUrl, UriKind.Absolute, out var parsedUri)
+                        ? Path.GetFileName(parsedUri.AbsolutePath)
+                        : string.Empty);
 
                 if (string.IsNullOrWhiteSpace(fileName) ||
                     (!fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&

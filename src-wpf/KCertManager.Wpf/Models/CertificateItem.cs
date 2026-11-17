@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 
 namespace KCertManager.Wpf.Models
 {
@@ -374,7 +375,7 @@ namespace KCertManager.Wpf.Models
             {
                 if (string.IsNullOrWhiteSpace(DirectoryPath)) return false;
                 string p = DirectoryPath.Replace('/', '\\').ToUpperInvariant();
-                return p.Contains(@"\APPDATA\LOCALLOW\GPKI");
+                return Regex.IsMatch(p, @"\\APPDATA\\LOCALLOW\\GPKI(?:$|\\)");
             }
         }
 
@@ -387,23 +388,20 @@ namespace KCertManager.Wpf.Models
 
                 // 1. 중첩 폴더(복사 오류) 또는 백업/임시 폴더는 명백한 비표준
                 // 예: C:\GPKI\GPKI, NPKI\NPKI, EPKI\EPKI, 백업, TEMP 등
-                if (p.Contains(@"\GPKI\GPKI") || p.Contains(@"\NPKI\NPKI") || p.Contains(@"\EPKI\EPKI") ||
-                    p.Contains(@"\GPKI\BACKUP") || p.Contains(@"\NPKI\BACKUP") || p.Contains(@"\EPKI\BACKUP") ||
-                    p.Contains(@"\인증서") || p.Contains(@"\백업") || p.Contains(@"\TEMP"))
+                if (Regex.IsMatch(p, @"\\(?:GPKI\\GPKI|NPKI\\NPKI|EPKI\\EPKI|GPKI\\BACKUP|NPKI\\BACKUP|EPKI\\BACKUP|BACKUP\\NPKI|인증서|백업|TEMP)(?:$|\\)"))
                 {
                     return false;
                 }
 
                 // 1-1. AppData\LocalLow\GPKI 경로는 공무원 행정전자서명(GPKI) 정부 공식 표준(C:\GPKI\Certificate\class2)이 아니며
                 // 실무 행정망(온-나라, 새올 등)에서 미인식되는 예외 경로이므로 비표준 처리
-                if (p.Contains(@"\APPDATA\LOCALLOW\GPKI"))
+                if (Regex.IsMatch(p, @"\\APPDATA\\LOCALLOW\\GPKI(?:$|\\)"))
                 {
                     return false;
                 }
 
                 // 2. AppData\LocalLow (금융결제원 NPKI, 교육부 EPKI 최우선 표준)
-                if (p.Contains(@"\APPDATA\LOCALLOW\NPKI") ||
-                    p.Contains(@"\APPDATA\LOCALLOW\EPKI"))
+                if (Regex.IsMatch(p, @"\\APPDATA\\LOCALLOW\\(?:NPKI|EPKI)(?:$|\\)"))
                 {
                     return true;
                 }
@@ -455,10 +453,10 @@ namespace KCertManager.Wpf.Models
                     return "일반 인증서 프로그램(은행/정부)이 정상 인식하는 표준 위치입니다.";
 
                 string p = DirectoryPath.Replace('/', '\\').ToUpperInvariant();
-                if (p.Contains(@"\GPKI\GPKI") || p.Contains(@"\NPKI\NPKI") || p.Contains(@"\EPKI\EPKI"))
+                if (Regex.IsMatch(p, @"\\(?:GPKI\\GPKI|NPKI\\NPKI|EPKI\\EPKI)(?:$|\\)"))
                     return "폴더 복사 과정에서 중첩 생성된 비표준 위치(GPKI\\GPKI 등)입니다. 정부/은행 서명 프로그램에서 인식되지 않습니다.";
 
-                if (Category == CertCategory.NPKI && !p.Contains(@"\APPDATA\LOCALLOW\NPKI") && !IsRemovableMedia)
+                if (Category == CertCategory.NPKI && !Regex.IsMatch(p, @"\\APPDATA\\LOCALLOW\\NPKI(?:$|\\)") && !IsRemovableMedia)
                     return "PC 하드디스크의 비표준 위치입니다. 은행/기관에서 인식하려면 [AppData\\LocalLow\\NPKI]로 이동해야 합니다.";
 
                 return "일반 인증서 프로그램(은행/정부)이 인식하지 못하는 비표준 위치입니다. [정 위치 복사]가 필요합니다.";
