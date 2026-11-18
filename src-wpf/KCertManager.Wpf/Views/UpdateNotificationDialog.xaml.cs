@@ -75,6 +75,7 @@ namespace KCertManager.Wpf.Views
             if (_isUpdating) return;
             _isUpdating = true;
 
+            _cts?.Dispose();
             _cts = new CancellationTokenSource();
             PnlError.Visibility = Visibility.Collapsed;
             PnlProgress.Visibility = Visibility.Visible;
@@ -83,41 +84,56 @@ namespace KCertManager.Wpf.Views
             TxtConfirmLabel.Text = "자동 다운로드 · 설치 중...";
             TxtCancelLabel.Text = "취소";
 
-            var progress = new Progress<UpdateInstallProgress>(p =>
+            try
             {
-                UpdateProgressBar.Value = p.Percentage;
-                TxtProgressPercent.Text = $"{p.Percentage}%";
-                TxtProgressStage.Text = p.Stage switch
+                var progress = new Progress<UpdateInstallProgress>(p =>
                 {
-                    "downloading" => "⬇️ 업데이트 파일 다운로드 중...",
-                    "verifying" => "🛡️ 파일 손상 검사 중 (SHA-256)...",
-                    "installing" => "⚙️ 자동 설치 및 재시작 준비 중...",
-                    "completed" => "✅ 자동 설치가 시작되었습니다",
-                    _ => "업데이트 진행 중..."
-                };
-                TxtProgressDetail.Text = p.Message;
-            });
+                    UpdateProgressBar.Value = p.Percentage;
+                    TxtProgressPercent.Text = $"{p.Percentage}%";
+                    TxtProgressStage.Text = p.Stage switch
+                    {
+                        "downloading" => "⬇️ 업데이트 파일 다운로드 중...",
+                        "verifying" => "🛡️ 파일 손상 검사 중 (SHA-256)...",
+                        "installing" => "⚙️ 자동 설치 및 재시작 준비 중...",
+                        "completed" => "✅ 자동 설치가 시작되었습니다",
+                        _ => "업데이트 진행 중..."
+                    };
+                    TxtProgressDetail.Text = p.Message;
+                });
 
-            var result = await UpdateCheckerService.DownloadAndInstallAsync(_updateInfo, progress, _cts.Token);
+                var result = await UpdateCheckerService.DownloadAndInstallAsync(_updateInfo, progress, _cts.Token);
 
-            if (result.Success && result.ShouldShutdownForInstall)
-            {
-                DialogResult = true;
-                Close();
-                Application.Current?.Shutdown();
-                return;
+                if (result.Success && result.ShouldShutdownForInstall)
+                {
+                    _isUpdating = false;
+                    DialogResult = true;
+                    Close();
+                    Application.Current?.Shutdown();
+                    return;
+                }
+
+                BtnConfirmUpdate.IsEnabled = true;
+                BtnHeaderClose.IsEnabled = true;
+                TxtConfirmLabel.Text = "다시 시도 (자동 다운로드 · 설치)";
+                TxtCancelLabel.Text = "나중에 하기";
+                PnlError.Visibility = Visibility.Visible;
+                TxtErrorDetail.Text = result.Message;
             }
-
-            _isUpdating = false;
-            _cts?.Dispose();
-            _cts = null;
-
-            BtnConfirmUpdate.IsEnabled = true;
-            BtnHeaderClose.IsEnabled = true;
-            TxtConfirmLabel.Text = "다시 시도 (자동 다운로드 · 설치)";
-            TxtCancelLabel.Text = "나중에 하기";
-            PnlError.Visibility = Visibility.Visible;
-            TxtErrorDetail.Text = result.Message;
+            catch (Exception ex)
+            {
+                BtnConfirmUpdate.IsEnabled = true;
+                BtnHeaderClose.IsEnabled = true;
+                TxtConfirmLabel.Text = "다시 시도 (자동 다운로드 · 설치)";
+                TxtCancelLabel.Text = "나중에 하기";
+                PnlError.Visibility = Visibility.Visible;
+                TxtErrorDetail.Text = $"업데이트 진행 중 오류가 발생했습니다: {ex.Message}";
+            }
+            finally
+            {
+                _isUpdating = false;
+                _cts?.Dispose();
+                _cts = null;
+            }
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)
@@ -129,6 +145,14 @@ namespace KCertManager.Wpf.Views
             }
             DialogResult = false;
             Close();
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
+            base.OnClosed(e);
         }
     }
 }

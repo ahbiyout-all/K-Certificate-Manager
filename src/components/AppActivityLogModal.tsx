@@ -44,6 +44,16 @@ export const AppActivityLogModal: React.FC<AppActivityLogModalProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedEvidenceIds, setExpandedEvidenceIds] = useState<Record<string, boolean>>({});
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
+  const copiedTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) {
+        clearTimeout(copiedTimerRef.current);
+        copiedTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const toggleEvidence = (logId: string) => {
     setExpandedEvidenceIds(prev => ({
@@ -53,9 +63,20 @@ export const AppActivityLogModal: React.FC<AppActivityLogModalProps> = ({
   };
 
   const handleCopyText = (keyId: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKeyId(keyId);
-    setTimeout(() => setCopiedKeyId(null), 2000);
+    try {
+      const writePromise = navigator.clipboard?.writeText?.(text || '');
+      if (writePromise && typeof writePromise.catch === 'function') {
+        writePromise.catch(() => {});
+      }
+      setCopiedKeyId(keyId);
+      if (copiedTimerRef.current) {
+        clearTimeout(copiedTimerRef.current);
+      }
+      copiedTimerRef.current = setTimeout(() => {
+        copiedTimerRef.current = null;
+        setCopiedKeyId(null);
+      }, 2000);
+    } catch {}
   };
 
   const evidenceCount = useMemo(() => {
@@ -74,16 +95,16 @@ export const AppActivityLogModal: React.FC<AppActivityLogModalProps> = ({
       }
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
-        const matchesAction = log.action.toLowerCase().includes(query);
-        const matchesDetails = log.details.toLowerCase().includes(query);
-        const matchesSource = log.source?.toLowerCase().includes(query) || false;
-        const matchesTarget = log.target?.toLowerCase().includes(query) || false;
-        const matchesEvidence = log.deletionEvidence?.some(ev => 
-          ev.name.toLowerCase().includes(query) ||
-          ev.subjectDn.toLowerCase().includes(query) ||
-          ev.sourceLocation.toLowerCase().includes(query) ||
-          ev.serialNumber.toLowerCase().includes(query)
-        ) || false;
+        const matchesAction = (log.action || '').toLowerCase().includes(query);
+        const matchesDetails = (log.details || '').toLowerCase().includes(query);
+        const matchesSource = (log.source || '').toLowerCase().includes(query);
+        const matchesTarget = (log.target || '').toLowerCase().includes(query);
+        const matchesEvidence = Array.isArray(log.deletionEvidence) && log.deletionEvidence.some(ev =>
+          (ev?.name || '').toLowerCase().includes(query) ||
+          (ev?.subjectDn || '').toLowerCase().includes(query) ||
+          (ev?.sourceLocation || '').toLowerCase().includes(query) ||
+          (ev?.serialNumber || '').toLowerCase().includes(query)
+        );
         return matchesAction || matchesDetails || matchesSource || matchesTarget || matchesEvidence;
       }
       return true;
@@ -427,7 +448,7 @@ export const AppActivityLogModal: React.FC<AppActivityLogModalProps> = ({
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] pt-1">
                                     <div className="text-slate-400">
                                       <span className="text-slate-500">소멸 파일: </span>
-                                      <span className="font-mono text-slate-200 font-semibold">{ev.fileList.join(', ')}</span>
+                                      <span className="font-mono text-slate-200 font-semibold">{Array.isArray(ev.fileList) ? ev.fileList.join(', ') : ''}</span>
                                     </div>
                                     <div className="text-slate-400">
                                       <span className="text-slate-500">일련번호: </span>

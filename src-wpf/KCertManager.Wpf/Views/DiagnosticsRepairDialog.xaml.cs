@@ -172,7 +172,7 @@ namespace KCertManager.Wpf.Views
                 if (!cert.IsCustomPath && !cert.IsRareLocalLowGpkiPath) continue;
                 if (string.IsNullOrWhiteSpace(cert.DirectoryPath)) continue;
 
-                var diag = CertIntegrityDoctor.Diagnose(cert.DirectoryPath);
+                var diag = CertIntegrityDoctor.Diagnose(cert.DirectoryPath, cert.DerFilePath);
                 var (destRoot, previewPath) = ComputeCanonicalDestination(cert, diag.CanonicalSubPath);
 
                 if (string.Equals(
@@ -307,8 +307,10 @@ namespace KCertManager.Wpf.Views
             BtnExecuteDuplicates.Visibility = showDuplicates ? Visibility.Visible : Visibility.Collapsed;
             BtnExecuteRepairs.Visibility = showDuplicates ? Visibility.Collapsed : Visibility.Visible;
 
-            BtnTabDuplicates.Style = (Style)FindResource(showDuplicates ? "PrimaryButton" : "SecondaryButton");
-            BtnTabRepairs.Style = (Style)FindResource(showDuplicates ? "SecondaryButton" : "PrimaryButton");
+            if (TryFindResource(showDuplicates ? "PrimaryButton" : "SecondaryButton") is Style dupStyle)
+                BtnTabDuplicates.Style = dupStyle;
+            if (TryFindResource(showDuplicates ? "SecondaryButton" : "PrimaryButton") is Style repStyle)
+                BtnTabRepairs.Style = repStyle;
 
             TxtFooterHint.Text = showDuplicates
                 ? "표준 원본은 자동 보존되며, 선택한 중복 사본은 휴지통으로 안전 격리됩니다."
@@ -334,57 +336,70 @@ namespace KCertManager.Wpf.Views
 
         private async void BtnExecuteDuplicates_Click(object sender, RoutedEventArgs e)
         {
-            var targets = _dupGroups
-                .SelectMany(g => g.RedundantCopies)
-                .Where(c => c.IsChecked)
-                .ToList();
-
-            if (!targets.Any())
+            try
             {
-                MessageBox.Show("휴지통으로 이동할 중복 사본을 1개 이상 선택해 주세요.", "안내", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
+                var targets = _dupGroups
+                    .SelectMany(g => g.RedundantCopies)
+                    .Where(c => c.IsChecked)
+                    .ToList();
 
-            int moved = 0;
-            int failed = 0;
-            var failMessages = new List<string>();
-            foreach (var item in targets)
-            {
-                try
+                if (!targets.Any())
                 {
-                    _backupService.MoveToTrash(item.Cert);
-                    moved++;
+                    MessageBox.Show(this, "휴지통으로 이동할 중복 사본을 1개 이상 선택해 주세요.", "안내", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
                 }
-                catch (Exception ex)
+
+                int moved = 0;
+                int failed = 0;
+                var failMessages = new List<string>();
+                foreach (var item in targets)
                 {
-                    failed++;
-                    failMessages.Add($"{item.Cert.CommonName}: {ex.Message}");
+                    try
+                    {
+                        _backupService.MoveToTrash(item.Cert);
+                        moved++;
+                    }
+                    catch (Exception ex)
+                    {
+                        failed++;
+                        failMessages.Add($"{item.Cert.CommonName}: {ex.Message}");
+                    }
+                }
+
+                if (moved > 0)
+                {
+                    HasMadeChanges = true;
+                    ActivityLogService.Instance.Log(
+                        LogCategory.DELETE,
+                        LogLevel.INFO,
+                        "중복 인증서 사본 휴지통 정리",
+                        $"중복 사본 {moved}건 안전 격리 보관 (원본 자동 보존)",
+                        "Duplicate Scan",
+                        "Trash",
+                        moved);
+
+                    await _refreshCallback();
+                    RebuildDiagnostics();
+                    ShowFeedback(failed > 0
+                        ? $"✅ 중복 사본 {moved}건을 휴지통으로 이동했습니다. (실패 {failed}건)"
+                        : $"✅ 중복 사본 {moved}건을 안전하게 휴지통으로 이동했습니다.");
+                }
+                else if (failed > 0)
+                {
+                    MessageBox.Show(
+                        this,
+                        $"중복 사본 휴지통 이동 중 오류가 발생했습니다 ({failed}건):\n" + string.Join("\n", failMessages.Take(5)),
+                        "오류",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
                 }
             }
-
-            if (moved > 0)
-            {
-                HasMadeChanges = true;
-                ActivityLogService.Instance.Log(
-                    LogCategory.DELETE,
-                    LogLevel.INFO,
-                    "중복 인증서 사본 휴지통 정리",
-                    $"중복 사본 {moved}건 안전 격리 보관 (원본 자동 보존)",
-                    "Duplicate Scan",
-                    "Trash",
-                    moved);
-
-                await _refreshCallback();
-                RebuildDiagnostics();
-                ShowFeedback(failed > 0
-                    ? $"✅ 중복 사본 {moved}건을 휴지통으로 이동했습니다. (실패 {failed}건)"
-                    : $"✅ 중복 사본 {moved}건을 안전하게 휴지통으로 이동했습니다.");
-            }
-            else if (failed > 0)
+            catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"중복 사본 휴지통 이동 중 오류가 발생했습니다 ({failed}건):\n" + string.Join("\n", failMessages.Take(5)),
-                    "오류",
+                    this,
+                    $"중복 인증서 정리 중 오류가 발생했습니다:\n{ex.Message}",
+                    "중복 정리 오류 안내",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
@@ -392,90 +407,103 @@ namespace KCertManager.Wpf.Views
 
         private async void BtnExecuteRepairs_Click(object sender, RoutedEventArgs e)
         {
-            var targets = _repairCandidates.Where(r => r.IsChecked).ToList();
-            if (!targets.Any())
+            try
             {
-                MessageBox.Show("표준 위치로 복구할 인증서를 1개 이상 선택해 주세요.", "안내", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            bool trashOld = ChkTrashSourceAfterRepair.IsChecked == true;
-            int repairedCount = 0;
-            var failMessages = new List<string>();
-            var succeededRepairs = new List<(RepairCandidateVm Item, string RepairedPath)>();
-
-            // Pass 1: Copy all selected non-standard certificates to standard paths before trashing any source folder
-            foreach (var item in targets)
-            {
-                var res = CertIntegrityDoctor.RepairToStandardHierarchy(item.SourcePath, item.DestinationRoot);
-                if (res.IsSuccess)
+                var targets = _repairCandidates.Where(r => r.IsChecked).ToList();
+                if (!targets.Any())
                 {
-                    repairedCount++;
-                    succeededRepairs.Add((item, res.RepairedPath));
-
-                    ActivityLogService.Instance.Log(
-                        LogCategory.RESTORE,
-                        LogLevel.SUCCESS,
-                        "비표준 인증서 폴더 자동 복구",
-                        $"{item.CommonName}: {item.SourcePath} ➔ {res.RepairedPath}",
-                        item.SourcePath,
-                        res.RepairedPath);
+                    MessageBox.Show(this, "표준 위치로 복구할 인증서를 1개 이상 선택해 주세요.", "안내", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
                 }
-                else
-                {
-                    failMessages.Add($"{item.CommonName}: {res.Message}");
-                }
-            }
 
-            // Pass 2: Deduplicate source directories and move to trash only after all repairs finish
-            if (trashOld && succeededRepairs.Any())
-            {
-                var trashedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var (item, repairedPath) in succeededRepairs)
-                {
-                    if (string.IsNullOrWhiteSpace(item.SourcePath)) continue;
+                bool trashOld = ChkTrashSourceAfterRepair.IsChecked == true;
+                int repairedCount = 0;
+                var failMessages = new List<string>();
+                var succeededRepairs = new List<(RepairCandidateVm Item, string RepairedPath)>();
 
-                    try
+                // Pass 1: Copy all selected non-standard certificates to standard paths before trashing any source folder
+                foreach (var item in targets)
+                {
+                    var res = CertIntegrityDoctor.RepairToStandardHierarchy(item.SourcePath, item.DestinationRoot, item.Cert?.DerFilePath);
+                    if (res.IsSuccess)
                     {
-                        string normSrc = Path.GetFullPath(item.SourcePath).TrimEnd('\\');
-                        string normDst = string.IsNullOrWhiteSpace(repairedPath)
-                            ? string.Empty
-                            : Path.GetFullPath(repairedPath).TrimEnd('\\');
+                        repairedCount++;
+                        succeededRepairs.Add((item, res.RepairedPath));
 
-                        if (string.Equals(normSrc, normDst, StringComparison.OrdinalIgnoreCase)) continue;
-                        if (!trashedPaths.Add(normSrc)) continue;
-                        if (Directory.Exists(item.SourcePath))
+                        ActivityLogService.Instance.Log(
+                            LogCategory.RESTORE,
+                            LogLevel.SUCCESS,
+                            "비표준 인증서 폴더 자동 복구",
+                            $"{item.CommonName}: {item.SourcePath} ➔ {res.RepairedPath}",
+                            item.SourcePath,
+                            res.RepairedPath);
+                    }
+                    else
+                    {
+                        failMessages.Add($"{item.CommonName}: {res.Message}");
+                    }
+                }
+
+                // Pass 2: Deduplicate source directories and move to trash only after all repairs finish
+                if (trashOld && succeededRepairs.Any())
+                {
+                    var trashedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var (item, repairedPath) in succeededRepairs)
+                    {
+                        if (string.IsNullOrWhiteSpace(item.SourcePath)) continue;
+
+                        try
                         {
-                            _backupService.MoveToTrash(item.Cert);
-                            ActivityLogService.Instance.Log(
-                                LogCategory.DELETE,
-                                LogLevel.INFO,
-                                "정위치 복구 후 원본 비표준 폴더 휴지통 이동",
-                                $"{item.CommonName}: {item.SourcePath} (복구 위치: {repairedPath})",
-                                item.SourcePath,
-                                "SafetyTrash");
+                            string normSrc = Path.GetFullPath(item.SourcePath).TrimEnd('\\');
+                            string normDst = string.IsNullOrWhiteSpace(repairedPath)
+                                ? string.Empty
+                                : Path.GetFullPath(repairedPath).TrimEnd('\\');
+
+                            if (string.Equals(normSrc, normDst, StringComparison.OrdinalIgnoreCase)) continue;
+                            if (!trashedPaths.Add(normSrc)) continue;
+                            if (Directory.Exists(item.SourcePath))
+                            {
+                                _backupService.MoveToTrash(item.Cert);
+                                ActivityLogService.Instance.Log(
+                                    LogCategory.DELETE,
+                                    LogLevel.INFO,
+                                    "정위치 복구 후 원본 비표준 폴더 휴지통 이동",
+                                    $"{item.CommonName}: {item.SourcePath} (복구 위치: {repairedPath})",
+                                    item.SourcePath,
+                                    "SafetyTrash");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            failMessages.Add($"{item.CommonName} 원본 휴지통 이동 실패: {ex.Message}");
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        failMessages.Add($"{item.CommonName} 원본 휴지통 이동 실패: {ex.Message}");
-                    }
+                }
+
+                if (repairedCount > 0)
+                {
+                    HasMadeChanges = true;
+                    await _refreshCallback();
+                    RebuildDiagnostics();
+                    ShowFeedback($"✅ 비표준 인증서 {repairedCount}건을 표준 위치로 복구했습니다.");
+                }
+
+                if (failMessages.Any())
+                {
+                    MessageBox.Show(
+                        this,
+                        "일부 항목 복구 중 안내:\n\n" + string.Join("\n", failMessages),
+                        "복구 결과 안내",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
                 }
             }
-
-            if (repairedCount > 0)
-            {
-                HasMadeChanges = true;
-                await _refreshCallback();
-                RebuildDiagnostics();
-                ShowFeedback($"✅ 비표준 인증서 {repairedCount}건을 표준 위치로 복구했습니다.");
-            }
-
-            if (failMessages.Any())
+            catch (Exception ex)
             {
                 MessageBox.Show(
-                    "일부 항목 복구 중 안내:\n\n" + string.Join("\n", failMessages),
-                    "복구 결과 안내",
+                    this,
+                    $"폴더 정위치 복구 처리 중 오류가 발생했습니다:\n{ex.Message}",
+                    "복구 오류 안내",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }

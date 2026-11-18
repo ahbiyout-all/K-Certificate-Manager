@@ -127,9 +127,54 @@ namespace KCertManager.Wpf.Views
             catch { }
         }
 
+        private HwndSource? _hwndSource;
+        private System.ComponentModel.PropertyChangedEventHandler? _vmPropertyChangedHandler;
+        private Action<System.Collections.Generic.IList<CertificateItem>>? _openTargetPickerHandler;
+
+        private void DispatchUi(Action action)
+        {
+            if (Dispatcher == null || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+            {
+                return;
+            }
+            if (Dispatcher.CheckAccess())
+            {
+                action();
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(action);
+            }
+        }
+
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
+
+            try
+            {
+                _hwndSource?.RemoveHook(HwndMessageHook);
+                _hwndSource = null;
+            }
+            catch { }
+
+            try
+            {
+                if (ViewModel != null)
+                {
+                    if (_vmPropertyChangedHandler != null)
+                    {
+                        ViewModel.PropertyChanged -= _vmPropertyChangedHandler;
+                        _vmPropertyChangedHandler = null;
+                    }
+                    if (_openTargetPickerHandler != null)
+                    {
+                        ViewModel.RequestOpenTargetDrivePicker -= _openTargetPickerHandler;
+                        _openTargetPickerHandler = null;
+                    }
+                }
+            }
+            catch { }
 
             try
             {
@@ -153,30 +198,40 @@ namespace KCertManager.Wpf.Views
             {
                 var helper = new WindowInteropHelper(this);
                 var source = HwndSource.FromHwnd(helper.Handle);
-                source?.AddHook(HwndMessageHook);
+                if (source != null)
+                {
+                    _hwndSource = source;
+                    source.AddHook(HwndMessageHook);
+                }
 
                 if (ViewModel != null)
                 {
-                    ViewModel.PropertyChanged += (s, args) =>
+                    _vmPropertyChangedHandler = (s, args) =>
                     {
                         if (args.PropertyName == nameof(MainViewModel.IsCertificateDetailSidebarVisible))
                         {
-                            Dispatcher.Invoke(() => UpdateDetailSidebarColumn(ViewModel.IsCertificateDetailSidebarVisible));
+                            DispatchUi(() =>
+                            {
+                                if (ViewModel != null)
+                                    UpdateDetailSidebarColumn(ViewModel.IsCertificateDetailSidebarVisible);
+                            });
                         }
                         else if (args.PropertyName == nameof(MainViewModel.SelectedTargetDrive))
                         {
-                            Dispatcher.Invoke(() => UpdateSidebarTargetDriveBorder());
+                            DispatchUi(UpdateSidebarTargetDriveBorder);
                         }
                     };
+                    ViewModel.PropertyChanged += _vmPropertyChangedHandler;
 
                     // Initial state sync
                     UpdateDetailSidebarColumn(ViewModel.IsCertificateDetailSidebarVisible);
                     UpdateSidebarTargetDriveBorder();
 
-                    ViewModel.RequestOpenTargetDrivePicker += (targets) =>
+                    _openTargetPickerHandler = (targets) =>
                     {
-                        Dispatcher.Invoke(() => OpenTargetDrivePickerForCertificates(targets));
+                        DispatchUi(() => OpenTargetDrivePickerForCertificates(targets));
                     };
+                    ViewModel.RequestOpenTargetDrivePicker += _openTargetPickerHandler;
                 }
             }
             catch (Exception ex)
@@ -725,6 +780,7 @@ namespace KCertManager.Wpf.Views
             catch (Exception ex)
             {
                 MessageBox.Show(
+                    this,
                     $"복사 대상 디스크 선택 창을 여는 중 문제가 발생했습니다.\n\n{ex.Message}",
                     "오류",
                     MessageBoxButton.OK,
@@ -760,6 +816,7 @@ namespace KCertManager.Wpf.Views
                 {
                     Clipboard.SetText(item.DirectoryPath);
                     MessageBox.Show(
+                        this,
                         $"인증서 경로가 클립보드에 복사되었습니다:\n\n{item.DirectoryPath}",
                         "경로 복사 완료",
                         MessageBoxButton.OK,
@@ -801,6 +858,7 @@ namespace KCertManager.Wpf.Views
                 if (ViewModel.FilteredCertificates.Count > 0)
                 {
                     var ask = MessageBox.Show(
+                        this,
                         "체크박스로 선택된 인증서가 없습니다.\n\n" +
                         $"현재 목록에 표시된 전체 인증서({ViewModel.FilteredCertificates.Count}건)를 대상으로 복사 목적지 디스크를 지정하시겠습니까?\n\n" +
                         "• [예(Y)]: 전체 인증서 복사 디스크 선택창 열기\n" +
@@ -820,7 +878,7 @@ namespace KCertManager.Wpf.Views
                 }
                 else
                 {
-                    MessageBox.Show("복사 또는 백업할 인증서가 목록에 없습니다.", "선택된 인증서 없음", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(this, "복사 또는 백업할 인증서가 목록에 없습니다.", "선택된 인증서 없음", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
             }
@@ -840,7 +898,7 @@ namespace KCertManager.Wpf.Views
 
             if (!all.Any())
             {
-                MessageBox.Show("복사할 인증서가 목록에 없습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, "복사할 인증서가 목록에 없습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 

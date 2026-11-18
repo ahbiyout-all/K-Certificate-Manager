@@ -77,8 +77,8 @@ namespace KCert.Core.Discovery
         /// 새로운 인증서가 발견될 때마다 실시간으로 콜백을 호출합니다.
         /// </summary>
         public async Task<int> ScanDeepBackgroundAsync(
-            Action<DiscoveredCertLocation> onCertDiscovered,
-            HashSet<string> alreadyFoundDerPaths,
+            Action<DiscoveredCertLocation>? onCertDiscovered,
+            HashSet<string>? alreadyFoundDerPaths,
             CancellationToken cancellationToken = default)
         {
             var sw = Stopwatch.StartNew();

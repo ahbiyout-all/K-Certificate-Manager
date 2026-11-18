@@ -63,7 +63,7 @@ namespace KCert.Core.Diagnostics
         /// <summary>
         /// 지정된 인증서 폴더의 무결성 및 구조적 이상을 정밀 진단합니다.
         /// </summary>
-        public static CertDiagnosisReport Diagnose(string folderPath)
+        public static CertDiagnosisReport Diagnose(string folderPath, string? specificDerPath = null)
         {
             if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
             {
@@ -92,8 +92,13 @@ namespace KCert.Core.Diagnostics
                     issues.Add("폴더 복사 실수 또는 백업/임시 경로 저장으로 인증서 계층 구조가 표준과 달라 정부/은행 서명 모듈에서 인식되지 않습니다.");
                 }
 
-                // 2. 파일 목록 검사 (GPKI/EPKI/NPKI 표준 및 확장 파일명 포함)
+                // 2. 파일 목록 검사 (GPKI/EPKI/NPKI 표준 및 확장 파일명 포함, 특정 DER 지정 시 해당 파일 우선)
+                string? explicitDer = (!string.IsNullOrWhiteSpace(specificDerPath) && File.Exists(specificDerPath))
+                    ? specificDerPath
+                    : null;
+
                 var derFile =
+                    explicitDer ??
                     files.FirstOrDefault(f =>
                     {
                         var fn = Path.GetFileName(f);
@@ -203,7 +208,7 @@ namespace KCert.Core.Diagnostics
                 KCertMetadata? meta = null;
                 if (derFile != null && File.Exists(derFile))
                 {
-                    meta = KCertParser.Parse(folderPath);
+                    meta = KCertParser.Parse(derFile);
                 }
 
                 CertSystemType sysType = meta?.Policy.SystemType ?? CertSystemType.Unknown;
@@ -283,9 +288,9 @@ namespace KCert.Core.Diagnostics
         /// 비표준 또는 중첩된 인증서 디렉터리를 대상 루트(예: AppData\LocalLow 또는 E:\) 하위의
         /// 완벽한 대한민국 표준 계층 구조(Canonical Hierarchy)로 치료·이동합니다.
         /// </summary>
-        public static CertRepairResult RepairToStandardHierarchy(string sourceFolder, string destinationRoot)
+        public static CertRepairResult RepairToStandardHierarchy(string sourceFolder, string destinationRoot, string? specificDerPath = null)
         {
-            var diag = Diagnose(sourceFolder);
+            var diag = Diagnose(sourceFolder, specificDerPath);
             if (string.IsNullOrEmpty(diag.CanonicalSubPath))
             {
                 return new CertRepairResult
@@ -397,8 +402,9 @@ namespace KCert.Core.Diagnostics
             // Subject DN 내 특수문자 정리
             string safeUserFolder = SanitizeFolderName(userFolder);
 
-            bool isClass1 = !string.IsNullOrEmpty(folderPath) &&
-                            Regex.IsMatch(folderPath, @"(?:^|[\\/])class1(?:$|[\\/])", RegexOptions.IgnoreCase);
+            bool isClass1 = (meta?.IsClass1 ?? false) ||
+                            (!string.IsNullOrEmpty(folderPath) &&
+                             Regex.IsMatch(folderPath, @"(?:^|[\\/])class1(?:$|[\\/])", RegexOptions.IgnoreCase));
             string classTier = isClass1 ? "class1" : "class2";
 
             if (sysType == CertSystemType.GPKI)

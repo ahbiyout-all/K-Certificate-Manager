@@ -55,13 +55,13 @@ export function filterCertificatesByCriteria(
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchName = cert.name.toLowerCase().includes(q);
-      const matchIssuer = cert.issuer.toLowerCase().includes(q);
+      const matchName = (cert.name || '').toLowerCase().includes(q);
+      const matchIssuer = (cert.issuer || '').toLowerCase().includes(q);
       const matchCa = (cert.caSignatureName || '').toLowerCase().includes(q);
       const matchDept = (cert.departmentOrOrg || '').toLowerCase().includes(q);
-      const matchPolicy = cert.policy.toLowerCase().includes(q);
-      const matchSerial = cert.serialNumber.toLowerCase().includes(q);
-      const matchPath = cert.sourceLocation.toLowerCase().includes(q);
+      const matchPolicy = (cert.policy || '').toLowerCase().includes(q);
+      const matchSerial = (cert.serialNumber || '').toLowerCase().includes(q);
+      const matchPath = (cert.sourceLocation || '').toLowerCase().includes(q);
       const matchLocationType = isUsb ? 'usb 이동식' : '컴퓨터 pc 로컬';
       const matchClass1 = isClass1Certificate(cert) && q.includes('class1');
       const isEpkiCert =
@@ -166,7 +166,17 @@ export const CertificateList: React.FC<CertificateListProps> = ({
     try {
       const saved = localStorage.getItem('kcert_wpf_col_widths_v2');
       if (saved) {
-        return { ...DEFAULT_COL_WIDTHS, ...JSON.parse(saved) };
+        const parsed: unknown = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          const safe: Record<string, number> = { ...DEFAULT_COL_WIDTHS };
+          for (const key of Object.keys(DEFAULT_COL_WIDTHS)) {
+            const val = (parsed as Record<string, unknown>)[key];
+            if (typeof val === 'number' && Number.isFinite(val) && val >= 32 && val <= 2000) {
+              safe[key] = val;
+            }
+          }
+          return safe;
+        }
       }
     } catch {}
     return DEFAULT_COL_WIDTHS;
@@ -200,12 +210,15 @@ export const CertificateList: React.FC<CertificateListProps> = ({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [copiedPathId, setCopiedPathId] = useState<string | null>(null);
   const copiedPathTimerRef = useRef<number | null>(null);
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     return () => {
       if (copiedPathTimerRef.current !== null) {
         window.clearTimeout(copiedPathTimerRef.current);
       }
+      resizeCleanupRef.current?.();
+      resizeCleanupRef.current = null;
     };
   }, []);
 
@@ -224,6 +237,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
   const handleStartResize = (colKey: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    resizeCleanupRef.current?.();
     const startX = e.clientX;
     const startWidth = colWidths[colKey] || 100;
     setResizingCol(colKey);
@@ -235,10 +249,17 @@ export const CertificateList: React.FC<CertificateListProps> = ({
       setColWidths(prev => ({ ...prev, [colKey]: newWidth }));
     };
 
-    const onMouseUp = () => {
-      setResizingCol(null);
+    const cleanup = () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
+      if (resizeCleanupRef.current === cleanup) {
+        resizeCleanupRef.current = null;
+      }
+    };
+
+    const onMouseUp = () => {
+      setResizingCol(null);
+      cleanup();
       setColWidths(current => {
         try {
           localStorage.setItem('kcert_wpf_col_widths_v2', JSON.stringify(current));
@@ -247,6 +268,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
       });
     };
 
+    resizeCleanupRef.current = cleanup;
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
   };

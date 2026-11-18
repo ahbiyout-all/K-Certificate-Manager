@@ -21,8 +21,21 @@ export function loadInstitutionStore(): InstitutionStorageState {
     const customRaw = localStorage.getItem(STORAGE_KEY_CUSTOM_INSTITUTIONS);
     const modifiedRaw = localStorage.getItem(STORAGE_KEY_MODIFIED_INSTITUTIONS);
 
-    const customs: RenewalInstitution[] = customRaw ? JSON.parse(customRaw) : [];
-    const overrides: Record<string, Partial<RenewalInstitution>> = modifiedRaw ? JSON.parse(modifiedRaw) : {};
+    const parsedCustoms: unknown = customRaw ? JSON.parse(customRaw) : [];
+    const customs: RenewalInstitution[] = Array.isArray(parsedCustoms)
+      ? (parsedCustoms.filter(item => item && typeof item === 'object') as RenewalInstitution[])
+      : [];
+
+    const parsedOverrides: unknown = modifiedRaw ? JSON.parse(modifiedRaw) : {};
+    const overrides: Record<string, Partial<RenewalInstitution>> = {};
+    if (parsedOverrides && typeof parsedOverrides === 'object' && !Array.isArray(parsedOverrides)) {
+      for (const [k, v] of Object.entries(parsedOverrides as Record<string, unknown>)) {
+        if (['__proto__', 'constructor', 'prototype'].includes(k)) continue;
+        if (v && typeof v === 'object' && !Array.isArray(v)) {
+          overrides[k] = v as Partial<RenewalInstitution>;
+        }
+      }
+    }
 
     return { customs, overrides };
   } catch (err) {
@@ -164,11 +177,11 @@ export function exportInstitutionsJSON(): string {
  */
 export function importInstitutionsJSON(jsonStr: string): { success: boolean; count: number; error?: string } {
   try {
-    const parsed = JSON.parse(jsonStr);
-    const incoming: RenewalInstitution[] = Array.isArray(parsed) 
-      ? parsed 
-      : Array.isArray(parsed.institutions) 
-      ? parsed.institutions 
+    const parsed: unknown = JSON.parse(jsonStr);
+    const incoming: RenewalInstitution[] = Array.isArray(parsed)
+      ? (parsed as RenewalInstitution[])
+      : (parsed && typeof parsed === 'object' && Array.isArray((parsed as { institutions?: unknown }).institutions))
+      ? ((parsed as { institutions: RenewalInstitution[] }).institutions)
       : [];
 
     if (incoming.length === 0) {

@@ -457,12 +457,18 @@ namespace KCert.Core.Discovery
 
                             if (isEnvFile && hasAnySignFile)
                             {
-                                // 매칭되는 서명 파일 검색 (예: 865김병석001_sig.cer 또는 signCert.der / sigCert.der)
+                                // 매칭되는 동일 스템/접두사 서명 파일 검색 (타 기관 _sig 파일에 의한 오탐 차단)
+                                bool isGenericEnvName = fn.StartsWith("kmcert") || fn.StartsWith("envcert") ||
+                                                        fn.Equals("km.der") || fn.Equals("km.cer") ||
+                                                        fn.Equals("env.der") || fn.Equals("env.cer");
+
                                 string sigVariant1 = fn.Replace("_env.", "_sig.").Replace("_km.", "_sig.")
                                                        .Replace("_env_", "_sig_").Replace("_km_", "_sig_")
+                                                       .Replace("env_", "sign_").Replace("km_", "sign_")
                                                        .Replace("envcert", "signcert").Replace("kmcert", "signcert");
-                                string sigVariant2 = fn.Replace("_env.", "_sig.").Replace("_km.", "_sig.")
-                                                       .Replace("_env_", "_sig_").Replace("_km_", "_sig_")
+                                string sigVariant2 = fn.Replace("_env.", "_sign.").Replace("_km.", "_sign.")
+                                                       .Replace("_env_", "_sign_").Replace("_km_", "_sign_")
+                                                       .Replace("env_", "sig_").Replace("km_", "sig_")
                                                        .Replace("envcert", "sigcert").Replace("kmcert", "sigcert");
 
                                 bool hasMatchingSign = candidateFiles.Any(other =>
@@ -470,13 +476,19 @@ namespace KCert.Core.Discovery
                                     var ofn = Path.GetFileName(other).ToLowerInvariant();
                                     if (ofn == fn) return false;
                                     if (ofn == sigVariant1 || ofn == sigVariant2) return true;
-                                    if (ofn.Contains("_sig.") || ofn.Contains("signcert") || ofn.Contains("sigcert") || ofn.Equals("user.der")) return true;
+                                    if (isGenericEnvName &&
+                                        (ofn.Equals("signcert.der") || ofn.Equals("signcert.cer") ||
+                                         ofn.Equals("sigcert.der") || ofn.Equals("sigcert.cer") ||
+                                         ofn.Equals("user.der") || ofn.Contains("_sig.")))
+                                    {
+                                        return true;
+                                    }
                                     return false;
                                 });
 
                                 if (hasMatchingSign)
                                 {
-                                    continue; // 서명 파일이 존재하므로 동반 암호화 파일은 중복 등록 방지를 위해 건너뜀
+                                    continue; // 대응되는 서명 파일이 존재하므로 동반 암호화 파일은 중복 등록 방지를 위해 건너뜀
                                 }
                             }
 
@@ -612,6 +624,25 @@ namespace KCert.Core.Discovery
                     stemCandidates.Add(prefix + "_key");
                     stemCandidates.Add(prefix);
                 }
+                else if (stem.EndsWith("_env", StringComparison.OrdinalIgnoreCase))
+                {
+                    var prefix = stem.Substring(0, stem.Length - 4);
+                    stemCandidates.Add(prefix + "_env_pri");
+                    stemCandidates.Add(prefix + "_kmPri");
+                    stemCandidates.Add(prefix + "_km");
+                    stemCandidates.Add(prefix + "_pri");
+                    stemCandidates.Add(prefix + "_key");
+                    stemCandidates.Add(prefix);
+                }
+                else if (stem.EndsWith("_km", StringComparison.OrdinalIgnoreCase))
+                {
+                    var prefix = stem.Substring(0, stem.Length - 3);
+                    stemCandidates.Add(prefix + "_km_pri");
+                    stemCandidates.Add(prefix + "_kmPri");
+                    stemCandidates.Add(prefix + "_pri");
+                    stemCandidates.Add(prefix + "_key");
+                    stemCandidates.Add(prefix);
+                }
                 else if (stem.EndsWith("cert", StringComparison.OrdinalIgnoreCase))
                 {
                     var prefix = stem.Substring(0, stem.Length - 4);
@@ -644,7 +675,11 @@ namespace KCert.Core.Discovery
                 // 4. 비표준 다중 파일 혼재 폴더 안전 폴백:
                 // 동일 폴더 내 다른 비-km 인증서가 1개 이하인 경우에만 임의 .key를 폴백 매칭하여 타 인증서의 키 오매칭 차단
                 var nonKmKeys = allKeyFiles
-                    .Where(k => !Path.GetFileName(k).StartsWith("km", StringComparison.OrdinalIgnoreCase))
+                    .Where(k =>
+                    {
+                        var kn = Path.GetFileName(k).ToLowerInvariant();
+                        return !kn.StartsWith("km") && !kn.StartsWith("env") && !kn.Contains("_km.") && !kn.Contains("_env.");
+                    })
                     .ToList();
 
                 if (!isKmCert && nonKmKeys.Count > 0)
@@ -654,7 +689,10 @@ namespace KCert.Core.Discovery
                         .Where(f =>
                         {
                             var n = Path.GetFileName(f).ToLowerInvariant();
-                            return !n.StartsWith("km") && !n.StartsWith("env") && !n.StartsWith("root") && !n.StartsWith("ca") && !n.StartsWith("crl");
+                            return !n.StartsWith("km") && !n.StartsWith("env") &&
+                                   !n.Contains("_km.") && !n.Contains("_env.") &&
+                                   !n.Contains("kmcert") && !n.Contains("envcert") &&
+                                   !n.StartsWith("root") && !n.StartsWith("ca") && !n.StartsWith("crl");
                         })
                         .ToList();
 

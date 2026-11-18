@@ -16,7 +16,8 @@ import {
   AlertTriangle,
   FileCode,
   ExternalLink,
-  Landmark
+  Landmark,
+  GraduationCap
 } from 'lucide-react';
 import { CertificateItem } from '../types';
 import { getDriveColorInfo } from '../utils/driveColors';
@@ -71,12 +72,45 @@ export const CertificateDetailModal: React.FC<CertificateDetailModalProps> = ({
                 <span className="text-[11px] font-semibold px-2 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded">
                   {cert.category}
                 </span>
-                {isInstitutional && (
-                  <span className="text-[11px] font-bold px-2 py-0.5 bg-indigo-500/30 text-indigo-200 border border-indigo-400/50 rounded flex items-center gap-1">
-                    <Landmark className="w-3 h-3 shrink-0" />
-                    <span>{isClass1 ? 'CLASS1 · 기관' : '기관용'}</span>
-                  </span>
-                )}
+                {isInstitutional && (() => {
+                  const isEpkiInst =
+                    cert.category === 'EPKI_EDU' ||
+                    (cert.category === 'UNKNOWN' && /[\\/]epki(?:$|[\\/])/i.test(cert.sourceLocation || ''));
+                  const isGpkiInst =
+                    !isEpkiInst &&
+                    (cert.category === 'GPKI_GOV' || /[\\/]gpki(?:$|[\\/])/i.test(cert.sourceLocation || ''));
+                  if (isEpkiInst) {
+                    return (
+                      <span
+                        className="text-[11px] font-bold px-2 py-0.5 bg-teal-500/30 text-teal-200 border border-teal-400/50 rounded flex items-center gap-1"
+                        title={isClass1 ? '교육·학술기관(EPKI) · class1 개인키 쌍 보유 인증서' : '교육·학술기관(EPKI) 인증서'}
+                      >
+                        <GraduationCap className="w-3 h-3 shrink-0" />
+                        <span>{isClass1 ? 'CLASS1 · 교육(EPKI)' : '교육(EPKI) 기관'}</span>
+                      </span>
+                    );
+                  }
+                  if (isGpkiInst) {
+                    return (
+                      <span
+                        className="text-[11px] font-bold px-2 py-0.5 bg-indigo-500/30 text-indigo-200 border border-indigo-400/50 rounded flex items-center gap-1"
+                        title={isClass1 ? '공무원·행정기관(GPKI) · class1 개인키 쌍 보유 인증서' : '공무원·행정기관(GPKI) 인증서'}
+                      >
+                        <Landmark className="w-3 h-3 shrink-0" />
+                        <span>{isClass1 ? 'CLASS1 · 공무원(GPKI)' : '공무원(GPKI) 기관'}</span>
+                      </span>
+                    );
+                  }
+                  return (
+                    <span
+                      className="text-[11px] font-bold px-2 py-0.5 bg-slate-600/40 text-slate-200 border border-slate-400/50 rounded flex items-center gap-1"
+                      title={isClass1 ? '기관·전자관인·특수목적용(class1) 개인키 쌍 보유 인증서' : '기관·법인·특수목적용 인증서'}
+                    >
+                      <Building2 className="w-3 h-3 shrink-0" />
+                      <span>{isClass1 ? 'CLASS1 · 기관' : '기관용'}</span>
+                    </span>
+                  );
+                })()}
                 {isUsb ? (
                   <span className="text-[11px] font-bold px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded flex items-center gap-1">
                     <HardDrive className="w-3 h-3" />

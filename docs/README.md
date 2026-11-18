@@ -36,17 +36,17 @@
 | [`BLOG_v1.6.5.md`](./BLOG_v1.6.5.md) | **공식 구글 블로그 배포 문서**: v1.6.5 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
 | [`BLOG_v1.5.0.md`](./BLOG_v1.5.0.md) | **공식 구글 블로그 배포 문서**: v1.5.0 공식 구글 블로그(Blogger) 게시용 10단계 표준 마크다운 원고 |
 | [`LICENSE.md`](./LICENSE.md) | **소프트웨어 라이선스 & 법적 고지**: 한국어(`LICENSE_KR.txt`)·영어(`LICENSE_EN.txt`) 2종 라이선스 정의, 무상 이용 조건 및 보증 부인 |
-| [`USER_GUIDE.md`](./USER_GUIDE.md) | **사용자 매뉴얼**: 쉬운 일상 표현 UI, 반응형 카드 레이아웃, 인앱 자동 업데이트, 암호화 보호 보관함 및 USB 백업/복구 가이드 |
+| [`USER_GUIDE.md`](./USER_GUIDE.md) | **사용자 매뉴얼**: 쉬운 일상 표현 UI, 반응형 카드 레이아웃, `Class1` 기관 배지·필터, 인앱 자동 업데이트 및 USB 백업/복구 가이드 |
 | [`BUILD_GUIDE.md`](./BUILD_GUIDE.md) | **빌드 및 배포 가이드**: .NET 10 / .NET 8 자동 감지 빌드(`build.bat`/`build.ps1`), 버전별 분리 출력(`dist/v2.1.1/`), Inno Setup(`kcert-manager-v2.1.1-setup.exe`) 안내 |
 | [`GITHUB_GUIDE.md`](./GITHUB_GUIDE.md) | **GitHub 운영·CI/CD 및 릴리스 배포 가이드**: 저장소 구조, GitHub Actions 매트릭스(`build.yml`), v2.1.1 릴리스 배포 파이프라인, 이슈/PR 기여 가이드 |
 | [`AUTO_UPDATE_GUIDE.md`](./AUTO_UPDATE_GUIDE.md) | **자동 업데이트 가이드**: GitHub 이동 없는 인앱 자동 다운로드·무인 셀프 설치(`DownloadAndInstallAsync`, `apply_self_update.ps1`, Web 3단계 업데이트) 명세 |
-| [`WPF_NATIVE_GUIDE.md`](./WPF_NATIVE_GUIDE.md) | **C# WPF 데스크톱 개발 가이드**: v2.1.1 MVVM 아키텍처, 유동 네온 테두리(`WpfAnimatedBorderHelper`), 인앱 자동 업데이트, `C:\` 자가 복사 방지 명세 |
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | **시스템 아키텍처**: 인증서 파일 쌍 규격, 경로 매핑, 양방향 전송 파이프라인, 5대 서브시스템 및 7대 보안 하드닝 설계 원칙 |
+| [`WPF_NATIVE_GUIDE.md`](./WPF_NATIVE_GUIDE.md) | **C# WPF 데스크톱 개발 가이드**: v2.1.1 MVVM 아키텍처, `Class1` 필터/배지, 유동 네온 테두리, 인앱 자동 업데이트, Pass 5 수명주기·Dispatcher 안전성 명세 |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | **시스템 아키텍처**: 인증서 파일 쌍·`class1` 경로 규격, 양방향 전송 파이프라인, 5대 서브시스템, 7대 보안 하드닝 및 수명주기/JSON 스키마 설계 |
 | [`PURE_CREATIVE_DLL_ARCHITECTURE.md`](./PURE_CREATIVE_DLL_ARCHITECTURE.md) | **순수 창작 DLL 아키텍처 및 세부 동작 원리서**: 100% C# 순수 창작 `KCert.Core.dll` 및 `KCert.Crypto.dll`의 5대 서브시스템, ASN.1 바이너리 파서, PKCS#8 키 분석기, 중복 탐지, PFX 변환 엔진 기술 명세 |
 | [`KCERT_CRYPTO_DLL_SPECIFICATION.md`](./KCERT_CRYPTO_DLL_SPECIFICATION.md) | **KCert.Crypto.dll 순수 창작 암호화 & 전자서명 엔진 기술 명세서**: KISA SEED-128 (RFC 4269), KISA ARIA (RFC 5794), PKCS#8 signPri.key 복호화, VID 영지식 본인확인, RSA-SHA256 전자서명 시뮬레이션 동작 원리 및 기존 DLL 결함 교정 상세서 |
 | [`KCERT_CORE_DLL_DESIGN_SPECIFICATION.md`](./KCERT_CORE_DLL_DESIGN_SPECIFICATION.md) | **KCert.Core.dll 주요 설계 사양서**: 5대 핵심 영역(기능 명세, 동작 원리, 데이터 흐름, 에러 처리 전략, .NET 8 WPF 환경과의 연동 방식)을 총망라한 엔지니어링 종합 설계서 |
 | [`KCERT_CORE_DLL_SPEC.md`](./KCERT_CORE_DLL_SPEC.md) | **KCert.Core.dll 기술 명세서**: 순수 창작 코어 라이브러리 동작 원리, OID 역해석, 화이트리스트 안전 전송, WMI 가드 및 C#/C++/Rust/Python 타 언어 연동 명세 |
-| [`WORK_LOG.md`](./WORK_LOG.md) | **공식 작업 일지**: 개발 요구사항, 차수별 구현 내역, 보안 감사 및 검증 이력 |
+| [`WORK_LOG.md`](./WORK_LOG.md) | **공식 작업 일지**: 개발 요구사항, 차수별 구현 내역(작업 차수 188 포함), 보안 감사 및 검증 이력 |
 
 ---
 
@@ -133,7 +133,10 @@
 29. **전역 UI 쉬운 일상 표현 우선 & `C:\` 자가 복사 판별 보강 (v2.1.0)**
     - Web 26개 모듈과 WPF 전역 다이얼로그의 긴 설명을 1줄 요약 + 기본 접힘 토글(`더보기` / `Expander`)로 정리하고, 전문 용어를 쉬운 일상 표현 + 용어 병기로 통일.
     - WPF `C:\` 드라이브 자가 복사 판별(`ResolveEffectiveDestinationRoot`) 보강 및 Web `AbortError`·`handleRefresh` 최신 참조 정합화.
-30. **복사 폴더 드라이브 루트 타겟팅, 정위치 복구·휴지통 격리 및 전수 감사 안정화 (v2.1.1 신규)**
+30. **복사 폴더 드라이브 루트 타겟팅, 정위치 복구·휴지통 격리 및 전수 감사 안정화 (v2.1.1)**
     - `OperationCompleteModal`/`OperationCompleteDialog`의 `'복사된 폴더 열기'` 실행 시 실제 드라이브 루트(`E:\NPKI\...`) 정밀 조합 및 탐색기 연동 지원.
     - `App.tsx` `handleRepairFolders` · `DiagnosticsRepairDialog` · `CertIntegrityDoctor`의 표준 경로 복사 후 원본 즉시 안전 휴지통(`SafetyTrash`) 이동·동일 경로 자기덮어쓰기 `IOException` 방어·활동 로그 및 토스트 연동 완성.
     - Web 중복 `skip` 0건 가드, `USB:\` 표준 경로·`certParser` 폴더 정규화·TradeSign `NPKI_CORP` 분류 추가, WPF `SafetyTrashManager` `ReadOnly` 속성 해제·`KCertAntiDuplicationEngine` PC 표준 원본 우선 선정·`FastScanPipeline` `\MPKI` GPKI 인식 보강 완료.
+31. **`Class1` 기관·특수목적 인증서 구분 배지·필터 & 5차 심층 수명주기 안정화 (v2.1.1 최신 보강)**
+    - `C:\GPKI\Certificate\class1` · EPKI · USB `class1`에서 개인키(`.key`/`.pri`) 쌍을 보유한 실사용 기관 인증서만 선별 표시(Root/CA/CRL 및 중복 `_env.cer` 제외)하고 `CLASS1 · 공무원(GPKI)` / `CLASS1 · 교육(EPKI)` / `CLASS1 · 기관` 배지와 사이드바 `CLASS1` 카테고리 필터·키워드 검색을 제공합니다.
+    - CI `.NET`/`WPF` 컴파일 오류(`Regex`/`RegexOptions` 누락, `CS8601`/`CS8604`)를 해소하고, WPF `DispatchSafe`/`OnClosed`/`IDisposable`/예외 가드 및 Web 타이머·리스너 정리, JSON/스토리지 프로토타입 오염 방지 검증을 전역 적용했습니다.

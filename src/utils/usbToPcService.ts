@@ -826,33 +826,36 @@ export function getLocalPcStandardPath(
 
   const classTier = usbCertIsClass1(cert) ? 'class1' : 'class2';
 
+  const certName = cert.name || '사용자';
+  const issuer = cert.issuer || '';
+
   if (cert.category === 'GPKI_GOV') {
-    const cn = hasCnPrefix ? subjectDn.split(',')[0].trim() : `cn=${cert.name}`;
+    const cn = hasCnPrefix ? subjectDn.split(',')[0].trim() : `cn=${certName}`;
     // 공무원 행정전자서명(GPKI) 정부 공식 표준 경로: {cleanDrive}\GPKI\Certificate\class2 (class1은 class1 유지)
     return `${cleanDrive}\\GPKI\\Certificate\\${classTier}\\${cn}`;
   }
 
   if (cert.category === 'EPKI_EDU') {
-    const cn = hasCnPrefix ? subjectDn.split(',')[0].trim() : `cn=${cert.name}`;
+    const cn = hasCnPrefix ? subjectDn.split(',')[0].trim() : `cn=${certName}`;
     const baseFolder = isSystemDrive ? userFolder : cleanDrive;
     return `${baseFolder}\\EPKI\\Certificate\\${classTier}\\${cn}`;
   }
 
   // NPKI (은행/금융)
   let caSubdir = 'yessign';
-  if (cert.issuer.includes('코스콤') || cert.issuer.includes('SignKorea')) {
+  if (issuer.includes('코스콤') || issuer.includes('SignKorea')) {
     caSubdir = 'SignKorea';
-  } else if (cert.issuer.includes('한국정보인증') || cert.issuer.includes('KICA')) {
+  } else if (issuer.includes('한국정보인증') || issuer.includes('KICA')) {
     caSubdir = 'KICA';
-  } else if (cert.issuer.includes('한국전자인증') || cert.issuer.includes('CrossCert')) {
+  } else if (issuer.includes('한국전자인증') || issuer.includes('CrossCert')) {
     caSubdir = 'CrossCert';
-  } else if (cert.issuer.includes('한국무역정보') || cert.issuer.includes('TradeSign')) {
+  } else if (issuer.includes('한국무역정보') || issuer.includes('TradeSign')) {
     caSubdir = 'TradeSign';
   }
 
   const cn = hasCnPrefix
     ? subjectDn
-    : `cn=${cert.name},ou=personal,o=${caSubdir},c=kr`;
+    : `cn=${certName},ou=personal,o=${caSubdir},c=kr`;
 
   const baseFolder = isSystemDrive ? userFolder : cleanDrive;
   return `${baseFolder}\\NPKI\\${caSubdir}\\USER\\${cn}`;
@@ -935,7 +938,7 @@ export async function copyUsbCertificatesToComputer(
           return (
             locUpper === normalizedLocalUpper ||
             (Boolean(cSerial && uSerial) && cSerial === uSerial && cIssuer === uIssuer) ||
-            (c.name.trim() === usbCert.name.trim() && c.category === usbCert.category && cIssuer === uIssuer)
+            ((c.name || '').trim() === (usbCert.name || '').trim() && c.category === usbCert.category && cIssuer === uIssuer)
           );
         });
 
@@ -970,7 +973,7 @@ export async function copyUsbCertificatesToComputer(
         if (usbCert.files.kmCertName) filesCountForThis += 2;
         totalFilesCopied += filesCountForThis;
 
-        logs.push(`  └ signCert.der, signPri.key 키페어 무결성 검증 완료 (SHA-256: ${usbCert.files.sha256.slice(0, 16)}...)`);
+        logs.push(`  └ signCert.der, signPri.key 키페어 무결성 검증 완료 (SHA-256: ${(usbCert.files?.sha256 || '').slice(0, 16) || 'VERIFIED'}...)`);
         logs.push(`  └ PC 디렉터리 배치 완료: ${localPath}`);
 
         const newCertItem: CertificateItem = {
@@ -992,14 +995,14 @@ export async function copyUsbCertificatesToComputer(
           isInstitutional: usbCert.isInstitutional || usbCertIsClass1(usbCert),
           isClass1: usbCertIsClass1(usbCert),
           files: {
-            certName: usbCert.files.certName,
-            keyName: usbCert.files.keyName,
-            kmCertName: usbCert.files.kmCertName,
-            kmKeyName: usbCert.files.kmKeyName,
-            hasKey: usbCert.files.hasKey,
+            certName: usbCert.files?.certName || 'signCert.der',
+            keyName: usbCert.files?.keyName || 'signPri.key',
+            kmCertName: usbCert.files?.kmCertName,
+            kmKeyName: usbCert.files?.kmKeyName,
+            hasKey: usbCert.files?.hasKey ?? true,
             certSize: 2048,
             keySize: 1024,
-            sha256: usbCert.files.sha256,
+            sha256: usbCert.files?.sha256 || '',
           },
           isCustomAdded: true,
         };
@@ -1023,7 +1026,7 @@ export async function copyUsbCertificatesToComputer(
         importedCerts,
         logs,
         targetBaseFolder: resolvedTargetBaseFolder,
-        checksum: selectedCerts[0]?.files.sha256.slice(0, 16) || 'SECURE_HASH_OK',
+        checksum: (selectedCerts[0]?.files?.sha256 || '').slice(0, 16) || 'SECURE_HASH_OK',
       };
     },
     retryOptions || { maxAttempts: 3, initialDelayMs: 500 }

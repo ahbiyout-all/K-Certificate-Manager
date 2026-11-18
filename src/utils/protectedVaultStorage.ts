@@ -88,12 +88,14 @@ export function loadProtectedRestoredItems(): RestoredTrashItem[] {
     const encryptedData = localStorage.getItem(PROTECTED_VAULT_KEY);
     if (encryptedData) {
       const decryptedJson = decryptPayload(encryptedData);
-      items = JSON.parse(decryptedJson) || [];
+      const parsed: unknown = JSON.parse(decryptedJson);
+      items = Array.isArray(parsed) ? (parsed as RestoredTrashItem[]) : [];
     } else {
       // 2. 레거시 일반 저장소 호환 조회 및 암호화 자동 마이그레이션
       const legacyData = localStorage.getItem(LEGACY_VAULT_KEY);
       if (legacyData) {
-        items = JSON.parse(legacyData) || [];
+        const parsedLegacy: unknown = JSON.parse(legacyData);
+        items = Array.isArray(parsedLegacy) ? (parsedLegacy as RestoredTrashItem[]) : [];
         if (items.length > 0) {
           saveProtectedRestoredItems(items);
           localStorage.removeItem(LEGACY_VAULT_KEY);

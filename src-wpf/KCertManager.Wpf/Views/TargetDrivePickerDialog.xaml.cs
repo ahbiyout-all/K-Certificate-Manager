@@ -66,7 +66,7 @@ namespace KCertManager.Wpf.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"드라이브 새로고침 중 오류: {ex.Message}", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, $"드라이브 새로고침 중 오류: {ex.Message}", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 
@@ -119,10 +119,10 @@ namespace KCertManager.Wpf.Views
                     }
                 });
 
-                var cardBackground = (Brush)Application.Current.FindResource("BgDarkBrush") ?? new SolidColorBrush(Color.FromRgb(15, 23, 42));
-                var cardBorderBrush = (Brush)Application.Current.FindResource("BorderBrush") ?? new SolidColorBrush(Color.FromRgb(51, 65, 85));
-                var textPrimary = (Brush)Application.Current.FindResource("TextPrimaryBrush") ?? Brushes.White;
-                var textSecondary = (Brush)Application.Current.FindResource("TextSecondaryBrush") ?? new SolidColorBrush(Color.FromRgb(148, 163, 184));
+                var cardBackground = (Application.Current?.TryFindResource("BgDarkBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(15, 23, 42));
+                var cardBorderBrush = (Application.Current?.TryFindResource("BorderBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(51, 65, 85));
+                var textPrimary = (Application.Current?.TryFindResource("TextPrimaryBrush") as Brush) ?? Brushes.White;
+                var textSecondary = (Application.Current?.TryFindResource("TextSecondaryBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(148, 163, 184));
 
                 var cardBorder = new Border
                 {
@@ -162,13 +162,15 @@ namespace KCertManager.Wpf.Views
                 {
                     string driveBgHex = drive.DriveBgColorHex;
                     string driveBorderHex = drive.DriveBorderColorHex;
+                    var bgColor = ColorConverter.ConvertFromString(driveBgHex) is Color parsedBg ? parsedBg : Color.FromRgb(30, 58, 138);
+                    var borderColor = ColorConverter.ConvertFromString(driveBorderHex) is Color parsedBorder ? parsedBorder : Color.FromRgb(59, 130, 246);
                     var letterBadge = new Border
                     {
                         CornerRadius = new CornerRadius(4),
                         Padding = new Thickness(6, 1.5, 6, 1.5),
                         Margin = new Thickness(0, 0, 6, 0),
-                        Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(driveBgHex)),
-                        BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(driveBorderHex)),
+                        Background = new SolidColorBrush(bgColor),
+                        BorderBrush = new SolidColorBrush(borderColor),
                         BorderThickness = new Thickness(1)
                     };
                     letterBadge.Child = new TextBlock
@@ -263,7 +265,7 @@ namespace KCertManager.Wpf.Views
                     CornerRadius = new CornerRadius(12),
                     Width = 24,
                     Height = 24,
-                    Background = (Brush)Application.Current.FindResource("BgDarkBrush") ?? new SolidColorBrush(Color.FromRgb(30, 41, 59)),
+                    Background = (Application.Current?.TryFindResource("BgDarkBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(30, 41, 59)),
                     BorderBrush = cardBorderBrush,
                     BorderThickness = new Thickness(1.5),
                     VerticalAlignment = VerticalAlignment.Center
@@ -289,6 +291,7 @@ namespace KCertManager.Wpf.Views
                     if (isSelfCopy)
                     {
                         MessageBox.Show(
+                            this,
                             $"선택한 인증서가 이미 {drive.Name}에 저장되어 있습니다.\n\n" +
                             "같은 드라이브로의 복사는 원본 보호를 위해 제한됩니다.\n" +
                             "다른 USB 메모리나 다른 드라이브를 선택해 주세요.",
@@ -375,8 +378,8 @@ namespace KCertManager.Wpf.Views
 
         private void SelectCard(Border cardBorder, DriveItem drive)
         {
-            var cardBackground = (Brush)Application.Current.FindResource("BgDarkBrush") ?? new SolidColorBrush(Color.FromRgb(15, 23, 42));
-            var cardBorderBrush = (Brush)Application.Current.FindResource("BorderBrush") ?? new SolidColorBrush(Color.FromRgb(51, 65, 85));
+            var cardBackground = (Application.Current?.TryFindResource("BgDarkBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(15, 23, 42));
+            var cardBorderBrush = (Application.Current?.TryFindResource("BorderBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(51, 65, 85));
 
             // Reset previous selected card to unselected animated gradient state
             if (_selectedCardBorder != null)
@@ -420,7 +423,7 @@ namespace KCertManager.Wpf.Views
         {
             if (SelectedDrive == null)
             {
-                MessageBox.Show("복사 대상 드라이브를 선택해 주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, "복사 대상 드라이브를 선택해 주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 

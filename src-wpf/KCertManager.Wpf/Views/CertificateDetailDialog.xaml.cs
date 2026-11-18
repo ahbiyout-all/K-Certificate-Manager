@@ -26,36 +26,41 @@ namespace KCertManager.Wpf.Views
             TxtCommonName.Text = _cert.CommonName;
             TxtIssuer.Text = $"발급자: {_cert.IssuerName}";
             TxtCategoryBadge.Text = _cert.CategoryBadgeText;
-            TxtStatusBadge.Text = _cert.StatusDisplayText;
-            if (_cert.Status == ExpiryStatus.Expired)
+
+            if (_cert.ShowClass1Badge)
             {
-                TxtStatusBadge.Background = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#881337"));
-                TxtStatusBadge.Foreground = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F87171"));
-            }
-            else if (_cert.Status == ExpiryStatus.ExpiringSoon)
-            {
-                TxtStatusBadge.Background = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#78350F"));
-                TxtStatusBadge.Foreground = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FBBF24"));
+                BorderClass1Badge.Visibility = Visibility.Visible;
+                TxtClass1Badge.Text = _cert.Class1BadgeText;
+                BorderClass1Badge.ToolTip = _cert.Class1BadgeToolTip;
+                BorderClass1Badge.Background = TryCreateBrush(_cert.Class1BadgeBgHex, System.Windows.Media.Color.FromRgb(30, 27, 75));
+                BorderClass1Badge.BorderBrush = TryCreateBrush(_cert.Class1BadgeBorderHex, System.Windows.Media.Color.FromRgb(99, 102, 241));
+                TxtClass1Badge.Foreground = TryCreateBrush(_cert.Class1BadgeFgHex, System.Windows.Media.Color.FromRgb(199, 210, 254));
             }
             else
             {
-                TxtStatusBadge.Background = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#065F46"));
-                TxtStatusBadge.Foreground = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#34D399"));
+                BorderClass1Badge.Visibility = Visibility.Collapsed;
+            }
+
+            TxtStatusBadge.Text = _cert.StatusDisplayText;
+            if (_cert.Status == ExpiryStatus.Expired)
+            {
+                TxtStatusBadge.Background = TryCreateBrush("#881337", System.Windows.Media.Color.FromRgb(136, 19, 55));
+                TxtStatusBadge.Foreground = TryCreateBrush("#F87171", System.Windows.Media.Color.FromRgb(248, 113, 113));
+            }
+            else if (_cert.Status == ExpiryStatus.ExpiringSoon)
+            {
+                TxtStatusBadge.Background = TryCreateBrush("#78350F", System.Windows.Media.Color.FromRgb(120, 53, 15));
+                TxtStatusBadge.Foreground = TryCreateBrush("#FBBF24", System.Windows.Media.Color.FromRgb(251, 191, 36));
+            }
+            else
+            {
+                TxtStatusBadge.Background = TryCreateBrush("#065F46", System.Windows.Media.Color.FromRgb(6, 95, 70));
+                TxtStatusBadge.Foreground = TryCreateBrush("#34D399", System.Windows.Media.Color.FromRgb(52, 211, 153));
             }
             
             TxtStorageBadge.Text = _cert.StorageLocationBadge;
-            try
-            {
-                TxtStorageBadge.Background = new System.Windows.Media.SolidColorBrush(
-                    (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(_cert.StorageLocationBgColorHex));
-                TxtStorageBadge.Foreground = System.Windows.Media.Brushes.White;
-            }
-            catch
-            {
-                TxtStorageBadge.Background = new System.Windows.Media.SolidColorBrush(
-                    (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E3A8A"));
-                TxtStorageBadge.Foreground = System.Windows.Media.Brushes.White;
-            }
+            TxtStorageBadge.Background = TryCreateBrush(_cert.StorageLocationBgColorHex, System.Windows.Media.Color.FromRgb(30, 58, 138));
+            TxtStorageBadge.Foreground = System.Windows.Media.Brushes.White;
 
             TxtSubjectDn.Text = _cert.SubjectDn;
             TxtIssuerDn.Text = _cert.IssuerName;
@@ -204,6 +209,22 @@ namespace KCertManager.Wpf.Views
             }
         }
 
+        private static System.Windows.Media.SolidColorBrush TryCreateBrush(string? hex, System.Windows.Media.Color fallbackColor)
+        {
+            if (!string.IsNullOrWhiteSpace(hex))
+            {
+                try
+                {
+                    if (System.Windows.Media.ColorConverter.ConvertFromString(hex) is System.Windows.Media.Color parsed)
+                    {
+                        return new System.Windows.Media.SolidColorBrush(parsed);
+                    }
+                }
+                catch { }
+            }
+            return new System.Windows.Media.SolidColorBrush(fallbackColor);
+        }
+
         private void BtnCopyPath_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -211,6 +232,13 @@ namespace KCertManager.Wpf.Views
                 string pathToCopy = !string.IsNullOrWhiteSpace(_cert.DirectoryPath) 
                     ? _cert.DirectoryPath 
                     : (!string.IsNullOrWhiteSpace(_cert.DerFilePath) ? (Path.GetDirectoryName(_cert.DerFilePath) ?? string.Empty) : string.Empty);
+
+                if (string.IsNullOrWhiteSpace(pathToCopy))
+                {
+                    UserFriendlyMessageHelper.ShowWarning("복사할 인증서 폴더 경로가 비어 있습니다.", "경로 없음", "• 목록을 새로고침한 뒤 다시 확인해 주세요.", this);
+                    return;
+                }
+
                 Clipboard.SetText(pathToCopy);
                 UserFriendlyMessageHelper.ShowInfo("인증서 폴더 경로가 클립보드에 복사되었습니다.", "복사 완료", this);
             }

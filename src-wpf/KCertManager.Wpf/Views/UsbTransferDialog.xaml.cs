@@ -7,20 +7,33 @@ namespace KCertManager.Wpf.Views
 {
     public partial class UsbTransferDialog : Window
     {
+        private readonly UsbTransferViewModel _viewModel;
+
         public UsbTransferDialog(string? targetDriveLetter = null)
         {
             InitializeComponent();
-            var vm = new UsbTransferViewModel(targetDriveLetter);
-            vm.PropertyChanged += ViewModel_PropertyChanged;
-            DataContext = vm;
+            _viewModel = new UsbTransferViewModel(targetDriveLetter);
+            _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+            DataContext = _viewModel;
             Loaded += (s, e) => UpdateDriveCardBorder();
+            Closed += (s, e) => _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
         }
 
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(UsbTransferViewModel.SelectedSourceDrive))
             {
-                UpdateDriveCardBorder();
+                if (Dispatcher == null || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+                    return;
+
+                if (Dispatcher.CheckAccess())
+                {
+                    UpdateDriveCardBorder();
+                }
+                else
+                {
+                    Dispatcher.BeginInvoke(new Action(UpdateDriveCardBorder));
+                }
             }
         }
 

@@ -16,16 +16,20 @@ namespace KCertManager.Wpf.Services
         {
             var result = new BackupHistoryItem
             {
-                CertCommonName = cert.CommonName,
-                SourcePath = cert.DirectoryPath,
-                TargetDrive = targetDriveLetter,
+                CertCommonName = cert?.CommonName ?? string.Empty,
+                SourcePath = cert?.DirectoryPath ?? string.Empty,
+                TargetDrive = targetDriveLetter ?? string.Empty,
             };
 
             try
             {
-                if (!Directory.Exists(cert.DirectoryPath))
+                if (cert == null || string.IsNullOrWhiteSpace(cert.DirectoryPath) || !Directory.Exists(cert.DirectoryPath))
                 {
                     throw new DirectoryNotFoundException("원본 인증서 디렉터리를 찾을 수 없습니다.");
+                }
+                if (string.IsNullOrWhiteSpace(targetDriveLetter))
+                {
+                    throw new ArgumentException("대상 드라이브가 지정되지 않았습니다.", nameof(targetDriveLetter));
                 }
 
                 // KCert.Core.Vault의 상대 경로 해석 및 원자적 무결성 전송 엔진 호출
@@ -89,6 +93,16 @@ namespace KCertManager.Wpf.Services
 
         public CertTransferResult CopyCertificateToLocalPc(string sourceDirectory, string targetCategory = "NPKI", string username = "", string targetDriveLetter = "C:")
         {
+            if (string.IsNullOrWhiteSpace(sourceDirectory))
+            {
+                return new CertTransferResult
+                {
+                    IsSuccess = false,
+                    SourceDirectory = string.Empty,
+                    Message = "PC 복사 실패: 원본 인증서 디렉터리 경로가 비어 있습니다."
+                };
+            }
+
             try
             {
                 if (string.IsNullOrEmpty(username))
@@ -97,12 +111,9 @@ namespace KCertManager.Wpf.Services
                 string cleanDrive = (string.IsNullOrWhiteSpace(targetDriveLetter) ? "C" : targetDriveLetter.TrimEnd(':', '\\', '/')).ToUpperInvariant() + ":\\";
                 string targetRoot;
 
-                string normSrc = (sourceDirectory ?? string.Empty).Replace('/', '\\').TrimEnd('\\');
+                string normSrc = sourceDirectory.Replace('/', '\\').TrimEnd('\\');
                 bool isGpki = string.Equals(targetCategory, "GPKI", StringComparison.OrdinalIgnoreCase) ||
                               Regex.IsMatch(normSrc, @"(?:^|[\\/])GPKI(?:$|[\\/])", RegexOptions.IgnoreCase);
-
-                bool isEpki = string.Equals(targetCategory, "EPKI", StringComparison.OrdinalIgnoreCase) ||
-                              Regex.IsMatch(normSrc, @"(?:^|[\\/])EPKI(?:$|[\\/])", RegexOptions.IgnoreCase);
 
                 string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\').ToUpperInvariant() + "\\";
                 var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -156,7 +167,7 @@ namespace KCertManager.Wpf.Services
                 return new CertTransferResult
                 {
                     IsSuccess = false,
-                    SourceDirectory = sourceDirectory,
+                    SourceDirectory = sourceDirectory ?? string.Empty,
                     Message = $"PC 복사 실패: {ex.Message}"
                 };
             }

@@ -67,9 +67,9 @@ namespace KCertManager.Wpf.Services
         /// 새로운 인증서가 식별될 때마다 실시간 콜백을 호출합니다. (UI 지연 0%)
         /// </summary>
         public async Task<int> ScanDeepPassBackgroundAsync(
-            Action<CertificateItem> onCertFound,
-            HashSet<string> existingDerPaths,
-            HashSet<string> existingSignatures,
+            Action<CertificateItem>? onCertFound,
+            HashSet<string>? existingDerPaths,
+            HashSet<string>? existingSignatures,
             CancellationToken ct = default)
         {
             var seenDerPaths = new ConcurrentDictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
@@ -211,32 +211,34 @@ namespace KCertManager.Wpf.Services
                     return null;
                 }
 
-                var rootDrive = Path.GetPathRoot(meta.DerFilePath) ?? string.Empty;
+                string metaDir = meta.DirectoryPath ?? string.Empty;
+                string metaDer = meta.DerFilePath ?? derFilePath;
+                var rootDrive = Path.GetPathRoot(metaDer) ?? string.Empty;
                 var driveLetter = rootDrive.TrimEnd('\\');
 
                 var item = new CertificateItem
                 {
-                    DerFilePath = meta.DerFilePath,
-                    KeyFilePath = meta.KeyFilePath,
-                    DirectoryPath = meta.DirectoryPath,
+                    DerFilePath = metaDer,
+                    KeyFilePath = meta.KeyFilePath ?? string.Empty,
+                    DirectoryPath = metaDir,
                     DerFileSize = meta.DerFileSize,
                     KeyFileSize = meta.KeyFileSize,
-                    SubjectDn = meta.SubjectDn,
-                    IssuerName = meta.Issuer,
-                    CaSignatureName = meta.CaSignatureName,
-                    SerialNumber = meta.SerialNumber,
+                    SubjectDn = meta.SubjectDn ?? string.Empty,
+                    IssuerName = meta.Issuer ?? string.Empty,
+                    CaSignatureName = meta.CaSignatureName ?? string.Empty,
+                    SerialNumber = meta.SerialNumber ?? string.Empty,
                     NotBefore = meta.ValidFrom,
                     NotAfter = meta.ValidTo,
-                    SignatureAlgorithm = meta.SignatureAlgorithm,
-                    CommonName = meta.CommonName,
-                    Organization = meta.Organization,
-                    OrganizationalUnit = meta.OrganizationalUnit,
+                    SignatureAlgorithm = meta.SignatureAlgorithm ?? "sha256RSA",
+                    CommonName = meta.CommonName ?? string.Empty,
+                    Organization = meta.Organization ?? string.Empty,
+                    OrganizationalUnit = meta.OrganizationalUnit ?? string.Empty,
                     DriveLetter = driveLetter,
-                    IsRemovableMedia = meta.IsOnRemovableMedia || CertLocationScanner.IsRemovableDrive(meta.DerFilePath),
-                    PolicyUsage = meta.DisplayUsage,
-                    PolicyOid = meta.Policy.PolicyOid,
+                    IsRemovableMedia = meta.IsOnRemovableMedia || CertLocationScanner.IsRemovableDrive(metaDer),
+                    PolicyUsage = meta.DisplayUsage ?? "일반 공동인증서",
+                    PolicyOid = meta.Policy.PolicyOid ?? string.Empty,
                     IsPairIntegrityValid = meta.IsPairIntegrityValid,
-                    IntegrityMessage = meta.IntegrityMessage,
+                    IntegrityMessage = meta.IntegrityMessage ?? string.Empty,
                     KeyEncryptionAlgorithm = meta.KeyInfo?.AlgorithmName ?? (meta.HasPrivateKey ? "KISA SEED-CBC" : "개인키 없음"),
                     KdfIterations = meta.KeyInfo?.IterationCount ?? 2048,
                     IsSystemCa = meta.IsSystemCa,

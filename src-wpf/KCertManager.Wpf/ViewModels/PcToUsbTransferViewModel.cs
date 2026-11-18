@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,8 +17,9 @@ using KCertManager.Wpf.Views;
 
 namespace KCertManager.Wpf.ViewModels
 {
-    public class PcToUsbTransferViewModel : ViewModelBase
+    public class PcToUsbTransferViewModel : ViewModelBase, IDisposable
     {
+        private PropertyChangedEventHandler? _certPropertyChangedHandler;
         private readonly CertificateScannerService _scannerService = new();
         private readonly CertificateBackupService _backupService = new();
 
@@ -290,23 +292,41 @@ namespace KCertManager.Wpf.ViewModels
                 }
             }
 
+            DetachCertificateHandlers();
+            _certPropertyChangedHandler = (s, e) =>
+            {
+                if (e.PropertyName == nameof(CertificateItem.IsSelected))
+                {
+                    Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                    {
+                        UpdateStatusMessage();
+                        (TransferToUsbCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                    }));
+                }
+            };
+
             foreach (var c in list)
             {
-                c.PropertyChanged += (s, e) =>
-                {
-                    if (e.PropertyName == nameof(CertificateItem.IsSelected))
-                    {
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                        {
-                            UpdateStatusMessage();
-                            (TransferToUsbCommand as RelayCommand)?.RaiseCanExecuteChanged();
-                        }));
-                    }
-                };
+                c.PropertyChanged += _certPropertyChangedHandler;
             }
 
             _allPcCertificates = list;
             ApplyDeduplicationFilter();
+        }
+
+        private void DetachCertificateHandlers()
+        {
+            if (_certPropertyChangedHandler == null || _allPcCertificates == null) return;
+            foreach (var c in _allPcCertificates)
+            {
+                c.PropertyChanged -= _certPropertyChangedHandler;
+            }
+        }
+
+        public void Dispose()
+        {
+            DetachCertificateHandlers();
+            _certPropertyChangedHandler = null;
         }
 
         private void ApplyDeduplicationFilter()

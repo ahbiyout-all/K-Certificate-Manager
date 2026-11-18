@@ -2,6 +2,7 @@ import { CertificateItem, DiskDrive } from '../types';
 import { isSameDriveSelfCopy } from './driveFilter';
 import { extractDriveLetterChar } from './driveColors';
 import { extractDriveLetterFromPathOrLabel } from './certDiagnostics';
+import { isClass1Certificate } from './certPathUtils';
 
 /**
  * 인메모리 더미 DER/KEY 바이너리 생성 (실제 파일 데이터가 없는 경우 표준 포맷 시뮬레이션)
@@ -93,15 +94,15 @@ export function detectDuplicateCertificates(
         certSha === tcSha;
       const isSerialIssuerMatch =
         Boolean(cert.serialNumber && tc.serialNumber) &&
-        tc.serialNumber.trim().toUpperCase() === cert.serialNumber.trim().toUpperCase() &&
-        tc.issuer.trim().toUpperCase() === cert.issuer.trim().toUpperCase();
+        (tc.serialNumber || '').trim().toUpperCase() === (cert.serialNumber || '').trim().toUpperCase() &&
+        (tc.issuer || '').trim().toUpperCase() === (cert.issuer || '').trim().toUpperCase();
       const isSameCertNameAndIssuer =
         tc.category === cert.category &&
-        tc.name.trim() === cert.name.trim() &&
-        tc.issuer.trim() === cert.issuer.trim();
+        (tc.name || '').trim() === (cert.name || '').trim() &&
+        (tc.issuer || '').trim() === (cert.issuer || '').trim();
       const isDnMatch =
         Boolean(cert.subjectDn && tc.subjectDn) &&
-        tc.subjectDn.toLowerCase() === cert.subjectDn.toLowerCase();
+        (tc.subjectDn || '').toLowerCase() === (cert.subjectDn || '').toLowerCase();
       const normalizedTcLoc = (tc.sourceLocation || '').replace(/\//g, '\\').replace(/\\+$/, '').toLowerCase();
       const isLocMatch =
         Boolean(normalizedStdLower) &&
@@ -112,7 +113,12 @@ export function detectDuplicateCertificates(
     if (match) {
       const matchSha = (match.files?.sha256 || '').trim().toLowerCase();
       const isSameHash = Boolean(certSha && matchSha) && certSha === matchSha;
-      const isNewer = new Date(cert.validTo).getTime() >= new Date(match.validTo).getTime();
+      const certValidTime = new Date(cert.validTo).getTime();
+      const matchValidTime = new Date(match.validTo).getTime();
+      const isNewer =
+        Number.isFinite(certValidTime) && Number.isFinite(matchValidTime)
+          ? certValidTime >= matchValidTime
+          : true;
       conflicts.push({
         cert,
         existingCert: match,
@@ -310,7 +316,7 @@ function sanitizePathSegment(segment: string): string {
 export function getStandardDirectoryPath(cert: CertificateItem): string {
   const subjectDn = (cert.subjectDn || '').trim();
   const hasCn = subjectDn.toLowerCase().includes('cn=');
-  const classTier = cert.isClass1 || /[\\/]class1(?:$|[\\/])/i.test(cert.sourceLocation || '') ? 'class1' : 'class2';
+  const classTier = isClass1Certificate(cert) ? 'class1' : 'class2';
 
   // 공무원 인증서 (GPKI)
   if (cert.category === 'GPKI_GOV') {
@@ -329,20 +335,22 @@ export function getStandardDirectoryPath(cert: CertificateItem): string {
   }
 
   // 은행/법인 공동인증서 (NPKI)
+  const issuer = cert.issuer || '';
+  const certName = cert.name || '사용자';
   let caSubdir = 'yessign';
-  if (cert.issuer.includes('코스콤') || cert.issuer.includes('SignKorea')) {
+  if (issuer.includes('코스콤') || issuer.includes('SignKorea')) {
     caSubdir = 'SignKorea';
-  } else if (cert.issuer.includes('한국정보인증') || cert.issuer.includes('KICA')) {
+  } else if (issuer.includes('한국정보인증') || issuer.includes('KICA')) {
     caSubdir = 'KICA';
-  } else if (cert.issuer.includes('한국전자인증') || cert.issuer.includes('CrossCert')) {
+  } else if (issuer.includes('한국전자인증') || issuer.includes('CrossCert')) {
     caSubdir = 'CrossCert';
-  } else if (cert.issuer.includes('한국무역정보') || cert.issuer.includes('TradeSign')) {
+  } else if (issuer.includes('한국무역정보') || issuer.includes('TradeSign')) {
     caSubdir = 'TradeSign';
   }
 
   const rawCn = hasCn
     ? subjectDn
-    : `cn=${cert.name},ou=personal,o=${caSubdir},c=kr`;
+    : `cn=${certName},ou=personal,o=${caSubdir},c=kr`;
 
   return `NPKI/${caSubdir}/USER/${sanitizePathSegment(rawCn)}`;
 }
@@ -409,7 +417,7 @@ export async function copyCertificatesToDisk(
     message: summaryMsg,
     totalCertificates: activeCerts.length,
     totalFiles,
-    checksum: manifestItems[0]?.sha256Fingerprint.slice(0, 16) || 'SECURE_OK',
+    checksum: (manifestItems[0]?.sha256Fingerprint || '').slice(0, 16) || 'SECURE_OK',
   };
 }
 

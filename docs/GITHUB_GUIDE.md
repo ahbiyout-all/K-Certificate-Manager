@@ -86,7 +86,10 @@
   1. **인앱 자동 다운로드 · 무인 셀프 설치 엔진 (`DownloadAndInstallAsync`)**: 업데이트 팝업에서 확인 시 GitHub 브라우저 이동 없이 직접 패키지를 다운로드·검증 후 자동 설치 및 앱 재시작 수행
   2. **WPF-Web 다크 테마 패리티 & CSS Grid `auto-fill` 반응형 카드 레이아웃**: Web 콘솔 기본 다크 테마 통일, 모달 대비 수정 및 화면 너비 기반 인증서 카드 자동 리플로우
   3. **전역 UI 쉬운 일상 표현 우선 + 접이식 안내 개편**: Web 26개 모듈과 WPF 다이얼로그 전체의 문구 간결화 및 `더보기` / `Expander` 적용
-  4. **폴더 열기 드라이브 루트 보정 · 정위치 복구 마법사 및 전수 감사 안정화**: `OperationCompleteModal`/`OperationCompleteDialog` 실제 드라이브 루트(`E:\NPKI\...`) 탐색기 타겟팅, 비표준 복구 후 안전 휴지통 격리 및 활동 로그·토스트 연동(`handleRepairFolders` · `DiagnosticsRepairDialog`), WPF `C:\` 자가 복사·중복 원본 우선순위·자기덮어쓰기 방어 및 Web `skip` 0건 가드·`USB:\` 표준 경로·`AbortError` 예외 정합화
+  4. **폴더 열기 드라이브 루트 보정 · 정위치 복구 마법사 · Class1 기관 구분 및 5차 전수 감사 안정화**:
+     * `OperationCompleteModal`/`OperationCompleteDialog` 실제 드라이브 루트(`E:\NPKI\...`) 탐색기 타겟팅, 비표준 복구 후 안전 휴지통 격리 및 활동 로그·토스트 연동(`handleRepairFolders` · `DiagnosticsRepairDialog` · `CertIntegrityDoctor` `specificDerPath`)
+     * `Class1` (`C:\GPKI\Certificate\class1`, EPKI, USB `class1`) 개인키 쌍 필터링, `CLASS1 · 공무원(GPKI)`/`교육(EPKI)`/`기관` 배지 구분 및 사이드바 `'CLASS1'` 필터·키워드 검색 지원
+     * `.NET`/`WPF` CI 컴파일(`Regex`/널 참조 경고) 해소, `DispatchSafe`/`OnClosed`/`IDisposable` 수명주기 정리 및 Web 타이머·리스너 누수·JSON 스키마 하드닝 완료
   5. **빌드 파이프라인 `/dist/v2.1.1/` 분리 배포**: `/dist/v2.1.1/web`, `/win-x64`, `/core-dll`, `/unpacked`, `/installer`
 
 ---

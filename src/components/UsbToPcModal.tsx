@@ -18,7 +18,9 @@ import {
   Sparkles,
   Filter,
   Layers,
-  Landmark
+  Landmark,
+  GraduationCap,
+  Building2
 } from 'lucide-react';
 import { CertificateItem, DiskDrive } from '../types';
 import { BRANDING_ASSETS } from '../data/brandingAssets';
@@ -129,10 +131,24 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
 
   const [colWidths, setColWidths] = useState<Record<string, number>>(DEFAULT_USB_COL_WIDTHS);
   const [resizingCol, setResizingCol] = useState<string | null>(null);
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      resizeCleanupRef.current?.();
+      resizeCleanupRef.current = null;
+      setResizingCol(null);
+    }
+    return () => {
+      resizeCleanupRef.current?.();
+      resizeCleanupRef.current = null;
+    };
+  }, [isOpen]);
 
   const handleStartResize = (colKey: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    resizeCleanupRef.current?.();
     const startX = e.clientX;
     const startWidth = colWidths[colKey] || 100;
     setResizingCol(colKey);
@@ -144,12 +160,20 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
       setColWidths(prev => ({ ...prev, [colKey]: newWidth }));
     };
 
-    const onMouseUp = () => {
-      setResizingCol(null);
+    const cleanup = () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
+      if (resizeCleanupRef.current === cleanup) {
+        resizeCleanupRef.current = null;
+      }
     };
 
+    const onMouseUp = () => {
+      setResizingCol(null);
+      cleanup();
+    };
+
+    resizeCleanupRef.current = cleanup;
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
   };
@@ -1049,16 +1073,33 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                                 <div className="flex items-center gap-1.5 min-w-0">
                                   <FileKey className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                                   <span className="truncate" title={cert.name}>{cert.name}</span>
-                                  {(cert.isClass1 || /[\\/]class1(?:$|[\\/])/i.test(cert.usbPath || '') || cert.isInstitutional) && (
-                                    <span className="inline-flex items-center gap-0.5 text-[9.5px] px-1.5 py-0.2 bg-indigo-50 text-indigo-700 border border-indigo-300 rounded font-bold shrink-0 whitespace-nowrap">
-                                      <Landmark className="w-2.5 h-2.5 shrink-0" />
-                                      <span>
-                                        {cert.isClass1 || /[\\/]class1(?:$|[\\/])/i.test(cert.usbPath || '')
-                                          ? 'CLASS1 · 기관'
-                                          : '기관용'}
+                                  {(cert.isClass1 || /[\\/]class1(?:$|[\\/])/i.test(cert.usbPath || '') || cert.isInstitutional) && (() => {
+                                    const rowIsClass1 = Boolean(cert.isClass1 || /[\\/]class1(?:$|[\\/])/i.test(cert.usbPath || ''));
+                                    const rowIsEpki = cert.category === 'EPKI_EDU' || /[\\/]epki(?:$|[\\/])/i.test(cert.usbPath || '');
+                                    const rowIsGpki = !rowIsEpki && (cert.category === 'GPKI_GOV' || /[\\/]gpki(?:$|[\\/])/i.test(cert.usbPath || ''));
+                                    if (rowIsEpki) {
+                                      return (
+                                        <span className="inline-flex items-center gap-0.5 text-[9.5px] px-1.5 py-0.2 bg-teal-50 text-teal-700 border border-teal-300 rounded font-bold shrink-0 whitespace-nowrap">
+                                          <GraduationCap className="w-2.5 h-2.5 shrink-0" />
+                                          <span>{rowIsClass1 ? 'CLASS1 · 교육(EPKI)' : '교육(EPKI)'}</span>
+                                        </span>
+                                      );
+                                    }
+                                    if (rowIsGpki) {
+                                      return (
+                                        <span className="inline-flex items-center gap-0.5 text-[9.5px] px-1.5 py-0.2 bg-indigo-50 text-indigo-700 border border-indigo-300 rounded font-bold shrink-0 whitespace-nowrap">
+                                          <Landmark className="w-2.5 h-2.5 shrink-0" />
+                                          <span>{rowIsClass1 ? 'CLASS1 · 공무원(GPKI)' : '공무원(GPKI)'}</span>
+                                        </span>
+                                      );
+                                    }
+                                    return (
+                                      <span className="inline-flex items-center gap-0.5 text-[9.5px] px-1.5 py-0.2 bg-slate-100 text-slate-700 border border-slate-300 rounded font-bold shrink-0 whitespace-nowrap">
+                                        <Building2 className="w-2.5 h-2.5 shrink-0" />
+                                        <span>{rowIsClass1 ? 'CLASS1 · 기관' : '기관용'}</span>
                                       </span>
-                                    </span>
-                                  )}
+                                    );
+                                  })()}
                                   {isAlreadyInPc && (
                                     <span className="text-[9px] px-1.5 py-0.2 bg-amber-100 text-amber-800 border border-amber-300 rounded font-semibold shrink-0">
                                       PC 기존 존재

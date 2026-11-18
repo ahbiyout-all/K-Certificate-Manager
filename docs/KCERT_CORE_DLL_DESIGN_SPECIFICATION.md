@@ -105,15 +105,15 @@
 
 | 클래스/타입 | 주요 메서드 및 인터페이스 | 기능 설명 |
 | :--- | :--- | :--- |
-| **`FastScanPipeline`** | `ScanFastAsync(CancellationToken ct)`<br/>`ScanDeepBackgroundAsync(Action<DiscoveredCertLocation> onFound, ...)` | **2단계 분리형 스캔 파이프라인**.<br/>- 1단계 (Fast-Pass): 표준 경로(`LocalLow\NPKI` 등)를 0.05~0.1초 내에 병렬 스캔하여 UI에 즉시 로딩.<br/>- 2단계 (Deep-Pass): C:, D:, 외장 드라이브의 심층 폴더를 백그라운드에서 실시간 스트리밍 탐색. |
-| **`CertLocationScanner`** | `GetStandardRoots()`<br/>`ScanDriveFast(DriveInfo drive, ...)`<br/>`ScanDriveDeep(DriveInfo drive, ...)` | Windows 시스템 드라이브 및 외장 드라이브의 디렉터리 트리를 순회하며 `signCert.der`를 안전하게 탐색. 접근 거부(`UnauthorizedAccessException`) 폴더는 무시하고 계속 진행. |
+| **`FastScanPipeline`** | `ScanFastAsync(CancellationToken ct)`<br/>`ScanDeepBackgroundAsync(Action<DiscoveredCertLocation>? onFound, ...)` | **2단계 분리형 스캔 파이프라인**.<br/>- 1단계 (Fast-Pass): 표준 경로(`LocalLow\NPKI|EPKI`, `C:\GPKI\Certificate\class1|class2` 등)를 0.05~0.1초 내에 병렬 스캔하여 UI에 즉시 로딩하고, `class1` 다중 폴더는 `FindMatchingPrivateKey` 스템 매칭으로 개인키를 연결.<br/>- 2단계 (Deep-Pass): C:, D:, 외장 드라이브의 심층 폴더를 백그라운드에서 실시간 스트리밍 탐색. |
+| **`CertLocationScanner`** | `GetStandardRoots()`<br/>`ScanDriveFast(DriveInfo drive, ...)`<br/>`ScanDriveDeep(DriveInfo drive, ...)` | Windows 시스템 드라이브 및 외장 드라이브의 디렉터리 트리를 순회하며 `signCert.der`를 안전하게 탐색. `CA`/`Root`/`CRL` 시스템 폴더와 접근 거부(`UnauthorizedAccessException`) 폴더는 무시하고 계속 진행. |
 | **`DiscoveredCertLocation`** | `DerFilePath`, `KeyFilePath`, `KmDerPath`, `KmKeyPath`, `DriveLetter`, `IsStandardPath`, `MediaKind` | 디스크에서 탐지된 인증서 구성 파일들의 절대 경로 및 매체 분류(로컬 고정 디스크, USB 이동식 디스크) 모델. |
 
 ### 2.3 Diagnostics 서브시스템 (`KCert.Core.Diagnostics`)
 
 | 클래스/타입 | 주요 메서드 및 인터페이스 | 기능 설명 |
 | :--- | :--- | :--- |
-| **`CertIntegrityDoctor`** | `Diagnose(string folderPath)`<br/>`RepairToStandardHierarchy(string source, string destRoot)` | - **진단**: 중첩 폴더(`.../NPKI/NPKI/...`), 개인키 누락, 0바이트 손상, ASN.1 헤더 깨짐, 만료, 비표준 경로 등 9대 이상 징후(`CertAnomalyFlags`) 판별.<br/>- **치료**: 비표준/중첩 폴더를 표준 계층 구조(`NPKI/{Issuer}/USER/cn=...`)로 재배치하고 읽기 전용 속성 자동 해제 (원본과 대상 폴더·파일 경로 동일 시 자기덮어쓰기 `IOException` 방지 가드 적용). |
+| **`CertIntegrityDoctor`** | `Diagnose(string folderPath, string? specificDerPath = null)`<br/>`RepairToStandardHierarchy(string source, string destRoot)` | - **진단**: 중첩 폴더(`.../NPKI/NPKI/...`), 개인키 누락, 0바이트 손상, ASN.1 헤더 깨짐, 만료, 비표준 경로 등 9대 이상 징후(`CertAnomalyFlags`) 판별 및 `specificDerPath` 기반 다중 `class1` 폴더 정밀 진단.<br/>- **치료**: 비표준/중첩 폴더를 표준 계층 구조(`NPKI/{Issuer}/USER/cn=...`, `GPKI/Certificate/class1|class2/...`)로 재배치하고 읽기 전용 속성 자동 해제 (원본과 대상 폴더·파일 경로 동일 시 자기덮어쓰기 `IOException` 방지 가드 적용). |
 | **`KCertAntiDuplicationEngine`**| `AnalyzeDuplicates(IEnumerable<KCertMetadata> certs)` | 전체 드라이브에 걸쳐 산재된 동일 인증서(SHA-256 지문 및 일련번호·발급기관·CN 폴백 일치)를 그룹화하고, PC 로컬 표준 경로를 USB 사본보다 우선(`PrimaryInstance` 점수화) 보존하여 잉여 정리 용량 계산. |
 | **`CertExpirationAlarmEngine`** | `EvaluateRisk(DateTime validTo)` | 만료일까지 남은 일수를 기준으로 위험 등급(만료, 7일 이내 임박, 30일 이내 주의, 정상) 판정 및 사용자 경고 플래그 생성. |
 
@@ -414,7 +414,7 @@ public async Task RefreshCertificatesAsync(CancellationToken ct = default)
 
 WPF 환경에서는 UI 요소(`ObservableCollection<T>`, `DataGrid`)에 대한 수정이 오직 UI 스레드(Dispatcher Thread)에서만 허용됩니다.
 - `KCert.Core.dll` 내부 엔진은 특정 UI 프레임워크(WPF)에 종속되지 않는 **순수 비동기 태스크**로 동작하며, 완료된 결과 또는 스트리밍 콜백(`Action<T>`)을 발생시킵니다.
-- WPF 상위 계층(`KCertManager.Wpf`)의 ViewModel은 `Dispatcher.InvokeAsync`를 통해 스레드 간 컨텍스트 전환을 안전하게 처리합니다.
+- WPF 상위 계층(`KCertManager.Wpf`)의 ViewModel 및 Window는 `DispatchSafe` / `DispatchUi` 헬퍼를 통해 `Dispatcher.HasShutdownStarted`/`HasShutdownFinished` 상태를 선검사한 뒤 `BeginInvoke`를 실행하여 앱 종료 시 레이스 컨디션 및 무효 디스패치를 안전하게 방지합니다.
 
 ### 6.3 MVVM 패턴 바인딩 연계
 

@@ -28,7 +28,7 @@
 - **`CertBundleSecurityEngine` 도입**: signCert+signPri와 PFX 간 원클릭 변환/추출 기능 지원.
 - **`CertSanitizer` 도입**: 주민등록번호, 사업자등록번호 및 VID 개인 식별 코드 안전 마스킹 및 RDN 정제.
 - **`CertExpirationAlarmEngine` 도입**: 만료 위험도(D-30, D-14, D-7, D-Day, 만료됨) 및 기관별 공식 갱신 포털 URL 자동 매칭.
-- **`CertIntegrityDoctor` & `NativeStorageInterop` 고도화**: Win32 `DeviceIoControl` 기반 물리 스토리지 버스(`BusTypeUsb`, `BusTypeNvme`) 식별 및 비표준 중첩 경로 자동 치료(Auto-Repair, 동일 경로/파일 자기덮어쓰기 `IOException` 방지 가드 포함).
+- **`CertIntegrityDoctor` & `NativeStorageInterop` 고도화**: Win32 `DeviceIoControl` 기반 물리 스토리지 버스(`BusTypeUsb`, `BusTypeNvme`) 식별 및 비표준 중첩 경로 자동 치료(Auto-Repair — `specificDerPath` 다중 `class1` 정밀 진단 및 동일 경로/파일 자기덮어쓰기 `IOException` 방지 가드 포함).
 
 ---
 
@@ -47,7 +47,7 @@
 - 개인키 파일의 내부 `encryptionAlgorithm` OID 및 `PBES2-params`를 순차 탐색하여 KISA SEED-CBC(`1.2.410.200004.1.4`), ARIA-128-CBC(`1.2.410.200004.1.11`), ARIA-256-CBC(`1.2.410.200004.1.13`) 등을 자동 식별합니다.
 
 ### 3.3 초고속 2단계 탐색 파이프라인 (`FastScanPipeline.cs`)
-- **Fast-Pass (0.1초 이내)**: `AppData\LocalLow\NPKI`, `GPKI`, `EPKI` 및 USB 루트 경로($\text{depth} \le 3$)를 병렬 I/O로 즉시 수집하여 화면을 즉시 갱신.
+- **Fast-Pass (0.1초 이내)**: `AppData\LocalLow\NPKI|EPKI`, `C:\GPKI\Certificate\class1|class2` 및 USB 루트 경로($\text{depth} \le 3$)를 병렬 I/O로 즉시 수집하여 화면을 갱신하며, 다중 인증서 혼재 `class1` 폴더에서는 스템 기반 개인키 매칭(`FindMatchingPrivateKey`)과 `CA`/`Root`/`CRL` 폴더 제외를 적용합니다.
 - **Deep-Pass (백그라운드 스트리밍)**: 비표준 디스크 전역을 백그라운드 탐색하여 신규 발견 시 스레드 안전 콜백을 통해 UI에 실시간 병합.
 
 ### 3.4 AES-256-GCM 보안 금고 (`CertVaultPacker.cs`)

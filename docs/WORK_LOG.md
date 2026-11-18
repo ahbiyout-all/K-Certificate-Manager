@@ -17,6 +17,47 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 188] .NET/WPF CI 컴파일 오류 교정 및 4~5차 심층 전수 감사(Self-Reflection & Deep Audit) 전역 안정화
+- **작업 일시**: 2026-11-18 01:45 KST
+- **요청 사항**:
+  - GitHub Actions `.NET Core & WPF Compilation Check` 및 Windows 릴리스 빌드 오류(`Regex`/`RegexOptions` 누락, `CS8601`/`CS8604` 널 가능 참조 경고) 해소
+  - Web & WPF 전역 반복 자아성찰(`Self-Reflection & Deep Audit`, 1~5차) 및 수명주기·메모리 누수·예외 처리·JSON/스토리지 안전성 보강
+- **수정 및 안정화 내역**:
+  1. **CI `.NET` / `WPF` 컴파일 오류 및 널 경고 완전 해소**:
+     - `src-wpf/KCertManager.Wpf/Views/DiagnosticsRepairDialog.xaml.cs`: 누락된 `using System.Text.RegularExpressions;` 추가(`Regex`/`RegexOptions` 오류 해결) 및 `BtnExecuteDuplicates_Click` 비동기 예외 방어·`Owner = this` 지정.
+     - `src-wpf/KCertManager.Wpf/Services/CertificateScannerService.cs`, `CertificateBackupService.cs`, `CertTransferEngine.cs`, `FastScanPipeline.cs`: `CS8601`/`CS8604` 널 가능 참조 경고 제거 및 방어적 null 가드 추가.
+  2. **WPF 수명주기 · Dispatcher 종료 안전성 · 리소스 누수 전수 교정 (Pass 4~5)**:
+     - `MainViewModel.cs`: `Application.Current?.Dispatcher` 종료 상태(`HasShutdownStarted`/`HasShutdownFinished`)를 확인하는 `DispatchSafe` 헬퍼 도입, `DriveArrived` 중복 `RefreshCertificatesAsync()` 제거, `ExecuteBackupWithConflictOptionAsync` 최상위 `try/catch/finally` 및 `Directory.GetFiles` 가드, `CleanExpired` 취소 시 `RestoreFilteredIndices()` 복원, `UndoDelete` 예외 방어 추가.
+     - `MainWindow.xaml.cs`: 명명된 이벤트 핸들러 분리 및 `OnClosed` 해제, `HwndSource.RemoveHook`, `DispatchUi` 가드, 모달 `Owner = this` 통일.
+     - `UsbTransferDialog.xaml.cs`, `PcToUsbTransferViewModel.cs`, `UpdateNotificationDialog.xaml.cs`: `IDisposable` 및 `Closed` 이벤트 해제, `_cts` 취소·해제, `async void` 예외 가드 적용.
+     - `TrashDialog.xaml.cs`, `CertificateDetailDialog.xaml.cs`, `ExpiredCleanupDialog.xaml.cs`, `TargetDrivePickerDialog.xaml.cs`: 비동기 복구 버튼 `try/catch`, `TryCreateBrush` Hex 파싱 가드, 빈 경로 복사 가드, `Application.Current?.Resources` null 체크 및 `is Color` 패턴 매칭 적용.
+  3. **Web SPA 타이머·리스너 누수 방지 & 스토리지/JSON 파싱 하드닝 (Pass 5)**:
+     - `Header.tsx`, `SettingsModal.tsx`, `AppActivityLogModal.tsx`: 언마운트 시 타이머 정리(`clearTimeout`), `parseInt` `NaN` 클램핑, 클립보드 복사 안전 처리 및 null-safe 문자열/배열 결합 보강.
+     - `BackupModal.tsx`, `UsbToPcModal.tsx`, `StartupWorkflowModal.tsx`, `App.tsx`, `CertificateList.tsx`: `mousemove`/`mouseup` 윈도우 리스너 cleanup ref 등록 및 `colWidths` JSON 유효성(객체·범위) 검증.
+     - `activityLogger.ts`, `protectedVaultStorage.ts`, `renewalStore.ts`, `backupService.ts`: `Array.isArray` JSON 스키마 검증, 프로토타입 오염 방지 키 필터링, null-safe 문자열·`Number.isFinite` 날짜 비교 적용.
+- **검증 결과**:
+  - Web SPA `compile_applet`(`vite build`) 및 `lint_applet`(`tsc --noEmit`) 오류 0건 통과; WPF XAML/C# 재귀 구문·리소스 검증 완료.
+
+---
+
+### 📝 [작업 차수 187] `Class1` 기관·특수목적 인증서 스캔/개인키 페어링, GPKI·EPKI 구분 배지 및 사이드바 `CLASS1` 필터 구현
+- **작업 일시**: 2026-11-17 16:30 KST
+- **요청 사항**:
+  - `C:\GPKI\Certificate\class1`(및 EPKI·USB `class1`) 기관/특수목적 인증서 스캔 시 개인키(`.key`/`.pri`) 쌍을 보유한 실사용 인증서만 표시하고 Root/CA/CRL·중복 `_env.cer`를 정교하게 필터링
+  - 목록에서 `공무원(GPKI)`, `교육(EPKI)`, `기관` `Class1` 배지를 직관적으로 시각 구분
+  - 사이드바 `categoryFilter`에 `Class1` 항목 추가 및 필터·검색 연동(Web & WPF)
+- **구현 내역**:
+  1. **`class1` 탐색 · 개인키 페어링 · 다중 기관 경로 처리 (`CertLocationScanner.cs`, `CertificateScannerService.cs`, `FastScanPipeline.cs`, `CertTransferEngine.cs`, `CertIntegrityDoctor.cs`, `certParser.ts`, `certPathUtils.ts`)**:
+     - `C:\GPKI\Certificate\class1`, `EPKI\Certificate\class1`, 이동식 USB `\GPKI\Certificate\class1` 등을 스캔하되 개인키(`.key`/`.pri`) 쌍이 없는 공개키 전용·Root/CA/CRL 파일은 제외하고 실사용 인증서만 표출.
+     - 동일 `class1` 폴더에 여러 인증서가 공존하는 다중 기관 환경을 고려해 `_env.cer` 중복 억제 및 스템 매칭(`FindMatchingPrivateKey`)·`CertIntegrityDoctor.Diagnose(..., specificDerPath)` 정밀 타겟팅을 지원하며, PC↔USB 복사 시에도 `class1` 하위 계층을 보존.
+  2. **`Class1` GPKI/EPKI 구분 배지 및 사이드바 필터·검색 연동 (`Sidebar.tsx`, `CertificateList.tsx`, `App.tsx`, `CertificateItem.cs`, `MainWindow.xaml`, `MainViewModel.cs`)**:
+     - **구분 배지**: `CLASS1 · 공무원(GPKI)` (인디고 + `Landmark`), `CLASS1 · 교육(EPKI)` (틸 + `GraduationCap`), `CLASS1 · 기관` (슬레이트 + `Building2`) 배지를 Web 카드/테이블 및 WPF 목록/상세 창에 일관 표시.
+     - **사이드바 필터 & 검색**: `SidebarCategoryFilter`에 `'CLASS1'`(`CLASS1 · 기관/특수목적`) 항목 추가 및 WPF `Class1Count`/`CLASS1` 라디오 버튼 연동; 검색창에서 `class1`, `공무원`, `행정`, `교육`, `학교`, `기관`, `관인`, `특수` 키워드 필터링 지원.
+- **검증 결과**:
+  - Web `compile_applet` · `lint_applet` 0 Errors 통과 및 WPF XAML/C# 바인딩 검증 완료.
+
+---
+
 ### 📝 [작업 차수 186] SemVer `v2.1.1` (PATCH) 버전 승격 및 전역 8대 영역·문서·블로그 동기화 완료
 - **작업 일시**: 2026-11-16 10:10 KST
 - **요청 사항**:

@@ -97,7 +97,40 @@ namespace KCertManager.Wpf.Models
 
         public bool ShowClass1Badge => (IsClass1Path || IsInstitutional) && !IsSystemCa;
 
-        public string Class1BadgeText => IsClass1Path ? "🏛️ CLASS1 · 기관" : "🏛️ 기관용";
+        public string Class1BadgeText => Category switch
+        {
+            CertCategory.EPKI => IsClass1Path ? "🎓 CLASS1 · 교육(EPKI)" : "🎓 교육(EPKI) 기관",
+            CertCategory.GPKI => IsClass1Path ? "🏛️ CLASS1 · 공무원(GPKI)" : "🏛️ 공무원(GPKI) 기관",
+            _ => IsClass1Path ? "🏢 CLASS1 · 기관" : "🏢 기관용"
+        };
+
+        public string Class1BadgeBgHex => Category switch
+        {
+            CertCategory.EPKI => "#115E59",
+            CertCategory.GPKI => "#312E81",
+            _ => "#334155"
+        };
+
+        public string Class1BadgeBorderHex => Category switch
+        {
+            CertCategory.EPKI => "#14B8A6",
+            CertCategory.GPKI => "#6366F1",
+            _ => "#64748B"
+        };
+
+        public string Class1BadgeFgHex => Category switch
+        {
+            CertCategory.EPKI => "#99F6E4",
+            CertCategory.GPKI => "#C7D2FE",
+            _ => "#E2E8F0"
+        };
+
+        public string Class1BadgeToolTip => Category switch
+        {
+            CertCategory.EPKI => "교육기관(EPKI · 교육부/교육청/학교) 특수목적·기관(class1) 개인키 쌍 보유 인증서",
+            CertCategory.GPKI => "정부·행정기관(GPKI · 공무원/관인) 특수목적·기관(class1) 개인키 쌍 보유 인증서",
+            _ => "기관·전자관인·특수목적용(class1) 개인키 쌍 보유 인증서"
+        };
 
         public bool IsSelected
         {

@@ -159,24 +159,28 @@ export function exportActivityLogsAsFile(logs: AppLogItem[]): void {
   ].join('\n');
 
   const lines = logs.map((log, index) => {
+    const levelLabel = String(log.level || 'INFO').padEnd(7);
+    const categoryLabel = String(log.category || 'SYSTEM').padEnd(7);
     const parts = [
-      `[${index + 1}] ${log.timestamp} | [${log.level.padEnd(7)}] | [${log.category.padEnd(7)}] - ${log.action}`,
-      `    상세 내용: ${log.details}`
+      `[${index + 1}] ${log.timestamp || ''} | [${levelLabel}] | [${categoryLabel}] - ${log.action || ''}`,
+      `    상세 내용: ${log.details || ''}`
     ];
     if (log.source) parts.push(`    출처(Source): ${log.source}`);
     if (log.target) parts.push(`    대상(Target): ${log.target}`);
     if (log.count !== undefined) parts.push(`    처리 건수: ${log.count}건`);
 
-    if (log.deletionEvidence && log.deletionEvidence.length > 0) {
+    if (Array.isArray(log.deletionEvidence) && log.deletionEvidence.length > 0) {
       parts.push(`    [🛡️ 보안 영구 삭제 증적 기록 (${log.deletionEvidence.length}건)]`);
       log.deletionEvidence.forEach((ev, idx) => {
-        parts.push(`      (${idx + 1}) 인증서명: ${ev.name} [발급기관: ${ev.issuer}]`);
-        parts.push(`          - 고유 식별자 (SubjectDN): ${ev.subjectDn}`);
-        parts.push(`          - 삭제 상세 파일 경로: ${ev.sourceLocation}`);
-        parts.push(`          - 일련번호(Serial): ${ev.serialNumber}`);
-        parts.push(`          - 영구 폐기 파일 목록: ${ev.fileList.join(', ')}`);
+        if (!ev) return;
+        const fileListText = Array.isArray(ev.fileList) ? ev.fileList.join(', ') : '';
+        parts.push(`      (${idx + 1}) 인증서명: ${ev.name || ''} [발급기관: ${ev.issuer || ''}]`);
+        parts.push(`          - 고유 식별자 (SubjectDN): ${ev.subjectDn || ''}`);
+        parts.push(`          - 삭제 상세 파일 경로: ${ev.sourceLocation || ''}`);
+        parts.push(`          - 일련번호(Serial): ${ev.serialNumber || ''}`);
+        parts.push(`          - 영구 폐기 파일 목록: ${fileListText}`);
         if (ev.sha256) parts.push(`          - SHA-256 해시값: ${ev.sha256}`);
-        parts.push(`          - 소멸 방식: ${ev.permanentMethod} | 일시: ${ev.deletedAt}`);
+        parts.push(`          - 소멸 방식: ${ev.permanentMethod || ''} | 일시: ${ev.deletedAt || ''}`);
       });
     }
 

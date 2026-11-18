@@ -56,6 +56,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [isPlayingTest, setIsPlayingTest] = useState(false);
   const [justSavedNotification, setJustSavedNotification] = useState(false);
   const volumeDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const testTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveBadgeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 접이식 환경 설정 섹션 오픈/접힘 상태 (기본값: 사운드 피드백만 펼침, 나머지는 접힘)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -118,6 +120,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         clearTimeout(volumeDebounceRef.current);
         volumeDebounceRef.current = null;
       }
+      if (testTimerRef.current) {
+        clearTimeout(testTimerRef.current);
+        testTimerRef.current = null;
+      }
+      if (saveBadgeTimerRef.current) {
+        clearTimeout(saveBadgeTimerRef.current);
+        saveBadgeTimerRef.current = null;
+      }
     };
   }, [isOpen]);
 
@@ -151,7 +161,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setTestingPhase(phase);
     setIsPlayingTest(true);
     playTestSound(phase, soundSettings.enabled ? soundSettings.volume : 40);
-    setTimeout(() => {
+    if (testTimerRef.current) {
+      clearTimeout(testTimerRef.current);
+    }
+    testTimerRef.current = setTimeout(() => {
+      testTimerRef.current = null;
       setTestingPhase(null);
       setIsPlayingTest(false);
     }, 600);
@@ -203,7 +217,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const triggerSaveBadge = () => {
     setJustSavedNotification(true);
-    setTimeout(() => setJustSavedNotification(false), 2000);
+    if (saveBadgeTimerRef.current) {
+      clearTimeout(saveBadgeTimerRef.current);
+    }
+    saveBadgeTimerRef.current = setTimeout(() => {
+      saveBadgeTimerRef.current = null;
+      setJustSavedNotification(false);
+    }, 2000);
   };
 
   const getVolumeIcon = () => {

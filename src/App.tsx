@@ -319,6 +319,17 @@ export default function App() {
   const [toastData, setToastData] = useState<ToastData | null>(null);
   const toastTimerRef = useRef<any>(null);
 
+  useEffect(() => {
+    return () => {
+      if (copiedHighlightTimerRef.current) {
+        clearTimeout(copiedHighlightTimerRef.current);
+      }
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
   // Calculate all certificates available on currently connected USB drives
   const allConnectedUsbCerts = useMemo(() => {
     return getAvailableUsbCertificates(availableDrives);
@@ -554,10 +565,10 @@ export default function App() {
     );
     const filteredInitial = INITIAL_CERTIFICATES.filter(shouldKeepCert);
     const seenIds = new Set(customImported.map(c => c.id));
-    const nextCertificates = [
+    const nextCertificates = sanitizeActiveCerts([
       ...customImported,
       ...filteredInitial.filter(c => !seenIds.has(c.id)),
-    ];
+    ]);
 
     certificatesRef.current = nextCertificates;
     setCertificates(nextCertificates);
@@ -915,6 +926,7 @@ export default function App() {
         sourceDrive: driveLabel,
         isCustomPath: false,
         isCustomAdded: true,
+        isClass1: isClass1Certificate({ ...cand.cert, sourceLocation: cand.canonicalPath }),
         files: {
           ...cand.cert.files,
           sha256: cand.cert.files?.sha256 || 'SHA256-REPAIR-VERIFIED',
@@ -1070,7 +1082,7 @@ export default function App() {
     // Add back to certificates without duplicates (sync ref before handleRefresh)
     updateCertificates(prev => {
       const existingIds = new Set(prev.map(c => c.id));
-      const toAdd = restoredCerts.filter(c => !existingIds.has(c.id));
+      const toAdd = sanitizeActiveCerts(restoredCerts).filter(c => !existingIds.has(c.id));
       return [...toAdd, ...prev];
     });
 
@@ -1147,7 +1159,7 @@ export default function App() {
 
     updateCertificates(prev => {
       const existingIds = new Set(prev.map(c => c.id));
-      const toAdd = certsToRestore.filter(c => !existingIds.has(c.id));
+      const toAdd = sanitizeActiveCerts(certsToRestore).filter(c => !existingIds.has(c.id));
       return [...toAdd, ...prev];
     });
 
@@ -1222,7 +1234,7 @@ export default function App() {
 
     updateCertificates(prev => {
       const existingIds = new Set(prev.map(c => c.id));
-      const toAdd = certsToRestore.filter(c => !existingIds.has(c.id));
+      const toAdd = sanitizeActiveCerts(certsToRestore).filter(c => !existingIds.has(c.id));
       return [...toAdd, ...prev];
     });
 
@@ -1658,18 +1670,35 @@ export default function App() {
     [certificates, sidebarCategoryFilter, sidebarSourceFilter, gridSearchQuery]
   );
 
+  const splitterCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      splitterCleanupRef.current?.();
+      splitterCleanupRef.current = null;
+    };
+  }, []);
+
   const handleStartDetailSplitterDrag = (e: React.MouseEvent) => {
     e.preventDefault();
+    splitterCleanupRef.current?.();
     const startX = e.clientX;
     const startWidth = detailSidebarWidth;
     const onMove = (ev: MouseEvent) => {
       const delta = startX - ev.clientX;
       setDetailSidebarWidth(Math.max(320, Math.min(540, startWidth + delta)));
     };
-    const onUp = () => {
+    const cleanup = () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      if (splitterCleanupRef.current === cleanup) {
+        splitterCleanupRef.current = null;
+      }
     };
+    const onUp = () => {
+      cleanup();
+    };
+    splitterCleanupRef.current = cleanup;
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
   };
@@ -2377,7 +2406,7 @@ export default function App() {
             category: 'SYSTEM',
             level: 'SUCCESS',
             action: `자동 업데이트 설치 완료 (v${newVersion})`,
-            details: `앱 내 패키지 다운로드 · 파일 손상 검사(${sha256.slice(0, 16)}...) · 설치 완료`,
+            details: `앱 내 패키지 다운로드 · 파일 손상 검사(${(sha256 || '').slice(0, 16) || 'VERIFIED'}...) · 설치 완료`,
             count: 1,
           });
           setActivityLogs(prev => [newLog, ...prev]);
@@ -2421,8 +2450,8 @@ export default function App() {
                 if (otherDrive !== guidedTargetLetter) return false;
                 const shaMatch =
                   Boolean(c.files?.sha256 && other.files?.sha256) &&
-                  c.files.sha256.length >= 12 &&
-                  c.files.sha256 === other.files.sha256;
+                  (c.files?.sha256 || '').length >= 12 &&
+                  c.files?.sha256 === other.files?.sha256;
                 const serialIssuerMatch =
                   Boolean(c.serialNumber && other.serialNumber) &&
                   c.serialNumber === other.serialNumber &&

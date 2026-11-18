@@ -45,10 +45,10 @@ namespace KCertManager.Wpf.Views
         {
             PanelConflictList.Children.Clear();
 
-            var cardBg = (Brush)Application.Current.FindResource("BgDarkBrush") ?? new SolidColorBrush(Color.FromRgb(15, 23, 42));
-            var borderBr = (Brush)Application.Current.FindResource("BorderBrush") ?? new SolidColorBrush(Color.FromRgb(51, 65, 85));
-            var textPri = (Brush)Application.Current.FindResource("TextPrimaryBrush") ?? Brushes.White;
-            var textSec = (Brush)Application.Current.FindResource("TextSecondaryBrush") ?? new SolidColorBrush(Color.FromRgb(148, 163, 184));
+            var cardBg = (Application.Current?.TryFindResource("BgDarkBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(15, 23, 42));
+            var borderBr = (Application.Current?.TryFindResource("BorderBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(51, 65, 85));
+            var textPri = (Application.Current?.TryFindResource("TextPrimaryBrush") as Brush) ?? Brushes.White;
+            var textSec = (Application.Current?.TryFindResource("TextSecondaryBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(148, 163, 184));
 
             for (int i = 0; i < _conflicts.Count; i++)
             {

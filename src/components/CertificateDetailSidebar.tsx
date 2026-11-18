@@ -11,7 +11,9 @@ import {
   Clock,
   ShieldCheck,
   UserCheck,
-  Landmark
+  Landmark,
+  GraduationCap,
+  Building2
 } from 'lucide-react';
 import { CertificateItem } from '../types';
 import { getDriveColorInfo } from '../utils/driveColors';
@@ -198,24 +200,61 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
                     >
                       {isUsb ? 'USB' : '컴퓨터'} [{dColor.letter}]
                     </span>
-                    {isInstitutional && (
-                      <span
-                        className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-[4px] border"
-                        style={{
-                          backgroundColor: '#EEF2FF',
-                          borderColor: '#C7D2FE',
-                          color: '#4338CA',
-                        }}
-                        title={
-                          isClass1
-                            ? '기관·전자관인·특수목적용(class1) 개인키 쌍 보유 인증서'
-                            : '기관·법인·특수목적용 인증서'
-                        }
-                      >
-                        <Landmark className="w-3 h-3 shrink-0" />
-                        <span>{isClass1 ? 'CLASS1 · 기관' : '기관용'}</span>
-                      </span>
-                    )}
+                    {isInstitutional && (() => {
+                      const isEpkiInst =
+                        cert.category === 'EPKI_EDU' ||
+                        (cert.category === 'UNKNOWN' && /[\\/]epki(?:$|[\\/])/i.test(cert.sourceLocation || ''));
+                      const isGpkiInst =
+                        !isEpkiInst &&
+                        (cert.category === 'GPKI_GOV' || /[\\/]gpki(?:$|[\\/])/i.test(cert.sourceLocation || ''));
+                      const badge = isEpkiInst
+                        ? {
+                            bg: 'var(--wpf-badge-epki-bg)',
+                            border: 'var(--wpf-badge-epki-border)',
+                            text: 'var(--wpf-badge-epki-text)',
+                            Icon: GraduationCap,
+                            label: isClass1 ? 'CLASS1 · 교육(EPKI)' : '교육(EPKI) 기관',
+                            title: isClass1
+                              ? '교육·학술기관(EPKI) · class1 개인키 쌍 보유 인증서'
+                              : '교육·학술기관(EPKI) 인증서',
+                          }
+                        : isGpkiInst
+                        ? {
+                            bg: 'var(--wpf-badge-gpki-bg)',
+                            border: 'var(--wpf-badge-gpki-border)',
+                            text: 'var(--wpf-badge-gpki-text)',
+                            Icon: Landmark,
+                            label: isClass1 ? 'CLASS1 · 공무원(GPKI)' : '공무원(GPKI) 기관',
+                            title: isClass1
+                              ? '공무원·행정기관(GPKI) · class1 개인키 쌍 보유 인증서'
+                              : '공무원·행정기관(GPKI) 인증서',
+                          }
+                        : {
+                            bg: 'var(--wpf-badge-corp-bg)',
+                            border: 'var(--wpf-badge-corp-border)',
+                            text: 'var(--wpf-badge-corp-text)',
+                            Icon: Building2,
+                            label: isClass1 ? 'CLASS1 · 기관' : '기관용',
+                            title: isClass1
+                              ? '기관·전자관인·특수목적용(class1) 개인키 쌍 보유 인증서'
+                              : '기관·법인·특수목적용 인증서',
+                          };
+                      const BadgeIcon = badge.Icon;
+                      return (
+                        <span
+                          className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-[4px] border"
+                          style={{
+                            backgroundColor: badge.bg,
+                            borderColor: badge.border,
+                            color: badge.text,
+                          }}
+                          title={badge.title}
+                        >
+                          <BadgeIcon className="w-3 h-3 shrink-0" />
+                          <span>{badge.label}</span>
+                        </span>
+                      );
+                    })()}
                   </div>
 
                   <div

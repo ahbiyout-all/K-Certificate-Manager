@@ -42,12 +42,12 @@ KCertManager.sln (솔루션 파일)
     │   ├── ViewModelBase.cs          # INotifyPropertyChanged 기본 구현체
     │   └── RelayCommand.cs           # ICommand 커맨드 바인딩 래퍼
     ├── Models/
-    │   ├── CertificateItem.cs        # 인증서 정보 (GPKI, EPKI, NPKI, 키 암호화 알고리즘, 만료/무결성)
+    │   ├── CertificateItem.cs        # 인증서 정보 (GPKI, EPKI, NPKI, IsClass1/Class1 배지 메타데이터, 키 암호화, 만료/무결성)
     │   ├── DriveItem.cs              # USB 이동식 및 로컬 디스크 정보 (고유 색상 팔레트)
     │   ├── BackupHistoryItem.cs      # 백업 이력 및 SHA-256 검증
     │   └── TrashItem.cs              # 휴지통 및 실행 취소 복원 모델
     ├── Services/
-    │   ├── CertificateScannerService.cs  # KCert.Core.Discovery & Parser 위임 호출
+    │   ├── CertificateScannerService.cs  # KCert.Core.Discovery & Parser 위임 (class1 개인키 페어링 · Root/CA 제외)
     │   ├── CertificateBackupService.cs   # KCert.Core.Vault 원자적 전송 & 격리 위임
     │   ├── UpdateCheckerService.cs       # GitHub API 조회 + 인앱 스트리밍 다운로드·무인 셀프 설치 엔진
     │   ├── SettingsService.cs            # %LocalAppData%\KCertManager\kcert_settings.json 영구 저장
@@ -55,20 +55,20 @@ KCertManager.sln (솔루션 파일)
     │   ├── UsbDriveWatcher.cs            # KCert.Core.HardwareGuard 핫플러그 위임
     │   └── UserFriendlyMessageHelper.cs  # 쉬운 한국어 안내/해결 방법 대화상자 도우미
     ├── ViewModels/
-    │   ├── MainViewModel.cs              # 메인 화면 상태, 드롭다운 테마 전환, 검색/필터링, 백업/삭제
+    │   ├── MainViewModel.cs              # 메인 화면 상태, 테마, CLASS1 포함 카테고리 필터, DispatchSafe · 예외 가드
     │   ├── UsbTransferViewModel.cs       # USB ➔ PC 역방향 가져오기 다이얼로그 뷰모델
-    │   └── PcToUsbTransferViewModel.cs   # PC ➔ USB 백업 다이얼로그 뷰모델
+    │   └── PcToUsbTransferViewModel.cs   # PC ➔ USB 백업 다이얼로그 뷰모델 (IDisposable 수명주기 정리)
     └── Views/
-        ├── MainWindow.xaml / .cs         # 모던 일체형 타이틀바(WindowChrome) 및 테마 ComboBox 드롭다운 메인 UI
-        ├── CertificateDetailDialog.xaml / .cs # PKCS#8 개인키 암호화 방식 및 지문 상세 뷰
-        ├── UpdateNotificationDialog.xaml / .cs # 인앱 자동 다운로드·셀프 설치 진행 UI 탑재 업데이트 창
+        ├── MainWindow.xaml / .cs         # 모던 일체형 타이틀바, CLASS1 필터 · 배지, OnClosed/HwndSource 정리
+        ├── CertificateDetailDialog.xaml / .cs # PKCS#8 개인키 암호화 방식, Class1 기관 배지 & TryCreateBrush 가드
+        ├── UpdateNotificationDialog.xaml / .cs # 인앱 자동 다운로드·셀프 설치 진행 UI & CTS 수명주기 정리
         ├── OperationCompleteDialog.xaml / .cs # 복사/백업 완료 안내 + 실제 드라이브 루트 explorer.exe 열기
-        ├── DiagnosticsRepairDialog.xaml / .cs # 중복 정리 + 비표준 2패스 정위치 복구·휴지통 격리 창
+        ├── DiagnosticsRepairDialog.xaml / .cs # 중복 정리 + 비표준 2패스 정위치 복구·휴지통 격리 (Regex·비동기 try/catch)
         ├── PcToUsbTransferDialog.xaml / .cs  # PC ➔ USB 복사하기 전용 대화창
-        ├── UsbTransferDialog.xaml / .cs      # USB ➔ PC 가져오기 창 (class1 보존 · 동적 시스템 루트)
+        ├── UsbTransferDialog.xaml / .cs      # USB ➔ PC 가져오기 창 (class1 보존 · Closed 핸들러 해제)
         ├── TargetDrivePickerDialog.xaml / .cs # 대상 드라이브 선택 + ResolveEffectiveDestinationRoot 자가 복사 차단
         ├── ExpiredCleanupDialog.xaml / .cs   # 984px 광폭 만료 인증서 정리 창
-        ├── TrashDialog.xaml / .cs            # 안전 휴지통 + DPAPI 암호화 보호 보관함 & USB 제한 복구
+        ├── TrashDialog.xaml / .cs            # 안전 휴지통 + DPAPI 암호화 보호 보관함 & 비동기 복원 예외 가드
         ├── SettingsDialog.xaml / .cs         # 환경 설정(알림음 볼륨, 테마, 시작 안내) 창
         ├── ActivityLogDialog.xaml / .cs      # 작업 로그 및 보안 삭제 증적 창 (Frozen 번호 열)
         ├── RenewalGuidanceDialog.xaml / .cs  # 인증서 갱신 안내 및 공식 포털 연결 창
@@ -113,6 +113,10 @@ KCertManager.sln (솔루션 파일)
     - `DiagnosticsRepairDialog` + `CertIntegrityDoctor`: 비표준 폴더를 표준 경로로 복사한 뒤 2패스로 중복 제거·안전 휴지통 격리 및 활동 로그 기록; 동일 경로/동일 파일 자기덮어쓰기 `IOException` 방지 가드 적용.
     - `KCertAntiDuplicationEngine`: PC 로컬 표준 경로를 USB 사본보다 우선(`PrimaryInstance`) 선정해 원본 오삭제 방지 및 `DerSha256` 누락 폴백 그룹핑 지원.
     - `SafetyTrashManager` / `CertTransferEngine` / `FastScanPipeline`: 볼륨 간 이동·덮어쓰기 전 `ReadOnly` 속성 재귀 해제, `GPKI`/`EPKI` `class1` 계층 보존, 말단 `\MPKI`·`/MPKI` GPKI 인식 보완.
+12. **`Class1` 기관·특수목적 필터/배지 & CI 컴파일·5차 수명주기 안정화 (`v2.1.1` 최신)**:
+    - `CertificateItem` (`IsClass1`, `ShowClass1Badge`, `Class1BadgeText`) 및 `MainWindow.xaml` `CLASS1` 라디오 필터로 `CLASS1 · 공무원(GPKI)` / `CLASS1 · 교육(EPKI)` / `CLASS1 · 기관` 인증서를 개인키 쌍 기준으로 선별 표시하고 Root/CA/CRL을 제외합니다.
+    - `DiagnosticsRepairDialog.xaml.cs` `System.Text.RegularExpressions` 참조 추가 및 `CertificateScannerService`/`CertificateBackupService` 널 경고(`CS8601`/`CS8604`) 해소로 .NET/WPF CI 빌드를 무결하게 유지합니다.
+    - `MainViewModel.DispatchSafe` · `MainWindow.OnClosed` · `PcToUsbTransferViewModel.Dispose` · `UpdateNotificationDialog` CTS 정리 및 `TrashDialog`/`CertificateDetailDialog`/`ExpiredCleanupDialog`/`TargetDrivePickerDialog` 비동기 `try/catch`·`TryCreateBrush`·`Owner` 바인딩으로 종료 시 레이스 컨디션과 메모리 누수를 원천 차단합니다.
 
 ---
 

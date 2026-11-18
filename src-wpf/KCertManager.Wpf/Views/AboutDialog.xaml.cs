@@ -38,10 +38,10 @@ namespace KCertManager.Wpf.Views
             if (PanelLicenseEn != null)
                 PanelLicenseEn.Visibility = (mode == "en" || mode == "both") ? Visibility.Visible : Visibility.Collapsed;
 
-            var activeBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2563EB"));
-            var inactiveBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E293B"));
+            var activeBg = new SolidColorBrush(ColorConverter.ConvertFromString("#2563EB") is Color c1 ? c1 : Colors.RoyalBlue);
+            var inactiveBg = new SolidColorBrush(ColorConverter.ConvertFromString("#1E293B") is Color c2 ? c2 : Colors.DarkSlateGray);
             var activeFg = Brushes.White;
-            var inactiveFg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#CBD5E1"));
+            var inactiveFg = new SolidColorBrush(ColorConverter.ConvertFromString("#CBD5E1") is Color c3 ? c3 : Colors.LightGray);
 
             if (BtnLangBoth != null)
             {

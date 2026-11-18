@@ -427,32 +427,49 @@ export function filterSignCertNamesInFolder<T extends { name: string }>(certItem
     const fn = item.name.toLowerCase();
     if (!isCompanionEnvCertName(fn)) return true;
 
+    const isGenericEnvName =
+      fn.startsWith('kmcert') ||
+      fn.startsWith('envcert') ||
+      fn === 'km.der' ||
+      fn === 'km.cer' ||
+      fn === 'env.der' ||
+      fn === 'env.cer';
+
     const sigVariant1 = fn
       .replace('_env.', '_sig.')
       .replace('_km.', '_sig.')
       .replace('_env_', '_sig_')
       .replace('_km_', '_sig_')
+      .replace('env_', 'sign_')
+      .replace('km_', 'sign_')
       .replace('envcert', 'signcert')
       .replace('kmcert', 'signcert');
     const sigVariant2 = fn
-      .replace('_env.', '_sig.')
-      .replace('_km.', '_sig.')
-      .replace('_env_', '_sig_')
-      .replace('_km_', '_sig_')
+      .replace('_env.', '_sign.')
+      .replace('_km.', '_sign.')
+      .replace('_env_', '_sign_')
+      .replace('_km_', '_sign_')
+      .replace('env_', 'sig_')
+      .replace('km_', 'sig_')
       .replace('envcert', 'sigcert')
       .replace('kmcert', 'sigcert');
 
     const hasMatchingSign = certItems.some(other => {
       const ofn = other.name.toLowerCase();
       if (ofn === fn) return false;
-      return (
-        ofn === sigVariant1 ||
-        ofn === sigVariant2 ||
-        ofn.includes('_sig.') ||
-        ofn.includes('signcert') ||
-        ofn.includes('sigcert') ||
-        ofn === 'user.der'
-      );
+      if (ofn === sigVariant1 || ofn === sigVariant2) return true;
+      if (
+        isGenericEnvName &&
+        (ofn === 'signcert.der' ||
+          ofn === 'signcert.cer' ||
+          ofn === 'sigcert.der' ||
+          ofn === 'sigcert.cer' ||
+          ofn === 'user.der' ||
+          ofn.includes('_sig.'))
+      ) {
+        return true;
+      }
+      return false;
     });
 
     return !hasMatchingSign;

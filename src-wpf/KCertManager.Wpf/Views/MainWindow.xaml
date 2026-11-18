@@ -318,6 +318,17 @@
                             </Grid>
                         </RadioButton>
 
+                        <RadioButton GroupName="Filters" Click="Filter_Click" Tag="CLASS1"
+                                     Style="{StaticResource SidebarNavRadio}">
+                            <Grid Width="210">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="🏛️ " FontSize="12"/>
+                                    <TextBlock Text="Class1 기관·특수목적" VerticalAlignment="Center" Foreground="#818CF8"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding Class1Count}" HorizontalAlignment="Right" Foreground="#818CF8" FontWeight="Bold"/>
+                            </Grid>
+                        </RadioButton>
+
                         <RadioButton GroupName="Filters" Click="Filter_Click" Tag="EXPIRED"
                                      Style="{StaticResource SidebarNavRadio}">
                             <Grid Width="210">
@@ -955,11 +966,11 @@
                                             <StackPanel VerticalAlignment="Center">
                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding CommonName}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" Margin="0,0,6,0"/>
-                                                    <!-- CLASS1 / Institutional Badge -->
+                                                    <!-- CLASS1 / Institutional Badge (GPKI vs EPKI vs Corp) -->
                                                     <Border Visibility="{Binding ShowClass1Badge, Converter={StaticResource BoolToVis}}"
-                                                            Background="#312E81" BorderBrush="#6366F1" BorderThickness="1" CornerRadius="3" Padding="5,1" Margin="0,0,5,0" VerticalAlignment="Center"
-                                                            ToolTip="기관·전자관인·특수목적용(class1) 개인키 쌍 보유 인증서">
-                                                        <TextBlock Text="{Binding Class1BadgeText}" FontSize="10" Foreground="#C7D2FE" FontWeight="Bold"/>
+                                                            Background="{Binding Class1BadgeBgHex}" BorderBrush="{Binding Class1BadgeBorderHex}" BorderThickness="1" CornerRadius="3" Padding="5,1" Margin="0,0,5,0" VerticalAlignment="Center"
+                                                            ToolTip="{Binding Class1BadgeToolTip}">
+                                                        <TextBlock Text="{Binding Class1BadgeText}" FontSize="10" Foreground="{Binding Class1BadgeFgHex}" FontWeight="Bold"/>
                                                     </Border>
                                                     <!-- Non-Standard Path Badge -->
                                                     <Border Visibility="{Binding IsCustomPath, Converter={StaticResource BoolToVis}}"
@@ -1123,8 +1134,9 @@
                                                         <TextBlock Text="{Binding SelectedCertificate.CategoryBadgeText}" FontSize="11" FontWeight="Bold" Foreground="#93C5FD"/>
                                                     </Border>
                                                     <Border Visibility="{Binding SelectedCertificate.ShowClass1Badge, Converter={StaticResource BoolToVis}}"
-                                                            Background="#312E81" BorderBrush="#6366F1" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
-                                                        <TextBlock Text="{Binding SelectedCertificate.Class1BadgeText}" FontSize="11" FontWeight="Bold" Foreground="#C7D2FE"/>
+                                                            Background="{Binding SelectedCertificate.Class1BadgeBgHex}" BorderBrush="{Binding SelectedCertificate.Class1BadgeBorderHex}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,6,0"
+                                                            ToolTip="{Binding SelectedCertificate.Class1BadgeToolTip}">
+                                                        <TextBlock Text="{Binding SelectedCertificate.Class1BadgeText}" FontSize="11" FontWeight="Bold" Foreground="{Binding SelectedCertificate.Class1BadgeFgHex}"/>
                                                     </Border>
                                                     <Border CornerRadius="4" Padding="6,2"
                                                             Background="{Binding SelectedCertificate.StorageLocationBgColorHex}"

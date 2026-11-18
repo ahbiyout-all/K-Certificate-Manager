@@ -154,7 +154,7 @@ namespace KCert.Crypto.Engine
 
                 HashAlgorithmName hashAlg = parsedParams.HashAlgorithm;
                 derivedKey = Rfc2898DeriveBytes.Pbkdf2(
-                    Encoding.UTF8.GetBytes(password),
+                    Encoding.UTF8.GetBytes(password ?? string.Empty),
                     parsedParams.Salt,
                     parsedParams.IterationCount,
                     hashAlg,
@@ -203,12 +203,20 @@ namespace KCert.Crypto.Engine
                 var rsa = RSA.Create();
                 try
                 {
-                    rsa.ImportPkcs8PrivateKey(decryptedBytes, out _);
+                    try
+                    {
+                        rsa.ImportPkcs8PrivateKey(decryptedBytes, out _);
+                    }
+                    catch
+                    {
+                        // PKCS#8이 실패하면 내부 PKCS#1 RSAPrivateKey 직접 로드 시도
+                        rsa.ImportRSAPrivateKey(decryptedBytes, out _);
+                    }
                 }
                 catch
                 {
-                    // PKCS#8이 실패하면 내부 PKCS#1 RSAPrivateKey 직접 로드 시도
-                    rsa.ImportRSAPrivateKey(decryptedBytes, out _);
+                    rsa.Dispose();
+                    throw;
                 }
 
                 result.IsSuccess = true;

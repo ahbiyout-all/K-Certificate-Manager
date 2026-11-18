@@ -177,7 +177,7 @@ namespace KCertManager.Wpf.Views
         {
             try
             {
-                if (Application.Current.Resources["TextPrimary"] is Color textPrimaryColor)
+                if (Application.Current?.Resources["TextPrimary"] is Color textPrimaryColor)
                 {
                     return textPrimaryColor.R > 128;
                 }

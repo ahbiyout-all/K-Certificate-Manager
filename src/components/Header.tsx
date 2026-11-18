@@ -91,6 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [soundSettings, setSoundSettings] = useState<SoundSettings>(getSoundSettings);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const volumeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const headerScrollRef = useRef<HTMLDivElement>(null);
 
   const handleHeaderWheel = (e: React.WheelEvent<HTMLDivElement>) => {
@@ -109,6 +110,14 @@ export const Header: React.FC<HeaderProps> = ({
     window.addEventListener(SOUND_SETTINGS_CHANGED_EVENT, handleSettingsChanged);
     return () => {
       window.removeEventListener(SOUND_SETTINGS_CHANGED_EVENT, handleSettingsChanged);
+      if (volumeDebounceRef.current) {
+        clearTimeout(volumeDebounceRef.current);
+        volumeDebounceRef.current = null;
+      }
+      if (previewTimerRef.current) {
+        clearTimeout(previewTimerRef.current);
+        previewTimerRef.current = null;
+      }
     };
   }, []);
 
@@ -123,7 +132,8 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseInt(e.target.value, 10);
+    const parsed = parseInt(e.target.value, 10);
+    const val = Number.isNaN(parsed) ? 0 : Math.max(0, Math.min(100, parsed));
     const newEnabled = val > 0;
     const updated = saveSoundSettings({ volume: val, enabled: newEnabled });
     setSoundSettings(updated);
@@ -132,6 +142,7 @@ export const Header: React.FC<HeaderProps> = ({
       clearTimeout(volumeDebounceRef.current);
     }
     volumeDebounceRef.current = setTimeout(() => {
+      volumeDebounceRef.current = null;
       if (val > 0) {
         playTestChime(val);
       }
@@ -141,7 +152,13 @@ export const Header: React.FC<HeaderProps> = ({
   const handlePreviewChime = () => {
     setIsPlayingPreview(true);
     playTestChime(soundSettings.enabled ? soundSettings.volume : 40);
-    setTimeout(() => setIsPlayingPreview(false), 500);
+    if (previewTimerRef.current) {
+      clearTimeout(previewTimerRef.current);
+    }
+    previewTimerRef.current = setTimeout(() => {
+      previewTimerRef.current = null;
+      setIsPlayingPreview(false);
+    }, 500);
   };
 
   const normalizedTheme =

@@ -18,13 +18,15 @@
 ---
 
 ## 3. 업데이트 (Recent Updates)
+- 🏛️ **`Class1` 기관·특수목적 인증서 구분 배지 & 사이드바 `CLASS1` 필터 신설 (`Sidebar`, `CertificateList`, `MainWindow`, `CertLocationScanner`)**:
+  - `C:\GPKI\Certificate\class1`, EPKI, USB `class1` 폴더에서 개인키(`.key`/`.pri`) 쌍을 보유한 실사용 기관 인증서만 선별 표시(Root/CA/CRL 및 중복 `_env.cer` 제외)하며, `CLASS1 · 공무원(GPKI)` / `CLASS1 · 교육(EPKI)` / `CLASS1 · 기관` 배지와 사이드바 `CLASS1` 필터·검색 키워드를 제공합니다.
 - 📁 **복사 완료 폴더 실제 드라이브 루트(`E:\NPKI\...`) 탐색기 타겟팅 보강 (`OperationCompleteModal`, `BackupModal`, `OperationCompleteDialog`)**:
   - `'복사된 폴더 열기'` 클릭 시 드라이브 문자 뒤 누락 백슬래시(`\`)와 하위 경로 조합을 정규화해 실제 대상 드라이브 루트를 정확히 열어주며, Web 환경에서도 안전 브리지·폴더 피커·클립보드 폴백을 지원합니다.
 - 🧹 **비표준 경로 정위치 복구 마법사·안전 휴지통 격리 워크플로우 완성 (`handleRepairFolders`, `DiagnosticsRepairDialog`, `CertIntegrityDoctor`)**:
-  - 중첩 폴더나 비표준 경로 인증서를 표준 위치로 복사한 직후 중복 ID를 정리해 원본을 안전 휴지통(`SafetyTrash`)으로 즉시 격리하고 활동 로그(`RESTORE`/`DELETE`)·성공 토스트를 기록하며, 동일 경로 자기덮어쓰기 `IOException`을 사전 차단합니다.
-- 🛡️ **중복 건너뛰기(`skip`) 0건 가드 및 Web/WPF 전수 감사 경로·무결성 교정**:
-  - **Web**: `skip` 옵션으로 실제 복사 `0`건일 때 허위 `"0건 완료"` 대신 `중복 건너뛰기 완료` 화면과 `INFO` 로그·토스트만 표시; `USB:\NPKI|GPKI\Certificate|EPKI\Certificate` 표준 경로 및 TradeSign 법인(`NPKI_CORP`) 분류·`class1` 계층·외장 SSD/고속 USB 필터 통일.
-  - **WPF**: `SafetyTrashManager` 읽기 전용(`ReadOnly`) 속성 재귀 해제, `KCertAntiDuplicationEngine` PC 표준 원본 우선 선정 및 폴백 그룹핑, `FastScanPipeline` 말단 `\MPKI` GPKI 인식 보강.
+  - 중첩 폴더나 비표준 경로 인증서를 표준 위치로 복사한 직후 중복 ID를 정리해 원본을 안전 휴지통(`SafetyTrash`)으로 즉시 격리하고 활동 로그(`RESTORE`/`DELETE`)·성공 토스트를 기록하며, `specificDerPath` 정밀 진단 및 동일 경로 자기덮어쓰기 `IOException`을 사전 차단합니다.
+- 🛡️ **중복 건너뛰기(`skip`) 0건 가드 및 Web/WPF 5차 심층 전수 감사 안정화**:
+  - **Web**: `skip` 옵션으로 실제 복사 `0`건일 때 허위 `"0건 완료"` 대신 `중복 건너뛰기 완료` 화면과 `INFO` 로그·토스트만 표시; `USB:\NPKI|GPKI\Certificate|EPKI\Certificate` 표준 경로 및 TradeSign `NPKI_CORP` 분류 통일, 타이머·윈도우 리스너 누수 정리 및 `localStorage`/JSON 스키마·프로토타입 오염 방어 강화.
+  - **WPF**: `.NET`/`WPF` CI 컴파일(`Regex`/널 참조 경고) 해소, `DispatchSafe`/`OnClosed`/`IDisposable`/비동기 `try/catch` 수명주기 정리, `SafetyTrashManager` 읽기 전용 해제, `KCertAntiDuplicationEngine` PC 원본 우선 선정 및 `FastScanPipeline` 말단 `\MPKI` GPKI 인식 보강.
 - 🚀 **인앱 자동 다운로드·무인 셀프 설치 & WPF-Web 다크 테마·반응형 카드 UI (`v2.1.0` 기반 계승)**:
   - GitHub 웹사이트 이동 없이 업데이트 창 `[확인 (자동 다운로드 · 설치)]` 클릭만으로 다운로드·검증(`MZ`/SHA-256)·무인 설치·재실행까지 원스톱 처리하며, 통합 다크 테마(`#0F1219`), CSS Grid `auto-fill` 카드 레이아웃, 쉬운 일상 표현 + `더보기` UI, DPAPI/AES-256 암호화 보호 보관함, 60fps 유동 네온 테두리를 제공합니다.
 
@@ -75,7 +77,7 @@
 ---
 
 ## 9. 전체 업데이트 (Full Update History)
-- **[v2.1.1] - 2026-11-16**: 복사 완료 폴더 실제 드라이브 루트(`E:\NPKI\...`) 탐색기 타겟팅 보강, 비표준 정위치 복구 후 안전 휴지통 격리 및 활동 로그·토스트 연동, 중복 `skip` 0건 가드, `USB:\` 표준 경로·`certParser` 정규화·TradeSign `NPKI_CORP` 추가 및 WPF `SafetyTrashManager`/`KCertAntiDuplicationEngine`/`CertIntegrityDoctor`/`FastScanPipeline` 안정화.
+- **[v2.1.1] - 2026-11-16 (안정화 2026-11-18)**: `Class1` (`C:\GPKI\Certificate\class1` 등) 개인키 쌍 선별 스캔 · `공무원(GPKI)`/`교육(EPKI)`/`기관` 배지 · 사이드바 `CLASS1` 필터 신설, 복사 완료 폴더 실제 드라이브 루트(`E:\NPKI\...`) 탐색기 타겟팅 보강, 비표준 정위치 복구(`specificDerPath`) 후 안전 휴지통 격리 및 활동 로그·토스트 연동, 중복 `skip` 0건 가드, Web/WPF 5차 심층 수명주기·JSON 스키마·CI 컴파일 안정화.
 - **[v2.1.0] - 2026-11-13**: GitHub 이동 없는 인앱 자동 다운로드·무인 셀프 설치 엔진, WPF-Web 다크 테마 통합 & CSS Grid `auto-fill` 반응형 카드 레이아웃, 쉬운 일상 표현 + `더보기` UI 개편, 3차 감사 수정(`C:\` 자가 복사 차단 보강 등).
 - **[v2.0.0] - 2026-11-10**: 60fps 무한 유동 애니메이션 테두리 전면 탑재(WPF & Web), `/dist/v2.0.0/` 분리 빌드 파이프라인 확립.
 - **[v1.9.0] - 2026-11-06**: DPAPI/AES-256 암호화 보호 보관함, 제한된 USB 복구, 984px 만료 정리창, Inno Setup 무인 설치 최적화.
@@ -112,12 +114,13 @@
   ✨ 3. 주요 업데이트 (Recent Highlights)
 </h2>
 <ul style="font-size: 14.5px; line-height: 1.75; color: #475569; padding-left: 20px; margin-bottom: 25px;">
+  <li><strong>🏛️ <code>Class1</code> 기관·특수목적 인증서 구분 배지 &amp; 사이드바 <code>CLASS1</code> 필터 신설</strong>: <code>C:\GPKI\Certificate\class1</code>, EPKI, USB <code>class1</code> 경로에서 개인키(<code>.key</code>/<code>.pri</code>) 쌍 보유 인증서만 선별 표시(Root/CA/CRL 및 중복 <code>_env.cer</code> 제외)하고, <code>CLASS1 · 공무원(GPKI)</code> · <code>CLASS1 · 교육(EPKI)</code> · <code>CLASS1 · 기관</code> 배지 및 사이드바 <code>CLASS1</code> 필터·키워드 검색을 지원합니다.</li>
   <li><strong>📁 복사 완료 폴더 실제 드라이브 루트(<code>E:\NPKI\...</code>) 탐색기 타겟팅 보강</strong>: <code>OperationCompleteModal</code> · <code>BackupModal</code> · <code>OperationCompleteDialog</code>에서 <code>'복사된 폴더 열기'</code> 클릭 시 드라이브 문자 뒤 누락 백슬래시(<code>\</code>)와 하위 경로 조합을 정규화해 실제 드라이브 루트를 정확히 열어주며, Web 환경에서도 안전 브리지·폴더 피커·클립보드 폴백을 지원합니다.</li>
-  <li><strong>🧹 비표준 경로 정위치 복구 마법사·안전 휴지통 격리 워크플로우 완성</strong>: <code>handleRepairFolders</code> · <code>DiagnosticsRepairDialog</code> · <code>CertIntegrityDoctor</code>에서 표준 경로 복사 완료 후 중복 ID를 정리해 원본을 안전 휴지통(<code>SafetyTrash</code>)으로 즉시 격리하고 활동 로그(<code>RESTORE</code>/<code>DELETE</code>)·성공 토스트를 기록하며, 동일 경로 자기덮어쓰기 <code>IOException</code>을 사전 차단합니다.</li>
-  <li><strong>🛡️ 중복 건너뛰기(<code>skip</code>) 0건 가드 및 Web/WPF 전수 감사 경로·무결성 교정</strong>:
+  <li><strong>🧹 비표준 경로 정위치 복구 마법사·안전 휴지통 격리 워크플로우 완성</strong>: <code>handleRepairFolders</code> · <code>DiagnosticsRepairDialog</code> · <code>CertIntegrityDoctor</code>(<code>specificDerPath</code> 정밀 진단)에서 표준 경로 복사 완료 후 중복 ID를 정리해 원본을 안전 휴지통(<code>SafetyTrash</code>)으로 즉시 격리하고 활동 로그·성공 토스트를 기록하며, 동일 경로 자기덮어쓰기 <code>IOException</code>을 사전 차단합니다.</li>
+  <li><strong>🛡️ 중복 건너뛰기(<code>skip</code>) 0건 가드 및 Web/WPF 5차 심층 전수 감사 안정화</strong>:
     <ul>
-      <li><strong>Web 관리 콘솔</strong>: <code>skip</code> 옵션으로 실제 복사 <code>0</code>건일 때 허위 <code>"0건 완료"</code> 대신 <code>중복 건너뛰기 완료</code> 화면과 <code>INFO</code> 로그·토스트만 표시; <code>USB:\NPKI|GPKI\Certificate|EPKI\Certificate</code> 표준 경로 및 TradeSign 법인(<code>NPKI_CORP</code>) 분류·<code>class1</code> 계층·외장 SSD/고속 USB 필터 통일.</li>
-      <li><strong>C# WPF 데스크톱</strong>: <code>SafetyTrashManager</code> 읽기 전용(<code>ReadOnly</code>) 속성 재귀 해제, <code>KCertAntiDuplicationEngine</code> PC 표준 원본 우선 선정 및 폴백 그룹핑, <code>FastScanPipeline</code> 말단 <code>\MPKI</code> GPKI 인식 보강.</li>
+      <li><strong>Web 관리 콘솔</strong>: <code>skip</code> 옵션으로 실제 복사 <code>0</code>건일 때 <code>중복 건너뛰기 완료</code> 안내 화면 표시; <code>USB:\</code> 표준 경로·TradeSign(<code>NPKI_CORP</code>)·<code>class1</code> 계층 통일 및 타이머·리스너 누수 정리, <code>localStorage</code>/JSON 스키마·프로토타입 오염 방어 적용.</li>
+      <li><strong>C# WPF 데스크톱</strong>: CI 컴파일(<code>Regex</code>/널 참조 경고) 해소, <code>DispatchSafe</code>·<code>OnClosed</code>·<code>IDisposable</code>·비동기 <code>try/catch</code> 수명주기 정리, <code>SafetyTrashManager</code> 읽기 전용 해제, <code>KCertAntiDuplicationEngine</code> PC 원본 우선 선정 및 <code>FastScanPipeline</code> 말단 <code>\MPKI</code> 인식 보강.</li>
     </ul>
   </li>
   <li><strong>🚀 인앱 자동 다운로드·무인 셀프 설치 &amp; WPF-Web 다크 테마·반응형 카드 UI (<code>v2.1.0</code> 계승)</strong>: 업데이트 창 <code>[확인 (자동 다운로드 · 설치)]</code> 원스톱 셀프 업데이트, 통합 다크 테마(<code>#0F1219</code>), CSS Grid <code>auto-fill</code> 카드 레이아웃, 쉬운 일상 표현 + <code>더보기</code> UI, DPAPI/AES-256 암호화 보호 보관함, 60fps 유동 네온 테두리를 제공합니다.</li>
@@ -199,11 +202,12 @@
   📜 9. 전체 업데이트 이력 (Full Update History)
 </h2>
 <div style="font-size: 13.5px; line-height: 1.7; color: #475569; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 25px;">
-  <p style="margin-top: 0; font-weight: bold; color: #0f172a;">[v2.1.1] - 2026-11-16</p>
+  <p style="margin-top: 0; font-weight: bold; color: #0f172a;">[v2.1.1] - 2026-11-16 (안정화 2026-11-18)</p>
   <ul>
+    <li><code>Class1</code> 기관·특수목적 인증서 개인키 쌍 선별 스캔, <code>공무원(GPKI)</code>/<code>교육(EPKI)</code>/<code>기관</code> 구분 배지 및 사이드바 <code>CLASS1</code> 필터·키워드 검색 신설.</li>
     <li>복사 완료 폴더 실제 드라이브 루트(<code>E:\NPKI\...</code>) 탐색기 타겟팅 보강(<code>OperationCompleteModal</code> / <code>OperationCompleteDialog</code>).</li>
-    <li>비표준 경로 정위치 복구 마법사·안전 휴지통 격리 및 활동 로그·토스트 연동 완성, 동일 경로 자기덮어쓰기 <code>IOException</code> 방지 가드 적용.</li>
-    <li>Web 중복 <code>skip</code> 0건 가드, <code>USB:\</code> 표준 경로·<code>certParser</code> 폴더 정규화·TradeSign <code>NPKI_CORP</code> 분류 추가 및 WPF <code>SafetyTrashManager</code> 읽기 전용 해제·<code>KCertAntiDuplicationEngine</code> PC 원본 우선 정렬·<code>FastScanPipeline</code> <code>\MPKI</code> 인식 보강.</li>
+    <li>비표준 경로 정위치 복구 마법사(<code>specificDerPath</code>)·안전 휴지통 격리 및 활동 로그·토스트 연동 완성, 동일 경로 자기덮어쓰기 <code>IOException</code> 방지 가드 적용.</li>
+    <li>Web·WPF 5차 심층 전수 감사: CI 컴파일(<code>Regex</code>/널 경고) 해소, <code>DispatchSafe</code>/<code>OnClosed</code>/<code>IDisposable</code> 수명주기 정리, Web 타이머·리스너 누수 및 JSON 스키마 방어, 중복 <code>skip</code> 0건 가드, <code>USB:\</code> 표준 경로 및 <code>KCertAntiDuplicationEngine</code> PC 원본 우선 정렬.</li>
   </ul>
   <p style="font-weight: bold; color: #0f172a;">[v2.1.0] - 2026-11-13</p>
   <ul>

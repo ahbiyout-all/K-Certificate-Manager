@@ -14,9 +14,11 @@
 ### 1.2 표준 디렉터리 경로 매핑
 | 체계 | 표준 로컬 디렉터리 경로 | 발급 기관 | 용도 |
 | :--- | :--- | :--- | :--- |
-| **GPKI** | `C:\Users\{User}\AppData\LocalLow\GPKI\Certificate\class\{UserCN}` | 정부공동인증센터 | 중앙행정기관, 지자체 공무원 |
-| **EPKI** | `C:\Users\{User}\AppData\LocalLow\EPKI\Certificate\class\{UserCN}` | 교육부행정전자서명센터 | 시도교육청, 국공사립 초중고대학 |
-| **NPKI** | `C:\Users\{User}\AppData\LocalLow\NPKI\{Yessign, KICA, CrossCert...}\User\{UserCN}` | 금융결제원, 코스콤, 한국정보인증 등 | 은행, 증권, 보험, 범용 공동인증 |
+| **GPKI** | `C:\GPKI\Certificate\class2\{UserCN}` / `class1\{Org}` | 정부공동인증센터 | 중앙행정기관, 지자체 공무원 및 기관·관인(`class1`) |
+| **EPKI** | `C:\Users\{User}\AppData\LocalLow\EPKI\Certificate\class2\|class1` (또는 `C:\EPKI\Certificate\...`) | 교육부행정전자서명센터 | 시도교육청, 국공사립 초중고대학 및 교육기관(`class1`) |
+| **NPKI** | `C:\Users\{User}\AppData\LocalLow\NPKI\{Yessign, KICA, CrossCert, TradeSign...}\User\{UserCN}` | 금융결제원, 코스콤, 한국정보인증 등 | 은행, 증권, 보험, 범용/법인 공동인증 |
+
+> **💡 `class1` 기관·특수목적 필터링 규칙**: `C:\GPKI\Certificate\class1`, EPKI `class1`, USB `class1` 경로는 다수의 인증서와 루트/CA 파일이 혼재할 수 있으므로, `CertLocationScanner` 및 `CertificateScannerService`가 **개인키(`.key`/`.pri`) 쌍을 보유한 실사용 인증서만 선별**하여 표출하고 Root/CA/CRL 및 중복 `_env.cer`를 자동 제외합니다. 또한 Web·WPF 목록과 사이드바(`CLASS1`)에서 `공무원(GPKI)`·`교육(EPKI)`·`기관` 배지로 구분합니다.
 
 ---
 
@@ -85,11 +87,11 @@
    - `signCert.der` + `signPri.key` 키 쌍 정합성 및 만료 임박(30일) 정밀 판별기 (`CertPairValidator.cs`)
    - 원클릭 고속 메타데이터 추출기 (`KCertParser.cs`)
 2. **`KCert.Core.Discovery` (2단계 초고속 탐색 서브시스템)**:
-   - 2단계 분리형(Fast-Pass 0.1초 즉시 로딩 + Deep-Pass 백그라운드 스트리밍) 스캔 파이프라인 (`FastScanPipeline.cs`, 말단 `\MPKI`/`/MPKI` 포함 GPKI/EPKI 자동 분류)
-   - `AppData\LocalLow`, 사용자 홈, 시스템 드라이브 루트, 연결된 USB 표준 경로 지능형 자동 탐색 (`CertLocationScanner.cs`)
-   - 권한 거부 및 시스템 특수 폴더 자동 스킵 안전 BFS 재귀 탐색기
+   - 2단계 분리형(Fast-Pass 0.1초 즉시 로딩 + Deep-Pass 백그라운드 스트리밍) 스캔 파이프라인 (`FastScanPipeline.cs`, 말단 `\MPKI`/`/MPKI` 포함 GPKI/EPKI 자동 분류 및 다중 인증서 혼재 `class1` 폴더 스템 기반 개인키 매칭 `FindMatchingPrivateKey`)
+   - `AppData\LocalLow`, 사용자 홈, 시스템 드라이브 루트(`C:\GPKI\Certificate\class1|class2`), 연결된 USB 표준 경로 지능형 자동 탐색 (`CertLocationScanner.cs`)
+   - 권한 거부 및 시스템 특수 폴더(`CA`, `Root`, `CRL`, `Government of Korea`, `ldap`) 자동 스킵 안전 BFS 재귀 탐색기
 3. **`KCert.Core.Diagnostics` (지능형 진단 & 중복 탐지 서브시스템)**:
-   - 비표준/중첩 디렉터리 정밀 진단 및 표준 계층 경로 자동 복구(Auto-Repair) 엔진 (`CertIntegrityDoctor.cs` — 동일 경로/동일 파일 자기덮어쓰기 `IOException` 방지 가드 포함; Web `handleRepairFolders` 및 WPF `DiagnosticsRepairDialog`에서 표준 복사 완료 후 원본 비표준 폴더 즉시 안전 휴지통 격리 + 활동 로그·토스트 연동)
+   - 비표준/중첩 디렉터리 정밀 진단 및 표준 계층 경로 자동 복구(Auto-Repair) 엔진 (`CertIntegrityDoctor.cs` — `specificDerPath` 기반 다중 `class1` 폴더 정밀 진단 및 동일 경로/동일 파일 자기덮어쓰기 `IOException` 방지 가드 포함; Web `handleRepairFolders` 및 WPF `DiagnosticsRepairDialog`에서 표준 복사 완료 후 원본 비표준 폴더 즉시 안전 휴지통 격리 + 활동 로그·토스트 연동)
    - 시스템 전역 드라이브(C/D/E/USB) 중복 인증서 클러스터링 및 잉여 복사본 분석 엔진 (`KCertAntiDuplicationEngine.cs` — PC 표준 경로를 USB 사본보다 우선 보존하는 `ScorePrimary` 및 `DerSha256` 누락 시 일련번호·발급기관·CN 폴백 그룹핑 적용)
    - 만료 위험 5단계 평가 및 인증기관별 공식 갱신 포털 자동 라우팅 엔진 (`CertExpirationAlarmEngine.cs`)
 4. **`KCert.Core.Vault` (보안 금고 & 원자적 트랜잭션 서브시스템)**:
@@ -196,7 +198,18 @@
 
 ---
 
-## 14. 메타데이터 & 개발자
+## 14. 수명주기 안전성, Dispatcher 가드 & 스토리지 JSON 스키마 하드닝 (`v2.1.1` Pass 5)
+
+1. **WPF UI 스레드 종료 가드 및 이벤트 수명주기 해제 (`DispatchSafe` / `OnClosed` / `IDisposable`)**:
+   - `MainViewModel.DispatchSafe` 및 `MainWindow.DispatchUi`가 `Dispatcher.HasShutdownStarted`/`HasShutdownFinished`를 선검사하여 앱 종료 직전 백그라운드 콜백으로 인한 `TaskCanceledException`·무효 디스패치를 차단합니다.
+   - `MainWindow`, `UsbTransferDialog`, `PcToUsbTransferViewModel`, `UpdateNotificationDialog`는 창 종료 시 `HwndSource.RemoveHook`, WMI/PropertyChanged 핸들러 구독 해제 및 `CancellationTokenSource` 정리를 수행하며, 비동기 UI 핸들러에 예외 방어(`try/catch`)와 `Owner` 바인딩을 강제합니다.
+2. **React Web 리스너·타이머 누수 차단 및 엄격한 JSON/스토리지 검증**:
+   - `Header`, `SettingsModal`, `AppActivityLogModal`, `BackupModal`, `UsbToPcModal`, `StartupWorkflowModal`, `App`, `CertificateList` 전반에 걸쳐 언마운트 시 `clearTimeout` 및 윈도우 `mousemove`/`mouseup` 리스너 정리를 보장합니다.
+   - `protectedVaultStorage.ts`, `renewalStore.ts`, `activityLogger.ts`, `backupService.ts`, `CertificateList.tsx`(`colWidths`)는 `localStorage` 및 JSON 가져오기 파싱 시 `Array.isArray`·필드 타입·허용 숫자 범위(`Number.isFinite`)·`__proto__` 키 차단을 수행합니다.
+
+---
+
+## 15. 메타데이터 & 개발자
 - **개발자**: AhBiYout
 - **GitHub 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
 - **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)

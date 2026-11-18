@@ -222,7 +222,7 @@ namespace KCert.Core.Vault
         /// 예: C:\Users\User\AppData\LocalLow\NPKI\yessign\User\홍길동 -> NPKI\yessign\User\홍길동
         /// 예: C:\GPKI\Certificate\class2\cn=홍길동 -> GPKI\Certificate\class2\cn=홍길동
         /// </summary>
-        public static string ResolveRelativePath(string fullPath)
+        public static string ResolveRelativePath(string? fullPath)
         {
             if (string.IsNullOrEmpty(fullPath)) return string.Empty;
 

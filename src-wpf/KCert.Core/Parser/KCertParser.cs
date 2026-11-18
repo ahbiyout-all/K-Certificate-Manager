@@ -51,7 +51,10 @@ namespace KCert.Core.Parser
                         var all = derFiles.Concat(cerFiles).ToArray();
                         derPath = all.FirstOrDefault(f => {
                             var fn = Path.GetFileName(f).ToLowerInvariant();
-                            return !fn.StartsWith("km") && !fn.StartsWith("root") && !fn.StartsWith("ca");
+                            return !fn.StartsWith("km") && !fn.StartsWith("env") &&
+                                   !fn.Contains("_km.") && !fn.Contains("_env.") &&
+                                   !fn.Contains("kmcert") && !fn.Contains("envcert") &&
+                                   !fn.StartsWith("root") && !fn.StartsWith("ca") && !fn.StartsWith("crl");
                         }) ?? all.FirstOrDefault() ?? string.Empty;
                     }
                     catch
@@ -231,7 +234,7 @@ namespace KCert.Core.Parser
                     SubjectDn = cert.Subject ?? string.Empty,
                     Issuer = formattedIssuer,
                     CaSignatureName = caSignatureName,
-                    SerialNumber = cert.SerialNumber,
+                    SerialNumber = cert.SerialNumber ?? string.Empty,
                     SignatureAlgorithm = cert.SignatureAlgorithm.FriendlyName ?? "sha256RSA",
                     CommonName = formattedName,
                     Organization = formattedOrg,

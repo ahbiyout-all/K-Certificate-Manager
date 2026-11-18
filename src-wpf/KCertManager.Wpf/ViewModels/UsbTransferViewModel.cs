@@ -436,6 +436,11 @@ namespace KCertManager.Wpf.ViewModels
                 {
                     try
                     {
+                        if (cert == null || string.IsNullOrWhiteSpace(cert.DirectoryPath))
+                        {
+                            continue;
+                        }
+
                         var cat = cert.Category.ToString();
                         destinationCategories.Add(cat);
 

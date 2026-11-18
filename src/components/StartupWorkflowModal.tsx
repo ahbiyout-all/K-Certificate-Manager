@@ -82,10 +82,24 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
 
   const [colWidths, setColWidths] = useState<Record<string, number>>(DEFAULT_STARTUP_COL_WIDTHS);
   const [resizingCol, setResizingCol] = useState<string | null>(null);
+  const resizeCleanupRef = React.useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      resizeCleanupRef.current?.();
+      resizeCleanupRef.current = null;
+      setResizingCol(null);
+    }
+    return () => {
+      resizeCleanupRef.current?.();
+      resizeCleanupRef.current = null;
+    };
+  }, [isOpen]);
 
   const handleStartResize = (colKey: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    resizeCleanupRef.current?.();
     const startX = e.clientX;
     const startWidth = colWidths[colKey] || 100;
     setResizingCol(colKey);
@@ -97,12 +111,20 @@ export const StartupWorkflowModal: React.FC<StartupWorkflowModalProps> = ({
       setColWidths(prev => ({ ...prev, [colKey]: newWidth }));
     };
 
-    const onMouseUp = () => {
-      setResizingCol(null);
+    const cleanup = () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
+      if (resizeCleanupRef.current === cleanup) {
+        resizeCleanupRef.current = null;
+      }
     };
 
+    const onMouseUp = () => {
+      setResizingCol(null);
+      cleanup();
+    };
+
+    resizeCleanupRef.current = cleanup;
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
   };

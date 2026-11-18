@@ -193,7 +193,7 @@ namespace KCertManager.Wpf.Views
             }
             catch (Exception ex)
             {
-                UserFriendlyMessageHelper.ShowError(ex, "보관함 보안 점검 오류");
+                UserFriendlyMessageHelper.ShowError(ex, "보관함 보안 점검 오류", this);
             }
         }
 
@@ -229,7 +229,7 @@ namespace KCertManager.Wpf.Views
             }
             catch (Exception ex)
             {
-                UserFriendlyMessageHelper.ShowError(ex, "백업 내보내기 오류");
+                UserFriendlyMessageHelper.ShowError(ex, "백업 내보내기 오류", this);
             }
         }
 
@@ -344,7 +344,7 @@ namespace KCertManager.Wpf.Views
                 }
                 catch (Exception ex)
                 {
-                    UserFriendlyMessageHelper.ShowError(ex, "파일 손상 여부 검사 중 오류");
+                    UserFriendlyMessageHelper.ShowError(ex, "파일 손상 여부 검사 중 오류", this);
                 }
             }
         }
@@ -386,8 +386,8 @@ namespace KCertManager.Wpf.Views
         private void BtnTabDeleted_Click(object sender, RoutedEventArgs e)
         {
             if (_isInitializing) return;
-            if (BtnTabDeleted != null) BtnTabDeleted.Style = (Style)FindResource("PrimaryButton");
-            if (BtnTabRestored != null) BtnTabRestored.Style = (Style)FindResource("SecondaryButton");
+            if (BtnTabDeleted != null && TryFindResource("PrimaryButton") is Style s1) BtnTabDeleted.Style = s1;
+            if (BtnTabRestored != null && TryFindResource("SecondaryButton") is Style s2) BtnTabRestored.Style = s2;
 
             if (PanelDeletedToolbar != null) PanelDeletedToolbar.Visibility = Visibility.Visible;
             if (PanelDeletedContent != null) PanelDeletedContent.Visibility = Visibility.Visible;
@@ -400,8 +400,8 @@ namespace KCertManager.Wpf.Views
         private void BtnTabRestored_Click(object sender, RoutedEventArgs e)
         {
             if (_isInitializing) return;
-            if (BtnTabDeleted != null) BtnTabDeleted.Style = (Style)FindResource("SecondaryButton");
-            if (BtnTabRestored != null) BtnTabRestored.Style = (Style)FindResource("PrimaryButton");
+            if (BtnTabDeleted != null && TryFindResource("SecondaryButton") is Style s1) BtnTabDeleted.Style = s1;
+            if (BtnTabRestored != null && TryFindResource("PrimaryButton") is Style s2) BtnTabRestored.Style = s2;
 
             if (PanelDeletedToolbar != null) PanelDeletedToolbar.Visibility = Visibility.Collapsed;
             if (PanelDeletedContent != null) PanelDeletedContent.Visibility = Visibility.Collapsed;
@@ -650,37 +650,41 @@ namespace KCertManager.Wpf.Views
                         }
                     }
                 });
+
+                if (restoredCount > 0)
+                {
+                    AnyItemRestored = true;
+                    UserFriendlyMessageHelper.ShowOperationComplete(
+                        "🎉 선택한 인증서 복원 완료",
+                        $"휴지통에 있던 {restoredCount}건의 인증서를 원래 위치로 복원했습니다.",
+                        restoredCount,
+                        "휴지통 (임시 보관함)",
+                        firstOrigPath,
+                        successItems.Select(s => new OperationCompleteItem { Name = s.CertCommonName, IssuerAndPolicy = $"원래 경로: {s.OriginalDirectoryPath}" }),
+                        "• 복원된 인증서는 내 PC 목록과 원래 폴더에서 바로 사용할 수 있습니다.",
+                        this);
+                    LoadTrashItems();
+                    LoadRestoredItems();
+                }
+                else
+                {
+                    UserFriendlyMessageHelper.ShowErrorText(
+                        "선택한 인증서를 복원하지 못했습니다.",
+                        "복원 오류 안내",
+                        "• 대상 디렉터리의 쓰기 권한을 확인해 주세요.\n• 관리자 권한으로 프로그램을 실행해 보세요.",
+                        this);
+                    LoadTrashItems();
+                    LoadRestoredItems();
+                }
+            }
+            catch (Exception ex)
+            {
+                UserFriendlyMessageHelper.ShowError(ex, "선택한 인증서 복원", this);
             }
             finally
             {
                 IsEnabled = true;
                 Mouse.OverrideCursor = null;
-            }
-
-            if (restoredCount > 0)
-            {
-                AnyItemRestored = true;
-                UserFriendlyMessageHelper.ShowOperationComplete(
-                    "🎉 선택한 인증서 복원 완료",
-                    $"휴지통에 있던 {restoredCount}건의 인증서를 원래 위치로 복원했습니다.",
-                    restoredCount,
-                    "휴지통 (임시 보관함)",
-                    firstOrigPath,
-                    successItems.Select(s => new OperationCompleteItem { Name = s.CertCommonName, IssuerAndPolicy = $"원래 경로: {s.OriginalDirectoryPath}" }),
-                    "• 복원된 인증서는 내 PC 목록과 원래 폴더에서 바로 사용할 수 있습니다.",
-                    this);
-                LoadTrashItems();
-                LoadRestoredItems();
-            }
-            else
-            {
-                UserFriendlyMessageHelper.ShowErrorText(
-                    "선택한 인증서를 복원하지 못했습니다.",
-                    "복원 오류 안내",
-                    "• 대상 디렉터리의 쓰기 권한을 확인해 주세요.\n• 관리자 권한으로 프로그램을 실행해 보세요.",
-                    this);
-                LoadTrashItems();
-                LoadRestoredItems();
             }
         }
 
@@ -741,37 +745,41 @@ namespace KCertManager.Wpf.Views
                         }
                     }
                 });
+
+                if (restoredCount > 0)
+                {
+                    AnyItemRestored = true;
+                    UserFriendlyMessageHelper.ShowOperationComplete(
+                        "🎉 휴지통 인증서 전체 복원 완료",
+                        $"휴지통에 있던 모든 인증서({restoredCount}건)를 원래 위치로 복원했습니다.",
+                        restoredCount,
+                        "휴지통 (임시 보관함)",
+                        firstOrigPath,
+                        successItems.Select(s => new OperationCompleteItem { Name = s.CertCommonName, IssuerAndPolicy = $"원래 경로: {s.OriginalDirectoryPath}" }),
+                        "• 복원된 인증서는 내 PC 목록과 원래 폴더에서 바로 사용할 수 있습니다.",
+                        this);
+                    LoadTrashItems();
+                    LoadRestoredItems();
+                }
+                else
+                {
+                    UserFriendlyMessageHelper.ShowErrorText(
+                        "휴지통의 인증서를 복원하지 못했습니다.",
+                        "복원 오류 안내",
+                        "• 대상 디렉터리의 쓰기 권한을 확인해 주세요.\n• 관리자 권한으로 프로그램을 다시 실행해 보세요.",
+                        this);
+                    LoadTrashItems();
+                    LoadRestoredItems();
+                }
+            }
+            catch (Exception ex)
+            {
+                UserFriendlyMessageHelper.ShowError(ex, "휴지통 전체 일괄 복원", this);
             }
             finally
             {
                 IsEnabled = true;
                 Mouse.OverrideCursor = null;
-            }
-
-            if (restoredCount > 0)
-            {
-                AnyItemRestored = true;
-                UserFriendlyMessageHelper.ShowOperationComplete(
-                    "🎉 휴지통 인증서 전체 복원 완료",
-                    $"휴지통에 있던 모든 인증서({restoredCount}건)를 원래 위치로 복원했습니다.",
-                    restoredCount,
-                    "휴지통 (임시 보관함)",
-                    firstOrigPath,
-                    successItems.Select(s => new OperationCompleteItem { Name = s.CertCommonName, IssuerAndPolicy = $"원래 경로: {s.OriginalDirectoryPath}" }),
-                    "• 복원된 인증서는 내 PC 목록과 원래 폴더에서 바로 사용할 수 있습니다.",
-                    this);
-                LoadTrashItems();
-                LoadRestoredItems();
-            }
-            else
-            {
-                UserFriendlyMessageHelper.ShowErrorText(
-                    "휴지통의 인증서를 복원하지 못했습니다.",
-                    "복원 오류 안내",
-                    "• 대상 디렉터리의 쓰기 권한을 확인해 주세요.\n• 관리자 권한으로 프로그램을 다시 실행해 보세요.",
-                    this);
-                LoadTrashItems();
-                LoadRestoredItems();
             }
         }
 
@@ -792,51 +800,55 @@ namespace KCertManager.Wpf.Views
                         success = res.Success;
                         msg = res.Message;
                     });
+
+                    if (success)
+                    {
+                        AnyItemRestored = true;
+                        ActivityLogService.Instance.Log(
+                            LogCategory.RESTORE,
+                            LogLevel.SUCCESS,
+                            "휴지통에서 복원 완료",
+                            $"인증서: {item.CertCommonName}",
+                            item.TrashDirectoryPath,
+                            item.OriginalDirectoryPath);
+
+                        UserFriendlyMessageHelper.ShowOperationComplete(
+                            "🎉 인증서 복원 완료",
+                            $"인증서 [{item.CertCommonName}]를 원래 위치({item.OriginalDirectoryPath})로 복원했습니다.",
+                            1,
+                            "휴지통 (임시 보관함)",
+                            item.OriginalDirectoryPath,
+                            new[] { new OperationCompleteItem { Name = item.CertCommonName, IssuerAndPolicy = $"원래 경로: {item.OriginalDirectoryPath}" } },
+                            "• 복원된 인증서는 내 PC 목록에서 바로 사용할 수 있습니다.",
+                            this);
+                        LoadTrashItems();
+                        LoadRestoredItems();
+                    }
+                    else
+                    {
+                        ActivityLogService.Instance.Log(
+                            LogCategory.RESTORE,
+                            LogLevel.ERROR,
+                            "휴지통 복원 실패",
+                            msg,
+                            item.TrashDirectoryPath,
+                            item.OriginalDirectoryPath);
+
+                        UserFriendlyMessageHelper.ShowErrorText(
+                            $"인증서를 원래 경로로 복원하지 못했습니다: {msg}",
+                            "복원 오류 안내",
+                            "• 대상 디렉터리의 쓰기 권한을 확인해 주세요.\n• 관리자 권한으로 프로그램을 실행해 보세요.",
+                            this);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    UserFriendlyMessageHelper.ShowError(ex, "개별 인증서 복원", this);
                 }
                 finally
                 {
                     IsEnabled = true;
                     Mouse.OverrideCursor = null;
-                }
-
-                if (success)
-                {
-                    AnyItemRestored = true;
-                    ActivityLogService.Instance.Log(
-                        LogCategory.RESTORE,
-                        LogLevel.SUCCESS,
-                        "휴지통에서 복원 완료",
-                        $"인증서: {item.CertCommonName}",
-                        item.TrashDirectoryPath,
-                        item.OriginalDirectoryPath);
-
-                    UserFriendlyMessageHelper.ShowOperationComplete(
-                        "🎉 인증서 복원 완료",
-                        $"인증서 [{item.CertCommonName}]를 원래 위치({item.OriginalDirectoryPath})로 복원했습니다.",
-                        1,
-                        "휴지통 (임시 보관함)",
-                        item.OriginalDirectoryPath,
-                        new[] { new OperationCompleteItem { Name = item.CertCommonName, IssuerAndPolicy = $"원래 경로: {item.OriginalDirectoryPath}" } },
-                        "• 복원된 인증서는 내 PC 목록에서 바로 사용할 수 있습니다.",
-                        this);
-                    LoadTrashItems();
-                    LoadRestoredItems();
-                }
-                else
-                {
-                    ActivityLogService.Instance.Log(
-                        LogCategory.RESTORE,
-                        LogLevel.ERROR,
-                        "휴지통 복원 실패",
-                        msg,
-                        item.TrashDirectoryPath,
-                        item.OriginalDirectoryPath);
-
-                    UserFriendlyMessageHelper.ShowErrorText(
-                        $"인증서를 원래 경로로 복원하지 못했습니다: {msg}",
-                        "복원 오류 안내",
-                        "• 대상 디렉터리의 쓰기 권한을 확인해 주세요.\n• 관리자 권한으로 프로그램을 실행해 보세요.",
-                        this);
                 }
             }
         }
