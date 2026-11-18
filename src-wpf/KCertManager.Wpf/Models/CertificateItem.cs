@@ -88,6 +88,16 @@ namespace KCertManager.Wpf.Models
         public int KdfIterations { get; set; } = 2048;
         public bool IsSystemCa { get; set; }
         public bool IsInstitutional { get; set; }
+        public bool IsClass1 { get; set; }
+
+        public bool IsClass1Path =>
+            IsClass1 ||
+            (!string.IsNullOrWhiteSpace(DirectoryPath) &&
+             Regex.IsMatch(DirectoryPath.Replace('/', '\\'), @"(?:^|\\)class1(?:$|\\)", RegexOptions.IgnoreCase));
+
+        public bool ShowClass1Badge => (IsClass1Path || IsInstitutional) && !IsSystemCa;
+
+        public string Class1BadgeText => IsClass1Path ? "🏛️ CLASS1 · 기관" : "🏛️ 기관용";
 
         public bool IsSelected
         {
@@ -447,10 +457,14 @@ namespace KCertManager.Wpf.Models
             get
             {
                 if (IsRareLocalLowGpkiPath)
-                    return "실제 행정 실무 환경에서 거의 사용되지 않는 비권장 경로입니다. 공무원 행정전자서명(GPKI)의 정부 정규 표준 위치는 [C:\\GPKI\\Certificate\\class2]입니다. 온-나라, 새올 등 행정망 프로그램에서 인식되지 않을 수 있으므로 표준 경로로 이동을 권장합니다.";
+                    return IsClass1Path
+                        ? "실제 행정 실무 환경에서 거의 사용되지 않는 비권장 경로입니다. 기관용 GPKI 인증서의 정부 정규 표준 위치는 [C:\\GPKI\\Certificate\\class1]입니다. 온-나라, 새올 등 행정망 프로그램에서 인식되지 않을 수 있으므로 표준 경로로 이동을 권장합니다."
+                        : "실제 행정 실무 환경에서 거의 사용되지 않는 비권장 경로입니다. 공무원 행정전자서명(GPKI)의 정부 정규 표준 위치는 [C:\\GPKI\\Certificate\\class2]입니다. 온-나라, 새올 등 행정망 프로그램에서 인식되지 않을 수 있으므로 표준 경로로 이동을 권장합니다.";
 
                 if (IsStandardPath)
-                    return "일반 인증서 프로그램(은행/정부)이 정상 인식하는 표준 위치입니다.";
+                    return IsClass1Path
+                        ? "기관·특수목적용(class1) 표준 인증서 위치입니다. (개인키 쌍 보유 확인됨)"
+                        : "일반 인증서 프로그램(은행/정부)이 정상 인식하는 표준 위치입니다.";
 
                 string p = DirectoryPath.Replace('/', '\\').ToUpperInvariant();
                 if (Regex.IsMatch(p, @"\\(?:GPKI\\GPKI|NPKI\\NPKI|EPKI\\EPKI)(?:$|\\)"))

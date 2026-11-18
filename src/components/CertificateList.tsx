@@ -4,7 +4,7 @@ import {
   CertCategory,
   DiskDrive
 } from '../types';
-import { isNonStandardCertPath, isRareLocalLowGpkiPath } from '../utils/certPathUtils';
+import { isNonStandardCertPath, isRareLocalLowGpkiPath, isClass1Certificate, isInstitutionalOrClass1 } from '../utils/certPathUtils';
 import { isCertificateExpired } from '../utils/certParser';
 import { isUsbCertificate as isUsbCertHelper } from '../utils/driveFilter';
 import { getDriveColorInfo } from '../utils/driveColors';
@@ -29,7 +29,10 @@ import {
   X,
   LayoutGrid,
   Table as TableIcon,
-  ArrowUpDown
+  ArrowUpDown,
+  Landmark,
+  GraduationCap,
+  Building2
 } from 'lucide-react';
 import { SidebarCategoryFilter, SidebarSourceFilter } from './Sidebar';
 
@@ -43,6 +46,7 @@ export function filterCertificatesByCriteria(
     if (categoryFilter === 'GPKI' && cert.category !== 'GPKI_GOV') return false;
     if (categoryFilter === 'EPKI' && cert.category !== 'EPKI_EDU') return false;
     if (categoryFilter === 'NPKI' && cert.category !== 'NPKI_BANK' && cert.category !== 'NPKI_CORP') return false;
+    if (categoryFilter === 'CLASS1' && !isClass1Certificate(cert)) return false;
     if (categoryFilter === 'EXPIRED' && !isCertificateExpired(cert)) return false;
     const isUsb = isUsbCertHelper(cert);
     if (categoryFilter === 'NON_STANDARD' && !cert.isCustomPath && !isNonStandardCertPath(cert.sourceLocation, isUsb)) return false;
@@ -59,6 +63,18 @@ export function filterCertificatesByCriteria(
       const matchSerial = cert.serialNumber.toLowerCase().includes(q);
       const matchPath = cert.sourceLocation.toLowerCase().includes(q);
       const matchLocationType = isUsb ? 'usb 이동식' : '컴퓨터 pc 로컬';
+      const matchClass1 = isClass1Certificate(cert) && q.includes('class1');
+      const isEpkiCert =
+        cert.category === 'EPKI_EDU' || (cert.category === 'UNKNOWN' && /[\\/]epki(?:$|[\\/])/i.test(cert.sourceLocation || ''));
+      const isGpkiCert =
+        !isEpkiCert && (cert.category === 'GPKI_GOV' || /[\\/]gpki(?:$|[\\/])/i.test(cert.sourceLocation || ''));
+      const matchInstitutional =
+        isInstitutionalOrClass1(cert) &&
+        (q.includes('기관') ||
+          q.includes('관인') ||
+          q.includes('특수') ||
+          (isGpkiCert && (q.includes('공무원') || q.includes('행정') || q.includes('gpki'))) ||
+          (isEpkiCert && (q.includes('교육') || q.includes('학교') || q.includes('epki'))));
       return (
         matchName ||
         matchIssuer ||
@@ -67,7 +83,9 @@ export function filterCertificatesByCriteria(
         matchPolicy ||
         matchSerial ||
         matchPath ||
-        matchLocationType.includes(q)
+        matchLocationType.includes(q) ||
+        matchClass1 ||
+        matchInstitutional
       );
     }
 
@@ -413,6 +431,73 @@ export const CertificateList: React.FC<CertificateListProps> = ({
     );
   };
 
+  const renderInstitutionClass1Badge = (
+    cert: CertificateItem,
+    isClass1: boolean,
+    variant: 'card' | 'table'
+  ) => {
+    const isEpkiInst =
+      cert.category === 'EPKI_EDU' ||
+      (cert.category === 'UNKNOWN' && /[\\/]epki(?:$|[\\/])/i.test(cert.sourceLocation || ''));
+    const isGpkiInst =
+      !isEpkiInst &&
+      (cert.category === 'GPKI_GOV' || /[\\/]gpki(?:$|[\\/])/i.test(cert.sourceLocation || ''));
+
+    const badgeConfig = isEpkiInst
+      ? {
+          bgVar: 'var(--wpf-badge-epki-bg)',
+          borderVar: 'var(--wpf-badge-epki-border)',
+          textVar: 'var(--wpf-badge-epki-text)',
+          Icon: GraduationCap,
+          label: isClass1 ? 'CLASS1 · 교육(EPKI)' : '교육(EPKI) 기관',
+          title: isClass1
+            ? '교육·학술기관(EPKI) · class1 개인키 쌍 보유 인증서'
+            : '교육·학술기관(EPKI) 인증서',
+        }
+      : isGpkiInst
+      ? {
+          bgVar: 'var(--wpf-badge-gpki-bg)',
+          borderVar: 'var(--wpf-badge-gpki-border)',
+          textVar: 'var(--wpf-badge-gpki-text)',
+          Icon: Landmark,
+          label: isClass1 ? 'CLASS1 · 공무원(GPKI)' : '공무원(GPKI) 기관',
+          title: isClass1
+            ? '공무원·행정기관(GPKI) · class1 개인키 쌍 보유 인증서'
+            : '공무원·행정기관(GPKI) 인증서',
+        }
+      : {
+          bgVar: 'var(--wpf-badge-corp-bg)',
+          borderVar: 'var(--wpf-badge-corp-border)',
+          textVar: 'var(--wpf-badge-corp-text)',
+          Icon: Building2,
+          label: isClass1 ? 'CLASS1 · 기관' : '기관용',
+          title: isClass1
+            ? '기관·전자관인·특수목적용(class1) 개인키 쌍 보유 인증서'
+            : '기관·법인·특수목적용 인증서',
+        };
+
+    const { Icon, bgVar, borderVar, textVar, label, title } = badgeConfig;
+
+    return (
+      <span
+        className={
+          variant === 'card'
+            ? 'inline-flex items-center gap-1 font-bold px-1.5 py-0.5 rounded-[3px] border text-[10.5px] leading-tight whitespace-nowrap'
+            : 'inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-[3px] border shrink-0 whitespace-nowrap'
+        }
+        style={{
+          backgroundColor: bgVar,
+          borderColor: borderVar,
+          color: textVar,
+        }}
+        title={title}
+      >
+        <Icon className="w-2.5 h-2.5 shrink-0" />
+        <span>{label}</span>
+      </span>
+    );
+  };
+
   const hasActiveFilter = categoryFilter !== 'ALL' || sourceFilter !== 'ALL' || searchQuery.trim().length > 0;
   const [isExpiryBannerDismissed, setIsExpiryBannerDismissed] = useState(false);
 
@@ -707,6 +792,8 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                 const dColor = getDriveColorInfo(driveLetter);
                 const isRareGpki = isRareLocalLowGpkiPath(cert.sourceLocation);
                 const isNonStandard = isRareGpki || cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation, isUsb);
+                const isClass1 = isClass1Certificate(cert);
+                const isInstitutional = isInstitutionalOrClass1(cert);
                 const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);
 
                 const cardBg = isRecentlyCopied
@@ -822,6 +909,12 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                           style={{ color: cardSecondary }}
                         >
                           <span className="font-semibold">{getCategoryShortBadge(cert.category)}</span>
+                          {isInstitutional && (
+                            <>
+                              <span aria-hidden="true">·</span>
+                              {renderInstitutionClass1Badge(cert, isClass1, 'card')}
+                            </>
+                          )}
                           <span aria-hidden="true">·</span>
                           <span className="inline-flex items-center gap-1 font-medium text-[#10B981]">
                             <KeyRound className="w-3 h-3 shrink-0" />
@@ -1142,6 +1235,8 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                   const dColor = getDriveColorInfo(driveLetter);
                   const isRareGpki = isRareLocalLowGpkiPath(cert.sourceLocation);
                   const isNonStandard = isRareGpki || cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation, isUsb);
+                  const isClass1 = isClass1Certificate(cert);
+                  const isInstitutional = isInstitutionalOrClass1(cert);
                   const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);
 
                   const rowBg = isRecentlyCopied
@@ -1279,6 +1374,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                           <span className="font-bold text-[13px] truncate" title={cert.name}>
                             {cert.name}
                           </span>
+                          {isInstitutional && renderInstitutionClass1Badge(cert, isClass1, 'table')}
                           {isNonStandard && (
                             <span
                               className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-[3px] border shrink-0 whitespace-nowrap"

@@ -17,7 +17,8 @@ import {
   Check,
   Sparkles,
   Filter,
-  Layers
+  Layers,
+  Landmark
 } from 'lucide-react';
 import { CertificateItem, DiskDrive } from '../types';
 import { BRANDING_ASSETS } from '../data/brandingAssets';
@@ -371,10 +372,22 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
       setShowCelebration(true);
 
       // Trigger success callback to add to main certificates list
-      const destDisplay =
-        cleanTargetPcDrive === 'C:'
-          ? `${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`
-          : `${cleanTargetPcDrive}\\NPKI`;
+      const hasClass1Path = (c: UsbDetectedCert) =>
+        Boolean(c.isClass1) || /[\\/]class1(?:$|[\\/])/i.test((c.usbPath || '').replace(/\//g, '\\'));
+      const allGpki = certsToCopy.length > 0 && certsToCopy.every(c => c.category === 'GPKI_GOV');
+      const allGpkiClass1 = allGpki && certsToCopy.every(hasClass1Path);
+      const allGpkiClass2 = allGpki && certsToCopy.every(c => !hasClass1Path(c));
+      const allEpki = certsToCopy.length > 0 && certsToCopy.every(c => c.category === 'EPKI_EDU');
+      const allEpkiClass1 = allEpki && certsToCopy.every(hasClass1Path);
+      const destDisplay = allGpki
+        ? `${cleanTargetPcDrive}\\GPKI\\Certificate${allGpkiClass1 ? '\\class1' : allGpkiClass2 ? '\\class2' : ''}`
+        : allEpki && allEpkiClass1
+          ? (cleanTargetPcDrive === 'C:'
+              ? `${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow\\EPKI\\Certificate\\class1`
+              : `${cleanTargetPcDrive}\\EPKI\\Certificate\\class1`)
+          : cleanTargetPcDrive === 'C:'
+            ? `${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`
+            : `${cleanTargetPcDrive}\\NPKI`;
       const actualCopiedCount = res.importedCerts.length;
       const callbackMessage = actualCopiedCount > 0
         ? `${actualCopiedCount}명의 인증서가 내 컴퓨터(${destDisplay})로 안전하게 복사되었습니다.`
@@ -1036,6 +1049,16 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                                 <div className="flex items-center gap-1.5 min-w-0">
                                   <FileKey className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                                   <span className="truncate" title={cert.name}>{cert.name}</span>
+                                  {(cert.isClass1 || /[\\/]class1(?:$|[\\/])/i.test(cert.usbPath || '') || cert.isInstitutional) && (
+                                    <span className="inline-flex items-center gap-0.5 text-[9.5px] px-1.5 py-0.2 bg-indigo-50 text-indigo-700 border border-indigo-300 rounded font-bold shrink-0 whitespace-nowrap">
+                                      <Landmark className="w-2.5 h-2.5 shrink-0" />
+                                      <span>
+                                        {cert.isClass1 || /[\\/]class1(?:$|[\\/])/i.test(cert.usbPath || '')
+                                          ? 'CLASS1 · 기관'
+                                          : '기관용'}
+                                      </span>
+                                    </span>
+                                  )}
                                   {isAlreadyInPc && (
                                     <span className="text-[9px] px-1.5 py-0.2 bg-amber-100 text-amber-800 border border-amber-300 rounded font-semibold shrink-0">
                                       PC 기존 존재

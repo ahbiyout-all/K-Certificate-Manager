@@ -586,12 +586,19 @@ namespace KCertManager.Wpf.ViewModels
 
                 string sourcePath = copiedTargets.FirstOrDefault()?.DirectoryPath ?? selected.FirstOrDefault()?.DirectoryPath ?? "내 컴퓨터 (NPKI/GPKI)";
                 string firstDest = successfulDestinations.FirstOrDefault(d => !string.IsNullOrEmpty(d)) ?? string.Empty;
+                string gpkiClass = selected.Any(c => c.Category == CertCategory.GPKI && c.IsClass1Path) &&
+                                   !selected.Any(c => c.Category == CertCategory.GPKI && !c.IsClass1Path)
+                    ? "class1" : "class2";
+                string epkiClass = selected.Any(c => c.Category == CertCategory.EPKI && c.IsClass1Path) &&
+                                   !selected.Any(c => c.Category == CertCategory.EPKI && !c.IsClass1Path)
+                    ? "class1" : "class2";
+
                 string targetPath = !string.IsNullOrEmpty(firstDest)
                     ? firstDest
                     : (selected.Any(c => c.Category == CertCategory.GPKI)
-                        ? Path.Combine(targetDriveRoot, "GPKI", "Certificate", "class2")
+                        ? Path.Combine(targetDriveRoot, "GPKI", "Certificate", gpkiClass)
                         : (selected.Any(c => c.Category == CertCategory.EPKI)
-                            ? Path.Combine(targetDriveRoot, "EPKI")
+                            ? Path.Combine(targetDriveRoot, "EPKI", "Certificate", epkiClass)
                             : Path.Combine(targetDriveRoot, "NPKI")));
 
                 string subtitle = skipped > 0

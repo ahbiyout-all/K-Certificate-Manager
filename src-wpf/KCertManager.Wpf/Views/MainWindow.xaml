@@ -955,6 +955,12 @@
                                             <StackPanel VerticalAlignment="Center">
                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding CommonName}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" Margin="0,0,6,0"/>
+                                                    <!-- CLASS1 / Institutional Badge -->
+                                                    <Border Visibility="{Binding ShowClass1Badge, Converter={StaticResource BoolToVis}}"
+                                                            Background="#312E81" BorderBrush="#6366F1" BorderThickness="1" CornerRadius="3" Padding="5,1" Margin="0,0,5,0" VerticalAlignment="Center"
+                                                            ToolTip="기관·전자관인·특수목적용(class1) 개인키 쌍 보유 인증서">
+                                                        <TextBlock Text="{Binding Class1BadgeText}" FontSize="10" Foreground="#C7D2FE" FontWeight="Bold"/>
+                                                    </Border>
                                                     <!-- Non-Standard Path Badge -->
                                                     <Border Visibility="{Binding IsCustomPath, Converter={StaticResource BoolToVis}}"
                                                             Background="#78350F" BorderBrush="#D97706" BorderThickness="1" CornerRadius="3" Padding="5,1" VerticalAlignment="Center"
@@ -1113,8 +1119,12 @@
                                         <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="8" Padding="14,12" Margin="0,0,0,12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                             <StackPanel>
                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                                    <Border Background="#1E3A8A" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                                                    <Border Background="#1E3A8A" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
                                                         <TextBlock Text="{Binding SelectedCertificate.CategoryBadgeText}" FontSize="11" FontWeight="Bold" Foreground="#93C5FD"/>
+                                                    </Border>
+                                                    <Border Visibility="{Binding SelectedCertificate.ShowClass1Badge, Converter={StaticResource BoolToVis}}"
+                                                            Background="#312E81" BorderBrush="#6366F1" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
+                                                        <TextBlock Text="{Binding SelectedCertificate.Class1BadgeText}" FontSize="11" FontWeight="Bold" Foreground="#C7D2FE"/>
                                                     </Border>
                                                     <Border CornerRadius="4" Padding="6,2"
                                                             Background="{Binding SelectedCertificate.StorageLocationBgColorHex}"

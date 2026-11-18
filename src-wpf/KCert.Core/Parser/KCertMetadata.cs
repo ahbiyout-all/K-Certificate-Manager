@@ -109,6 +109,9 @@ namespace KCert.Core.Parser
         /// <summary>기관용 공용 인증서 (행정기관/공공기관/지자체/전자관인/특수목적용) 여부</summary>
         public bool IsInstitutional { get; set; }
 
+        /// <summary>GPKI/EPKI class1 (기관·특수목적) 경로 기반 인증서 여부</summary>
+        public bool IsClass1 { get; set; }
+
         /// <summary>정제된 사용자 친화적 서명/소유자 표기명</summary>
         public string CleanDisplayName { get; set; } = string.Empty;
 

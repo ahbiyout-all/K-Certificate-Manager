@@ -261,11 +261,16 @@ namespace KCertManager.Wpf.Views
             string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             string localLow = Path.Combine(userProfile, "AppData", "LocalLow");
 
+            bool isClass1 = cert.IsClass1Path ||
+                            (!string.IsNullOrWhiteSpace(cert.DirectoryPath) &&
+                             Regex.IsMatch(cert.DirectoryPath, @"(?:^|[\\/])class1(?:$|[\\/])", RegexOptions.IgnoreCase));
+            string classTier = isClass1 ? "class1" : "class2";
+
             string sub = !string.IsNullOrWhiteSpace(canonicalSubPath)
                 ? canonicalSubPath
                 : Path.Combine(
-                    cert.Category == CertCategory.GPKI ? "GPKI\\Certificate\\class2" :
-                    cert.Category == CertCategory.EPKI ? "EPKI\\Certificate\\class2" :
+                    cert.Category == CertCategory.GPKI ? $"GPKI\\Certificate\\{classTier}" :
+                    cert.Category == CertCategory.EPKI ? $"EPKI\\Certificate\\{classTier}" :
                     "NPKI\\yessign\\USER",
                     Path.GetFileName(cert.DirectoryPath));
 

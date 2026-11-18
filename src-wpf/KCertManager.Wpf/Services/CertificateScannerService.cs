@@ -205,6 +205,12 @@ namespace KCertManager.Wpf.Services
                     return null;
                 }
 
+                // GPKI/EPKI class1 경로는 개인키(.key)와 쌍을 이루는 실사용 기관/특수목적 인증서만 목록에 표시 (Root/CA/공개키 전용 제외)
+                if (meta.IsClass1 && (!meta.HasPrivateKey || meta.IsSystemCa))
+                {
+                    return null;
+                }
+
                 var rootDrive = Path.GetPathRoot(meta.DerFilePath) ?? string.Empty;
                 var driveLetter = rootDrive.TrimEnd('\\');
 
@@ -235,6 +241,7 @@ namespace KCertManager.Wpf.Services
                     KdfIterations = meta.KeyInfo?.IterationCount ?? 2048,
                     IsSystemCa = meta.IsSystemCa,
                     IsInstitutional = meta.IsInstitutional,
+                    IsClass1 = meta.IsClass1,
                     Category = meta.SystemType switch
                     {
                         CertSystemType.GPKI => CertCategory.GPKI,

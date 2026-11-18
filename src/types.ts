@@ -36,6 +36,7 @@ export interface CertificateItem {
   caSignatureName?: string; // 기관 서명 이름 (CA Name, 예: 행정전자서명 행정기관용 인증센터 (CA134040001), 금융결제원 전자인증센터 yessignCA)
   isSystemCa?: boolean; // 시스템 루트/중계 CA 인증서 여부
   isInstitutional?: boolean; // 기관용/전자관인/특수목적용 공용 인증서 여부
+  isClass1?: boolean; // GPKI/EPKI class1 (기관·특수목적) 경로 기반 인증서 여부
   keyEncryptionAlgorithm?: string;
   files: CertFileDetail;
   isRemovableMedia?: boolean;

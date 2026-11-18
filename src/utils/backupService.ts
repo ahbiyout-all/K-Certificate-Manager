@@ -310,7 +310,7 @@ function sanitizePathSegment(segment: string): string {
 export function getStandardDirectoryPath(cert: CertificateItem): string {
   const subjectDn = (cert.subjectDn || '').trim();
   const hasCn = subjectDn.toLowerCase().includes('cn=');
-  const classTier = /[\\/]class1(?:$|[\\/])/i.test(cert.sourceLocation || '') ? 'class1' : 'class2';
+  const classTier = cert.isClass1 || /[\\/]class1(?:$|[\\/])/i.test(cert.sourceLocation || '') ? 'class1' : 'class2';
 
   // 공무원 인증서 (GPKI)
   if (cert.category === 'GPKI_GOV') {

@@ -373,27 +373,8 @@ namespace KCert.Core.Discovery
                             var rootDrive = Path.GetPathRoot(der) ?? string.Empty;
                             bool isRemovable = IsRemovableDrive(der);
 
-                            // 매칭되는 개인키 검색 (signPri.key, sigPri.key, envPri.key, user.key 등)
-                            string key = string.Empty;
-                            string[] keyPatterns = { "signPri.key", "SignPri.key", "signpri.key", "sigPri.key", "SigPri.key", "envPri.key", "user.key" };
-                            foreach (var kp in keyPatterns)
-                            {
-                                var testKey = Path.Combine(dir, kp);
-                                if (File.Exists(testKey))
-                                {
-                                    key = testKey;
-                                    break;
-                                }
-                            }
-                            if (string.IsNullOrEmpty(key))
-                            {
-                                try
-                                {
-                                    var anyKeys = Directory.GetFiles(dir, "*.key");
-                                    key = anyKeys.FirstOrDefault(k => !Path.GetFileName(k).StartsWith("km", StringComparison.OrdinalIgnoreCase)) ?? anyKeys.FirstOrDefault() ?? string.Empty;
-                                }
-                                catch { }
-                            }
+                            // 매칭되는 개인키 검색 (다중 인증서 혼재 class1 폴더 스템 매칭 우선 지원)
+                            string key = FindMatchingPrivateKey(der);
 
                             string category = "NPKI";
                             if (Regex.IsMatch(der, @"(?:^|[\\/])(?:GPKI|MPKI)(?:$|[\\/])", RegexOptions.IgnoreCase) ||
@@ -439,14 +420,7 @@ namespace KCert.Core.Discovery
 
                 var (current, depth) = queue.Dequeue();
 
-                // GPKI Certificate\class1 디렉터리는 비개인(기관/관인/서버용) 전용 경로이므로 파일/하위폴더 스캔 모두 제외
-                var curDirName = Path.GetFileName(current).ToLowerInvariant();
-                if (curDirName == "class1" ||
-                    Regex.IsMatch(current, @"[\\/]GPKI[\\/]Certificate[\\/]class1(?:$|[\\/])", RegexOptions.IgnoreCase))
-                {
-                    continue;
-                }
-
+                // GPKI / EPKI class1 디렉터리도 스캔 대상에 포함하되, 후속 파서 단계에서 개인키(.key) 쌍이 확인된 기관 인증서만 선별 노출합니다.
                 try
                 {
                     var derFiles = Directory.GetFiles(current, "*.der");
@@ -468,10 +442,9 @@ namespace KCert.Core.Discovery
                         {
                             var fn = Path.GetFileName(file).ToLowerInvariant();
 
-                            // 1. 루트 CA, CRL(폐기목록), 시스템 CA 및 비개인 CLASS1 파일 제외
+                            // 1. 루트 CA, CRL(폐기목록), 시스템 CA 공개키 파일 제외
                             if (fn.StartsWith("root") || fn.StartsWith("ca") || fn.StartsWith("crl") ||
-                                fn.EndsWith(".crl") || fn.Contains("cacert") || fn.Contains("rootcert") ||
-                                fn.StartsWith("class1") || fn.Contains("_class1.") || fn.Contains("_class1_"))
+                                fn.EndsWith(".crl") || fn.Contains("cacert") || fn.Contains("rootcert"))
                             {
                                 continue;
                             }
@@ -589,6 +562,114 @@ namespace KCert.Core.Discovery
             }
 
             return results;
+        }
+
+        /// <summary>
+        /// 주어진 인증서 DER/CER 파일과 쌍을 이루는 개인키(.key/.pri) 경로를 스템 매칭 우선으로 탐색합니다.
+        /// 단일 폴더에 다수의 class1 기관/서버 인증서가 혼재한 경우에도 교차 오매칭을 방지합니다.
+        /// </summary>
+        public static string FindMatchingPrivateKey(string derFilePath)
+        {
+            if (string.IsNullOrWhiteSpace(derFilePath)) return string.Empty;
+            var dir = Path.GetDirectoryName(derFilePath) ?? string.Empty;
+            if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return string.Empty;
+
+            var fileName = Path.GetFileName(derFilePath);
+            var stem = Path.GetFileNameWithoutExtension(fileName);
+            var lowerFileName = fileName.ToLowerInvariant();
+            bool isKmCert = lowerFileName.StartsWith("km") || lowerFileName.Contains("_km.") || lowerFileName.Contains("_env.") || lowerFileName.StartsWith("env");
+
+            try
+            {
+                var allKeyFiles = Directory.GetFiles(dir, "*.key")
+                    .Concat(Directory.GetFiles(dir, "*.pri"))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (allKeyFiles.Count == 0) return string.Empty;
+
+                // 1. 동일 스템 직접 매칭 (예: 865기관_sig.cer -> 865기관_sig.key, SVR134_sig.der -> SVR134_sig.key)
+                var directMatch = allKeyFiles.FirstOrDefault(k =>
+                    string.Equals(Path.GetFileNameWithoutExtension(k), stem, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(directMatch)) return directMatch;
+
+                // 2. 변형 스템 매칭 (_sig -> _pri, Cert -> Pri, cert -> key)
+                var stemCandidates = new List<string>();
+                if (stem.EndsWith("_sig", StringComparison.OrdinalIgnoreCase))
+                {
+                    var prefix = stem.Substring(0, stem.Length - 4);
+                    stemCandidates.Add(prefix + "_pri");
+                    stemCandidates.Add(prefix + "_signPri");
+                    stemCandidates.Add(prefix + "_sigPri");
+                    stemCandidates.Add(prefix + "_key");
+                    stemCandidates.Add(prefix);
+                }
+                else if (stem.EndsWith("_sign", StringComparison.OrdinalIgnoreCase))
+                {
+                    var prefix = stem.Substring(0, stem.Length - 5);
+                    stemCandidates.Add(prefix + "_pri");
+                    stemCandidates.Add(prefix + "_signPri");
+                    stemCandidates.Add(prefix + "_key");
+                    stemCandidates.Add(prefix);
+                }
+                else if (stem.EndsWith("cert", StringComparison.OrdinalIgnoreCase))
+                {
+                    var prefix = stem.Substring(0, stem.Length - 4);
+                    stemCandidates.Add(prefix + "Pri");
+                    stemCandidates.Add(prefix + "pri");
+                    stemCandidates.Add(prefix + "Key");
+                    stemCandidates.Add(prefix + "_pri");
+                    stemCandidates.Add(prefix);
+                }
+
+                foreach (var cand in stemCandidates)
+                {
+                    var m = allKeyFiles.FirstOrDefault(k =>
+                        string.Equals(Path.GetFileNameWithoutExtension(k), cand, StringComparison.OrdinalIgnoreCase));
+                    if (!string.IsNullOrEmpty(m)) return m;
+                }
+
+                // 3. 표준 단일 인증서 폴더의 대표 개인키 패턴 검사 (km 인증서는 kmPri 우선, 그 외는 비-km 개인키 우선)
+                string[] stdPatterns = isKmCert
+                    ? new[] { "kmPri.key", "kmpri.key", "envPri.key", "envpri.key", "kmPri.pri" }
+                    : new[] { "signPri.key", "SignPri.key", "signpri.key", "sigPri.key", "SigPri.key", "sigpri.key", "user.key", "UserPri.key", "signPri.pri", "priv.key", "envPri.key" };
+
+                foreach (var kp in stdPatterns)
+                {
+                    var match = allKeyFiles.FirstOrDefault(k =>
+                        string.Equals(Path.GetFileName(k), kp, StringComparison.OrdinalIgnoreCase));
+                    if (!string.IsNullOrEmpty(match)) return match;
+                }
+
+                // 4. 비표준 다중 파일 혼재 폴더 안전 폴백:
+                // 동일 폴더 내 다른 비-km 인증서가 1개 이하인 경우에만 임의 .key를 폴백 매칭하여 타 인증서의 키 오매칭 차단
+                var nonKmKeys = allKeyFiles
+                    .Where(k => !Path.GetFileName(k).StartsWith("km", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                if (!isKmCert && nonKmKeys.Count > 0)
+                {
+                    var siblingSignCerts = Directory.GetFiles(dir, "*.der")
+                        .Concat(Directory.GetFiles(dir, "*.cer"))
+                        .Where(f =>
+                        {
+                            var n = Path.GetFileName(f).ToLowerInvariant();
+                            return !n.StartsWith("km") && !n.StartsWith("env") && !n.StartsWith("root") && !n.StartsWith("ca") && !n.StartsWith("crl");
+                        })
+                        .ToList();
+
+                    if (siblingSignCerts.Count <= 1)
+                    {
+                        return nonKmKeys[0];
+                    }
+                }
+            }
+            catch
+            {
+                // 파일 시스템 조회 오류 무시
+            }
+
+            return string.Empty;
         }
 
         private static bool IsExcluded(string dirName)

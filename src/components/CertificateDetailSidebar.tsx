@@ -10,12 +10,13 @@ import {
   FolderOpen,
   Clock,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  Landmark
 } from 'lucide-react';
 import { CertificateItem } from '../types';
 import { getDriveColorInfo } from '../utils/driveColors';
 import { isUsbCertificate } from '../utils/driveFilter';
-import { isNonStandardCertPath } from '../utils/certPathUtils';
+import { isNonStandardCertPath, isClass1Certificate, isInstitutionalOrClass1 } from '../utils/certPathUtils';
 import { getAccurateIssuerInfo } from '../utils/issuerUtils';
 import { extractDriveLetterFromPathOrLabel } from '../utils/certDiagnostics';
 
@@ -147,6 +148,8 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
               'C:';
             const dColor = getDriveColorInfo(driveLetter);
             const isNonStandard = cert.isCustomPath || isNonStandardCertPath(cert.sourceLocation, isUsb);
+            const isClass1 = isClass1Certificate(cert);
+            const isInstitutional = isInstitutionalOrClass1(cert);
             const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);
 
             const statusBadgeStyle =
@@ -195,6 +198,24 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
                     >
                       {isUsb ? 'USB' : '컴퓨터'} [{dColor.letter}]
                     </span>
+                    {isInstitutional && (
+                      <span
+                        className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-[4px] border"
+                        style={{
+                          backgroundColor: '#EEF2FF',
+                          borderColor: '#C7D2FE',
+                          color: '#4338CA',
+                        }}
+                        title={
+                          isClass1
+                            ? '기관·전자관인·특수목적용(class1) 개인키 쌍 보유 인증서'
+                            : '기관·법인·특수목적용 인증서'
+                        }
+                      >
+                        <Landmark className="w-3 h-3 shrink-0" />
+                        <span>{isClass1 ? 'CLASS1 · 기관' : '기관용'}</span>
+                      </span>
+                    )}
                   </div>
 
                   <div
@@ -418,7 +439,11 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
                         color: isNonStandard ? 'var(--wpf-badge-expiring-text)' : 'var(--wpf-accent-text)',
                       }}
                     >
-                      {isNonStandard ? '⚠️ 비표준 위치 (PC 이동 권장)' : '✓ 공식 표준 인증서 보관 위치'}
+                      {isNonStandard
+                        ? '⚠️ 비표준 위치 (PC 이동 권장)'
+                        : isClass1
+                        ? '✓ 기관·특수목적용(class1) 표준 인증서 위치'
+                        : '✓ 공식 표준 인증서 보관 위치'}
                     </span>
                   </div>
 

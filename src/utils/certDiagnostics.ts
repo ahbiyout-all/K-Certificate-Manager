@@ -126,13 +126,13 @@ export function buildCanonicalCertPath(cert: CertificateItem): string {
   const pathUpper = (cert.sourceLocation || '').replace(/\//g, '\\').toUpperCase();
 
   if (cert.category === 'GPKI_GOV') {
-    const classTier = /(?:^|[\\/])CLASS1(?:$|[\\/])/.test(pathUpper) ? 'class1' : 'class2';
+    const classTier = cert.isClass1 || /(?:^|[\\/])CLASS1(?:$|[\\/])/.test(pathUpper) ? 'class1' : 'class2';
     const cleanCn = leaf.toLowerCase().startsWith('cn=') ? leaf : `cn=${cert.name}`;
     return `${drive}\\GPKI\\Certificate\\${classTier}\\${cleanCn}`;
   }
 
   if (cert.category === 'EPKI_EDU') {
-    const classTier = /(?:^|[\\/])CLASS1(?:$|[\\/])/.test(pathUpper) ? 'class1' : 'class2';
+    const classTier = cert.isClass1 || /(?:^|[\\/])CLASS1(?:$|[\\/])/.test(pathUpper) ? 'class1' : 'class2';
     const cleanCn = leaf.toLowerCase().startsWith('cn=') ? leaf : `cn=${cert.name}`;
     if (isUsb || drive !== 'C:') {
       return `${drive}\\EPKI\\Certificate\\${classTier}\\${cleanCn}`;
@@ -274,7 +274,10 @@ export function analyzePathRepairs(certs: CertificateItem[]): PathRepairCandidat
     } else if (isRareLocalLowGpkiPath(path)) {
       issueType = 'LOCALLOW_GPKI';
       issueTitle = 'GPKI 비권장 위치 (AppData\\LocalLow\\GPKI)';
-      issueDescription = '공무원 행정전자서명(GPKI)은 C:\\GPKI\\Certificate\\class2 경로를 사용해야 인식됩니다.';
+      issueDescription =
+        cert.isClass1 || /(?:^|[\\/])CLASS1(?:$|[\\/])/.test(upper)
+          ? '기관용 행정전자서명(GPKI)은 C:\\GPKI\\Certificate\\class1 경로를 사용해야 인식됩니다.'
+          : '공무원 행정전자서명(GPKI)은 C:\\GPKI\\Certificate\\class2 경로를 사용해야 인식됩니다.';
     } else if (/\\(?:BACKUP|TEMP|TEMPORARY|백업|인증서|DOWNLOADS?|DESKTOP)(?:\\|$)/.test(upper)) {
       issueType = 'BACKUP_TEMP';
       issueTitle = '임시·백업 폴더 보관';

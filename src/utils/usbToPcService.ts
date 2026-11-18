@@ -1,6 +1,12 @@
 import { CertificateItem, CertCategory, DiskDrive, WmiQueryLogItem, UsbDiagnosticDeviceReport } from '../types';
 import { INITIAL_DRIVES } from '../data/defaultCertificates';
-import { parseDerBasic, calculateSha256 } from './certParser';
+import {
+  parseDerBasic,
+  calculateSha256,
+  extractDerValidityDates,
+  filterSignCertNamesInFolder,
+  findMatchingKeyInFolder,
+} from './certParser';
 import { isPcCertificate } from './driveFilter';
 
 export interface UsbDetectedCert {
@@ -18,6 +24,8 @@ export interface UsbDetectedCert {
   usbPath: string;
   usbDriveLetter: string;
   departmentOrOrg?: string;
+  isInstitutional?: boolean;
+  isClass1?: boolean;
   files: {
     certName: string;
     keyName: string;
@@ -168,6 +176,32 @@ export function getAvailableUsbCertificates(drives: DiskDrive[] = activeDrivesSt
         kmKeyName: 'kmPri.key',
         hasKey: true,
         sha256: '8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c',
+      },
+    },
+    {
+      id: 'usb-cert-gov-class1-gg',
+      name: '경기도청 (기관용)',
+      subjectDn: 'cn=001경기도청001,ou=경기도,o=Government of Korea,c=kr',
+      category: 'GPKI_GOV',
+      issuer: '행정전자서명인증센터(GPKI)',
+      policy: '행정기관용 (기관서명·공용 class1)',
+      serialNumber: '7D18 4A91 E204 5109',
+      validFrom: '2025-09-01',
+      validTo: '2028-09-01',
+      status: 'valid',
+      daysRemaining: 653,
+      usbPath: `${driveG}\\GPKI\\Certificate\\class1\\cn=001경기도청001`,
+      usbDriveLetter: driveG,
+      departmentOrOrg: '경기도청 정보화정책관',
+      isInstitutional: true,
+      isClass1: true,
+      files: {
+        certName: 'SignCert.der',
+        keyName: 'SignPri.key',
+        kmCertName: 'kmCert.der',
+        kmKeyName: 'kmPri.key',
+        hasKey: true,
+        sha256: '4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b',
       },
     },
   ];
@@ -328,50 +362,41 @@ export async function scanDirectoryHandleForCertificates(dirHandle: any): Promis
         entries.push(entry);
       }
 
-      // 1. 현재 디렉터리 내 인증서 관련 파일 검출 (signCert, sigCert, envCert, userCert, cert.der 등)
-      const certFileEntry = entries.find(
-        e => e.kind === 'file' && (
-          e.name.toLowerCase() === 'signcert.der' ||
-          e.name.toLowerCase() === 'sigcert.der' ||
-          e.name.toLowerCase() === 'envcert.der' ||
-          e.name.toLowerCase() === 'signcert.cer' ||
-          e.name.toLowerCase() === 'sigcert.cer' ||
-          e.name.toLowerCase() === 'signcert.crt' ||
-          e.name.toLowerCase() === 'cert.der' ||
-          e.name.toLowerCase() === 'usercert.der' ||
-          e.name.toLowerCase() === 'user.der' ||
-          (e.name.toLowerCase().endsWith('.der') && !e.name.toLowerCase().startsWith('km') && !e.name.toLowerCase().startsWith('root') && !e.name.toLowerCase().startsWith('ca'))
-        )
+      // 1. 현재 디렉터리 내 인증서 관련 파일 전수 검출 (다중 인증서 혼재 class1 폴더 포함)
+      const fileEntries = entries.filter(e => e.kind === 'file');
+      const rawCertEntries = fileEntries.filter(e => {
+        const lower = e.name.toLowerCase();
+        if (!(lower.endsWith('.der') || lower.endsWith('.cer') || lower.endsWith('.crt'))) return false;
+        return !(
+          lower.startsWith('root') ||
+          lower.startsWith('ca') ||
+          lower.startsWith('crl') ||
+          lower.endsWith('.crl') ||
+          lower.includes('cacert') ||
+          lower.includes('rootcert')
+        );
+      });
+      const keyEntries = fileEntries.filter(e => {
+        const lower = e.name.toLowerCase();
+        return lower.endsWith('.key') || lower.endsWith('.pri');
+      });
+
+      const certFileEntries = filterSignCertNamesInFolder(rawCertEntries);
+      const kmCertFileEntry = fileEntries.find(
+        e => e.kind === 'file' && (e.name.toLowerCase() === 'kmcert.der' || e.name.toLowerCase() === 'kmcert.cer')
+      );
+      const kmKeyFileEntry = fileEntries.find(
+        e => e.kind === 'file' && (e.name.toLowerCase() === 'kmpri.key' || e.name.toLowerCase() === 'kmpri.pri')
       );
 
-      const keyFileEntry = entries.find(
-        e => e.kind === 'file' && (
-          e.name.toLowerCase() === 'signpri.key' ||
-          e.name.toLowerCase() === 'sigpri.key' ||
-          e.name.toLowerCase() === 'envpri.key' ||
-          e.name.toLowerCase() === 'user.key' ||
-          e.name.toLowerCase() === 'signpri.pri' ||
-          e.name.toLowerCase() === 'priv.key' ||
-          e.name.toLowerCase() === 'userpri.key' ||
-          (e.name.toLowerCase().endsWith('.key') && !e.name.toLowerCase().startsWith('km'))
-        )
-      );
+      const formattedPath = `USB:\\${currentPath.replace(/^\//, '').replace(/\//g, '\\')}`;
+      const isClass1 = /(?:^|[\\/])class1(?:$|[\\/])/i.test(formattedPath);
+      const siblingSignCount = certFileEntries.filter(c => {
+        const l = c.name.toLowerCase();
+        return !l.includes('_env.') && !l.includes('_km.') && !l.startsWith('km') && !l.startsWith('env');
+      }).length;
 
-      const kmCertFileEntry = entries.find(
-        e => e.kind === 'file' && (
-          e.name.toLowerCase() === 'kmcert.der' ||
-          e.name.toLowerCase() === 'kmcert.cer'
-        )
-      );
-
-      const kmKeyFileEntry = entries.find(
-        e => e.kind === 'file' && (
-          e.name.toLowerCase() === 'kmpri.key' ||
-          e.name.toLowerCase() === 'kmpri.pri'
-        )
-      );
-
-      if (certFileEntry) {
+      for (const certFileEntry of certFileEntries) {
         try {
           let name = '사용자';
           let subjectDn = '';
@@ -382,6 +407,15 @@ export async function scanDirectoryHandleForCertificates(dirHandle: any): Promis
           let sha256 = 'fs-verified-sha256';
           let certBytes: Uint8Array | undefined;
           let keyBytes: Uint8Array | undefined;
+          let isSystemCa = false;
+          let isInstitutional = false;
+          let validFrom = '2026-01-01';
+          let validTo = '2027-01-01';
+          let status: 'valid' | 'expiring' | 'expired' = 'valid';
+          let daysRemaining = 180;
+
+          const keyFileEntry = findMatchingKeyInFolder(certFileEntry.name, keyEntries, siblingSignCount);
+          const hasKey = Boolean(keyFileEntry);
 
           // 실제 파일 핸들로부터 바이너리 읽기 및 DER 분석 (512KB 초과 비정상 파일 차단)
           if (typeof certFileEntry.getFile === 'function') {
@@ -391,6 +425,7 @@ export async function scanDirectoryHandleForCertificates(dirHandle: any): Promis
               certBytes = new Uint8Array(buffer);
               sha256 = await calculateSha256(certBytes);
               const parsed = parseDerBasic(certBytes);
+              const validity = extractDerValidityDates(certBytes);
 
               name = parsed.name;
               subjectDn = parsed.subjectDn;
@@ -398,7 +433,18 @@ export async function scanDirectoryHandleForCertificates(dirHandle: any): Promis
               issuer = parsed.issuer;
               policy = parsed.policy;
               serialNumber = parsed.serialNumber;
+              isSystemCa = Boolean(parsed.isSystemCa);
+              isInstitutional = Boolean(parsed.isInstitutional);
+              validFrom = validity.validFrom;
+              validTo = validity.validTo;
+              status = validity.status;
+              daysRemaining = validity.daysRemaining;
             }
+          }
+
+          // USB 내 class1 폴더 역시 개인키(.key)와 쌍을 이루는 실사용 기관/특수목적 인증서만 노출
+          if (isClass1 && (!hasKey || isSystemCa)) {
+            continue;
           }
 
           if (keyFileEntry && typeof keyFileEntry.getFile === 'function') {
@@ -413,11 +459,11 @@ export async function scanDirectoryHandleForCertificates(dirHandle: any): Promis
           if (upperPath.includes('GPKI') || upperPath.includes('GOVERNMENT') || upperPath.includes('행정전자서명') || upperPath.includes('MOIS')) {
             category = 'GPKI_GOV';
             issuer = '행정전자서명인증센터(GPKI)';
-            policy = '행정업무용 (공무원 전자서명·암호화)';
+            policy = isClass1 ? '행정기관용 (기관서명·공용 class1)' : '행정업무용 (공무원 전자서명·암호화)';
           } else if (upperPath.includes('EPKI') || upperPath.includes('EDUCATION') || upperPath.includes('교육부') || upperPath.includes('KERIS') || upperPath.includes('NEIS') || upperPath.includes('나이스')) {
             category = 'EPKI_EDU';
             issuer = '교육부전자서명인증센터(EPKI)';
-            policy = '교육행정용 (나이스 NEIS / K-에듀파인)';
+            policy = isClass1 ? '교육기관 전자관인용 (class1)' : '교육행정용 (나이스 NEIS / K-에듀파인)';
           } else if (upperPath.includes('MPKI') || upperPath.includes('국방전자서명') || upperPath.includes('MND')) {
             category = 'GPKI_GOV';
             issuer = '국방전자서명인증센터(MPKI)';
@@ -453,10 +499,10 @@ export async function scanDirectoryHandleForCertificates(dirHandle: any): Promis
             }
           }
 
-          const formattedPath = `USB:\\${currentPath.replace(/^\//, '').replace(/\//g, '\\')}`;
-
-          // 중복 추가 방지 (경로 또는 시리얼번호 기준)
-          const isDuplicate = found.some(c => (c.serialNumber === serialNumber && c.usbPath === formattedPath) || c.usbPath === formattedPath);
+          // 중복 추가 방지 (경로 + 파일명 또는 SHA-256 기준)
+          const isDuplicate = found.some(
+            c => c.usbPath === formattedPath && (c.files.certName === certFileEntry.name || (sha256 !== 'fs-verified-sha256' && c.files.sha256 === sha256))
+          );
           if (!isDuplicate) {
             found.push({
               id: `fs-usb-${Date.now()}-${found.length + 1}-${Math.random().toString(36).substring(2, 6)}`,
@@ -466,19 +512,21 @@ export async function scanDirectoryHandleForCertificates(dirHandle: any): Promis
               issuer,
               policy,
               serialNumber,
-              validFrom: '2026-01-01',
-              validTo: '2027-01-01',
-              status: 'valid',
-              daysRemaining: 180,
+              validFrom,
+              validTo,
+              status,
+              daysRemaining,
               usbPath: formattedPath,
               usbDriveLetter: 'USB (직접선택)',
               departmentOrOrg: `${issuer} 저장매체`,
+              isInstitutional: isInstitutional || (isClass1 && !isSystemCa && hasKey),
+              isClass1,
               files: {
                 certName: certFileEntry.name,
-                keyName: keyFileEntry ? keyFileEntry.name : 'signPri.key',
+                keyName: keyFileEntry ? keyFileEntry.name : 'signPri.key (없음)',
                 kmCertName: kmCertFileEntry?.name,
                 kmKeyName: kmKeyFileEntry?.name,
-                hasKey: !!keyFileEntry,
+                hasKey,
                 sha256,
                 certData: certBytes,
                 keyData: keyBytes,
@@ -571,15 +619,27 @@ export function verifyAndScanLocalDriveGpkiEpkiPaths(
           isProtectedSystemPath: true,
         },
         {
+          path: `${cleanDrive}\\GPKI\\Certificate\\class1`,
+          type: 'GPKI',
+          description: '행정전자서명 기관·특수목적용(class1) 인증서 계층',
+          isProtectedSystemPath: true,
+        },
+        {
           path: `${cleanDrive}\\GPKI\\Certificate\\class2`,
           type: 'GPKI',
-          description: '행정전자서명 인증서 보관 핵심 계층',
+          description: '행정전자서명 공무원(class2) 보관 핵심 계층',
           isProtectedSystemPath: true,
         },
         {
           path: `${cleanDrive}\\EPKI`,
           type: 'EPKI',
           description: '교육부 전자서명인증센터 C: 루트 경로',
+          isProtectedSystemPath: true,
+        },
+        {
+          path: `${cleanDrive}\\EPKI\\Certificate\\class1`,
+          type: 'EPKI',
+          description: '교육부 기관·전자관인(class1) 인증서 계층',
           isProtectedSystemPath: true,
         },
         {
@@ -628,6 +688,11 @@ export function verifyAndScanLocalDriveGpkiEpkiPaths(
           description: `${cleanDrive} 드라이브 루트 GPKI 보관 경로`,
         },
         {
+          path: `${cleanDrive}\\GPKI\\Certificate\\class1`,
+          type: 'GPKI',
+          description: `${cleanDrive} 드라이브 GPKI class1(기관용) 보관 계층`,
+        },
+        {
           path: `${cleanDrive}\\GPKI\\Certificate\\class2`,
           type: 'GPKI',
           description: `${cleanDrive} 드라이브 GPKI class2 보관 계층`,
@@ -636,6 +701,11 @@ export function verifyAndScanLocalDriveGpkiEpkiPaths(
           path: `${cleanDrive}\\EPKI`,
           type: 'EPKI',
           description: `${cleanDrive} 드라이브 루트 EPKI 보관 경로`,
+        },
+        {
+          path: `${cleanDrive}\\EPKI\\Certificate\\class1`,
+          type: 'EPKI',
+          description: `${cleanDrive} 드라이브 EPKI class1(기관용) 보관 계층`,
         },
         {
           path: `${cleanDrive}\\EPKI\\Certificate\\class2`,
@@ -736,6 +806,9 @@ export function verifyAndScanLocalDriveGpkiEpkiPaths(
   };
 }
 
+const usbCertIsClass1 = (cert: Pick<UsbDetectedCert, 'isClass1' | 'usbPath'>): boolean =>
+  Boolean(cert.isClass1) || /[\\/]class1(?:$|[\\/])/i.test((cert.usbPath || '').replace(/\//g, '\\'));
+
 /**
  * 컴퓨터(PC) 로컬 표준 디렉터리 경로 계산
  */
@@ -751,7 +824,7 @@ export function getLocalPcStandardPath(
   const subjectDn = (cert.subjectDn || '').trim();
   const hasCnPrefix = subjectDn.toLowerCase().startsWith('cn=');
 
-  const classTier = /[\\/]class1(?:$|[\\/])/i.test(cert.usbPath || '') ? 'class1' : 'class2';
+  const classTier = usbCertIsClass1(cert) ? 'class1' : 'class2';
 
   if (cert.category === 'GPKI_GOV') {
     const cn = hasCnPrefix ? subjectDn.split(',')[0].trim() : `cn=${cert.name}`;
@@ -916,6 +989,8 @@ export async function copyUsbCertificatesToComputer(
           sourceDrive: `${cleanTargetDrive} (로컬 디스크)`,
           isRemovableMedia: false,
           departmentOrOrg: usbCert.departmentOrOrg || 'USB에서 복원됨',
+          isInstitutional: usbCert.isInstitutional || usbCertIsClass1(usbCert),
+          isClass1: usbCertIsClass1(usbCert),
           files: {
             certName: usbCert.files.certName,
             keyName: usbCert.files.keyName,

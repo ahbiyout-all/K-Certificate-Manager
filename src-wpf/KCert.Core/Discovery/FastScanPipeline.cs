@@ -19,8 +19,6 @@ namespace KCert.Core.Discovery
     /// </remarks>
     public class FastScanPipeline
     {
-        private static readonly string[] KeyPatterns = { "signPri.key", "SignPri.key", "signpri.key", "sigPri.key", "SigPri.key", "envPri.key", "user.key" };
-
         public TimeSpan LastFastStageDuration { get; private set; } = TimeSpan.Zero;
         public TimeSpan LastDeepStageDuration { get; private set; } = TimeSpan.Zero;
 
@@ -159,28 +157,8 @@ namespace KCert.Core.Discovery
                 var rootDrive = Path.GetPathRoot(derFilePath) ?? string.Empty;
                 bool isRemovable = CertLocationScanner.IsRemovableDrive(derFilePath);
 
-                // 매칭되는 개인키 검색 (signPri.key)
-                string key = string.Empty;
-                foreach (var kp in KeyPatterns)
-                {
-                    var testKey = Path.Combine(dir, kp);
-                    if (File.Exists(testKey))
-                    {
-                        key = testKey;
-                        break;
-                    }
-                }
-                if (string.IsNullOrEmpty(key))
-                {
-                    try
-                    {
-                        var anyKeys = Directory.GetFiles(dir, "*.key");
-                        key = anyKeys.FirstOrDefault(k => !Path.GetFileName(k).StartsWith("km", StringComparison.OrdinalIgnoreCase))
-                           ?? anyKeys.FirstOrDefault()
-                           ?? string.Empty;
-                    }
-                    catch { }
-                }
+                // 매칭되는 개인키 검색 (다중 인증서 혼재 class1 폴더 스템 매칭 우선 지원)
+                string key = CertLocationScanner.FindMatchingPrivateKey(derFilePath);
 
                 string category = "NPKI";
                 if (Regex.IsMatch(derFilePath, @"(?:^|[\\/])(?:GPKI|MPKI)(?:$|[\\/])", RegexOptions.IgnoreCase) ||

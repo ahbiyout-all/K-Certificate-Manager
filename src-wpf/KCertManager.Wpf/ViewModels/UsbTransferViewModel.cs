@@ -496,6 +496,13 @@ namespace KCertManager.Wpf.ViewModels
                 string gpkiTargetRoot = ResolveTargetRootForCategory("GPKI", null, targetDrive, effectiveUsername, sysRoot, userProfile);
                 string localLowTargetRoot = ResolveTargetRootForCategory("NPKI", null, targetDrive, effectiveUsername, sysRoot, userProfile);
 
+                string gpkiClass = selected.Any(c => c.Category == CertCategory.GPKI && c.IsClass1Path) &&
+                                   !selected.Any(c => c.Category == CertCategory.GPKI && !c.IsClass1Path)
+                    ? "class1" : "class2";
+                string epkiClass = selected.Any(c => c.Category == CertCategory.EPKI && c.IsClass1Path) &&
+                                   !selected.Any(c => c.Category == CertCategory.EPKI && !c.IsClass1Path)
+                    ? "class1" : "class2";
+
                 string targetPath;
                 if (!string.IsNullOrEmpty(firstDest))
                 {
@@ -503,19 +510,21 @@ namespace KCertManager.Wpf.ViewModels
                 }
                 else if (isAnyGpki)
                 {
-                    targetPath = Path.Combine(gpkiTargetRoot, "GPKI", "Certificate", "class2");
+                    targetPath = Path.Combine(gpkiTargetRoot, "GPKI", "Certificate", gpkiClass);
                 }
                 else if (isAnyEpki)
                 {
-                    targetPath = Path.Combine(localLowTargetRoot, "EPKI");
+                    targetPath = Path.Combine(localLowTargetRoot, "EPKI", "Certificate", epkiClass);
                 }
                 else
                 {
                     targetPath = Path.Combine(localLowTargetRoot, "NPKI");
                 }
 
-                string gpkiDisplayPath = Path.Combine(gpkiTargetRoot, "GPKI", "Certificate", "class2");
-                string epkiDisplayPath = Path.Combine(localLowTargetRoot, "EPKI");
+                string gpkiDisplayPath = Path.Combine(gpkiTargetRoot, "GPKI", "Certificate", gpkiClass);
+                string epkiDisplayPath = epkiClass == "class1"
+                    ? Path.Combine(localLowTargetRoot, "EPKI", "Certificate", "class1")
+                    : Path.Combine(localLowTargetRoot, "EPKI");
                 string npkiDisplayPath = Path.Combine(localLowTargetRoot, "NPKI");
 
                 string destCategoryName = isAnyGpki ? "공무원 인증서 (GPKI)" : (isAnyEpki ? "교육기관 인증서 (EPKI)" : "은행·공동 인증서 (NPKI)");

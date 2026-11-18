@@ -1621,6 +1621,8 @@ namespace KCertManager.Wpf.ViewModels
                     x.Organization.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
                     x.DirectoryPath.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
                     x.StorageLocationType.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+                    (kw.Equals("class1", StringComparison.OrdinalIgnoreCase) && x.IsClass1Path) ||
+                    ((kw.Contains("기관", StringComparison.OrdinalIgnoreCase) || kw.Contains("관인", StringComparison.OrdinalIgnoreCase)) && (x.IsClass1Path || x.IsInstitutional)) ||
                     (kw.Equals("usb", StringComparison.OrdinalIgnoreCase) && x.IsRemovableMedia) ||
                     (kw.Equals("컴퓨터", StringComparison.OrdinalIgnoreCase) && !x.IsRemovableMedia) ||
                     (kw.Equals("pc", StringComparison.OrdinalIgnoreCase) && !x.IsRemovableMedia));

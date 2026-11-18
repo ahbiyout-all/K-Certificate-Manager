@@ -53,3 +53,25 @@ export function isNonStandardCertPath(sourceLocation: string, isRemovableMedia?:
   return !isStandardCertPath(sourceLocation, isRemovableMedia);
 }
 
+export function isClass1Path(sourceLocation?: string): boolean {
+  if (!sourceLocation) return false;
+  return /(?:^|[\\/])class1(?:$|[\\/])/i.test(sourceLocation.replace(/\//g, '\\'));
+}
+
+export function isClass1Certificate(cert?: {
+  isClass1?: boolean;
+  sourceLocation?: string;
+} | null): boolean {
+  if (!cert) return false;
+  return Boolean(cert.isClass1) || isClass1Path(cert.sourceLocation);
+}
+
+export function isInstitutionalOrClass1(cert?: {
+  isClass1?: boolean;
+  isInstitutional?: boolean;
+  isSystemCa?: boolean;
+  sourceLocation?: string;
+} | null): boolean {
+  if (!cert || cert.isSystemCa) return false;
+  return isClass1Certificate(cert) || Boolean(cert.isInstitutional);
+}

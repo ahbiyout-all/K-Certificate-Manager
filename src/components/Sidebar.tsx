@@ -3,7 +3,7 @@ import { Globe, HardDrive, Laptop, AlertTriangle, ChevronRight, ShieldCheck } fr
 import { DiskDrive } from '../types';
 import { filterPhysicalDrivesOnly } from '../utils/driveFilter';
 
-export type SidebarCategoryFilter = 'ALL' | 'GPKI' | 'EPKI' | 'NPKI' | 'EXPIRED' | 'NON_STANDARD';
+export type SidebarCategoryFilter = 'ALL' | 'GPKI' | 'EPKI' | 'NPKI' | 'CLASS1' | 'EXPIRED' | 'NON_STANDARD';
 export type SidebarSourceFilter = 'ALL' | 'LOCAL' | 'REMOVABLE';
 
 interface SidebarProps {
@@ -16,6 +16,7 @@ interface SidebarProps {
     gpki: number;
     epki: number;
     npki: number;
+    class1: number;
     expired: number;
     nonStandard: number;
     pc: number;
@@ -156,6 +157,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }}
           >
             {counts.npki}
+          </span>
+        </button>
+
+        {/* CLASS1 · 기관 */}
+        <button
+          type="button"
+          onClick={() => handleCatClick('CLASS1')}
+          className={`wpf-native w-full flex items-center justify-between px-2.5 py-2 text-xs cursor-pointer text-left wpf-nav-radio ${
+            categoryFilter === 'CLASS1' ? 'wpf-nav-radio-active' : ''
+          }`}
+        >
+          <span className="truncate">CLASS1 · 기관/특수목적</span>
+          <span
+            className="tabular-nums shrink-0 ml-2 font-bold"
+            style={{
+              color: categoryFilter === 'CLASS1' ? '#FFFFFF' : '#4338CA',
+            }}
+          >
+            {counts.class1}
           </span>
         </button>
 

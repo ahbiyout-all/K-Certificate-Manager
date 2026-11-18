@@ -14,7 +14,6 @@ namespace KCert.Core.Parser
     public static class KCertParser
     {
         private static readonly string[] CertCandidates = { "signCert.der", "SignCert.der", "signcert.der", "sigCert.der", "SigCert.der", "sigcert.der", "envCert.der", "user.der", "signCert.cer", "sigCert.cer", "SignCert.cer", "UserCert.der" };
-        private static readonly string[] KeyCandidates = { "signPri.key", "SignPri.key", "signpri.key", "sigPri.key", "SigPri.key", "sigpri.key", "envPri.key", "user.key", "signPri.pri", "UserPri.key" };
 
         /// <summary>
         /// signCert.der 파일 또는 인증서 디렉터리 경로를 입력받아 풍부한 메타데이터를 추출합니다.
@@ -98,27 +97,8 @@ namespace KCert.Core.Parser
                     return null;
                 }
 
-                // 개인키 탐색
-                string keyPath = string.Empty;
-                foreach (var kCand in KeyCandidates)
-                {
-                    var testKey = Path.Combine(dirPath, kCand);
-                    if (File.Exists(testKey))
-                    {
-                        keyPath = testKey;
-                        break;
-                    }
-                }
-
-                if (string.IsNullOrEmpty(keyPath))
-                {
-                    try
-                    {
-                        var keys = Directory.GetFiles(dirPath, "*.key");
-                        keyPath = keys.FirstOrDefault(k => !Path.GetFileName(k).ToLowerInvariant().StartsWith("km")) ?? keys.FirstOrDefault() ?? string.Empty;
-                    }
-                    catch { }
-                }
+                // 개인키 탐색 (다중 인증서 혼재 class1 폴더 스템 매칭 우선)
+                string keyPath = Discovery.CertLocationScanner.FindMatchingPrivateKey(derPath);
 
                 bool hasKey = !string.IsNullOrEmpty(keyPath) && File.Exists(keyPath);
 
@@ -268,7 +248,8 @@ namespace KCert.Core.Parser
                     KeyFileSize = hasKey ? new FileInfo(keyPath).Length : 0,
                     KeyInfo = keyInfo,
                     IsSystemCa = isSystemCa,
-                    IsInstitutional = isInstitutional,
+                    IsInstitutional = isInstitutional || (isClass1 && !isSystemCa && hasKey),
+                    IsClass1 = isClass1,
                     CleanDisplayName = formattedName
                 };
 

@@ -379,9 +379,153 @@ export function parseDerBasic(derBytes: Uint8Array): {
   };
 }
 
+const isCandidateCertFileName = (fileName: string): boolean => {
+  const lower = fileName.toLowerCase();
+  if (!(lower.endsWith('.der') || lower.endsWith('.cer') || lower.endsWith('.crt'))) return false;
+  if (
+    lower.startsWith('root') ||
+    lower.startsWith('ca') ||
+    lower.startsWith('crl') ||
+    lower.endsWith('.crl') ||
+    lower.includes('cacert') ||
+    lower.includes('rootcert')
+  ) {
+    return false;
+  }
+  return true;
+};
+
+const isCompanionEnvCertName = (lower: string): boolean =>
+  lower.includes('_env.') ||
+  lower.includes('_km.') ||
+  lower.includes('envcert') ||
+  lower.includes('kmcert') ||
+  lower.includes('_env_') ||
+  lower.includes('_km_') ||
+  lower.startsWith('env_') ||
+  lower.startsWith('km_') ||
+  lower.startsWith('envcert') ||
+  lower.startsWith('kmcert');
+
+const isPrimarySignCertName = (lower: string): boolean =>
+  lower === 'signcert.der' ||
+  lower === 'sigcert.der' ||
+  lower === 'user.der' ||
+  lower === 'signcert.cer' ||
+  lower === 'sigcert.cer' ||
+  lower === 'signcert.crt' ||
+  lower.includes('_sig.') ||
+  lower.includes('_sign.') ||
+  lower.startsWith('sign_') ||
+  lower.startsWith('sig_');
+
+export function filterSignCertNamesInFolder<T extends { name: string }>(certItems: T[]): T[] {
+  const hasAnySignFile = certItems.some(item => isPrimarySignCertName(item.name.toLowerCase()));
+  if (!hasAnySignFile) return certItems;
+
+  return certItems.filter(item => {
+    const fn = item.name.toLowerCase();
+    if (!isCompanionEnvCertName(fn)) return true;
+
+    const sigVariant1 = fn
+      .replace('_env.', '_sig.')
+      .replace('_km.', '_sig.')
+      .replace('_env_', '_sig_')
+      .replace('_km_', '_sig_')
+      .replace('envcert', 'signcert')
+      .replace('kmcert', 'signcert');
+    const sigVariant2 = fn
+      .replace('_env.', '_sig.')
+      .replace('_km.', '_sig.')
+      .replace('_env_', '_sig_')
+      .replace('_km_', '_sig_')
+      .replace('envcert', 'sigcert')
+      .replace('kmcert', 'sigcert');
+
+    const hasMatchingSign = certItems.some(other => {
+      const ofn = other.name.toLowerCase();
+      if (ofn === fn) return false;
+      return (
+        ofn === sigVariant1 ||
+        ofn === sigVariant2 ||
+        ofn.includes('_sig.') ||
+        ofn.includes('signcert') ||
+        ofn.includes('sigcert') ||
+        ofn === 'user.der'
+      );
+    });
+
+    return !hasMatchingSign;
+  });
+}
+
+export function findMatchingKeyInFolder<T extends { name: string }>(
+  certFileName: string,
+  keyItems: T[],
+  siblingCertCount: number
+): T | undefined {
+  if (keyItems.length === 0) return undefined;
+
+  const lowerCert = certFileName.toLowerCase();
+  const dotIdx = certFileName.lastIndexOf('.');
+  const stem = dotIdx > 0 ? certFileName.slice(0, dotIdx) : certFileName;
+  const stemLower = stem.toLowerCase();
+  const isKmCert =
+    lowerCert.startsWith('km') ||
+    lowerCert.includes('_km.') ||
+    lowerCert.includes('_env.') ||
+    lowerCert.startsWith('env');
+
+  const getKeyStem = (name: string): string => {
+    const idx = name.lastIndexOf('.');
+    return (idx > 0 ? name.slice(0, idx) : name).toLowerCase();
+  };
+
+  // 1. 동일 파일명 스템 매칭 (예: 865기관_sig.cer -> 865기관_sig.key)
+  const direct = keyItems.find(k => getKeyStem(k.name) === stemLower);
+  if (direct) return direct;
+
+  // 2. 변형 스템 매칭 (_sig -> _pri, Cert -> Pri)
+  const stemCandidates: string[] = [];
+  if (stemLower.endsWith('_sig')) {
+    const prefix = stemLower.slice(0, -4);
+    stemCandidates.push(`${prefix}_pri`, `${prefix}_signpri`, `${prefix}_sigpri`, `${prefix}_key`, prefix);
+  } else if (stemLower.endsWith('_sign')) {
+    const prefix = stemLower.slice(0, -5);
+    stemCandidates.push(`${prefix}_pri`, `${prefix}_signpri`, `${prefix}_key`, prefix);
+  } else if (stemLower.endsWith('cert')) {
+    const prefix = stemLower.slice(0, -4);
+    stemCandidates.push(`${prefix}pri`, `${prefix}key`, `${prefix}_pri`, prefix);
+  }
+
+  for (const cand of stemCandidates) {
+    const matched = keyItems.find(k => getKeyStem(k.name) === cand);
+    if (matched) return matched;
+  }
+
+  // 3. 표준 대표 개인키 패턴
+  const stdPatterns = isKmCert
+    ? ['kmpri.key', 'envpri.key', 'kmpri.pri']
+    : ['signpri.key', 'sigpri.key', 'user.key', 'userpri.key', 'signpri.pri', 'priv.key', 'envpri.key'];
+
+  for (const pat of stdPatterns) {
+    const matched = keyItems.find(k => k.name.toLowerCase() === pat);
+    if (matched) return matched;
+  }
+
+  // 4. 단일 인증서 폴더 안전 폴백 (복수 인증서 혼재 폴더에서는 타 인증서 키 오매칭 방지)
+  if (!isKmCert && siblingCertCount <= 1) {
+    const nonKmKeys = keyItems.filter(k => !k.name.toLowerCase().startsWith('km'));
+    if (nonKmKeys.length > 0) return nonKmKeys[0];
+  }
+
+  return undefined;
+}
+
 /**
  * FileSystemDirectoryHandle (Web File System Access API)로부터 인증서 계층 재귀 탐색
  * - NPKI/GPKI/EPKI 계층 구조 및 숨김 폴더(.NPKI, .certs, .backup 등) 지원
+ * - GPKI/EPKI class1 폴더는 항상 탐색하되 개인키(.key) 쌍이 확인된 기관 인증서만 선별 등록
  */
 export async function scanDirectoryHandle(
   dirHandle: any,
@@ -402,40 +546,27 @@ export async function scanDirectoryHandle(
     return [];
   }
 
-  // 현재 폴더에 서명 인증서 및 개인키, GPKI 암호화키가 있는지 확인
-  const certFileHandle = entries.find(
-    e => e.kind === 'file' && (
-      e.name.toLowerCase() === 'signcert.der' ||
-      e.name.toLowerCase() === 'sigcert.der' ||
-      e.name.toLowerCase() === 'envcert.der' ||
-      e.name.toLowerCase() === 'signcert.cer' ||
-      e.name.toLowerCase() === 'sigcert.cer' ||
-      e.name.toLowerCase() === 'signcert.crt' ||
-      e.name.toLowerCase() === 'cert.der' ||
-      e.name.toLowerCase() === 'usercert.der' ||
-      e.name.toLowerCase() === 'user.der' ||
-      (e.name.toLowerCase().endsWith('.der') && !e.name.toLowerCase().startsWith('km') && !e.name.toLowerCase().startsWith('root'))
-    )
-  );
-  const keyFileHandle = entries.find(
-    e => e.kind === 'file' && (
-      e.name.toLowerCase() === 'signpri.key' ||
-      e.name.toLowerCase() === 'sigpri.key' ||
-      e.name.toLowerCase() === 'envpri.key' ||
-      e.name.toLowerCase() === 'user.key' ||
-      e.name.toLowerCase() === 'signpri.pri' ||
-      e.name.toLowerCase() === 'priv.key' ||
-      (e.name.toLowerCase().endsWith('.key') && !e.name.toLowerCase().startsWith('km'))
-    )
-  );
-  const kmCertHandle = entries.find(
-    e => e.kind === 'file' && e.name.toLowerCase() === 'kmcert.der'
-  );
-  const kmKeyHandle = entries.find(
-    e => e.kind === 'file' && e.name.toLowerCase() === 'kmpri.key'
-  );
+  const fileEntries = entries.filter(e => e.kind === 'file');
+  const rawCertHandles = fileEntries.filter(e => isCandidateCertFileName(e.name));
+  const keyHandles = fileEntries.filter(e => {
+    const l = e.name.toLowerCase();
+    return l.endsWith('.key') || l.endsWith('.pri');
+  });
 
-  if (certFileHandle) {
+  const certFileHandles = filterSignCertNamesInFolder(rawCertHandles);
+  const kmCertHandle = fileEntries.find(e => e.name.toLowerCase() === 'kmcert.der');
+  const kmKeyHandle = fileEntries.find(e => e.name.toLowerCase() === 'kmpri.key');
+
+  const normalizedDirPath = (currentPath || dirHandle.name || 'Root').replace(/\//g, '\\');
+  const isClass1 = /(?:^|[\\/])class1(?:$|[\\/])/i.test(normalizedDirPath);
+  const hasLocalFixedDrive = /^[CD]:(?:\\|$)/i.test(normalizedDirPath);
+  const isUsbDrivePath =
+    /^(?:USB(?::|\\|$)|[E-Z]:)/i.test(normalizedDirPath) ||
+    (!hasLocalFixedDrive && /(?:^|\\)(?:USB|REMOVABLE|이동식)(?:\\|$|\s)/i.test(normalizedDirPath));
+
+  const siblingSignCount = certFileHandles.filter(c => !isCompanionEnvCertName(c.name.toLowerCase())).length;
+
+  for (const certFileHandle of certFileHandles) {
     try {
       const file = await certFileHandle.getFile();
       // 보안 검증: 512KB 초과 비정상 대용량 파일 메모리 로드 방지 (DoS 방어) — 해당 파일만 건너뛰고 하위 폴더 탐색은 계속 진행
@@ -444,6 +575,14 @@ export async function scanDirectoryHandle(
         const bytes = new Uint8Array(buffer);
         const sha256 = await calculateSha256(bytes);
         const parsed = parseDerBasic(bytes);
+
+        const keyFileHandle = findMatchingKeyInFolder(certFileHandle.name, keyHandles, siblingSignCount);
+        const hasKey = Boolean(keyFileHandle);
+
+        // class1 폴더는 개인키(.key)와 쌍을 이루는 실사용 기관/특수목적 인증서만 허용 (CA/Root/공개키 전용 제외)
+        if (isClass1 && (!hasKey || parsed.isSystemCa)) {
+          continue;
+        }
 
         let keySize = 0;
         let keyData: Uint8Array | undefined;
@@ -456,12 +595,7 @@ export async function scanDirectoryHandle(
         }
 
         const validity = extractDerValidityDates(bytes);
-
-        const normalizedDirPath = (currentPath || dirHandle.name || 'Root').replace(/\//g, '\\');
-        const hasLocalFixedDrive = /^[CD]:(?:\\|$)/i.test(normalizedDirPath);
-        const isUsbDrivePath =
-          /^(?:USB(?::|\\|$)|[E-Z]:)/i.test(normalizedDirPath) ||
-          (!hasLocalFixedDrive && /(?:^|\\)(?:USB|REMOVABLE|이동식)(?:\\|$|\s)/i.test(normalizedDirPath));
+        const isInstitutional = Boolean(parsed.isInstitutional) || (isClass1 && !parsed.isSystemCa && hasKey);
 
         certs.push({
           id: `custom-scanned-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
@@ -481,13 +615,14 @@ export async function scanDirectoryHandle(
           isRemovableMedia: isUsbDrivePath,
           departmentOrOrg: parsed.departmentOrOrg,
           isSystemCa: parsed.isSystemCa,
-          isInstitutional: parsed.isInstitutional,
+          isInstitutional,
+          isClass1,
           files: {
             certName: certFileHandle.name,
             keyName: keyFileHandle ? keyFileHandle.name : 'signPri.key (없음)',
             kmCertName: kmCertHandle?.name,
             kmKeyName: kmKeyHandle?.name,
-            hasKey: !!keyFileHandle,
+            hasKey,
             certSize: file.size,
             keySize,
             certData: bytes,
@@ -522,7 +657,7 @@ export async function scanDirectoryHandle(
  */
 export async function groupUploadedCertFiles(fileList: FileList): Promise<CertificateItem[]> {
   const certs: CertificateItem[] = [];
-  const dirMap = new Map<string, { certFile?: File; keyFile?: File; kmCertFile?: File; kmKeyFile?: File }>();
+  const dirMap = new Map<string, { certFiles: File[]; keyFiles: File[]; kmCertFile?: File; kmKeyFile?: File }>();
 
   for (let i = 0; i < fileList.length; i++) {
     const file = fileList[i];
@@ -532,35 +667,17 @@ export async function groupUploadedCertFiles(fileList: FileList): Promise<Certif
     const dirPath = parts.join('/') || 'Root';
 
     if (!dirMap.has(dirPath)) {
-      dirMap.set(dirPath, {});
+      dirMap.set(dirPath, { certFiles: [], keyFiles: [] });
     }
     const current = dirMap.get(dirPath)!;
 
     const lower = fileName.toLowerCase();
-    if (
-      lower === 'signcert.der' ||
-      lower === 'sigcert.der' ||
-      lower === 'envcert.der' ||
-      lower === 'signcert.cer' ||
-      lower === 'sigcert.cer' ||
-      lower === 'signcert.crt' ||
-      lower === 'cert.der' ||
-      lower === 'usercert.der' ||
-      lower === 'user.der' ||
-      (lower.endsWith('.der') && !lower.startsWith('km') && !lower.startsWith('root') && !current.certFile)
-    ) {
-      current.certFile = file;
-    } else if (
-      lower === 'signpri.key' ||
-      lower === 'sigpri.key' ||
-      lower === 'envpri.key' ||
-      lower === 'user.key' ||
-      lower === 'signpri.pri' ||
-      lower === 'priv.key' ||
-      (lower.endsWith('.key') && !lower.startsWith('km') && !current.keyFile)
-    ) {
-      current.keyFile = file;
-    } else if (lower === 'kmcert.der') {
+    if (isCandidateCertFileName(fileName)) {
+      current.certFiles.push(file);
+    } else if (lower.endsWith('.key') || lower.endsWith('.pri')) {
+      current.keyFiles.push(file);
+    }
+    if (lower === 'kmcert.der') {
       current.kmCertFile = file;
     } else if (lower === 'kmpri.key') {
       current.kmKeyFile = file;
@@ -568,22 +685,41 @@ export async function groupUploadedCertFiles(fileList: FileList): Promise<Certif
   }
 
   for (const [dirPath, group] of dirMap.entries()) {
-    if (group.certFile) {
+    const normalizedDirPath = dirPath.replace(/\//g, '\\');
+    const isClass1 = /(?:^|[\\/])class1(?:$|[\\/])/i.test(normalizedDirPath);
+    const hasLocalFixedDrive = /^[CD]:(?:\\|$)/i.test(normalizedDirPath);
+    const isUsbDrivePath =
+      /^(?:USB(?::|\\|$)|[E-Z]:)/i.test(normalizedDirPath) ||
+      (!hasLocalFixedDrive && /(?:^|\\)(?:USB|REMOVABLE|이동식)(?:\\|$|\s)/i.test(normalizedDirPath));
+
+    const certFiles = filterSignCertNamesInFolder(group.certFiles);
+    const siblingSignCount = certFiles.filter(c => !isCompanionEnvCertName(c.name.toLowerCase())).length;
+
+    for (const certFile of certFiles) {
       try {
-        if (group.certFile.size <= 0 || group.certFile.size > 512 * 1024) continue;
-        const certBuf = await group.certFile.arrayBuffer();
+        if (certFile.size <= 0 || certFile.size > 512 * 1024) continue;
+        const certBuf = await certFile.arrayBuffer();
         const certBytes = new Uint8Array(certBuf);
         const sha256 = await calculateSha256(certBytes);
         const parsed = parseDerBasic(certBytes);
 
+        const matchedKeyFile = findMatchingKeyInFolder(certFile.name, group.keyFiles, siblingSignCount);
+        const hasKey = Boolean(matchedKeyFile);
+
+        // class1 폴더는 개인키(.key) 쌍이 있는 실사용 기관/특수목적 인증서만 허용
+        if (isClass1 && (!hasKey || parsed.isSystemCa)) {
+          continue;
+        }
+
         let keyData: Uint8Array | undefined;
         let keySize = 0;
-        if (group.keyFile && group.keyFile.size > 0 && group.keyFile.size <= 512 * 1024) {
-          keySize = group.keyFile.size;
-          keyData = new Uint8Array(await group.keyFile.arrayBuffer());
+        if (matchedKeyFile && matchedKeyFile.size > 0 && matchedKeyFile.size <= 512 * 1024) {
+          keySize = matchedKeyFile.size;
+          keyData = new Uint8Array(await matchedKeyFile.arrayBuffer());
         }
 
         const validity = extractDerValidityDates(certBytes);
+        const isInstitutional = Boolean(parsed.isInstitutional) || (isClass1 && !parsed.isSystemCa && hasKey);
 
         certs.push({
           id: `upload-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
@@ -598,18 +734,20 @@ export async function groupUploadedCertFiles(fileList: FileList): Promise<Certif
           validTo: validity.validTo,
           status: validity.status,
           daysRemaining: validity.daysRemaining,
-          sourceLocation: dirPath.replace(/\//g, '\\'),
-          sourceDrive: '업로드된 파일 폴더',
+          sourceLocation: normalizedDirPath,
+          sourceDrive: isUsbDrivePath ? '이동식 USB' : '업로드된 파일 폴더',
+          isRemovableMedia: isUsbDrivePath,
           departmentOrOrg: parsed.departmentOrOrg,
           isSystemCa: parsed.isSystemCa,
-          isInstitutional: parsed.isInstitutional,
+          isInstitutional,
+          isClass1,
           files: {
-            certName: group.certFile.name,
-            keyName: group.keyFile ? group.keyFile.name : 'signPri.key (없음)',
+            certName: certFile.name,
+            keyName: matchedKeyFile ? matchedKeyFile.name : 'signPri.key (없음)',
             kmCertName: group.kmCertFile?.name,
             kmKeyName: group.kmKeyFile?.name,
-            hasKey: !!group.keyFile,
-            certSize: group.certFile.size,
+            hasKey,
+            certSize: certFile.size,
             keySize,
             certData: certBytes,
             keyData,

@@ -15,12 +15,14 @@ import {
   Clock,
   AlertTriangle,
   FileCode,
-  ExternalLink
+  ExternalLink,
+  Landmark
 } from 'lucide-react';
 import { CertificateItem } from '../types';
 import { getDriveColorInfo } from '../utils/driveColors';
 import { getAccurateIssuerInfo } from '../utils/issuerUtils';
 import { isUsbCertificate } from '../utils/driveFilter';
+import { isClass1Certificate, isInstitutionalOrClass1 } from '../utils/certPathUtils';
 
 interface CertificateDetailModalProps {
   cert: CertificateItem | null;
@@ -44,6 +46,8 @@ export const CertificateDetailModal: React.FC<CertificateDetailModalProps> = ({
   if (!cert) return null;
 
   const isUsb = isUsbCertificate(cert);
+  const isClass1 = isClass1Certificate(cert);
+  const isInstitutional = isInstitutionalOrClass1(cert);
 
   const copyToClipboard = (text: string) => {
     if (!text) return;
@@ -67,6 +71,12 @@ export const CertificateDetailModal: React.FC<CertificateDetailModalProps> = ({
                 <span className="text-[11px] font-semibold px-2 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded">
                   {cert.category}
                 </span>
+                {isInstitutional && (
+                  <span className="text-[11px] font-bold px-2 py-0.5 bg-indigo-500/30 text-indigo-200 border border-indigo-400/50 rounded flex items-center gap-1">
+                    <Landmark className="w-3 h-3 shrink-0" />
+                    <span>{isClass1 ? 'CLASS1 · 기관' : '기관용'}</span>
+                  </span>
+                )}
                 {isUsb ? (
                   <span className="text-[11px] font-bold px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded flex items-center gap-1">
                     <HardDrive className="w-3 h-3" />

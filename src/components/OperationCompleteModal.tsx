@@ -206,8 +206,12 @@ export const OperationCompleteModal: React.FC<OperationCompleteModalProps> = ({
     const inferDefaultSubdir = (): string => {
       const cat = String(firstCert?.category || '').toUpperCase();
       const srcUpper = `${data.sourcePath || ''} ${rawInput}`.toUpperCase();
-      if (cat.startsWith('GPKI') || /(?:^|[\\/\s])GPKI(?:$|[\\/\s])/.test(srcUpper)) return 'GPKI\\Certificate\\class2';
-      if (cat.startsWith('EPKI') || /(?:^|[\\/\s])EPKI(?:$|[\\/\s])/.test(srcUpper)) return 'EPKI\\Certificate\\class2';
+      const classTier =
+        firstCert?.isClass1 || /(?:^|[\\/])CLASS1(?:$|[\\/])/.test(srcUpper)
+          ? 'class1'
+          : 'class2';
+      if (cat.startsWith('GPKI') || /(?:^|[\\/\s])GPKI(?:$|[\\/\s])/.test(srcUpper)) return `GPKI\\Certificate\\${classTier}`;
+      if (cat.startsWith('EPKI') || /(?:^|[\\/\s])EPKI(?:$|[\\/\s])/.test(srcUpper)) return `EPKI\\Certificate\\${classTier}`;
       return 'NPKI';
     };
 

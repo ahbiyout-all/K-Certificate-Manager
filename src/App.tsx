@@ -68,7 +68,7 @@ import {
   setActiveDrives 
 } from './utils/usbToPcService';
 import { isPcCertificate, isUsbCertificate, isSameDriveSelfCopy } from './utils/driveFilter';
-import { isNonStandardCertPath } from './utils/certPathUtils';
+import { isNonStandardCertPath, isClass1Certificate } from './utils/certPathUtils';
 import { isCertificateExpired } from './utils/certParser';
 import { getStoredActivityLogs, logActivity, clearAllActivityLogs, formatCurrentTimestamp } from './utils/activityLogger';
 import { 
@@ -107,6 +107,21 @@ export default function App() {
     return loadProtectedRestoredItems();
   });
 
+  const sanitizeActiveCerts = (list: CertificateItem[]): CertificateItem[] =>
+    list
+      .filter(c => {
+        if (!c) return false;
+        const inClass1 = Boolean(c.isClass1) || /(?:^|[\\/])class1(?:$|[\\/])/i.test((c.sourceLocation || '').replace(/\//g, '\\'));
+        if (inClass1 && (!c.files?.hasKey || c.isSystemCa)) return false;
+        return true;
+      })
+      .map(c => {
+        const inClass1 = Boolean(c.isClass1) || /(?:^|[\\/])class1(?:$|[\\/])/i.test((c.sourceLocation || '').replace(/\//g, '\\'));
+        return inClass1 && !c.isClass1
+          ? { ...c, isClass1: true, isInstitutional: c.isInstitutional ?? true }
+          : c;
+      });
+
   const [certificates, setCertificates] = useState<CertificateItem[]>(() => {
     try {
       const savedTrash = localStorage.getItem('kcert_trash_items');
@@ -117,16 +132,16 @@ export default function App() {
       if (savedCerts) {
         const parsed = JSON.parse(savedCerts);
         if (Array.isArray(parsed)) {
-          return parsed.filter(c => !trashCertIds.has(c.id));
+          return sanitizeActiveCerts(parsed.filter(c => !trashCertIds.has(c.id)));
         }
       }
       if (savedList && savedList.length > 0) {
-        return INITIAL_CERTIFICATES.filter(c => !trashCertIds.has(c.id));
+        return sanitizeActiveCerts(INITIAL_CERTIFICATES.filter(c => !trashCertIds.has(c.id)));
       }
     } catch {
       // fallback
     }
-    return INITIAL_CERTIFICATES;
+    return sanitizeActiveCerts(INITIAL_CERTIFICATES);
   });
   const certificatesRef = useRef<CertificateItem[]>(certificates);
   useEffect(() => {
@@ -567,21 +582,22 @@ export default function App() {
 
   // Add custom scanned certificates from File System API or Folder upload
   const handleCustomScannedCerts = (newCerts: CertificateItem[]) => {
+    const validNewCerts = sanitizeActiveCerts(newCerts);
     updateCertificates(prev => {
       const existingIds = new Set(prev.filter(Boolean).map(c => c.id));
-      const filteredNew = newCerts.filter(c => c && c.id && !existingIds.has(c.id));
+      const filteredNew = validNewCerts.filter(c => c && c.id && !existingIds.has(c.id));
       return [...filteredNew, ...prev];
     });
 
-    setSelectedIds(prev => [...new Set([...prev, ...newCerts.filter(Boolean).map(c => c.id)])]);
+    setSelectedIds(prev => [...new Set([...prev, ...validNewCerts.filter(Boolean).map(c => c.id)])]);
 
     // Also remove from trash if imported
     setTrashItems(prev => {
-      const scannedIds = new Set(newCerts.map(c => c.id));
+      const scannedIds = new Set(validNewCerts.map(c => c.id));
       return prev.filter(t => !scannedIds.has(t.cert.id));
     });
 
-    showToast(`${newCerts.length}개의 인증서를 로드하여 목록에 추가했습니다.`);
+    showToast(`${validNewCerts.length}개의 인증서를 로드하여 목록에 추가했습니다.`);
   };
 
   const handleRefreshRef = useRef<(customMessage?: string, integrityVerified?: boolean, checksumText?: string) => Promise<void>>(async () => {});
@@ -1630,6 +1646,7 @@ export default function App() {
     gpki: certificates.filter(c => c.category === 'GPKI_GOV').length,
     epki: certificates.filter(c => c.category === 'EPKI_EDU').length,
     npki: certificates.filter(c => c.category === 'NPKI_BANK' || c.category === 'NPKI_CORP').length,
+    class1: certificates.filter(c => isClass1Certificate(c)).length,
     expired: certificates.filter(isCertificateExpired).length,
     nonStandard: nonStandardCount,
     pc: certificates.filter(c => !isUsbCertificate(c)).length,
