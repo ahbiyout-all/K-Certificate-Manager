@@ -372,46 +372,23 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       return;
     }
 
-    // 2. Pre-flight Duplicate Certificate Folder Check on Target Drive
-    const dupCheck = detectDuplicateCertificates(effectiveSelectedCerts, existingCertificates, targetDrive);
-    setDuplicateResult(dupCheck);
-
-    if (dupCheck.hasDuplicates && !overrideDuplicateConfirmed) {
-      // Prompt user with confirmation dialog before starting copy!
-      setShowDuplicateModal(true);
-      return;
-    }
-
-    // User confirmed duplicate resolution mode
-    const decisions = confirmedDecisions || customDuplicateDecisions;
-    const skippedCertIds: string[] = [];
-    const archivedCertIds: string[] = [];
-    const overwrittenCertIds: string[] = [];
-
-    effectiveSelectedCerts.forEach(cert => {
-      const decision = decisions[cert.id] || duplicateMode;
-      const isConflict = dupCheck.conflicts.some(c => c.cert.id === cert.id);
-      if (isConflict) {
-        if (decision === 'skip') {
-          skippedCertIds.push(cert.id);
-        } else if (decision === 'archive_old') {
-          archivedCertIds.push(cert.id);
-        } else {
-          overwrittenCertIds.push(cert.id);
-        }
-      }
-    });
-
-    // If all selected certs are skipped or same-drive self-copy
-    const actualCopyable = effectiveSelectedCerts.filter(
-      c => !skippedCertIds.includes(c.id) && !isSameDriveSelfCopy(c, targetDrive)
-    );
-    if (effectiveSelectedCerts.length > 0 && actualCopyable.length === 0) {
-      setLogs([
-        skippedCertIds.length === effectiveSelectedCerts.length
-          ? '[복사 취소] 모든 중복 인증서가 "건너뛰기(Skip)"로 지정되어 복사할 대상 파일이 없습니다.'
-          : '[복사 취소] 복사할 수 있는 대상 인증서가 없습니다 (중복 건너뛰기 또는 동일 드라이브 자가 복사 제외됨).',
-      ]);
+    // 광학 미디어(CD/DVD-ROM) 쓰기 차단 검사
+    if (targetDrive.type === 'cdrom' || targetDrive.isCdRom) {
+      setCopyErrorModalInfo({
+        title: '광학 미디어(CD/DVD-ROM) 쓰기 불가 오류',
+        summary: `${targetDrive.letter} 드라이브는 읽기 전용 광학 미디어(CD/DVD-ROM)로 인식되어 파일을 직접 기록할 수 없습니다.`,
+        category: 'WRITE_PROTECTED',
+        solutions: [
+          '일반 USB 메모리 또는 외장 SSD를 컴퓨터에 연결한 후 다시 시도하세요.',
+          '컴퓨터의 쓰기 가능한 일반 로컬 디스크(D:\\ 등)를 선택하세요.',
+        ],
+        driveLetter: targetDrive?.letter,
+        driveName: targetDrive?.name,
+        direction: 'PC_TO_USB',
+        failedCount: effectiveSelectedCerts.length,
+        certNames: effectiveSelectedCerts.map(c => c.name),
+        technicalDetail: 'DeviceError: MEDIA_TYPE_OPTICAL_READONLY (0x80070013)',
+      });
       return;
     }
 
@@ -459,23 +436,46 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       return;
     }
 
-    // 광학 미디어(CD/DVD-ROM) 쓰기 차단 검사
-    if (targetDrive.type === 'cdrom' || targetDrive.isCdRom) {
-      setCopyErrorModalInfo({
-        title: '광학 미디어(CD/DVD-ROM) 쓰기 불가 오류',
-        summary: `${targetDrive.letter} 드라이브는 읽기 전용 광학 미디어(CD/DVD-ROM)로 인식되어 파일을 직접 기록할 수 없습니다.`,
-        category: 'WRITE_PROTECTED',
-        solutions: [
-          '일반 USB 메모리 또는 외장 SSD를 컴퓨터에 연결한 후 다시 시도하세요.',
-          '컴퓨터의 쓰기 가능한 일반 로컬 디스크(D:\\ 등)를 선택하세요.',
-        ],
-        driveLetter: targetDrive?.letter,
-        driveName: targetDrive?.name,
-        direction: 'PC_TO_USB',
-        failedCount: effectiveSelectedCerts.length,
-        certNames: effectiveSelectedCerts.map(c => c.name),
-        technicalDetail: 'DeviceError: MEDIA_TYPE_OPTICAL_READONLY (0x80070013)',
-      });
+    // 2. Pre-flight Duplicate Certificate Folder Check on Target Drive
+    const dupCheck = detectDuplicateCertificates(effectiveSelectedCerts, existingCertificates, targetDrive);
+    setDuplicateResult(dupCheck);
+
+    if (dupCheck.hasDuplicates && !overrideDuplicateConfirmed) {
+      // Prompt user with confirmation dialog before starting copy!
+      setShowDuplicateModal(true);
+      return;
+    }
+
+    // User confirmed duplicate resolution mode
+    const decisions = confirmedDecisions || customDuplicateDecisions;
+    const skippedCertIds: string[] = [];
+    const archivedCertIds: string[] = [];
+    const overwrittenCertIds: string[] = [];
+
+    effectiveSelectedCerts.forEach(cert => {
+      const decision = decisions[cert.id] || duplicateMode;
+      const isConflict = dupCheck.conflicts.some(c => c.cert.id === cert.id);
+      if (isConflict) {
+        if (decision === 'skip') {
+          skippedCertIds.push(cert.id);
+        } else if (decision === 'archive_old') {
+          archivedCertIds.push(cert.id);
+        } else {
+          overwrittenCertIds.push(cert.id);
+        }
+      }
+    });
+
+    // If all selected certs are skipped or same-drive self-copy
+    const actualCopyable = effectiveSelectedCerts.filter(
+      c => !skippedCertIds.includes(c.id) && !isSameDriveSelfCopy(c, targetDrive)
+    );
+    if (effectiveSelectedCerts.length > 0 && actualCopyable.length === 0) {
+      setLogs([
+        skippedCertIds.length === effectiveSelectedCerts.length
+          ? '[복사 취소] 모든 중복 인증서가 "건너뛰기(Skip)"로 지정되어 복사할 대상 파일이 없습니다.'
+          : '[복사 취소] 복사할 수 있는 대상 인증서가 없습니다 (중복 건너뛰기 또는 동일 드라이브 자가 복사 제외됨).',
+      ]);
       return;
     }
 

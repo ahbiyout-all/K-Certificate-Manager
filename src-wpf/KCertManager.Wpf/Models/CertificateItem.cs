@@ -462,9 +462,12 @@ namespace KCertManager.Wpf.Models
                     return true;
                 }
 
-                // 5. NPKI 이동식 USB 표준 ([USB]:\NPKI)
-                // 주의: PC 로컬 C: 드라이브의 C:\NPKI는 구형/비표준 위치(현대 뱅킹 프로그램 미인식)임
-                if (IsRemovableMedia && System.Text.RegularExpressions.Regex.IsMatch(p, @"^[A-Z]:\\NPKI($|\\)"))
+                // 5. NPKI 이동식 USB 표준 ([USB]:\NPKI) 또는 비-시스템 드라이브(D:, E: 등) 루트 \NPKI 표준
+                // 주의: PC 로컬 시스템 드라이브의 C:\NPKI는 구형/비표준 위치(현대 뱅킹 프로그램 미인식)임
+                var sysDrive = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\');
+                bool isNonSystemDrive = p.Length >= 2 && p[1] == ':' &&
+                                        !p.Substring(0, 2).Equals(sysDrive, StringComparison.OrdinalIgnoreCase);
+                if ((IsRemovableMedia || isNonSystemDrive) && Regex.IsMatch(p, @"^[A-Z]:\\NPKI($|\\)"))
                 {
                     return true;
                 }

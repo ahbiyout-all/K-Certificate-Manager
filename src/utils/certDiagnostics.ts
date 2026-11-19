@@ -124,16 +124,26 @@ export function buildCanonicalCertPath(cert: CertificateItem): string {
   const username = extractUsernameFromPath(cert.sourceLocation || '');
   const leaf = extractLeafFolderName(cert);
   const pathUpper = (cert.sourceLocation || '').replace(/\//g, '\\').toUpperCase();
+  const subjectDn = (cert.subjectDn || '').trim();
+  const cnMatch = subjectDn.match(/(?:^|,)\s*(cn\s*=\s*[^,]+)/i);
+  const extractedCn = cnMatch
+    ? `cn=${cnMatch[1].replace(/^cn\s*=\s*/i, '').trim()}`
+    : '';
+  const hasSubjectCn = Boolean(cnMatch);
 
   if (cert.category === 'GPKI_GOV') {
     const classTier = cert.isClass1 || /(?:^|[\\/])CLASS1(?:$|[\\/])/.test(pathUpper) ? 'class1' : 'class2';
-    const cleanCn = leaf.toLowerCase().startsWith('cn=') ? leaf : `cn=${cert.name}`;
+    const cleanCn = leaf.toLowerCase().startsWith('cn=')
+      ? leaf
+      : (extractedCn || `cn=${cert.name || '사용자'}`);
     return `${drive}\\GPKI\\Certificate\\${classTier}\\${cleanCn}`;
   }
 
   if (cert.category === 'EPKI_EDU') {
     const classTier = cert.isClass1 || /(?:^|[\\/])CLASS1(?:$|[\\/])/.test(pathUpper) ? 'class1' : 'class2';
-    const cleanCn = leaf.toLowerCase().startsWith('cn=') ? leaf : `cn=${cert.name}`;
+    const cleanCn = leaf.toLowerCase().startsWith('cn=')
+      ? leaf
+      : (extractedCn || `cn=${cert.name || '사용자'}`);
     if (isUsb || drive !== 'C:') {
       return `${drive}\\EPKI\\Certificate\\${classTier}\\${cleanCn}`;
     }
@@ -142,7 +152,9 @@ export function buildCanonicalCertPath(cert: CertificateItem): string {
 
   // NPKI (은행/금융/법인)
   const caDir = extractCaFolderName(cert);
-  const cleanCn = leaf.toLowerCase().startsWith('cn=') ? leaf : `cn=${cert.name},ou=personal,o=${caDir},c=kr`;
+  const cleanCn = leaf.toLowerCase().startsWith('cn=')
+    ? leaf
+    : (hasSubjectCn ? subjectDn : `cn=${cert.name || '사용자'},ou=personal,o=${caDir},c=kr`);
   if (isUsb || drive !== 'C:') {
     return `${drive}\\NPKI\\${caDir}\\USER\\${cleanCn}`;
   }

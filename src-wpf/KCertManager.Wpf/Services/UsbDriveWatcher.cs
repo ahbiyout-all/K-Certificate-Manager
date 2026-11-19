@@ -333,7 +333,8 @@ namespace KCertManager.Wpf.Services
                         // 3. 클라우드 드라이브 (구글 드라이브, 원드라이브, 드롭박스, 레이드라이브 등)
                         modelUpper.Contains("GOOGLE") || modelUpper.Contains("ONEDRIVE") ||
                         modelUpper.Contains("DROPBOX") || modelUpper.Contains("RAIDRIVE") ||
-                        modelUpper.Contains("CLOUD") || modelUpper.Contains("BOX") ||
+                        modelUpper.Contains("CLOUD") || modelUpper.Contains("BOX DRIVE") ||
+                        modelUpper.Contains("BOX SYNC") ||
                         volUpper.Contains("GOOGLE") || volUpper.Contains("구글") ||
                         volUpper.Contains("ONEDRIVE") || volUpper.Contains("ONE DRIVE") ||
                         volUpper.Contains("DROPBOX") || volUpper.Contains("드롭박스") ||

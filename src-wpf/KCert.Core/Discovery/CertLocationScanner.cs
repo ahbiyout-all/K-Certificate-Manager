@@ -443,7 +443,7 @@ namespace KCert.Core.Discovery
                             var fn = Path.GetFileName(file).ToLowerInvariant();
 
                             // 1. 루트 CA, CRL(폐기목록), 시스템 CA 공개키 파일 제외
-                            if (fn.StartsWith("root") || fn.StartsWith("ca") || fn.StartsWith("crl") ||
+                            if (fn.StartsWith("root") || IsCaSystemFileName(fn) || fn.StartsWith("crl") ||
                                 fn.EndsWith(".crl") || fn.Contains("cacert") || fn.Contains("rootcert"))
                             {
                                 continue;
@@ -479,7 +479,7 @@ namespace KCert.Core.Discovery
                                     if (isGenericEnvName &&
                                         (ofn.Equals("signcert.der") || ofn.Equals("signcert.cer") ||
                                          ofn.Equals("sigcert.der") || ofn.Equals("sigcert.cer") ||
-                                         ofn.Equals("user.der") || ofn.Contains("_sig.")))
+                                         ofn.Equals("user.der") || ofn.Contains("_sig.") || ofn.Contains("_sign.")))
                                     {
                                         return true;
                                     }
@@ -692,7 +692,7 @@ namespace KCert.Core.Discovery
                             return !n.StartsWith("km") && !n.StartsWith("env") &&
                                    !n.Contains("_km.") && !n.Contains("_env.") &&
                                    !n.Contains("kmcert") && !n.Contains("envcert") &&
-                                   !n.StartsWith("root") && !n.StartsWith("ca") && !n.StartsWith("crl");
+                                   !n.StartsWith("root") && !IsCaSystemFileName(n) && !n.StartsWith("crl");
                         })
                         .ToList();
 
@@ -708,6 +708,11 @@ namespace KCert.Core.Discovery
             }
 
             return string.Empty;
+        }
+
+        private static bool IsCaSystemFileName(string lowerFileName)
+        {
+            return Regex.IsMatch(lowerFileName, @"^ca(?:\d|[._-]|cert|$)", RegexOptions.IgnoreCase);
         }
 
         private static bool IsExcluded(string dirName)

@@ -144,6 +144,7 @@ export default function App() {
     return sanitizeActiveCerts(INITIAL_CERTIFICATES);
   });
   const certificatesRef = useRef<CertificateItem[]>(certificates);
+  const hiddenByPathToggleRef = useRef<CertificateItem[]>([]);
   useEffect(() => {
     certificatesRef.current = certificates;
   }, [certificates]);
@@ -540,17 +541,29 @@ export default function App() {
   };
 
   // Toggle search path (preserves user-imported USB/custom certificates alongside standard roots)
+  const matchesSearchPathPrefix = (certLocation: string, pathPrefix: string): boolean => {
+    const normCert = (certLocation || '').replace(/\//g, '\\').replace(/\\+$/, '').toLowerCase();
+    const normPath = (pathPrefix || '').replace(/\//g, '\\').replace(/\\+$/, '').toLowerCase();
+    if (!normCert || !normPath) return false;
+    return normCert === normPath || normCert.startsWith(`${normPath}\\`);
+  };
+
   const handleTogglePath = (id: string) => {
     const updatedPaths = searchPaths.map(p => (p.id === id ? { ...p, enabled: !p.enabled } : p));
     setSearchPaths(updatedPaths);
 
     const enabledTypes = updatedPaths.filter(p => p.enabled).map(p => p.type);
     const isUsbEnabled = updatedPaths.some(p => p.type === 'removable_usb' && p.enabled);
+    const disabledCustomPaths = updatedPaths.filter(p => p.type === 'custom' && !p.enabled);
     const trashCertIds = new Set(trashItems.map(t => t.cert.id));
     const initialIdSet = new Set(INITIAL_CERTIFICATES.map(c => c.id));
 
-    const shouldKeepCert = (cert: CertificateItem) => {
+    const isHiddenByDisabledCustomPath = (cert: CertificateItem) =>
+      disabledCustomPaths.some(cp => matchesSearchPathPrefix(cert.sourceLocation, cp.path));
+
+    const shouldKeepInitialCert = (cert: CertificateItem) => {
       if (trashCertIds.has(cert.id)) return false;
+      if (isHiddenByDisabledCustomPath(cert)) return false;
       const isUsb = isUsbCertificate(cert);
       if (isUsb && !isUsbEnabled) return false;
       if (cert.category === 'GPKI_GOV' && !enabledTypes.includes('default_gpki')) return false;
@@ -560,13 +573,29 @@ export default function App() {
       return true;
     };
 
-    const customImported = certificatesRef.current.filter(
-      c => !initialIdSet.has(c.id) && !trashCertIds.has(c.id) && (!isUsbCertificate(c) || isUsbEnabled)
-    );
-    const filteredInitial = INITIAL_CERTIFICATES.filter(shouldKeepCert);
-    const seenIds = new Set(customImported.map(c => c.id));
+    const nonInitialPoolMap = new Map<string, CertificateItem>();
+    for (const c of [...hiddenByPathToggleRef.current, ...certificatesRef.current]) {
+      if (!c || initialIdSet.has(c.id) || trashCertIds.has(c.id)) continue;
+      nonInitialPoolMap.set(c.id, c);
+    }
+
+    const customImportedKept: CertificateItem[] = [];
+    const customImportedHidden: CertificateItem[] = [];
+    for (const c of nonInitialPoolMap.values()) {
+      const hiddenByUsb = isUsbCertificate(c) && !isUsbEnabled;
+      const hiddenByCustom = isHiddenByDisabledCustomPath(c);
+      if (hiddenByUsb || hiddenByCustom) {
+        customImportedHidden.push(c);
+      } else {
+        customImportedKept.push(c);
+      }
+    }
+    hiddenByPathToggleRef.current = customImportedHidden;
+
+    const filteredInitial = INITIAL_CERTIFICATES.filter(shouldKeepInitialCert);
+    const seenIds = new Set(customImportedKept.map(c => c.id));
     const nextCertificates = sanitizeActiveCerts([
-      ...customImported,
+      ...customImportedKept,
       ...filteredInitial.filter(c => !seenIds.has(c.id)),
     ]);
 
@@ -668,6 +697,8 @@ export default function App() {
           count = nextCertificates.filter(c => (c.category === 'NPKI_BANK' || c.category === 'NPKI_CORP') && isPcCertificate(c)).length;
         } else if (p.type === 'removable_usb') {
           count = nextCertificates.filter(c => isUsbCertificate(c)).length;
+        } else if (p.type === 'custom') {
+          count = nextCertificates.filter(c => matchesSearchPathPrefix(c.sourceLocation, p.path)).length;
         }
         return { ...p, countFound: count, exists: true };
       });
@@ -913,9 +944,12 @@ export default function App() {
       const matchedDrive = availableDrives.find(
         d => extractDriveLetterFromPathOrLabel(d.letter) === drivePrefix
       );
+      const targetIsRemovable = matchedDrive
+        ? (matchedDrive.type === 'removable' || matchedDrive.busType === 'USB' || matchedDrive.deviceKind === 'fast_usb' || matchedDrive.deviceKind === 'external_ssd')
+        : drivePrefix !== 'C:' && drivePrefix !== 'D:';
       const driveLabel = matchedDrive
         ? `${drivePrefix} (${matchedDrive.name})`
-        : isUsbCertificate(cand.cert)
+        : targetIsRemovable
           ? `${drivePrefix} (이동식 USB)`
           : `${drivePrefix} (로컬 디스크)`;
 
@@ -924,6 +958,7 @@ export default function App() {
         id: `repaired-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         sourceLocation: cand.canonicalPath,
         sourceDrive: driveLabel,
+        isRemovableMedia: targetIsRemovable,
         isCustomPath: false,
         isCustomAdded: true,
         isClass1: isClass1Certificate({ ...cand.cert, sourceLocation: cand.canonicalPath }),
@@ -1321,7 +1356,9 @@ export default function App() {
       sourceDrive: `${cleanUsbLetter} (${removableDrive.name})`,
       isRemovableMedia: true,
       isCustomPath: false,
-      status: isCertificateExpired(item.cert) ? 'expired' : 'valid'
+      status: isCertificateExpired(item.cert)
+        ? 'expired'
+        : (typeof item.cert.daysRemaining === 'number' && item.cert.daysRemaining <= 30 ? 'expiring' : 'valid')
     };
 
     updateCertificates(prev => {

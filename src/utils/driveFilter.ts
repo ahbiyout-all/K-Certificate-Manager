@@ -199,8 +199,8 @@ export function isPcCertificate(
     return false;
   }
 
-  const removableDriveLocRegex = /^[EFGHIJKUM]:/;
-  const removableDriveLabelRegex = /(?:^|[^A-Z])[EFGHIJKUM]:|\([EFGHIJKUM]\)/;
+  const removableDriveLocRegex = /^[E-Z]:/;
+  const removableDriveLabelRegex = /(?:^|[^A-Z])[E-Z]:|\([E-Z]\)/;
   if (removableDriveLocRegex.test(sourceLoc) || removableDriveLabelRegex.test(sourceDrive)) {
     // Only treat as PC if explicitly labeled as internal/local disk without USB cues
     if (!sourceDrive.includes('내장') && !sourceDrive.includes('로컬 디스크')) {

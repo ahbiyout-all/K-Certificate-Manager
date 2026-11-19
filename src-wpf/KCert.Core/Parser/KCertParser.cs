@@ -54,7 +54,7 @@ namespace KCert.Core.Parser
                             return !fn.StartsWith("km") && !fn.StartsWith("env") &&
                                    !fn.Contains("_km.") && !fn.Contains("_env.") &&
                                    !fn.Contains("kmcert") && !fn.Contains("envcert") &&
-                                   !fn.StartsWith("root") && !fn.StartsWith("ca") && !fn.StartsWith("crl");
+                                   !fn.StartsWith("root") && !Regex.IsMatch(fn, @"^ca(?:\d|[._-]|cert|$)") && !fn.StartsWith("crl");
                         }) ?? all.FirstOrDefault() ?? string.Empty;
                     }
                     catch

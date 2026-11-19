@@ -448,6 +448,7 @@ namespace KCertManager.Wpf.Views
                 if (trashOld && succeededRepairs.Any())
                 {
                     var trashedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    var repairedCertSet = new HashSet<CertificateItem>(succeededRepairs.Select(s => s.Item.Cert));
                     foreach (var (item, repairedPath) in succeededRepairs)
                     {
                         if (string.IsNullOrWhiteSpace(item.SourcePath)) continue;
@@ -461,6 +462,19 @@ namespace KCertManager.Wpf.Views
 
                             if (string.Equals(normSrc, normDst, StringComparison.OrdinalIgnoreCase)) continue;
                             if (!trashedPaths.Add(normSrc)) continue;
+
+                            bool hasUnrepairedSibling = _allCerts.Any(c =>
+                                c != null &&
+                                !repairedCertSet.Contains(c) &&
+                                !string.IsNullOrWhiteSpace(c.DirectoryPath) &&
+                                string.Equals(Path.GetFullPath(c.DirectoryPath).TrimEnd('\\'), normSrc, StringComparison.OrdinalIgnoreCase));
+
+                            if (hasUnrepairedSibling)
+                            {
+                                failMessages.Add($"{item.CommonName}: 동일 폴더({item.SourcePath}) 내 미복구 인증서가 함께 있어 원본 폴더는 보존했습니다.");
+                                continue;
+                            }
+
                             if (Directory.Exists(item.SourcePath))
                             {
                                 _backupService.MoveToTrash(item.Cert);

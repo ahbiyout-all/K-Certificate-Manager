@@ -119,36 +119,94 @@ namespace KCert.Core.Diagnostics
                                !fn.EndsWith("_env.der", StringComparison.OrdinalIgnoreCase);
                     });
 
-                var keyFile =
+                int siblingSignCount = files.Count(f =>
+                {
+                    var fn = Path.GetFileName(f).ToLowerInvariant();
+                    return (fn.EndsWith(".der") || fn.EndsWith(".cer")) &&
+                           !fn.StartsWith("km") && !fn.StartsWith("env") &&
+                           !fn.Contains("_km.") && !fn.Contains("_env.") &&
+                           !fn.Contains("kmcert") && !fn.Contains("envcert") &&
+                           !fn.StartsWith("root") && !fn.StartsWith("crl") &&
+                           !Regex.IsMatch(fn, @"^ca(?:\d|[._-]|cert|$)");
+                });
+
+                string? keyFile = null;
+                if (derFile != null)
+                {
+                    var matchedKey = Discovery.CertLocationScanner.FindMatchingPrivateKey(derFile);
+                    if (!string.IsNullOrEmpty(matchedKey) && File.Exists(matchedKey))
+                    {
+                        keyFile = matchedKey;
+                    }
+                }
+
+                if (keyFile == null && (explicitDer == null || siblingSignCount <= 1))
+                {
+                    keyFile =
+                        files.FirstOrDefault(f =>
+                        {
+                            var fn = Path.GetFileName(f);
+                            return fn.Equals("signPri.key", StringComparison.OrdinalIgnoreCase) ||
+                                   fn.Equals("sigPri.key", StringComparison.OrdinalIgnoreCase) ||
+                                   fn.Equals("user.key", StringComparison.OrdinalIgnoreCase) ||
+                                   fn.EndsWith("_sig.key", StringComparison.OrdinalIgnoreCase);
+                        }) ??
+                        files.FirstOrDefault(f =>
+                        {
+                            var fn = Path.GetFileName(f);
+                            return fn.EndsWith(".key", StringComparison.OrdinalIgnoreCase) &&
+                                   !fn.StartsWith("km", StringComparison.OrdinalIgnoreCase) &&
+                                   !fn.StartsWith("env", StringComparison.OrdinalIgnoreCase) &&
+                                   !fn.Contains("_km.", StringComparison.OrdinalIgnoreCase) &&
+                                   !fn.EndsWith("_env.key", StringComparison.OrdinalIgnoreCase);
+                        });
+                }
+
+                string? derStem = derFile != null ? Path.GetFileNameWithoutExtension(derFile) : null;
+                string? basePrefix = null;
+                if (!string.IsNullOrEmpty(derStem))
+                {
+                    if (derStem.EndsWith("_sig", StringComparison.OrdinalIgnoreCase))
+                        basePrefix = derStem.Substring(0, derStem.Length - 4);
+                    else if (derStem.EndsWith("_sign", StringComparison.OrdinalIgnoreCase))
+                        basePrefix = derStem.Substring(0, derStem.Length - 5);
+                }
+
+                var kmDerFile =
+                    (!string.IsNullOrEmpty(basePrefix)
+                        ? files.FirstOrDefault(f =>
+                        {
+                            var fn = Path.GetFileName(f);
+                            return fn.Equals($"{basePrefix}_env.cer", StringComparison.OrdinalIgnoreCase) ||
+                                   fn.Equals($"{basePrefix}_env.der", StringComparison.OrdinalIgnoreCase) ||
+                                   fn.Equals($"{basePrefix}_km.cer", StringComparison.OrdinalIgnoreCase) ||
+                                   fn.Equals($"{basePrefix}_km.der", StringComparison.OrdinalIgnoreCase);
+                        })
+                        : null) ??
                     files.FirstOrDefault(f =>
                     {
                         var fn = Path.GetFileName(f);
-                        return fn.Equals("signPri.key", StringComparison.OrdinalIgnoreCase) ||
-                               fn.Equals("sigPri.key", StringComparison.OrdinalIgnoreCase) ||
-                               fn.Equals("user.key", StringComparison.OrdinalIgnoreCase) ||
-                               fn.EndsWith("_sig.key", StringComparison.OrdinalIgnoreCase);
-                    }) ??
-                    files.FirstOrDefault(f =>
-                    {
-                        var fn = Path.GetFileName(f);
-                        return fn.EndsWith(".key", StringComparison.OrdinalIgnoreCase) &&
-                               !fn.StartsWith("km", StringComparison.OrdinalIgnoreCase) &&
-                               !fn.EndsWith("_env.key", StringComparison.OrdinalIgnoreCase);
+                        return fn.Equals("kmCert.der", StringComparison.OrdinalIgnoreCase) ||
+                               fn.Equals("kmCert.cer", StringComparison.OrdinalIgnoreCase) ||
+                               (siblingSignCount <= 1 && (fn.EndsWith("_env.cer", StringComparison.OrdinalIgnoreCase) || fn.EndsWith("_km.cer", StringComparison.OrdinalIgnoreCase)));
                     });
 
-                var kmDerFile = files.FirstOrDefault(f =>
-                {
-                    var fn = Path.GetFileName(f);
-                    return fn.Equals("kmCert.der", StringComparison.OrdinalIgnoreCase) ||
-                           fn.Equals("kmCert.cer", StringComparison.OrdinalIgnoreCase) ||
-                           fn.EndsWith("_env.cer", StringComparison.OrdinalIgnoreCase);
-                });
-                var kmKeyFile = files.FirstOrDefault(f =>
-                {
-                    var fn = Path.GetFileName(f);
-                    return fn.Equals("kmPri.key", StringComparison.OrdinalIgnoreCase) ||
-                           fn.EndsWith("_env.key", StringComparison.OrdinalIgnoreCase);
-                });
+                var kmKeyFile =
+                    (!string.IsNullOrEmpty(basePrefix)
+                        ? files.FirstOrDefault(f =>
+                        {
+                            var fn = Path.GetFileName(f);
+                            return fn.Equals($"{basePrefix}_env.key", StringComparison.OrdinalIgnoreCase) ||
+                                   fn.Equals($"{basePrefix}_km.key", StringComparison.OrdinalIgnoreCase);
+                        })
+                        : null) ??
+                    files.FirstOrDefault(f =>
+                    {
+                        var fn = Path.GetFileName(f);
+                        return fn.Equals("kmPri.key", StringComparison.OrdinalIgnoreCase) ||
+                               fn.Equals("envPri.key", StringComparison.OrdinalIgnoreCase) ||
+                               (siblingSignCount <= 1 && (fn.EndsWith("_env.key", StringComparison.OrdinalIgnoreCase) || fn.EndsWith("_km.key", StringComparison.OrdinalIgnoreCase)));
+                    });
 
                 if (derFile == null)
                 {
@@ -213,8 +271,13 @@ namespace KCert.Core.Diagnostics
 
                 CertSystemType sysType = meta?.Policy.SystemType ?? CertSystemType.Unknown;
 
-                // GPKI/EPKI 암호화키 쌍 누락 검사
-                if ((sysType == CertSystemType.GPKI || sysType == CertSystemType.EPKI) && (kmDerFile == null || kmKeyFile == null))
+                bool isClass1 = (meta?.IsClass1 ?? false) ||
+                                Regex.IsMatch(folderPath, @"(?:^|[\\/])class1(?:$|[\\/])", RegexOptions.IgnoreCase);
+                bool hasPartialKmPair = (kmDerFile != null) ^ (kmKeyFile != null);
+
+                // GPKI/EPKI 암호화키 쌍 누락 검사 (class1 기관/서버 인증서는 kmCert 없이 _sig 단독 발급이 정상인 경우가 많으므로 부분 누락만 경고)
+                if ((sysType == CertSystemType.GPKI || sysType == CertSystemType.EPKI) &&
+                    ((!isClass1 && (kmDerFile == null || kmKeyFile == null)) || (isClass1 && hasPartialKmPair)))
                 {
                     flags |= CertAnomalyFlags.MissingKmPairForGpki;
                     issues.Add("행정/교육 인증서(GPKI/EPKI)의 전자문서 암호화용 보조키 세트(kmCert.der/kmPri.key)가 누락되었습니다.");
@@ -324,10 +387,62 @@ namespace KCert.Core.Diagnostics
                     Directory.CreateDirectory(targetDir);
                 }
 
-                var files = Directory.GetFiles(sourceFolder);
+                var allFiles = Directory.GetFiles(sourceFolder);
+                var filesToCopy = allFiles.AsEnumerable();
+
+                if (!string.IsNullOrWhiteSpace(specificDerPath) && File.Exists(specificDerPath))
+                {
+                    var siblingSignCerts = allFiles.Count(f =>
+                    {
+                        var fn = Path.GetFileName(f).ToLowerInvariant();
+                        return (fn.EndsWith(".der") || fn.EndsWith(".cer")) &&
+                               !fn.StartsWith("km") && !fn.StartsWith("env") &&
+                               !fn.Contains("_km.") && !fn.Contains("_env.") &&
+                               !fn.Contains("kmcert") && !fn.Contains("envcert") &&
+                               !fn.StartsWith("root") && !fn.StartsWith("crl") &&
+                               !Regex.IsMatch(fn, @"^ca(?:\d|[._-]|cert|$)");
+                    });
+
+                    if (siblingSignCerts > 1)
+                    {
+                        var selectedSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            Path.GetFullPath(specificDerPath)
+                        };
+
+                        var matchedKey = Discovery.CertLocationScanner.FindMatchingPrivateKey(specificDerPath);
+                        if (!string.IsNullOrEmpty(matchedKey) && File.Exists(matchedKey))
+                        {
+                            selectedSet.Add(Path.GetFullPath(matchedKey));
+                        }
+
+                        string specStem = Path.GetFileNameWithoutExtension(specificDerPath);
+                        string? specPrefix = null;
+                        if (specStem.EndsWith("_sig", StringComparison.OrdinalIgnoreCase))
+                            specPrefix = specStem.Substring(0, specStem.Length - 4);
+                        else if (specStem.EndsWith("_sign", StringComparison.OrdinalIgnoreCase))
+                            specPrefix = specStem.Substring(0, specStem.Length - 5);
+
+                        if (!string.IsNullOrEmpty(specPrefix))
+                        {
+                            foreach (var companion in allFiles)
+                            {
+                                var cfn = Path.GetFileName(companion);
+                                if (cfn.StartsWith($"{specPrefix}_env.", StringComparison.OrdinalIgnoreCase) ||
+                                    cfn.StartsWith($"{specPrefix}_km.", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    selectedSet.Add(Path.GetFullPath(companion));
+                                }
+                            }
+                        }
+
+                        filesToCopy = allFiles.Where(f => selectedSet.Contains(Path.GetFullPath(f)));
+                    }
+                }
+
                 int movedCount = 0;
 
-                foreach (var file in files)
+                foreach (var file in filesToCopy)
                 {
                     string fileName = Path.GetFileName(file);
 

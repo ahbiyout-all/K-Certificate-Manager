@@ -475,9 +475,9 @@ namespace KCertManager.Wpf.Views
         {
             try
             {
-                var usbDrives = ViewModel?.RemovableDrives != null && ViewModel.RemovableDrives.Count > 0
-                    ? ViewModel.RemovableDrives.ToList()
-                    : KCertManager.Wpf.Services.UsbDriveWatcher.GetAvailableDrives().Where(d => d.IsRemovable).ToList();
+                var usbDrives = ViewModel?.RemovableDrives != null && ViewModel.RemovableDrives.Any(d => d.IsRemovable && !d.IsCdRom && d.IsReady)
+                    ? ViewModel.RemovableDrives.Where(d => d.IsRemovable && !d.IsCdRom && d.IsReady).ToList()
+                    : KCertManager.Wpf.Services.UsbDriveWatcher.GetAvailableDrives().Where(d => d.IsRemovable && !d.IsCdRom && d.IsReady).ToList();
                 if (usbDrives.Count == 0)
                 {
                     var result = MessageBox.Show(

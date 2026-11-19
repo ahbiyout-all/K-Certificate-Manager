@@ -450,7 +450,7 @@ namespace KCertManager.Wpf.Views
         {
             if (sender is Button btn && btn.DataContext is RestoredTrashItem item)
             {
-                var targetDrives = UsbDriveWatcher.GetAvailableDrives().Where(d => d.IsRemovable || string.Equals(d.BusType, "USB", StringComparison.OrdinalIgnoreCase)).ToList();
+                var targetDrives = UsbDriveWatcher.GetAvailableDrives().Where(d => d.IsReady && (d.IsRemovable || string.Equals(d.BusType, "USB", StringComparison.OrdinalIgnoreCase))).ToList();
                 if (!targetDrives.Any())
                 {
                     UserFriendlyMessageHelper.ShowErrorText(
@@ -463,7 +463,8 @@ namespace KCertManager.Wpf.Views
 
                 var usbDrive = targetDrives.First();
                 string subFolder = item.Category.ToString().StartsWith("GPKI") ? "GPKI" : item.Category.ToString().StartsWith("EPKI") ? "EPKI" : "NPKI";
-                string destDir = System.IO.Path.Combine(usbDrive.Name, subFolder, item.CertCommonName);
+                string safeCommonName = KCert.Core.Common.CertSanitizer.SanitizeFileSystemName(item.CertCommonName);
+                string destDir = System.IO.Path.Combine(usbDrive.Name, subFolder, safeCommonName);
 
                 string sourceToCopy = item.OriginalDirectoryPath;
                 string? tempDirToDelete = null;
@@ -514,7 +515,7 @@ namespace KCertManager.Wpf.Views
                     string safeRel = CertTransferEngine.ResolveRelativePath(item.OriginalDirectoryPath);
                     if (string.IsNullOrWhiteSpace(safeRel) || string.Equals(safeRel, "NPKI", StringComparison.OrdinalIgnoreCase))
                     {
-                        safeRel = System.IO.Path.Combine(subFolder, item.CertCommonName);
+                        safeRel = System.IO.Path.Combine(subFolder, safeCommonName);
                     }
 
                     var transferResult = CertTransferEngine.Transfer(sourceToCopy, usbDrive.Name, safeRel);

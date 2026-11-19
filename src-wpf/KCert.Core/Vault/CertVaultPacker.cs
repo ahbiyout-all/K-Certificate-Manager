@@ -467,23 +467,73 @@ namespace KCert.Core.Vault
         /// </summary>
         public static (bool Success, VaultMetadata? Metadata, string Message) PeekMetadata(string vaultPath, string password)
         {
-            var unpackResult = Unpack(vaultPath, password, Path.Combine(Path.GetTempPath(), "KCertPeek_" + Guid.NewGuid().ToString("N")));
-            if (!unpackResult.IsSuccess)
+            if (string.IsNullOrWhiteSpace(vaultPath) || !File.Exists(vaultPath))
             {
-                return (false, null, unpackResult.Message);
+                return (false, null, "열람할 .kcertpack 금고 파일이 존재하지 않습니다.");
             }
 
-            // 임시 추출 파일 즉시 삭제
             try
             {
-                if (Directory.Exists(unpackResult.TargetDirectory))
-                {
-                    Directory.Delete(unpackResult.TargetDirectory, true);
-                }
-            }
-            catch { }
+                using var fs = File.OpenRead(vaultPath);
+                using var reader = new BinaryReader(fs);
 
-            return (true, unpackResult.Metadata, "메타데이터 확인 성공");
+                byte[] header = reader.ReadBytes(MagicHeader.Length);
+                if (!StructuralEquals(header, MagicHeader))
+                {
+                    return (false, null, "올바른 K-인증서 암호화 금고(.kcertpack) 파일 포맷이 아닙니다.");
+                }
+
+                byte[] salt = reader.ReadBytes(SaltSizeBytes);
+                byte[] nonce = reader.ReadBytes(NonceSizeBytes);
+                byte[] tag = reader.ReadBytes(TagSizeBytes);
+                if (salt.Length != SaltSizeBytes || nonce.Length != NonceSizeBytes || tag.Length != TagSizeBytes || fs.Length - fs.Position < sizeof(int))
+                {
+                    return (false, null, "금고 파일 헤더가 손상되었거나 불완전하게 잘렸습니다.");
+                }
+
+                int ciphertextLen = reader.ReadInt32();
+                if (ciphertextLen <= 0 || ciphertextLen > 50 * 1024 * 1024)
+                {
+                    return (false, null, "금고 데이터 크기가 비정상적입니다.");
+                }
+
+                byte[] ciphertext = reader.ReadBytes(ciphertextLen);
+                if (ciphertext.Length != ciphertextLen)
+                {
+                    return (false, null, "금고 파일 페이로드가 불완전하게 잘려 있습니다(Truncated Vault).");
+                }
+
+                byte[] key = DeriveKey(password, salt);
+                byte[] decryptedBytes = new byte[ciphertext.Length];
+
+                try
+                {
+                    using var aesGcm = new AesGcm(key, TagSizeBytes);
+                    aesGcm.Decrypt(nonce, ciphertext, tag, decryptedBytes);
+                }
+                catch (CryptographicException)
+                {
+                    return (false, null, "비밀번호가 일치하지 않거나 파일이 변조되었습니다.");
+                }
+
+                VaultMetadata? metadata = null;
+                using (var memoryStream = new MemoryStream(decryptedBytes))
+                using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read))
+                {
+                    var metaEntry = archive.Entries.FirstOrDefault(e => e.Name == "__metadata.json");
+                    if (metaEntry != null)
+                    {
+                        using var s = metaEntry.Open();
+                        metadata = JsonSerializer.Deserialize<VaultMetadata>(s);
+                    }
+                }
+
+                return (true, metadata, "메타데이터 확인 성공");
+            }
+            catch (Exception ex)
+            {
+                return (false, null, $"금고 메타데이터 확인 중 오류: {ex.Message}");
+            }
         }
 
         private static byte[] DeriveKey(string password, byte[] salt)

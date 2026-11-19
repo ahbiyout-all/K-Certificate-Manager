@@ -75,7 +75,15 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
   // Analyze available PC local/fixed drives for destination drive selection (C:, D:, E:, etc.)
   const pcLocalTargetDrives = useMemo(() => {
     const fixed = availableDrives.filter(
-      d => d.type === 'fixed' || d.type === 'local' || d.deviceKind === 'c_drive' || d.deviceKind === 'secondary_fixed'
+      d =>
+        d.type === 'fixed' &&
+        d.busType !== 'USB' &&
+        d.deviceKind !== 'external_ssd' &&
+        d.deviceKind !== 'fast_usb' &&
+        d.deviceKind !== 'usb_flash' &&
+        !d.isCdRom &&
+        d.deviceKind !== 'cdrom' &&
+        d.deviceKind !== 'virtual_cd'
     );
     const existingLetters = new Set(
       fixed
@@ -88,11 +96,13 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
         name: '로컬 디스크 (C:)',
         letter: 'C:',
         type: 'fixed',
-        deviceKind: 'c_drive',
+        deviceKind: 'internal_fixed',
         freeSpace: '가용 공간 충분',
         totalSpace: '512 GB',
-        usagePercent: 35,
-        isPrimary: true,
+        freePercentage: 65,
+        targetFolderPath: 'C:\\Users\\Admin\\AppData\\LocalLow\\NPKI',
+        isRecommended: true,
+        description: '기본 시스템 로컬 디스크',
         fileSystem: 'NTFS'
       });
     }
@@ -189,7 +199,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
   // Analyze all connected removable drives and sort with priority (drives with certs first)
   const usbDrivesWithStats = useMemo(() => {
     const removableDrives = availableDrives.filter(
-      d => d.type === 'removable' || d.deviceKind === 'external_ssd' || d.deviceKind === 'fast_usb'
+      d => !d.isCdRom && d.type !== 'cdrom' && (d.type === 'removable' || d.busType === 'USB' || d.deviceKind === 'external_ssd' || d.deviceKind === 'fast_usb')
     );
 
     const drivesWithData = removableDrives.map(d => {
@@ -242,7 +252,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
       if (!initialDriveLetter && nextDrive !== 'ALL') {
         const stillMounted = availableDrives.some(d => {
           const clean = extractDriveLetterChar(d.letter);
-          return (d.type === 'removable' || d.deviceKind === 'external_ssd' || d.deviceKind === 'fast_usb') && clean === nextDrive.toUpperCase();
+          return !d.isCdRom && d.type !== 'cdrom' && (d.type === 'removable' || d.busType === 'USB' || d.deviceKind === 'external_ssd' || d.deviceKind === 'fast_usb') && clean === nextDrive.toUpperCase();
         });
         if (!stillMounted) {
           nextDrive = 'ALL';
@@ -267,12 +277,11 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
         if (event.type === 'mount' || event.type === 'unmount' || event.type === 'update') {
           const refreshedUsb = getAvailableUsbCertificates(event.allDrives, selectedUsbDriveRef.current);
           setDetectedCerts(refreshedUsb);
-          // 드라이브 자동 감지/갱신 이벤트 시 사용자가 해제/선택한 선택 상태(selectedCertIds)를 100% 보존
+          // 드라이브 자동 감지/갱신 이벤트 시 현재 유효한 목록에 남아 있는 사용자 선택 상태만 보존 (제거된 드라이브의 ID 잔존 방지)
           setSelectedCertIds(prev => {
             if (prev.length === 0) return [];
-            const validIds = refreshedUsb.map(c => c.id);
-            const preserved = validIds.filter(id => prev.includes(id));
-            return preserved.length > 0 ? preserved : prev;
+            const validIds = new Set(refreshedUsb.map(c => c.id));
+            return prev.filter(id => validIds.has(id));
           });
         }
       });

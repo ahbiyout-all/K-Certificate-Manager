@@ -156,6 +156,8 @@ namespace KCertManager.Wpf.ViewModels
 
         public void RefreshDrives(string? preferredDriveLetter = null, IEnumerable<DriveItem>? fallbackDrives = null)
         {
+            string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\').ToUpperInvariant() + "\\";
+            string sysLetter = sysRoot.TrimEnd('\\');
             try
             {
                 UsbStorageGuard.InvalidateUsbCache();
@@ -173,12 +175,12 @@ namespace KCertManager.Wpf.ViewModels
                     drives.AddRange(fallbackDrives.Where(d => !d.IsCdRom));
                 }
 
-                // 2. 기본 C: 드라이브가 누락된 경우 기본 시스템 드라이브 보장 추가
-                if (!drives.Any(d => d.Name.StartsWith("C", StringComparison.OrdinalIgnoreCase)))
+                // 2. 기본 시스템 드라이브가 누락된 경우 기본 시스템 드라이브 보장 추가
+                if (!drives.Any(d => d.Name.StartsWith(sysLetter, StringComparison.OrdinalIgnoreCase)))
                 {
                     drives.Insert(0, new DriveItem
                     {
-                        Name = @"C:\",
+                        Name = sysRoot,
                         VolumeLabel = "로컬 디스크",
                         TotalSize = 256L * 1024 * 1024 * 1024,
                         FreeSpace = 120L * 1024 * 1024 * 1024,
@@ -191,7 +193,7 @@ namespace KCertManager.Wpf.ViewModels
                     });
                 }
 
-                // 3. USB 드라이브 우선, 그 다음 C:, D: 등 로컬 드라이브 순으로 정렬
+                // 3. USB 드라이브 우선, 그 다음 시스템 드라이브 등 로컬 드라이브 순으로 정렬
                 var sortedDrives = drives
                     .Where(d => d.IsReady)
                     .OrderByDescending(d => d.IsRemovable)
@@ -202,7 +204,7 @@ namespace KCertManager.Wpf.ViewModels
                 HasDrives = AvailableDrives.Count > 0;
                 HasRemovableUsb = AvailableDrives.Any(d => d.IsRemovable && d.IsReady);
 
-                // 4. 우선 드라이브 지정 또는 USB 우선 선택, 없으면 C: 기본 선택
+                // 4. 우선 드라이브 지정 또는 USB 우선 선택, 없으면 시스템 드라이브 기본 선택
                 if (!string.IsNullOrEmpty(preferredDriveLetter))
                 {
                     var match = AvailableDrives.FirstOrDefault(d =>
@@ -222,9 +224,9 @@ namespace KCertManager.Wpf.ViewModels
                 }
                 else
                 {
-                    // USB가 없을 경우 기본 C: 드라이브 또는 첫 번째 사용 가능 디스크 자동 선택
-                    var cDrive = AvailableDrives.FirstOrDefault(d => d.Name.StartsWith("C", StringComparison.OrdinalIgnoreCase));
-                    SelectedTargetDrive = cDrive ?? AvailableDrives.FirstOrDefault();
+                    // USB가 없을 경우 기본 시스템 드라이브 또는 첫 번째 사용 가능 디스크 자동 선택
+                    var sysDrive = AvailableDrives.FirstOrDefault(d => d.Name.StartsWith(sysLetter, StringComparison.OrdinalIgnoreCase));
+                    SelectedTargetDrive = sysDrive ?? AvailableDrives.FirstOrDefault();
                 }
 
                 UpdateStatusMessage();
@@ -232,20 +234,20 @@ namespace KCertManager.Wpf.ViewModels
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[RefreshDrives Error] {ex.Message}");
-                // 예외 발생 시에도 C: 드라이브 기본 보장
+                // 예외 발생 시에도 시스템 드라이브 기본 보장
                 if (AvailableDrives.Count == 0)
                 {
-                    var fallbackC = new DriveItem
+                    var fallbackSys = new DriveItem
                     {
-                        Name = @"C:\",
+                        Name = sysRoot,
                         VolumeLabel = "로컬 디스크",
                         IsRemovable = false,
                         IsReady = true,
                         DeviceKind = "internal_fixed",
                         DeviceKindName = "내장 디스크"
                     };
-                    AvailableDrives = new ObservableCollection<DriveItem> { fallbackC };
-                    SelectedTargetDrive = fallbackC;
+                    AvailableDrives = new ObservableCollection<DriveItem> { fallbackSys };
+                    SelectedTargetDrive = fallbackSys;
                     HasDrives = true;
                     HasRemovableUsb = false;
                 }
@@ -606,18 +608,19 @@ namespace KCertManager.Wpf.ViewModels
 
                 string sourcePath = copiedTargets.FirstOrDefault()?.DirectoryPath ?? selected.FirstOrDefault()?.DirectoryPath ?? "내 컴퓨터 (NPKI/GPKI)";
                 string firstDest = successfulDestinations.FirstOrDefault(d => !string.IsNullOrEmpty(d)) ?? string.Empty;
-                string gpkiClass = selected.Any(c => c.Category == CertCategory.GPKI && c.IsClass1Path) &&
-                                   !selected.Any(c => c.Category == CertCategory.GPKI && !c.IsClass1Path)
+                var pathCandidates = copiedTargets.Any() ? copiedTargets : selected;
+                string gpkiClass = pathCandidates.Any(c => c.Category == CertCategory.GPKI && c.IsClass1Path) &&
+                                   !pathCandidates.Any(c => c.Category == CertCategory.GPKI && !c.IsClass1Path)
                     ? "class1" : "class2";
-                string epkiClass = selected.Any(c => c.Category == CertCategory.EPKI && c.IsClass1Path) &&
-                                   !selected.Any(c => c.Category == CertCategory.EPKI && !c.IsClass1Path)
+                string epkiClass = pathCandidates.Any(c => c.Category == CertCategory.EPKI && c.IsClass1Path) &&
+                                   !pathCandidates.Any(c => c.Category == CertCategory.EPKI && !c.IsClass1Path)
                     ? "class1" : "class2";
 
                 string targetPath = !string.IsNullOrEmpty(firstDest)
                     ? firstDest
-                    : (selected.Any(c => c.Category == CertCategory.GPKI)
+                    : (pathCandidates.Any(c => c.Category == CertCategory.GPKI)
                         ? Path.Combine(targetDriveRoot, "GPKI", "Certificate", gpkiClass)
-                        : (selected.Any(c => c.Category == CertCategory.EPKI)
+                        : (pathCandidates.Any(c => c.Category == CertCategory.EPKI)
                             ? Path.Combine(targetDriveRoot, "EPKI", "Certificate", epkiClass)
                             : Path.Combine(targetDriveRoot, "NPKI")));
 

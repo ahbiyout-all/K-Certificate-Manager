@@ -625,7 +625,12 @@ namespace KCert.Core.Vault
                             {
                                 continue;
                             }
-                            try { Directory.Delete(d, true); } catch { }
+                            try
+                            {
+                                ClearReadOnlyAttributesRecursive(d);
+                                Directory.Delete(d, true);
+                            }
+                            catch { }
                         }
                     }
                     SaveIndexInternal(new List<TrashQuarantineItem>());

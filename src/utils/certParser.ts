@@ -215,28 +215,28 @@ export function parseDerBasic(derBytes: Uint8Array): {
     issuer = '국방전자서명인증센터 (MPKI)';
     caSignatureName = '국방전자서명인증센터 (MPKI Sub CA)';
     policy = '국방전자서명용 (군인/군기관)';
-  } else if (rawText.includes('yessign') || rawText.includes('Financial Telecommunications')) {
+  } else if (upperRaw.includes('YESSIGN') || upperRaw.includes('FINANCIAL TELECOMMUNICATIONS')) {
     category = 'NPKI_BANK';
     issuer = '금융결제원 (yessign)';
     caSignatureName = '금융결제원 전자인증센터 (yessignCA Class 1)';
     policy = '은행/신용카드/보험용 (개인)';
-  } else if (rawText.includes('SignKorea') || rawText.includes('KOSCOM') || rawText.includes('코스콤')) {
+  } else if (upperRaw.includes('SIGNKOREA') || upperRaw.includes('KOSCOM') || rawText.includes('코스콤')) {
     category = 'NPKI_BANK';
     issuer = '코스콤 (SignKorea)';
     caSignatureName = '코스콤 공인인증센터 (SignKorea CA)';
     policy = '증권거래용 (개인)';
-  } else if (rawText.includes('KICA') || rawText.includes('한국정보인증')) {
-    category = rawText.includes('법인') || rawText.toLowerCase().includes('corp') ? 'NPKI_CORP' : 'NPKI_BANK';
+  } else if (upperRaw.includes('KICA') || rawText.includes('한국정보인증')) {
+    category = rawText.includes('법인') || upperRaw.includes('CORP') ? 'NPKI_CORP' : 'NPKI_BANK';
     issuer = '한국정보인증 (KICA)';
     caSignatureName = '한국정보인증 공인인증센터 (KICA CA)';
     policy = category === 'NPKI_CORP' ? '전자세금용 (법인)' : '범용/은행용 (개인)';
-  } else if (rawText.includes('CrossCert') || rawText.includes('한국전자인증')) {
+  } else if (upperRaw.includes('CROSSCERT') || rawText.includes('한국전자인증')) {
     category = 'NPKI_BANK';
     issuer = '한국전자인증 (CrossCert)';
     caSignatureName = '한국전자인증 전자인증센터 (CrossCert CA)';
     policy = '범용공동인증서 (개인)';
-  } else if (rawText.includes('TradeSign') || rawText.includes('한국무역정보통신')) {
-    category = rawText.includes('법인') || rawText.toLowerCase().includes('corp') ? 'NPKI_CORP' : 'NPKI_BANK';
+  } else if (upperRaw.includes('TRADESIGN') || rawText.includes('한국무역정보통신')) {
+    category = rawText.includes('법인') || upperRaw.includes('CORP') ? 'NPKI_CORP' : 'NPKI_BANK';
     issuer = '한국무역정보통신 (TradeSign)';
     caSignatureName = '한국무역정보통신 무역인증센터 (TradeSign CA)';
     policy = category === 'NPKI_CORP' ? '무역 및 전자상거래용 (법인·TradeSign)' : '무역 및 전자상거래용 (TradeSign)';
@@ -347,7 +347,7 @@ export function parseDerBasic(derBytes: Uint8Array): {
     subjectDn = subjectDn || `ou=${departmentOrOrg || 'Unknown'},o=${issuer},c=kr`;
     
     // 명칭이 없고 특정 발급기관도 감지되지 않은 경우 UNKNOWN 카테고리 지정
-    if (category === 'NPKI_BANK' && !rawText.includes('yessign') && !rawText.includes('SignKorea') && !rawText.includes('KICA') && !rawText.includes('CrossCert') && !rawText.includes('TradeSign')) {
+    if (category === 'NPKI_BANK' && !upperRaw.includes('YESSIGN') && !upperRaw.includes('FINANCIAL TELECOMMUNICATIONS') && !upperRaw.includes('SIGNKOREA') && !upperRaw.includes('KOSCOM') && !rawText.includes('코스콤') && !upperRaw.includes('KICA') && !rawText.includes('한국정보인증') && !upperRaw.includes('CROSSCERT') && !rawText.includes('한국전자인증') && !upperRaw.includes('TRADESIGN') && !rawText.includes('한국무역정보통신')) {
       category = 'UNKNOWN';
       policy = '미분류 / 명칭 미지정 인증서';
       issuer = '미식별 발급기관';
@@ -384,7 +384,7 @@ const isCandidateCertFileName = (fileName: string): boolean => {
   if (!(lower.endsWith('.der') || lower.endsWith('.cer') || lower.endsWith('.crt'))) return false;
   if (
     lower.startsWith('root') ||
-    lower.startsWith('ca') ||
+    /^ca(?:\d|[._-]|cert|$)/.test(lower) ||
     lower.startsWith('crl') ||
     lower.endsWith('.crl') ||
     lower.includes('cacert') ||
@@ -465,7 +465,8 @@ export function filterSignCertNamesInFolder<T extends { name: string }>(certItem
           ofn === 'sigcert.der' ||
           ofn === 'sigcert.cer' ||
           ofn === 'user.der' ||
-          ofn.includes('_sig.'))
+          ofn.includes('_sig.') ||
+          ofn.includes('_sign.'))
       ) {
         return true;
       }
@@ -532,7 +533,10 @@ export function findMatchingKeyInFolder<T extends { name: string }>(
 
   // 4. 단일 인증서 폴더 안전 폴백 (복수 인증서 혼재 폴더에서는 타 인증서 키 오매칭 방지)
   if (!isKmCert && siblingCertCount <= 1) {
-    const nonKmKeys = keyItems.filter(k => !k.name.toLowerCase().startsWith('km'));
+    const nonKmKeys = keyItems.filter(k => {
+      const kl = k.name.toLowerCase();
+      return !kl.startsWith('km') && !kl.startsWith('env') && !kl.includes('_km.') && !kl.includes('_env.');
+    });
     if (nonKmKeys.length > 0) return nonKmKeys[0];
   }
 

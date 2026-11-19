@@ -184,7 +184,7 @@ namespace KCertManager.Wpf.ViewModels
             try
             {
                 var localDrives = UsbDriveWatcher.GetAvailableDrives()
-                    .Where(d => d.IsFixed || d.Name.StartsWith(sysLetter, StringComparison.OrdinalIgnoreCase))
+                    .Where(d => d.IsReady && (d.IsFixed || d.Name.StartsWith(sysLetter, StringComparison.OrdinalIgnoreCase)))
                     .ToList();
 
                 if (!localDrives.Any(d => d.Name.StartsWith(sysLetter, StringComparison.OrdinalIgnoreCase)))
@@ -390,10 +390,11 @@ namespace KCertManager.Wpf.ViewModels
             if (!selected.Any()) return;
 
             string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\') + "\\";
+            string sysLetterFallback = sysRoot.TrimEnd('\\');
             var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            string targetDrive = SelectedTargetDrive?.Name?.TrimEnd('\\') ?? "C:";
+            string targetDrive = SelectedTargetDrive?.Name?.TrimEnd('\\') ?? sysLetterFallback;
             string selectedDriveShort = (string.IsNullOrWhiteSpace(targetDrive)
-                ? "C"
+                ? sysLetterFallback.TrimEnd(':')
                 : targetDrive.TrimEnd(':', '\\', '/')).ToUpperInvariant() + ":";
             string selectedDriveRoot = selectedDriveShort + "\\";
             string effectiveUsername = string.IsNullOrWhiteSpace(TargetUsername) ? Environment.UserName : TargetUsername;
@@ -427,8 +428,10 @@ namespace KCertManager.Wpf.ViewModels
 
             int success = 0;
             int selfCopySkipped = 0;
+            var copiedTargets = new List<CertificateItem>();
             var successfulDestinations = new List<string>();
             var destinationCategories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var failedReasons = new List<string>();
 
             await Task.Run(() =>
             {
@@ -438,11 +441,11 @@ namespace KCertManager.Wpf.ViewModels
                     {
                         if (cert == null || string.IsNullOrWhiteSpace(cert.DirectoryPath))
                         {
+                            failedReasons.Add("인증서 원본 경로가 비어 있습니다.");
                             continue;
                         }
 
                         var cat = cert.Category.ToString();
-                        destinationCategories.Add(cat);
 
                         string targetRoot = ResolveTargetRootForCategory(cat, cert.DirectoryPath, targetDrive, effectiveUsername, sysRoot, userProfile);
                         string relativePath = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
@@ -460,11 +463,20 @@ namespace KCertManager.Wpf.ViewModels
                         if (transferResult.IsSuccess)
                         {
                             success++;
+                            copiedTargets.Add(cert);
+                            destinationCategories.Add(cat);
                             successfulDestinations.Add(transferResult.DestinationDirectory);
+                        }
+                        else
+                        {
+                            string label = !string.IsNullOrWhiteSpace(cert.CommonName) ? cert.CommonName : Path.GetFileName(cert.DirectoryPath);
+                            failedReasons.Add($"{label}: {transferResult.Message}");
                         }
                     }
                     catch (Exception ex)
                     {
+                        string label = !string.IsNullOrWhiteSpace(cert?.CommonName) ? cert!.CommonName : "인증서";
+                        failedReasons.Add($"{label}: {ex.Message}");
                         System.Diagnostics.Debug.WriteLine($"[CopyCert Error] {ex.Message}");
                     }
                 }
@@ -482,30 +494,31 @@ namespace KCertManager.Wpf.ViewModels
 
             if (success + selfCopySkipped == selected.Count && success > 0)
             {
-                var completeItems = selected.Select(c => new OperationCompleteItem
+                var summaryTargets = copiedTargets.Any() ? copiedTargets : selected;
+                var completeItems = summaryTargets.Select(c => new OperationCompleteItem
                 {
                     Name = !string.IsNullOrWhiteSpace(c.CommonName) ? c.CommonName : "공동인증서",
                     IssuerAndPolicy = $"{c.IssuerName} · 만료일: {c.NotAfter:yyyy-MM-dd}"
                 }).ToList();
 
-                string sourcePath = selected.FirstOrDefault()?.DirectoryPath ?? "이동식 USB";
+                string sourcePath = summaryTargets.FirstOrDefault()?.DirectoryPath ?? "이동식 USB";
                 string firstDest = successfulDestinations.FirstOrDefault(d => !string.IsNullOrEmpty(d)) ?? string.Empty;
 
                 bool isAnyGpki = destinationCategories.Contains("GPKI") ||
-                                 selected.Any(c => c.Category == CertCategory.GPKI) ||
+                                 summaryTargets.Any(c => c.Category == CertCategory.GPKI) ||
                                  (!string.IsNullOrEmpty(firstDest) && Regex.IsMatch(firstDest, @"(?:^|[\\/])GPKI(?:$|[\\/])", RegexOptions.IgnoreCase));
                 bool isAnyEpki = destinationCategories.Contains("EPKI") ||
-                                 selected.Any(c => c.Category == CertCategory.EPKI) ||
+                                 summaryTargets.Any(c => c.Category == CertCategory.EPKI) ||
                                  (!string.IsNullOrEmpty(firstDest) && Regex.IsMatch(firstDest, @"(?:^|[\\/])EPKI(?:$|[\\/])", RegexOptions.IgnoreCase));
 
                 string gpkiTargetRoot = ResolveTargetRootForCategory("GPKI", null, targetDrive, effectiveUsername, sysRoot, userProfile);
                 string localLowTargetRoot = ResolveTargetRootForCategory("NPKI", null, targetDrive, effectiveUsername, sysRoot, userProfile);
 
-                string gpkiClass = selected.Any(c => c.Category == CertCategory.GPKI && c.IsClass1Path) &&
-                                   !selected.Any(c => c.Category == CertCategory.GPKI && !c.IsClass1Path)
+                string gpkiClass = summaryTargets.Any(c => c.Category == CertCategory.GPKI && c.IsClass1Path) &&
+                                   !summaryTargets.Any(c => c.Category == CertCategory.GPKI && !c.IsClass1Path)
                     ? "class1" : "class2";
-                string epkiClass = selected.Any(c => c.Category == CertCategory.EPKI && c.IsClass1Path) &&
-                                   !selected.Any(c => c.Category == CertCategory.EPKI && !c.IsClass1Path)
+                string epkiClass = summaryTargets.Any(c => c.Category == CertCategory.EPKI && c.IsClass1Path) &&
+                                   !summaryTargets.Any(c => c.Category == CertCategory.EPKI && !c.IsClass1Path)
                     ? "class1" : "class2";
 
                 string targetPath;
@@ -563,11 +576,15 @@ namespace KCertManager.Wpf.ViewModels
             else
             {
                 int failedCount = Math.Max(0, selected.Count - success - selfCopySkipped);
+                string reasonDetail = failedReasons.Any()
+                    ? "\n\n[상세 오류 원인]\n• " + string.Join("\n• ", failedReasons.Take(5)) +
+                      (failedReasons.Count > 5 ? $"\n• 외 {failedReasons.Count - 5}건" : string.Empty)
+                    : string.Empty;
                 UserFriendlyMessageHelper.ShowWarning(
                     $"인증서 {selected.Count}개 중 {success}개 성공, {failedCount}개 실패했습니다." +
                     (selfCopySkipped > 0 ? $" (동일 위치 {selfCopySkipped}개 건너뜀)" : string.Empty),
                     "가져오기 결과 안내",
-                    $"• PC 저장 폴더({selectedDriveShort})에 쓰기 권한이 있는지 확인하세요.\n• 필요하면 관리자 권한으로 프로그램을 다시 실행하세요.");
+                    $"• PC 저장 폴더({selectedDriveShort})에 쓰기 권한이 있는지 확인하세요.\n• 필요하면 관리자 권한으로 프로그램을 다시 실행하세요.{reasonDetail}");
             }
         }
     }

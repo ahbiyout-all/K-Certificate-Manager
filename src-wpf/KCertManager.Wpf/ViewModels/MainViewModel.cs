@@ -1519,9 +1519,10 @@ namespace KCertManager.Wpf.ViewModels
                 }
                 else if (SelectedTargetDrive == null || !AvailableTargetDrives.Any(d => d.Name == SelectedTargetDrive.Name))
                 {
-                    // USB 드라이브 우선 선택, 없으면 보조 디스크(D:) 또는 첫 번째 사용 가능 디스크 선택
+                    // USB 드라이브 우선 선택, 없으면 시스템 드라이브 외 보조 디스크(D: 등) 또는 첫 번째 사용 가능 디스크 선택
+                    string sysDriveRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\') + "\\";
                     SelectedTargetDrive = RemovableDrives.FirstOrDefault(d => d.IsReady)
-                                       ?? AvailableTargetDrives.FirstOrDefault(d => !string.Equals(d.Name, "C:\\", StringComparison.OrdinalIgnoreCase))
+                                       ?? AvailableTargetDrives.FirstOrDefault(d => !string.Equals(d.Name.TrimEnd('\\') + "\\", sysDriveRoot, StringComparison.OrdinalIgnoreCase))
                                        ?? AvailableTargetDrives.FirstOrDefault();
                 }
                 else

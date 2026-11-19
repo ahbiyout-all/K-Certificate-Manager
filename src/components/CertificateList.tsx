@@ -938,10 +938,20 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                             </>
                           )}
                           <span aria-hidden="true">·</span>
-                          <span className="inline-flex items-center gap-1 font-medium text-[#10B981]">
-                            <KeyRound className="w-3 h-3 shrink-0" />
-                            <span>개인키 보유</span>
-                          </span>
+                          {cert.files?.hasKey ? (
+                            <span className="inline-flex items-center gap-1 font-medium text-[#10B981]">
+                              <KeyRound className="w-3 h-3 shrink-0" />
+                              <span>개인키 보유</span>
+                            </span>
+                          ) : (
+                            <span
+                              className="inline-flex items-center gap-1 font-medium text-[#F59E0B]"
+                              title="개인키(.key) 파일이 누락되어 전자서명이 불가합니다."
+                            >
+                              <KeyRound className="w-3 h-3 shrink-0" />
+                              <span>개인키 미보유</span>
+                            </span>
+                          )}
                           {isNonStandard && (
                             <>
                               <span aria-hidden="true">·</span>
@@ -1495,10 +1505,20 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                         }}
                         className={`${cellPadding} text-center whitespace-nowrap`}
                       >
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#10B981]">
-                          <KeyRound className="w-3 h-3" />
-                          <span>보유</span>
-                        </span>
+                        {cert.files?.hasKey ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#10B981]">
+                            <KeyRound className="w-3 h-3" />
+                            <span>보유</span>
+                          </span>
+                        ) : (
+                          <span
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#F59E0B]"
+                            title="개인키(.key) 파일이 누락되어 전자서명이 불가합니다."
+                          >
+                            <KeyRound className="w-3 h-3" />
+                            <span>미보유</span>
+                          </span>
+                        )}
                       </td>
 
                       {/* 10. 작업 / 복사 */}

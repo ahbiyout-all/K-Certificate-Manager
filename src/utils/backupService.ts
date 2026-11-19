@@ -315,36 +315,37 @@ function sanitizePathSegment(segment: string): string {
  */
 export function getStandardDirectoryPath(cert: CertificateItem): string {
   const subjectDn = (cert.subjectDn || '').trim();
-  const hasCn = subjectDn.toLowerCase().includes('cn=');
+  const cnMatch = subjectDn.match(/(?:^|,)\s*(cn\s*=\s*[^,]+)/i);
+  const extractedCn = cnMatch
+    ? `cn=${cnMatch[1].replace(/^cn\s*=\s*/i, '').trim()}`
+    : '';
+  const hasCn = Boolean(cnMatch);
   const classTier = isClass1Certificate(cert) ? 'class1' : 'class2';
 
   // 공무원 인증서 (GPKI)
   if (cert.category === 'GPKI_GOV') {
-    const rawCn = hasCn
-      ? subjectDn.split(',')[0].trim()
-      : `cn=${cert.name}`;
+    const rawCn = extractedCn || `cn=${cert.name}`;
     return `GPKI/Certificate/${classTier}/${sanitizePathSegment(rawCn)}`;
   }
 
   // 교육행정 인증서 (EPKI)
   if (cert.category === 'EPKI_EDU') {
-    const rawCn = hasCn
-      ? subjectDn.split(',')[0].trim()
-      : `cn=${cert.name}`;
+    const rawCn = extractedCn || `cn=${cert.name}`;
     return `EPKI/Certificate/${classTier}/${sanitizePathSegment(rawCn)}`;
   }
 
   // 은행/법인 공동인증서 (NPKI)
   const issuer = cert.issuer || '';
+  const issuerUpper = issuer.toUpperCase();
   const certName = cert.name || '사용자';
   let caSubdir = 'yessign';
-  if (issuer.includes('코스콤') || issuer.includes('SignKorea')) {
+  if (issuer.includes('코스콤') || issuerUpper.includes('SIGNKOREA')) {
     caSubdir = 'SignKorea';
-  } else if (issuer.includes('한국정보인증') || issuer.includes('KICA')) {
+  } else if (issuer.includes('한국정보인증') || issuerUpper.includes('KICA')) {
     caSubdir = 'KICA';
-  } else if (issuer.includes('한국전자인증') || issuer.includes('CrossCert')) {
+  } else if (issuer.includes('한국전자인증') || issuerUpper.includes('CROSSCERT')) {
     caSubdir = 'CrossCert';
-  } else if (issuer.includes('한국무역정보') || issuer.includes('TradeSign')) {
+  } else if (issuer.includes('한국무역정보') || issuerUpper.includes('TRADESIGN')) {
     caSubdir = 'TradeSign';
   }
 
@@ -461,6 +462,24 @@ export async function writeCertificatesToDirectoryHandle(
         const writableKey = await keyFileHandle.createWritable();
         await writableKey.write(createSyntheticKeyData(cert));
         await writableKey.close();
+        count++;
+      }
+
+      // companion encryption cert/key pair (GPKI/EPKI kmCert/kmPri or _env)
+      if (cert.files.kmCertName) {
+        const safeKmCertName = sanitizePathSegment(cert.files.kmCertName);
+        const kmCertHandle = await currentDir.getFileHandle(safeKmCertName, { create: true });
+        const writableKmCert = await kmCertHandle.createWritable();
+        await writableKmCert.write(createSyntheticCertData(cert));
+        await writableKmCert.close();
+        count++;
+      }
+      if (cert.files.kmKeyName) {
+        const safeKmKeyName = sanitizePathSegment(cert.files.kmKeyName);
+        const kmKeyHandle = await currentDir.getFileHandle(safeKmKeyName, { create: true });
+        const writableKmKey = await kmKeyHandle.createWritable();
+        await writableKmKey.write(createSyntheticKeyData(cert));
+        await writableKmKey.close();
         count++;
       }
     }

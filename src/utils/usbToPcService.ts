@@ -81,7 +81,9 @@ const extractCleanDriveColon = (raw: string, fallback = 'E:'): string => {
 };
 
 export function getAvailableUsbCertificates(drives: DiskDrive[] = activeDrivesState, filterDriveLetter?: string): UsbDetectedCert[] {
-  const usbDrives = drives.filter(d => d.type === 'removable');
+  const usbDrives = drives.filter(
+    d => !d.isCdRom && d.type !== 'cdrom' && (d.type === 'removable' || d.busType === 'USB' || d.deviceKind === 'fast_usb' || d.deviceKind === 'external_ssd')
+  );
   const driveE = extractCleanDriveColon(usbDrives.find(d => extractCleanDriveColon(d.letter, '') === 'E:')?.letter || '', 'E:');
   const driveG = extractCleanDriveColon(usbDrives.find(d => extractCleanDriveColon(d.letter, '') === 'G:')?.letter || '', 'G:');
 
@@ -369,7 +371,7 @@ export async function scanDirectoryHandleForCertificates(dirHandle: any): Promis
         if (!(lower.endsWith('.der') || lower.endsWith('.cer') || lower.endsWith('.crt'))) return false;
         return !(
           lower.startsWith('root') ||
-          lower.startsWith('ca') ||
+          /^ca(?:\d|[._-]|cert|$)/.test(lower) ||
           lower.startsWith('crl') ||
           lower.endsWith('.crl') ||
           lower.includes('cacert') ||
@@ -822,38 +824,43 @@ export function getLocalPcStandardPath(
   const userFolder = `${cleanDrive}\\Users\\${targetUsername}\\AppData\\LocalLow`;
 
   const subjectDn = (cert.subjectDn || '').trim();
-  const hasCnPrefix = subjectDn.toLowerCase().startsWith('cn=');
+  const cnMatch = subjectDn.match(/(?:^|,)\s*(cn\s*=\s*[^,]+)/i);
+  const extractedCn = cnMatch
+    ? `cn=${cnMatch[1].replace(/^cn\s*=\s*/i, '').trim()}`
+    : '';
+  const hasCnAttribute = Boolean(cnMatch);
 
   const classTier = usbCertIsClass1(cert) ? 'class1' : 'class2';
 
   const certName = cert.name || '사용자';
   const issuer = cert.issuer || '';
+  const issuerUpper = issuer.toUpperCase();
 
   if (cert.category === 'GPKI_GOV') {
-    const cn = hasCnPrefix ? subjectDn.split(',')[0].trim() : `cn=${certName}`;
+    const cn = extractedCn || `cn=${certName}`;
     // 공무원 행정전자서명(GPKI) 정부 공식 표준 경로: {cleanDrive}\GPKI\Certificate\class2 (class1은 class1 유지)
     return `${cleanDrive}\\GPKI\\Certificate\\${classTier}\\${cn}`;
   }
 
   if (cert.category === 'EPKI_EDU') {
-    const cn = hasCnPrefix ? subjectDn.split(',')[0].trim() : `cn=${certName}`;
+    const cn = extractedCn || `cn=${certName}`;
     const baseFolder = isSystemDrive ? userFolder : cleanDrive;
     return `${baseFolder}\\EPKI\\Certificate\\${classTier}\\${cn}`;
   }
 
   // NPKI (은행/금융)
   let caSubdir = 'yessign';
-  if (issuer.includes('코스콤') || issuer.includes('SignKorea')) {
+  if (issuer.includes('코스콤') || issuerUpper.includes('SIGNKOREA')) {
     caSubdir = 'SignKorea';
-  } else if (issuer.includes('한국정보인증') || issuer.includes('KICA')) {
+  } else if (issuer.includes('한국정보인증') || issuerUpper.includes('KICA')) {
     caSubdir = 'KICA';
-  } else if (issuer.includes('한국전자인증') || issuer.includes('CrossCert')) {
+  } else if (issuer.includes('한국전자인증') || issuerUpper.includes('CROSSCERT')) {
     caSubdir = 'CrossCert';
-  } else if (issuer.includes('한국무역정보') || issuer.includes('TradeSign')) {
+  } else if (issuer.includes('한국무역정보') || issuerUpper.includes('TRADESIGN')) {
     caSubdir = 'TradeSign';
   }
 
-  const cn = hasCnPrefix
+  const cn = hasCnAttribute
     ? subjectDn
     : `cn=${certName},ou=personal,o=${caSubdir},c=kr`;
 
@@ -1250,7 +1257,9 @@ export function startUsbDriveWatcher(options?: UsbWatcherOptions): () => void {
 
   const handleUsbDisconnect = (event: any) => {
     console.log('[WebUSB] USB Device Disconnected:', event);
-    const removableDrives = activeDrivesState.filter(d => d.type === 'removable');
+    const removableDrives = activeDrivesState.filter(
+      d => !d.isCdRom && d.type !== 'cdrom' && (d.type === 'removable' || d.busType === 'USB' || d.deviceKind === 'fast_usb' || d.deviceKind === 'external_ssd')
+    );
     if (removableDrives.length > 0) {
       const removed = removableDrives[0];
       simulateUsbUnmount(removed.id);
