@@ -25,39 +25,59 @@ namespace KCertManager.Wpf.Services
         }
 
         /// <summary>
+        /// [0단계 Local Fast-Pass] 외부/네트워크 드라이브 조회 없이 내 PC 표준 경로(LocalLow, C:\)만 0.05초 이내로 즉시 스캔합니다.
+        /// </summary>
+        public async Task<List<CertificateItem>> ScanLocalFastPassAsync(CancellationToken ct = default)
+        {
+            var discovered = await _pipeline.ScanLocalFastAsync(ct);
+            return await Task.Run(() => ParseDiscoveredLocations(discovered, ct), ct);
+        }
+
+        /// <summary>
         /// [1단계 Fast-Pass] 표준 경로(LocalLow NPKI/GPKI/EPKI, C:\, 각 드라이브 루트)만 병렬로 고속 탐색하여
         /// 0.05~0.1초 내외로 즉시 인증서 목록을 생성합니다.
         /// </summary>
         public async Task<List<CertificateItem>> ScanFastPassAsync(CancellationToken ct = default)
         {
             var discovered = await _pipeline.ScanFastAsync(ct);
+            return await Task.Run(() => ParseDiscoveredLocations(discovered, ct), ct);
+        }
+
+        private List<CertificateItem> ParseDiscoveredLocations(List<DiscoveredCertLocation> discovered, CancellationToken ct)
+        {
             var results = new ConcurrentBag<CertificateItem>();
             var seenDerPaths = new ConcurrentDictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             var seenSignatures = new ConcurrentDictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 
-            Parallel.ForEach(discovered, new ParallelOptions
+            try
             {
-                CancellationToken = ct,
-                MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount)
-            }, loc =>
-            {
-                if (ct.IsCancellationRequested) return;
-
-                var canonicalDer = Path.GetFullPath(loc.DerFilePath);
-                if (!seenDerPaths.TryAdd(canonicalDer, true)) return;
-
-                var item = ParseCertificateFile(canonicalDer);
-                if (item != null)
+                Parallel.ForEach(discovered, new ParallelOptions
                 {
-                    var dir = Path.GetDirectoryName(canonicalDer) ?? string.Empty;
-                    // 동일 디렉터리 내 동일 시리얼/발급대상 중복만 차단하고, 서로 다른 인증서는 모두 등록
-                    var sig = $"{dir}|{item.SerialNumber}|{item.SubjectDn}";
-                    if (seenSignatures.TryAdd(sig, true))
+                    CancellationToken = ct,
+                    MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount)
+                }, loc =>
+                {
+                    if (ct.IsCancellationRequested) return;
+
+                    var canonicalDer = Path.GetFullPath(loc.DerFilePath);
+                    if (!seenDerPaths.TryAdd(canonicalDer, true)) return;
+
+                    var item = ParseCertificateFile(canonicalDer);
+                    if (item != null)
                     {
-                        results.Add(item);
+                        var dir = Path.GetDirectoryName(canonicalDer) ?? string.Empty;
+                        // 동일 디렉터리 내 동일 시리얼/발급대상 중복만 차단하고, 서로 다른 인증서는 모두 등록
+                        var sig = $"{dir}|{item.SerialNumber}|{item.SubjectDn}";
+                        if (seenSignatures.TryAdd(sig, true))
+                        {
+                            results.Add(item);
+                        }
                     }
-                }
-            });
+                });
+            }
+            catch (OperationCanceledException)
+            {
+            }
 
             return results.ToList();
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -55,7 +56,8 @@ namespace KCertManager.Wpf.ViewModels
         private bool _toastHasIntegrityBadge;
         private string _toastFilePath = string.Empty;
         private string _toastFileSize = string.Empty;
-        private System.Threading.CancellationTokenSource? _toastCts;
+        private CancellationTokenSource? _toastCts;
+        private CancellationTokenSource? _scanCts;
 
         private bool _isGuidedWorkflowActive;
         private string _guidedWorkflowType = "pc_to_usb";
@@ -85,7 +87,7 @@ namespace KCertManager.Wpf.ViewModels
             {
                 UsbStorageGuard.InvalidateUsbCache();
                 CertLocationScanner.ClearRemovableDriveCache();
-                RefreshDrives();
+                _ = RefreshDrivesAsync();
                 await RefreshCertificatesAsync();
             });
             BackupSelectedCommand = new RelayCommand(async () => await BackupSelectedAsync(), () => SelectedCertificatesCount > 0 || SelectedCertificate != null);
@@ -107,7 +109,7 @@ namespace KCertManager.Wpf.ViewModels
             ToggleSoundCommand = new RelayCommand(() => ToggleSound());
             TestSoundCommand = new RelayCommand(() => PlayTestSound());
 
-            StartGuidedWorkflowCommand = new RelayCommand<string>(StartGuidedWorkflow);
+            StartGuidedWorkflowCommand = new RelayCommand<string>(async t => await StartGuidedWorkflowAsync(t));
             NextGuidedStepCommand = new RelayCommand(NextGuidedStep);
             PrevGuidedStepCommand = new RelayCommand(PrevGuidedStep);
             EndGuidedWorkflowCommand = new RelayCommand(EndGuidedWorkflow);
@@ -118,14 +120,14 @@ namespace KCertManager.Wpf.ViewModels
             CopySelectedCertDetailsCommand = new RelayCommand(CopySelectedCertDetails);
             OpenSelectedCertDirectoryCommand = new RelayCommand(OpenSelectedCertDirectory);
 
-            // Drive Watcher with debounced and safe event handling
+            // Drive Watcher with debounced and non-blocking async event handling
             Action onDrivesChangedAction = () =>
             {
                 try
                 {
                     UsbStorageGuard.InvalidateUsbCache();
                     CertLocationScanner.ClearRemovableDriveCache();
-                    RefreshDrives();
+                    _ = RefreshDrivesAsync();
                     _ = RefreshCertificatesAsync();
                 }
                 catch (Exception ex)
@@ -136,39 +138,36 @@ namespace KCertManager.Wpf.ViewModels
 
             _driveWatcher.DrivesChanged += (s, e) =>
             {
-                DispatchSafe(onDrivesChangedAction);
+                onDrivesChangedAction();
             };
 
             _driveWatcher.DriveArrived += (s, driveName) =>
             {
-                DispatchSafe(onDrivesChangedAction);
+                onDrivesChangedAction();
             };
 
             _driveWatcher.DriveRemoved += (s, driveName) =>
             {
-                DispatchSafe(onDrivesChangedAction);
+                onDrivesChangedAction();
             };
 
-            // Asynchronous deferred initialization to ensure lightning-fast window rendering (< 50ms)
-            Task.Run(async () =>
+            // Start local certificate discovery, drive discovery, trash refresh, and hardware watcher concurrently without blocking UI thread
+            _ = RefreshCertificatesAsync();
+            _ = RefreshDrivesAsync();
+            _ = RefreshTrashAsync();
+
+            _ = Task.Run(async () =>
             {
                 try
                 {
-                    // WMI 캐시 사전 예열 (백그라운드 비동기)
-                    _ = KCert.Core.HardwareGuard.UsbStorageGuard.PrefetchUsbInterfaceDriveLettersAsync();
+                    // WMI/DeviceIoControl USB 캐시 사전 예열 및 드라이브 감시기 백그라운드 시작
+                    _ = UsbStorageGuard.PrefetchUsbInterfaceDriveLettersAsync();
                     _driveWatcher.Start();
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"[DriveWatcher Start Error] {ex.Message}");
                 }
-
-                DispatchSafe(() =>
-                {
-                    RefreshDrives();
-                    RefreshTrash();
-                    _ = RefreshCertificatesAsync();
-                });
 
                 // 앱 시작 시 백그라운드 자동 업데이트 확인 및 사용자 알림 팝업 창 연동
                 try
@@ -199,7 +198,30 @@ namespace KCertManager.Wpf.ViewModels
             {
                 return;
             }
-            dispatcher.BeginInvoke(action);
+            if (dispatcher.CheckAccess())
+            {
+                action();
+            }
+            else
+            {
+                dispatcher.BeginInvoke(action);
+            }
+        }
+
+        private static Task DispatchSafeAsync(Action action)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
+            {
+                action();
+                return Task.CompletedTask;
+            }
+            if (dispatcher.CheckAccess())
+            {
+                action();
+                return Task.CompletedTask;
+            }
+            return dispatcher.InvokeAsync(action).Task;
         }
 
         #region Properties
@@ -502,7 +524,7 @@ namespace KCertManager.Wpf.ViewModels
 
         public void ShowStartupWorkflowDialog()
         {
-            Application.Current?.Dispatcher?.Invoke(() =>
+            DispatchSafe(() =>
             {
                 try
                 {
@@ -520,11 +542,11 @@ namespace KCertManager.Wpf.ViewModels
                     {
                         if (dialog.SelectedResult == Views.StartupWorkflowResult.PcToUsb)
                         {
-                            StartGuidedWorkflow("pc_to_usb");
+                            _ = StartGuidedWorkflowAsync("pc_to_usb");
                         }
                         else if (dialog.SelectedResult == Views.StartupWorkflowResult.UsbToPc)
                         {
-                            StartGuidedWorkflow("usb_to_pc");
+                            _ = StartGuidedWorkflowAsync("usb_to_pc");
                         }
                     }
                 }
@@ -537,103 +559,121 @@ namespace KCertManager.Wpf.ViewModels
 
         public void StartGuidedWorkflow(string? type)
         {
-            GuidedWorkflowType = type ?? "pc_to_usb";
-            IsGuidedWorkflowActive = true;
-            GuidedWorkflowStep = 1;
+            _ = StartGuidedWorkflowAsync(type);
+        }
 
-            if (GuidedWorkflowType == "pc_to_usb")
+        public async Task StartGuidedWorkflowAsync(string? type)
+        {
+            try
             {
-                GuidedWorkflowTitle = "🚀 시작가이드: PC ➔ USB 백업";
-                GuidedWorkflowStepTitle = "1단계: 복사할 PC 유효 인증서 선택 및 대상 USB 지정";
-                GuidedWorkflowStepDescription = "컴퓨터에 보관된 유효한 공인인증서만 필터링하여 USB 메모리로 안전하게 복사/백업합니다.";
+                GuidedWorkflowType = type ?? "pc_to_usb";
+                IsGuidedWorkflowActive = true;
+                GuidedWorkflowStep = 1;
 
-                // 1. 카테고리 필터 및 검색어 전체 초기화
-                SelectedFilter = "ALL";
-                SearchKeyword = string.Empty;
-                ApplyFilter();
-
-                // 2. PC 로컬 보관 인증서 (시스템 드라이브 및 내장 디스크) 중 유효한 인증서만 수집 (만료 ExpiryStatus.Expired 제외)
-                var sysDrivePrefix = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\').ToUpperInvariant();
-                bool IsLocalPcCert(CertificateItem c) =>
-                    !c.IsRemovableMedia ||
-                    string.Equals(c.DriveLetter?.TrimEnd('\\'), sysDrivePrefix, StringComparison.OrdinalIgnoreCase) ||
-                    (!string.IsNullOrEmpty(c.DirectoryPath) && c.DirectoryPath.StartsWith(sysDrivePrefix, StringComparison.OrdinalIgnoreCase));
-
-                var pcCerts = _allCertificates
-                    .Where(c => IsLocalPcCert(c) && c.Status != ExpiryStatus.Expired)
-                    .ToList();
-
-                // _allCertificates가 아직 비어 있거나 스캔 대기 중인 경우 표준 PC 경로 즉시 고속 스캔 보장
-                if (!pcCerts.Any())
+                if (GuidedWorkflowType == "pc_to_usb")
                 {
-                    try
+                    GuidedWorkflowTitle = "🚀 시작가이드: PC ➔ USB 백업";
+                    GuidedWorkflowStepTitle = "1단계: 복사할 PC 유효 인증서 선택 및 대상 USB 지정";
+                    GuidedWorkflowStepDescription = "컴퓨터에 보관된 유효한 공인인증서만 필터링하여 USB 메모리로 안전하게 복사/백업합니다.";
+
+                    await DispatchSafeAsync(() =>
                     {
-                        var fastList = _scannerService.ScanCertificates(CertLocationScanner.GetFastStandardRoots());
-                        pcCerts = fastList
-                            .Where(c => IsLocalPcCert(c) && c.Status != ExpiryStatus.Expired)
-                            .ToList();
-                        foreach (var item in fastList)
-                        {
-                            if (!_allCertificates.Any(x => x.DerFilePath.Equals(item.DerFilePath, StringComparison.OrdinalIgnoreCase)))
-                            {
-                                _allCertificates.Add(item);
-                            }
-                        }
+                        SelectedFilter = "ALL";
+                        SearchKeyword = string.Empty;
                         ApplyFilter();
+                    });
+
+                    var sysDrivePrefix = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\').ToUpperInvariant();
+                    bool IsLocalPcCert(CertificateItem c) =>
+                        !c.IsRemovableMedia ||
+                        string.Equals(c.DriveLetter?.TrimEnd('\\'), sysDrivePrefix, StringComparison.OrdinalIgnoreCase) ||
+                        (!string.IsNullOrEmpty(c.DirectoryPath) && c.DirectoryPath.StartsWith(sysDrivePrefix, StringComparison.OrdinalIgnoreCase));
+
+                    var pcCerts = _allCertificates
+                        .Where(c => IsLocalPcCert(c) && c.Status != ExpiryStatus.Expired)
+                        .ToList();
+
+                    // _allCertificates가 아직 비어 있거나 스캔 대기 중인 경우 백그라운드 스레드에서 표준 PC 경로 즉시 고속 스캔
+                    if (!pcCerts.Any())
+                    {
+                        try
+                        {
+                            var fastList = await Task.Run(() => _scannerService.ScanCertificates(CertLocationScanner.GetLocalProfileFastRoots()));
+                            pcCerts = fastList
+                                .Where(c => IsLocalPcCert(c) && c.Status != ExpiryStatus.Expired)
+                                .ToList();
+
+                            await DispatchSafeAsync(() =>
+                            {
+                                foreach (var item in fastList)
+                                {
+                                    if (!_allCertificates.Any(x => x.DerFilePath.Equals(item.DerFilePath, StringComparison.OrdinalIgnoreCase)))
+                                    {
+                                        AttachCertEvent(item);
+                                        _allCertificates.Add(item);
+                                    }
+                                }
+                                ApplyFilter();
+                            });
+                        }
+                        catch { }
                     }
-                    catch { }
-                }
 
-                // 3. PC 원본 유효 인증서들을 모두 체크하여 한 번에 백업할 수 있도록 지원
-                foreach (var c in pcCerts)
-                {
-                    c.IsSelected = true;
-                }
-                foreach (var c in FilteredCertificates)
-                {
-                    c.IsSelected = (c.Status != ExpiryStatus.Expired) && IsLocalPcCert(c);
-                }
+                    await RefreshDrivesAsync();
 
-                if (pcCerts.Any())
-                {
-                    SelectedCertificate = pcCerts.First();
-                }
-
-                OnPropertyChanged(nameof(SelectedCertificatesCount));
-                (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
-
-                // 4. 모달 대화창(PcToUsbTransferDialog)에 유효한 PC/C: 인증서 목록(pcCerts) 전달하여 표시
-                Application.Current?.Dispatcher?.Invoke(() =>
-                {
-                    var targets = pcCerts.Any() ? pcCerts : FilteredCertificates.Where(c => c.Status != ExpiryStatus.Expired).ToList();
-                    var dlg = new Views.PcToUsbTransferDialog(this, targets, AvailableTargetDrives)
+                    await DispatchSafeAsync(() =>
                     {
-                        Owner = Application.Current?.MainWindow
-                    };
-                    dlg.ShowDialog();
-                    RefreshDrives();
-                    _ = RefreshCertificatesAsync();
-                });
-                IsGuidedWorkflowActive = false;
+                        foreach (var c in pcCerts)
+                        {
+                            c.IsSelected = true;
+                        }
+                        foreach (var c in FilteredCertificates)
+                        {
+                            c.IsSelected = (c.Status != ExpiryStatus.Expired) && IsLocalPcCert(c);
+                        }
+
+                        if (pcCerts.Any())
+                        {
+                            SelectedCertificate = pcCerts.First();
+                        }
+
+                        OnPropertyChanged(nameof(SelectedCertificatesCount));
+                        (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
+
+                        var targets = pcCerts.Any() ? pcCerts : FilteredCertificates.Where(c => c.Status != ExpiryStatus.Expired).ToList();
+                        var dlg = new Views.PcToUsbTransferDialog(this, targets, AvailableTargetDrives)
+                        {
+                            Owner = Application.Current?.MainWindow
+                        };
+                        dlg.ShowDialog();
+                        _ = RefreshDrivesAsync();
+                        _ = RefreshCertificatesAsync();
+                    });
+                    IsGuidedWorkflowActive = false;
+                }
+                else
+                {
+                    GuidedWorkflowTitle = "🚀 시작가이드: USB ➔ PC 가져오기";
+                    GuidedWorkflowStepTitle = "1단계: 가져올 USB 드라이브 및 인증서 선택";
+                    GuidedWorkflowStepDescription = "USB 이동식 메모리의 인증서를 확인하고 가져오기를 진행합니다.";
+
+                    await DispatchSafeAsync(() =>
+                    {
+                        var dlg = new Views.UsbTransferDialog
+                        {
+                            Owner = Application.Current?.MainWindow
+                        };
+                        dlg.ShowDialog();
+                        _ = RefreshDrivesAsync();
+                        _ = RefreshCertificatesAsync();
+                    });
+                    IsGuidedWorkflowActive = false;
+                }
             }
-            else
+            catch (Exception ex)
             {
-                GuidedWorkflowTitle = "🚀 시작가이드: USB ➔ PC 가져오기";
-                GuidedWorkflowStepTitle = "1단계: 가져올 USB 드라이브 및 인증서 선택";
-                GuidedWorkflowStepDescription = "USB 이동식 메모리의 인증서를 확인하고 가져오기를 진행합니다.";
-
-                // Open UsbTransferDialog directly
-                Application.Current?.Dispatcher?.Invoke(() =>
-                {
-                    var dlg = new Views.UsbTransferDialog
-                    {
-                        Owner = Application.Current?.MainWindow
-                    };
-                    dlg.ShowDialog();
-                    RefreshDrives();
-                    _ = RefreshCertificatesAsync();
-                });
                 IsGuidedWorkflowActive = false;
+                System.Diagnostics.Debug.WriteLine($"[StartGuidedWorkflowAsync Error] {ex.Message}");
             }
         }
 
@@ -1310,12 +1350,26 @@ namespace KCertManager.Wpf.ViewModels
 
         private async Task RefreshCertificatesInternalAsync(IEnumerable<string>? customPaths, bool waitForDeepPass)
         {
-            int scanGen = System.Threading.Interlocked.Increment(ref _scanGeneration);
+            int scanGen = Interlocked.Increment(ref _scanGeneration);
+            var newCts = new CancellationTokenSource();
+            var prevCts = Interlocked.Exchange(ref _scanCts, newCts);
+            try
+            {
+                prevCts?.Cancel();
+                prevCts?.Dispose();
+            }
+            catch { }
+
+            var ct = newCts.Token;
 
             try
             {
-                IsBusy = true;
-                StatusMessage = "인증서 찾는 중...";
+                await DispatchSafeAsync(() =>
+                {
+                    if (scanGen != _scanGeneration) return;
+                    IsBusy = true;
+                    StatusMessage = "인증서 찾는 중...";
+                });
 
                 if (customPaths != null)
                 {
@@ -1325,124 +1379,201 @@ namespace KCertManager.Wpf.ViewModels
                 // 사용자 지정 경로가 전달된 경우 해당 경로로 집중 탐색
                 if (_customSearchPaths.Count > 0)
                 {
-                    await Task.Run(() =>
+                    var list = await Task.Run(() => _scannerService.ScanCertificates(_customSearchPaths), ct);
+                    if (scanGen != _scanGeneration || ct.IsCancellationRequested) return;
+
+                    AttachCertEvents(list);
+                    await DispatchUpdateCertificatesAsync(list, scanGen);
+
+                    await DispatchSafeAsync(() =>
                     {
-                        var list = _scannerService.ScanCertificates(_customSearchPaths);
-                        AttachCertEvents(list);
-                        DispatchUpdateCertificates(list, scanGen);
+                        if (scanGen == _scanGeneration)
+                        {
+                            IsBusy = false;
+                            StatusMessage = $"총 {TotalCount}개 인증서를 찾았습니다.";
+                        }
                     });
-                    if (scanGen == _scanGeneration)
-                    {
-                        IsBusy = false;
-                        StatusMessage = $"총 {TotalCount}개 인증서를 찾았습니다.";
-                    }
                     return;
                 }
 
                 // =========================================================================
-                // [1단계 Fast-Pass]: 표준 경로만 0.05~0.1초 만에 즉시 스캔하여 화면 갱신
+                // [0단계 Local Fast-Pass]: 네트워크/외부 드라이브 대기 없이 PC 로컬 표준 경로(LocalLow, C:\) 0.05초 즉시 표시
                 // =========================================================================
-                var fastList = await _scannerService.ScanFastPassAsync();
-                if (scanGen != _scanGeneration) return;
+                var localList = await _scannerService.ScanLocalFastPassAsync(ct);
+                if (scanGen != _scanGeneration || ct.IsCancellationRequested) return;
 
-                AttachCertEvents(fastList);
-                DispatchUpdateCertificates(fastList, scanGen);
+                AttachCertEvents(localList);
+                await DispatchUpdateCertificatesAsync(localList, scanGen);
 
-                IsBusy = false; // 사용자 UI 즉각 사용 가능하게 전환!
-                StatusMessage = $"표준 인증서 {fastList.Count}개 표시됨 (추가 폴더 확인 중...)";
+                await DispatchSafeAsync(() =>
+                {
+                    if (scanGen != _scanGeneration) return;
+                    IsBusy = false; // 사용자 UI 즉각 사용 가능하게 전환!
+                    StatusMessage = localList.Count > 0
+                        ? $"PC 인증서 {localList.Count}개 표시됨 (외장/추가 드라이브 확인 중...)"
+                        : "표준 경로 및 외장 드라이브 인증서 확인 중...";
+                });
 
                 // =========================================================================
-                // [2단계 Deep-Pass]: 비표준 및 외장 디스크 심층 탐색을 백그라운드 비동기로 실행
+                // [1단계 Drive Fast-Pass]: 준비된 로컬 보조 및 이동식 USB 드라이브 루트 표준 경로 병렬 탐색
+                // =========================================================================
+                var fastDriveList = await _scannerService.ScanFastPassAsync(ct);
+                if (scanGen != _scanGeneration || ct.IsCancellationRequested) return;
+
+                var mergedFastMap = new Dictionary<string, CertificateItem>(StringComparer.OrdinalIgnoreCase);
+                foreach (var item in localList)
+                {
+                    if (!string.IsNullOrWhiteSpace(item.DerFilePath))
+                    {
+                        mergedFastMap[Path.GetFullPath(item.DerFilePath)] = item;
+                    }
+                }
+                foreach (var item in fastDriveList)
+                {
+                    if (!string.IsNullOrWhiteSpace(item.DerFilePath))
+                    {
+                        var key = Path.GetFullPath(item.DerFilePath);
+                        if (!mergedFastMap.ContainsKey(key))
+                        {
+                            AttachCertEvent(item);
+                            mergedFastMap[key] = item;
+                        }
+                    }
+                }
+
+                var mergedFastList = mergedFastMap.Values.ToList();
+                await DispatchUpdateCertificatesAsync(mergedFastList, scanGen);
+
+                await DispatchSafeAsync(() =>
+                {
+                    if (scanGen != _scanGeneration) return;
+                    StatusMessage = $"표준 인증서 {mergedFastList.Count}개 표시됨 (추가 폴더 확인 중...)";
+                });
+
+                // =========================================================================
+                // [2단계 Deep-Pass]: 비표준 및 외장 디스크 심층 탐색 (일괄 배치 UI 반영)
                 // =========================================================================
                 var deepTask = Task.Run(async () =>
                 {
                     try
                     {
                         var seenDers = new HashSet<string>(
-                            fastList.Where(x => !string.IsNullOrWhiteSpace(x.DerFilePath))
-                                    .Select(x => Path.GetFullPath(x.DerFilePath)),
+                            mergedFastList.Where(x => !string.IsNullOrWhiteSpace(x.DerFilePath))
+                                          .Select(x => Path.GetFullPath(x.DerFilePath)),
                             StringComparer.OrdinalIgnoreCase);
                         var seenSigs = new HashSet<string>(
-                            fastList.Where(x => !string.IsNullOrWhiteSpace(x.DerFilePath))
-                                    .Select(x =>
-                                    {
-                                        var dir = Path.GetDirectoryName(Path.GetFullPath(x.DerFilePath)) ?? string.Empty;
-                                        return $"{dir}|{x.SerialNumber}|{x.SubjectDn}";
-                                    }),
+                            mergedFastList.Where(x => !string.IsNullOrWhiteSpace(x.DerFilePath))
+                                          .Select(x =>
+                                          {
+                                              var dir = Path.GetDirectoryName(Path.GetFullPath(x.DerFilePath)) ?? string.Empty;
+                                              return $"{dir}|{x.SerialNumber}|{x.SubjectDn}";
+                                          }),
                             StringComparer.OrdinalIgnoreCase);
+
+                        var batchLock = new object();
+                        var pendingBatch = new List<CertificateItem>();
+                        var lastFlushUtc = DateTime.UtcNow;
+
+                        void FlushPendingBatch()
+                        {
+                            List<CertificateItem> toAdd;
+                            lock (batchLock)
+                            {
+                                if (pendingBatch.Count == 0) return;
+                                toAdd = new List<CertificateItem>(pendingBatch);
+                                pendingBatch.Clear();
+                                lastFlushUtc = DateTime.UtcNow;
+                            }
+
+                            DispatchSafe(() =>
+                            {
+                                if (scanGen != _scanGeneration || ct.IsCancellationRequested) return;
+                                bool addedAny = false;
+                                foreach (var item in toAdd)
+                                {
+                                    string? newDer = string.IsNullOrWhiteSpace(item.DerFilePath) ? null : Path.GetFullPath(item.DerFilePath);
+                                    if (newDer != null && _allCertificates.Any(x => !string.IsNullOrWhiteSpace(x.DerFilePath) && string.Equals(Path.GetFullPath(x.DerFilePath), newDer, StringComparison.OrdinalIgnoreCase)))
+                                    {
+                                        continue;
+                                    }
+                                    _allCertificates.Add(item);
+                                    addedAny = true;
+                                }
+
+                                if (addedAny)
+                                {
+                                    UpdateDriveCertificateCounts();
+                                    ApplyFilter();
+                                    UpdateCounts();
+                                }
+                            });
+                        }
 
                         int newDiscovered = await _scannerService.ScanDeepPassBackgroundAsync(newItem =>
                         {
-                            if (scanGen != _scanGeneration) return;
+                            if (scanGen != _scanGeneration || ct.IsCancellationRequested) return;
                             AttachCertEvent(newItem);
-                            Action addAction = () =>
-                            {
-                                if (scanGen != _scanGeneration) return;
-                                string? newDer = string.IsNullOrWhiteSpace(newItem.DerFilePath) ? null : Path.GetFullPath(newItem.DerFilePath);
-                                if (newDer != null && _allCertificates.Any(x => !string.IsNullOrWhiteSpace(x.DerFilePath) && string.Equals(Path.GetFullPath(x.DerFilePath), newDer, StringComparison.OrdinalIgnoreCase)))
-                                {
-                                    return;
-                                }
-                                _allCertificates.Add(newItem);
-                                UpdateDriveCertificateCounts();
-                                ApplyFilter();
-                                UpdateCounts();
-                            };
 
-                            var dispatcher = Application.Current?.Dispatcher;
-                            if (dispatcher != null)
+                            bool shouldFlush;
+                            lock (batchLock)
                             {
-                                dispatcher.BeginInvoke(addAction);
+                                pendingBatch.Add(newItem);
+                                shouldFlush = pendingBatch.Count >= 12 || (DateTime.UtcNow - lastFlushUtc).TotalMilliseconds >= 180;
                             }
-                            else
+
+                            if (shouldFlush)
                             {
-                                addAction();
+                                FlushPendingBatch();
                             }
-                        }, seenDers, seenSigs);
+                        }, seenDers, seenSigs, ct);
 
-                        if (scanGen != _scanGeneration) return;
+                        if (scanGen != _scanGeneration || ct.IsCancellationRequested) return;
 
-                        var dispatcherFinal = Application.Current?.Dispatcher;
-                        Action updateStatusAction = () =>
+                        FlushPendingBatch();
+
+                        await DispatchSafeAsync(() =>
                         {
                             if (scanGen != _scanGeneration) return;
                             StatusMessage = $"전체 스캔 완료: 총 {TotalCount}개 인증서 (PC: {ComputerCount}개, USB: {UsbCount}개" +
                                             (newDiscovered > 0 ? $", 비표준 {newDiscovered}개 추가 감지" : "") + ").";
-                        };
-
-                        if (dispatcherFinal != null)
-                        {
-                            await dispatcherFinal.InvokeAsync(updateStatusAction);
-                        }
-                        else
-                        {
-                            updateStatusAction();
-                        }
+                        });
 
                         ActivityLogService.Instance.Log(
                             LogCategory.SCAN,
                             LogLevel.SUCCESS,
                             "인증서 2단계 전체 스캔 완료",
-                            $"총 {_allCertificates.Count}개 인증서 (Fast-Pass: {fastList.Count}개, Deep-Pass 추가: {newDiscovered}개)",
+                            $"총 {_allCertificates.Count}개 인증서 (Fast-Pass: {mergedFastList.Count}개, Deep-Pass 추가: {newDiscovered}개)",
                             "Local System",
                             "Memory",
                             _allCertificates.Count);
+                    }
+                    catch (OperationCanceledException)
+                    {
                     }
                     catch (Exception ex)
                     {
                         System.Diagnostics.Debug.WriteLine($"[Deep Scan Error] {ex.Message}");
                     }
-                });
+                }, ct);
 
                 if (waitForDeepPass)
                 {
                     await deepTask;
                 }
             }
+            catch (OperationCanceledException)
+            {
+            }
             catch (Exception ex)
             {
-                IsBusy = false;
-                StatusMessage = $"스캔 중 알림: {ex.Message}";
+                await DispatchSafeAsync(() =>
+                {
+                    if (scanGen == _scanGeneration)
+                    {
+                        IsBusy = false;
+                        StatusMessage = $"스캔 중 알림: {ex.Message}";
+                    }
+                });
                 System.Diagnostics.Debug.WriteLine($"[RefreshCertificatesAsync Error] {ex.Message}");
             }
         }
@@ -1468,10 +1599,9 @@ namespace KCertManager.Wpf.ViewModels
             };
         }
 
-        private void DispatchUpdateCertificates(List<CertificateItem> list, int scanGen)
+        private Task DispatchUpdateCertificatesAsync(List<CertificateItem> list, int scanGen)
         {
-            var dispatcher = Application.Current?.Dispatcher;
-            Action updateAction = () =>
+            return DispatchSafeAsync(() =>
             {
                 if (scanGen != _scanGeneration) return;
                 _allCertificates.Clear();
@@ -1482,72 +1612,70 @@ namespace KCertManager.Wpf.ViewModels
                 UpdateDriveCertificateCounts();
                 ApplyFilter();
                 UpdateCounts();
-            };
-
-            if (dispatcher != null)
-            {
-                dispatcher.Invoke(updateAction);
-            }
-            else
-            {
-                updateAction();
-            }
+            });
         }
 
         public void RefreshDrives()
         {
+            _ = RefreshDrivesAsync();
+        }
+
+        public async Task RefreshDrivesAsync()
+        {
             try
             {
-                UsbStorageGuard.InvalidateUsbCache();
-                CertLocationScanner.ClearRemovableDriveCache();
-
-                var all = UsbDriveWatcher.GetAvailableDrives();
-                AllDrives = new ObservableCollection<DriveItem>(all);
-
-                // 1. 순수 이동식 USB 드라이브 (CD-ROM 배제)
-                var drives = all.Where(d => d.IsRemovable && !d.IsCdRom).ToList();
-                RemovableDrives = new ObservableCollection<DriveItem>(drives);
-
-                // 2. 백업 및 복사 가능한 전체 대상 드라이브 (로컬 디스크 C:, D: 및 USB E:, F: 등 - CD-ROM 완전 배제)
-                var targetDrives = all.Where(d => !d.IsCdRom && d.IsReady).ToList();
-                AvailableTargetDrives = new ObservableCollection<DriveItem>(targetDrives);
-
-                UpdateDriveCertificateCounts();
-
-                if (AvailableTargetDrives.Count == 0)
+                var all = await Task.Run(() =>
                 {
-                    SelectedTargetDrive = null;
-                }
-                else if (SelectedTargetDrive == null || !AvailableTargetDrives.Any(d => d.Name == SelectedTargetDrive.Name))
+                    UsbStorageGuard.InvalidateUsbCache();
+                    CertLocationScanner.ClearRemovableDriveCache();
+                    return UsbDriveWatcher.GetAvailableDrives();
+                });
+
+                await DispatchSafeAsync(() =>
                 {
-                    // USB 드라이브 우선 선택, 없으면 시스템 드라이브 외 보조 디스크(D: 등) 또는 첫 번째 사용 가능 디스크 선택
-                    string sysDriveRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\') + "\\";
-                    SelectedTargetDrive = RemovableDrives.FirstOrDefault(d => d.IsReady)
-                                       ?? AvailableTargetDrives.FirstOrDefault(d => !string.Equals(d.Name.TrimEnd('\\') + "\\", sysDriveRoot, StringComparison.OrdinalIgnoreCase))
-                                       ?? AvailableTargetDrives.FirstOrDefault();
-                }
-                else
-                {
-                    var current = AvailableTargetDrives.FirstOrDefault(d => d.Name == SelectedTargetDrive.Name);
-                    if (current != null)
+                    try
                     {
-                        SelectedTargetDrive = current;
+                        AllDrives = new ObservableCollection<DriveItem>(all);
+
+                        // 1. 순수 이동식 USB 드라이브 (CD-ROM 배제)
+                        var drives = all.Where(d => d.IsRemovable && !d.IsCdRom).ToList();
+                        RemovableDrives = new ObservableCollection<DriveItem>(drives);
+
+                        // 2. 백업 및 복사 가능한 전체 대상 드라이브 (로컬 디스크 C:, D: 및 USB E:, F: 등 - CD-ROM 완전 배제)
+                        var targetDrives = all.Where(d => !d.IsCdRom && d.IsReady).ToList();
+                        AvailableTargetDrives = new ObservableCollection<DriveItem>(targetDrives);
+
+                        UpdateDriveCertificateCounts();
+
+                        if (AvailableTargetDrives.Count == 0)
+                        {
+                            SelectedTargetDrive = null;
+                        }
+                        else if (SelectedTargetDrive == null || !AvailableTargetDrives.Any(d => d.Name == SelectedTargetDrive.Name))
+                        {
+                            // USB 드라이브 우선 선택, 없으면 시스템 드라이브 외 보조 디스크(D: 등) 또는 첫 번째 사용 가능 디스크 선택
+                            string sysDriveRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\') + "\\";
+                            SelectedTargetDrive = RemovableDrives.FirstOrDefault(d => d.IsReady)
+                                               ?? AvailableTargetDrives.FirstOrDefault(d => !string.Equals(d.Name.TrimEnd('\\') + "\\", sysDriveRoot, StringComparison.OrdinalIgnoreCase))
+                                               ?? AvailableTargetDrives.FirstOrDefault();
+                        }
+                        else
+                        {
+                            var current = AvailableTargetDrives.FirstOrDefault(d => d.Name == SelectedTargetDrive.Name);
+                            SelectedTargetDrive = current ?? AvailableTargetDrives.FirstOrDefault();
+                        }
+                        OnPropertyChanged(nameof(DisplayedStatusDrives));
                     }
-                    else
+                    finally
                     {
-                        SelectedTargetDrive = AvailableTargetDrives.FirstOrDefault();
+                        (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                        (BackupAllCommand as RelayCommand)?.RaiseCanExecuteChanged();
                     }
-                }
-                OnPropertyChanged(nameof(DisplayedStatusDrives));
+                });
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[RefreshDrives Error] {ex.Message}");
-            }
-            finally
-            {
-                (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
-                (BackupAllCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                System.Diagnostics.Debug.WriteLine($"[RefreshDrivesAsync Error] {ex.Message}");
             }
         }
 
@@ -1600,23 +1728,38 @@ namespace KCertManager.Wpf.ViewModels
 
         public void RefreshTrash()
         {
-            var raw = _backupService.GetTrashItems();
-            if (raw != null)
+            _ = RefreshTrashAsync();
+        }
+
+        public async Task RefreshTrashAsync()
+        {
+            try
             {
-                for (int i = 0; i < raw.Count; i++)
+                var raw = await Task.Run(() => _backupService.GetTrashItems());
+                await DispatchSafeAsync(() =>
                 {
-                    if (raw[i] != null)
+                    if (raw != null)
                     {
-                        raw[i].IndexNumber = i + 1;
+                        for (int i = 0; i < raw.Count; i++)
+                        {
+                            if (raw[i] != null)
+                            {
+                                raw[i].IndexNumber = i + 1;
+                            }
+                        }
+                        TrashItems = new ObservableCollection<TrashItem>(raw.Where(x => x != null));
                     }
-                }
-                TrashItems = new ObservableCollection<TrashItem>(raw.Where(x => x != null));
+                    else
+                    {
+                        TrashItems = new ObservableCollection<TrashItem>();
+                    }
+                    OnPropertyChanged(nameof(TrashCount));
+                });
             }
-            else
+            catch (Exception ex)
             {
-                TrashItems = new ObservableCollection<TrashItem>();
+                System.Diagnostics.Debug.WriteLine($"[RefreshTrashAsync Error] {ex.Message}");
             }
-            OnPropertyChanged(nameof(TrashCount));
         }
 
         private void ApplyFilter()
@@ -1782,7 +1925,7 @@ namespace KCertManager.Wpf.ViewModels
                 return;
             }
 
-            RefreshDrives();
+            await RefreshDrivesAsync();
 
             Views.TargetDrivePickerDialog? dialog = null;
             Application.Current?.Dispatcher?.Invoke(() =>
@@ -2313,7 +2456,7 @@ namespace KCertManager.Wpf.ViewModels
                 return;
             }
 
-            RefreshDrives();
+            await RefreshDrivesAsync();
 
             Views.TargetDrivePickerDialog? dialog = null;
             Application.Current?.Dispatcher?.Invoke(() =>
@@ -2609,6 +2752,9 @@ namespace KCertManager.Wpf.ViewModels
         {
             try
             {
+                _scanCts?.Cancel();
+                _scanCts?.Dispose();
+                _scanCts = null;
                 _toastCts?.Cancel();
                 _toastCts?.Dispose();
                 _toastCts = null;

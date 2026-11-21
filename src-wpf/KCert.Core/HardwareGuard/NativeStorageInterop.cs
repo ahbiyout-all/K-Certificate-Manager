@@ -213,6 +213,12 @@ namespace KCert.Core.HardwareGuard
             if (cleanLetter.Length == 1) cleanLetter += ":";
             if (!cleanLetter.EndsWith(":")) return null;
 
+            uint driveType = GetDriveType(cleanLetter + "\\");
+            if (driveType == DRIVE_REMOTE || driveType == DRIVE_NO_ROOT_DIR || driveType == DRIVE_UNKNOWN || driveType == DRIVE_RAMDISK)
+            {
+                return null;
+            }
+
             string volumeDevicePath = @"\\.\" + cleanLetter;
 
             // dwDesiredAccess = 0 (FILE_READ_ATTRIBUTES) : 관리자 권한 없이 일반 사용자 권한으로 쿼리 가능
@@ -352,7 +358,7 @@ namespace KCert.Core.HardwareGuard
         /// <summary>
         /// 시스템에 연결된 모든 논리 드라이브 중 물리 버스가 USB인 드라이브 문자(예: "E:") 세트를 반환합니다.
         /// (소요 시간: 전체 드라이브 순회 시 약 0.2ms)
-        /// (물리/가상 CD-ROM, ISO 마운트 완벽 배제)
+        /// (물리/가상 CD-ROM, ISO 마운트, 네트워크 드라이브 완벽 배제)
         /// </summary>
         public static HashSet<string> GetUsbDriveLettersDirect()
         {
@@ -366,50 +372,44 @@ namespace KCert.Core.HardwareGuard
                     try
                     {
                         if (drive == null) continue;
-                        
-                        // 1. CD-ROM 타입 기본 배제
-                        if (drive.DriveType == DriveType.CDRom) continue;
+
+                        // 1. 네트워크, CD-ROM, 가상 RAM, 미연결 드라이브 즉시 배제 (IsReady/SMB 응답 대기 차단)
+                        var driveType = drive.DriveType;
+                        if (driveType != DriveType.Fixed && driveType != DriveType.Removable) continue;
 
                         string driveRoot = drive.Name.EndsWith("\\") ? drive.Name : drive.Name + "\\";
                         uint win32Type = GetDriveType(driveRoot);
-                        if (win32Type == DRIVE_CDROM) continue;
-
-                        // 2. 광학 디스크 포맷 (CDFS, UDF, ISO9660) 배제
-                        try
-                        {
-                            if (drive.IsReady)
-                            {
-                                string fmt = (drive.DriveFormat ?? "").ToUpperInvariant();
-                                if (fmt == "CDFS" || fmt == "UDF" || fmt == "ISO9660") continue;
-                            }
-                        }
-                        catch { }
+                        if (win32Type != DRIVE_FIXED && win32Type != DRIVE_REMOVABLE) continue;
 
                         string letter = drive.Name.TrimEnd('\\').ToUpperInvariant();
                         var details = QueryDriveDetails(letter);
 
-                        // 3. 광학/가상 CD-ROM으로 판별된 경우 USB 목록에서 제외
+                        // 2. 광학/가상 CD-ROM으로 판별된 경우 USB 목록에서 제외
                         if (details != null && details.IsOpticalOrCdRom) continue;
 
                         if (details != null && details.IsUsb)
                         {
                             result.Add(letter);
                         }
-                        else if (drive.DriveType == DriveType.Removable && win32Type != DRIVE_CDROM)
+                        else if (driveType == DriveType.Removable)
                         {
                             result.Add(letter);
                         }
                     }
                     catch
                     {
-                        if (drive.DriveType == DriveType.Removable)
+                        try
                         {
-                            string driveRoot = drive.Name.EndsWith("\\") ? drive.Name : drive.Name + "\\";
-                            if (GetDriveType(driveRoot) != DRIVE_CDROM)
+                            if (drive != null && drive.DriveType == DriveType.Removable)
                             {
-                                result.Add(drive.Name.TrimEnd('\\').ToUpperInvariant());
+                                string driveRoot = drive.Name.EndsWith("\\") ? drive.Name : drive.Name + "\\";
+                                if (GetDriveType(driveRoot) == DRIVE_REMOVABLE)
+                                {
+                                    result.Add(drive.Name.TrimEnd('\\').ToUpperInvariant());
+                                }
                             }
                         }
+                        catch { }
                     }
                 }
             }

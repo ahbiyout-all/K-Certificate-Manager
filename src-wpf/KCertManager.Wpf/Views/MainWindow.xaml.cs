@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -471,13 +472,13 @@ namespace KCertManager.Wpf.Views
             ViewModel?.SelectAllCommand.Execute(false);
         }
 
-        private void OpenUsbTransfer_Click(object sender, RoutedEventArgs e)
+        private async void OpenUsbTransfer_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 var usbDrives = ViewModel?.RemovableDrives != null && ViewModel.RemovableDrives.Any(d => d.IsRemovable && !d.IsCdRom && d.IsReady)
                     ? ViewModel.RemovableDrives.Where(d => d.IsRemovable && !d.IsCdRom && d.IsReady).ToList()
-                    : KCertManager.Wpf.Services.UsbDriveWatcher.GetAvailableDrives().Where(d => d.IsRemovable && !d.IsCdRom && d.IsReady).ToList();
+                    : await Task.Run(() => UsbDriveWatcher.GetAvailableDrives().Where(d => d.IsRemovable && !d.IsCdRom && d.IsReady).ToList());
                 if (usbDrives.Count == 0)
                 {
                     var result = MessageBox.Show(
@@ -759,13 +760,13 @@ namespace KCertManager.Wpf.Views
             dialog.ShowDialog();
         }
 
-        public void OpenTargetDrivePickerForCertificates(System.Collections.Generic.IList<CertificateItem> targets)
+        public async void OpenTargetDrivePickerForCertificates(System.Collections.Generic.IList<CertificateItem> targets)
         {
             if (ViewModel == null || targets == null || !targets.Any()) return;
 
             try
             {
-                ViewModel.RefreshDrives();
+                await ViewModel.RefreshDrivesAsync();
                 var dialog = new TargetDrivePickerDialog(targets, ViewModel.AvailableTargetDrives)
                 {
                     Owner = this

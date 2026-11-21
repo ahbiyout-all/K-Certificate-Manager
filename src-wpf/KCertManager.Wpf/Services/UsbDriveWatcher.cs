@@ -1,6 +1,10 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using KCert.Core.HardwareGuard;
 using KCertManager.Wpf.Models;
 
@@ -9,9 +13,10 @@ namespace KCertManager.Wpf.Services
     public class UsbDriveWatcher : IDisposable
     {
         private readonly UsbStorageGuard _guard = new();
-        private System.Threading.Timer? _heartbeatTimer;
+        private Timer? _heartbeatTimer;
         private HashSet<string> _lastDrivesSnapshot = new(StringComparer.OrdinalIgnoreCase);
         private readonly object _snapshotLock = new();
+        private int _heartbeatRunning;
 
         public event EventHandler? DrivesChanged;
         public event EventHandler<string>? DriveArrived;
@@ -59,40 +64,76 @@ namespace KCertManager.Wpf.Services
 
             // 백그라운드 드라이브 상태 스냅샷 폴링 (WMI 이벤트 누락 및 동일 드라이브 문자 USB 교체 완벽 감지)
             InitializeDrivesSnapshot();
-            _heartbeatTimer = new System.Threading.Timer(CheckDrivesHeartbeat, null, 2000, 2000);
+            _heartbeatTimer = new Timer(CheckDrivesHeartbeat, null, 3500, 3000);
         }
 
         private void InitializeDrivesSnapshot()
         {
+            var initial = CaptureDrivesSnapshot();
             lock (_snapshotLock)
             {
-                _lastDrivesSnapshot = CaptureDrivesSnapshot();
+                _lastDrivesSnapshot = initial;
+            }
+        }
+
+        private static bool IsCandidateLocalOrRemovableDrive(DriveInfo? d)
+        {
+            if (d == null) return false;
+            try
+            {
+                var dt = d.DriveType;
+                if (dt != DriveType.Fixed && dt != DriveType.Removable) return false;
+
+                string rootPath = d.Name.EndsWith("\\") ? d.Name : d.Name + "\\";
+                uint win32Type = NativeStorageInterop.GetDriveType(rootPath);
+                return win32Type == NativeStorageInterop.DRIVE_FIXED ||
+                       win32Type == NativeStorageInterop.DRIVE_REMOVABLE;
+            }
+            catch
+            {
+                return false;
             }
         }
 
         private static HashSet<string> CaptureDrivesSnapshot()
         {
-            var snapshot = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var snapshot = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
             try
             {
-                foreach (var d in DriveInfo.GetDrives())
+                var candidates = DriveInfo.GetDrives().Where(IsCandidateLocalOrRemovableDrive).ToList();
+                var tasks = candidates.Select(d => Task.Run(() =>
                 {
                     try
                     {
-                        if (d != null && d.IsReady)
+                        var probe = Task.Run(() =>
                         {
-                            snapshot.Add($"{d.Name}|{d.VolumeLabel}|{d.TotalSize}|{d.DriveType}");
-                        }
+                            try
+                            {
+                                if (d.IsReady)
+                                {
+                                    snapshot.TryAdd($"{d.Name}|{d.VolumeLabel}|{d.TotalSize}|{d.DriveType}", 0);
+                                }
+                            }
+                            catch { }
+                        });
+                        probe.Wait(1000);
                     }
                     catch { }
-                }
+                })).ToArray();
+
+                Task.WaitAll(tasks, 1300);
             }
             catch { }
-            return snapshot;
+            return new HashSet<string>(snapshot.Keys, StringComparer.OrdinalIgnoreCase);
         }
 
         private void CheckDrivesHeartbeat(object? state)
         {
+            if (Interlocked.Exchange(ref _heartbeatRunning, 1) == 1)
+            {
+                return;
+            }
+
             try
             {
                 var currentSnapshot = CaptureDrivesSnapshot();
@@ -115,6 +156,10 @@ namespace KCertManager.Wpf.Services
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Drive Heartbeat Error] {ex.Message}");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _heartbeatRunning, 0);
             }
         }
 
@@ -144,49 +189,60 @@ namespace KCertManager.Wpf.Services
             public bool IsOpticalOrCdRom { get; set; }
         }
 
-        private static Dictionary<string, PhysicalDiskInfo> QueryPhysicalDisks()
+        private static Dictionary<string, PhysicalDiskInfo> QueryPhysicalDisks(IEnumerable<DriveInfo> candidateDrives)
         {
-            var map = new Dictionary<string, PhysicalDiskInfo>(StringComparer.OrdinalIgnoreCase);
+            var map = new ConcurrentDictionary<string, PhysicalDiskInfo>(StringComparer.OrdinalIgnoreCase);
             try
             {
-                var drives = DriveInfo.GetDrives();
-                foreach (var d in drives)
+                var tasks = candidateDrives.Select(d => Task.Run(() =>
                 {
                     try
                     {
                         string cleanKey = d.Name.TrimEnd('\\').ToUpperInvariant();
-                        var details = NativeStorageInterop.QueryDriveDetails(cleanKey);
-                        if (details != null)
+                        var probe = Task.Run(() =>
                         {
-                            map[cleanKey] = new PhysicalDiskInfo
+                            try
                             {
-                                Model = details.Model,
-                                BusType = details.BusTypeName,
-                                DiskType = details.DiskMediaType,
-                                PortDetail = details.PhysicalPortDetail,
-                                IsOpticalOrCdRom = details.IsOpticalOrCdRom
-                            };
-                        }
+                                var details = NativeStorageInterop.QueryDriveDetails(cleanKey);
+                                if (details != null)
+                                {
+                                    map[cleanKey] = new PhysicalDiskInfo
+                                    {
+                                        Model = details.Model,
+                                        BusType = details.BusTypeName,
+                                        DiskType = details.DiskMediaType,
+                                        PortDetail = details.PhysicalPortDetail,
+                                        IsOpticalOrCdRom = details.IsOpticalOrCdRom
+                                    };
+                                }
+                            }
+                            catch { }
+                        });
+                        probe.Wait(1000);
                     }
                     catch { }
-                }
+                })).ToArray();
+
+                Task.WaitAll(tasks, 1300);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Native Physical Disk Query Warning] {ex.Message}");
             }
 
-            return map;
+            return new Dictionary<string, PhysicalDiskInfo>(map, StringComparer.OrdinalIgnoreCase);
         }
 
         public static List<DriveItem> GetAvailableDrives()
         {
             var list = new List<DriveItem>();
-            DriveInfo[]? drives = null;
+            List<DriveInfo> candidateDrives;
 
             try
             {
-                drives = DriveInfo.GetDrives();
+                candidateDrives = (DriveInfo.GetDrives() ?? Array.Empty<DriveInfo>())
+                    .Where(IsCandidateLocalOrRemovableDrive)
+                    .ToList();
             }
             catch (Exception ex)
             {
@@ -194,12 +250,51 @@ namespace KCertManager.Wpf.Services
                 return list;
             }
 
-            if (drives == null) return list;
+            if (candidateDrives.Count == 0) return list;
 
-            var physicalMap = QueryPhysicalDisks();
+            var physicalMap = QueryPhysicalDisks(candidateDrives);
             string systemDriveRoot = Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\";
 
-            foreach (var d in drives)
+            var metadataMap = new ConcurrentDictionary<string, (bool IsReady, string VolumeLabel, string FileSystem, long TotalSize, long FreeSpace)>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                var metaTasks = candidateDrives.Select(d => Task.Run(() =>
+                {
+                    try
+                    {
+                        string key = d.Name.TrimEnd('\\').ToUpperInvariant();
+                        bool isSystemDrive = string.Equals(d.Name, systemDriveRoot, StringComparison.OrdinalIgnoreCase);
+
+                        var probe = Task.Run(() =>
+                        {
+                            bool ready = false;
+                            string vol = "";
+                            string fs = "NTFS";
+                            long total = 0;
+                            long free = 0;
+
+                            try { ready = d.IsReady; } catch { ready = false; }
+                            if (ready)
+                            {
+                                try { vol = d.VolumeLabel ?? ""; } catch { vol = ""; }
+                                try { fs = d.DriveFormat ?? "NTFS"; } catch { fs = "NTFS"; }
+                                try { total = d.TotalSize; } catch { total = 0; }
+                                try { free = d.AvailableFreeSpace; } catch { free = 0; }
+                            }
+
+                            metadataMap[key] = (ready, vol, fs, total, free);
+                        });
+
+                        probe.Wait(isSystemDrive ? 2500 : 1200);
+                    }
+                    catch { }
+                })).ToArray();
+
+                Task.WaitAll(metaTasks, 1600);
+            }
+            catch { }
+
+            foreach (var d in candidateDrives)
             {
                 try
                 {
@@ -229,23 +324,21 @@ namespace KCertManager.Wpf.Services
                     bool isNonSystemFixed = (d.DriveType == DriveType.Fixed) && !string.Equals(d.Name, systemDriveRoot, StringComparison.OrdinalIgnoreCase);
                     bool isSystem = string.Equals(driveName, systemDriveRoot, StringComparison.OrdinalIgnoreCase);
 
+                    string cleanLetter = driveName.TrimEnd('\\').ToUpperInvariant();
                     bool isReady = false;
-                    try { isReady = d.IsReady; } catch { isReady = false; }
-
                     string volumeLabel = "";
                     string fileSystem = "NTFS";
                     long totalSize = 0;
                     long freeSpace = 0;
 
-                    if (isReady)
+                    if (metadataMap.TryGetValue(cleanLetter, out var meta))
                     {
-                        try { volumeLabel = d.VolumeLabel ?? ""; } catch { volumeLabel = ""; }
-                        try { fileSystem = d.DriveFormat ?? "NTFS"; } catch { fileSystem = "NTFS"; }
-                        try { totalSize = d.TotalSize; } catch { totalSize = 0; }
-                        try { freeSpace = d.AvailableFreeSpace; } catch { freeSpace = 0; }
+                        isReady = meta.IsReady;
+                        volumeLabel = meta.VolumeLabel;
+                        fileSystem = meta.FileSystem;
+                        totalSize = meta.TotalSize;
+                        freeSpace = meta.FreeSpace;
                     }
-
-                    string cleanLetter = driveName.TrimEnd('\\').ToUpperInvariant();
 
                     string formatUpper = (fileSystem ?? "").ToUpperInvariant();
                     bool isOpticalFormat = formatUpper == "CDFS" || formatUpper == "UDF" || formatUpper == "ISO9660";

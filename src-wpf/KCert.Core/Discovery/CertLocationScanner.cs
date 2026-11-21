@@ -42,10 +42,60 @@ namespace KCert.Core.Discovery
         public static bool ExcludeLocalLowGpkiScan { get; set; } = true;
 
         /// <summary>
-        /// [1단계 Fast-Pass] 0.05~0.1초 만에 즉시 스캔할 핵심 표준 인증서 경로만 반환합니다.
-        /// (LocalLow NPKI/EPKI, C:\GPKI, C:\EPKI 및 각 드라이브 최상위 \NPKI)
+        /// 드라이브가 인증서 스캔 대상(로컬 고정 디스크 또는 이동식 USB/메모리 카드)인지 DriveType 및 Win32 API로 고속 판별합니다.
+        /// (네트워크 SMB 드라이브, CD-ROM, RAM 디스크, 미연결 슬롯 차단)
         /// </summary>
-        public static List<string> GetFastStandardRoots()
+        public static bool IsScannableDriveType(DriveInfo? drive)
+        {
+            if (drive == null) return false;
+            try
+            {
+                var dt = drive.DriveType;
+                if (dt != DriveType.Fixed && dt != DriveType.Removable) return false;
+
+                var root = drive.RootDirectory.FullName;
+                uint win32Type = HardwareGuard.NativeStorageInterop.GetDriveType(root);
+                return win32Type == HardwareGuard.NativeStorageInterop.DRIVE_FIXED ||
+                       win32Type == HardwareGuard.NativeStorageInterop.DRIVE_REMOVABLE;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 느리거나 응답 없는 외부/카드리더 드라이브의 IsReady 확인이 앱 전체를 멈추지 않도록 제한 시간 내에만 검사합니다.
+        /// </summary>
+        private static bool IsDriveReadyBounded(DriveInfo drive, int timeoutMs = 1200)
+        {
+            try
+            {
+                string sysDrive = Path.GetPathRoot(Environment.SystemDirectory) ?? @"C:\";
+                if (string.Equals(drive.RootDirectory.FullName, sysDrive, StringComparison.OrdinalIgnoreCase))
+                {
+                    return drive.IsReady;
+                }
+
+                var probeTask = Task.Run(() =>
+                {
+                    try { return drive.IsReady; }
+                    catch { return false; }
+                });
+
+                return probeTask.Wait(timeoutMs) && probeTask.Result;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// [0단계 Local Fast-Pass] 네트워크나 외부 드라이브 열거 없이 0.01초 만에 스캔할 로컬 PC 핵심 표준 경로만 반환합니다.
+        /// (AppData\LocalLow NPKI/EPKI, C:\GPKI, C:\EPKI, C:\NPKI)
+        /// </summary>
+        public static List<string> GetLocalProfileFastRoots()
         {
             var roots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -55,14 +105,17 @@ namespace KCert.Core.Discovery
             // 1. AppData\LocalLow (금융결제원, 행안부, 교육부 최우선 표준)
             foreach (var name in FastDirNames)
             {
-                // AppData\LocalLow\GPKI는 실무 행정망(온-나라, 새올 등)에서 사용되지 않는 예외 경로이므로 옵션에 따라 제외
                 if (name.Equals("GPKI", StringComparison.OrdinalIgnoreCase) && ExcludeLocalLowGpkiScan)
                 {
                     continue;
                 }
 
                 var dir = Path.Combine(localLow, name);
-                if (Directory.Exists(dir)) roots.Add(dir);
+                try
+                {
+                    if (Directory.Exists(dir)) roots.Add(dir);
+                }
+                catch { }
             }
 
             // 2. 시스템 드라이브(C:\ 등) 루트 직하 GPKI / EPKI / NPKI
@@ -70,31 +123,71 @@ namespace KCert.Core.Discovery
             foreach (var name in FastDirNames)
             {
                 var dir = Path.Combine(systemDriveRoot, name);
-                if (Directory.Exists(dir)) roots.Add(dir);
+                try
+                {
+                    if (Directory.Exists(dir)) roots.Add(dir);
+                }
+                catch { }
             }
 
-            // 3. 연결된 모든 드라이브 (USB 및 고정 디스크) 최상위 NPKI/GPKI/EPKI
+            return new List<string>(roots);
+        }
+
+        /// <summary>
+        /// 연결된 로컬 보조 및 이동식 USB 드라이브(네트워크/CD-ROM 제외)의 최상위 \NPKI, \GPKI, \EPKI 경로를 제한 시간 보호와 함께 수집합니다.
+        /// </summary>
+        public static List<string> GetDriveFastRoots(int perDriveTimeoutMs = 1200)
+        {
+            var roots = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
+
             try
             {
-                foreach (var drive in DriveInfo.GetDrives())
+                var scannableDrives = DriveInfo.GetDrives().Where(IsScannableDriveType).ToList();
+                var probeTasks = scannableDrives.Select(drive => Task.Run(() =>
                 {
                     try
                     {
-                        if (drive != null && drive.IsReady)
+                        var singleTask = Task.Run(() =>
                         {
-                            var driveRoot = drive.RootDirectory.FullName;
-                            foreach (var name in FastDirNames)
+                            try
                             {
-                                var dir = Path.Combine(driveRoot, name);
-                                if (Directory.Exists(dir)) roots.Add(dir);
+                                var driveRoot = drive.RootDirectory.FullName;
+                                var details = HardwareGuard.NativeStorageInterop.QueryDriveDetails(driveRoot.TrimEnd('\\'));
+                                if (details != null && details.IsOpticalOrCdRom) return;
+
+                                if (!drive.IsReady) return;
+                                foreach (var name in FastDirNames)
+                                {
+                                    var dir = Path.Combine(driveRoot, name);
+                                    if (Directory.Exists(dir)) roots.TryAdd(dir, 0);
+                                }
                             }
-                        }
+                            catch { }
+                        });
+
+                        singleTask.Wait(perDriveTimeoutMs);
                     }
                     catch { }
-                }
+                })).ToArray();
+
+                Task.WaitAll(probeTasks, Math.Max(perDriveTimeoutMs + 300, 1500));
             }
             catch { }
 
+            return new List<string>(roots.Keys);
+        }
+
+        /// <summary>
+        /// [1단계 Fast-Pass] 0.05~0.1초 만에 즉시 스캔할 핵심 표준 인증서 경로만 반환합니다.
+        /// (LocalLow NPKI/EPKI, C:\GPKI, C:\EPKI 및 각 준비된 드라이브 최상위 \NPKI)
+        /// </summary>
+        public static List<string> GetFastStandardRoots()
+        {
+            var roots = new HashSet<string>(GetLocalProfileFastRoots(), StringComparer.OrdinalIgnoreCase);
+            foreach (var dir in GetDriveFastRoots())
+            {
+                roots.Add(dir);
+            }
             return new List<string>(roots);
         }
 
@@ -171,32 +264,32 @@ namespace KCert.Core.Discovery
                 roots.Add(Path.Combine(programFilesX86, "NPKI"));
             }
 
-            // 4. 모든 연결 드라이브(C: 및 USB, 외장/보조 디스크)의 비표준 백업/중첩 폴더 탐색
+            // 4. 모든 연결 드라이브(C: 및 USB, 외장/보조 디스크; 네트워크/CD-ROM 제외)의 비표준 백업/중첩 폴더 탐색
             try
             {
                 foreach (var drive in DriveInfo.GetDrives())
                 {
                     try
                     {
-                        if (drive != null && drive.IsReady)
-                        {
-                            var driveRoot = drive.RootDirectory.FullName;
-                            roots.Add(Path.Combine(driveRoot, "공인인증서"));
-                            roots.Add(Path.Combine(driveRoot, "공인인증서백업"));
-                            roots.Add(Path.Combine(driveRoot, "인증서"));
-                            roots.Add(Path.Combine(driveRoot, "인증서백업"));
-                            roots.Add(Path.Combine(driveRoot, "인증서_백업"));
-                            roots.Add(Path.Combine(driveRoot, "Cert"));
-                            roots.Add(Path.Combine(driveRoot, "Certificates"));
-                            roots.Add(Path.Combine(driveRoot, "Backup"));
-                            roots.Add(Path.Combine(driveRoot, "만료인증서"));
-                            roots.Add(Path.Combine(driveRoot, "인증서_만료"));
-                            roots.Add(Path.Combine(driveRoot, "GPKI", "GPKI"));
-                            roots.Add(Path.Combine(driveRoot, "NPKI", "NPKI"));
-                            roots.Add(Path.Combine(driveRoot, "EPKI", "EPKI"));
-                            roots.Add(Path.Combine(driveRoot, "Certificate"));
-                            roots.Add(Path.Combine(driveRoot, "Cert_Backup"));
-                        }
+                        if (!IsScannableDriveType(drive)) continue;
+                        if (!IsDriveReadyBounded(drive, 1200)) continue;
+
+                        var driveRoot = drive.RootDirectory.FullName;
+                        roots.Add(Path.Combine(driveRoot, "공인인증서"));
+                        roots.Add(Path.Combine(driveRoot, "공인인증서백업"));
+                        roots.Add(Path.Combine(driveRoot, "인증서"));
+                        roots.Add(Path.Combine(driveRoot, "인증서백업"));
+                        roots.Add(Path.Combine(driveRoot, "인증서_백업"));
+                        roots.Add(Path.Combine(driveRoot, "Cert"));
+                        roots.Add(Path.Combine(driveRoot, "Certificates"));
+                        roots.Add(Path.Combine(driveRoot, "Backup"));
+                        roots.Add(Path.Combine(driveRoot, "만료인증서"));
+                        roots.Add(Path.Combine(driveRoot, "인증서_만료"));
+                        roots.Add(Path.Combine(driveRoot, "GPKI", "GPKI"));
+                        roots.Add(Path.Combine(driveRoot, "NPKI", "NPKI"));
+                        roots.Add(Path.Combine(driveRoot, "EPKI", "EPKI"));
+                        roots.Add(Path.Combine(driveRoot, "Certificate"));
+                        roots.Add(Path.Combine(driveRoot, "Cert_Backup"));
                     }
                     catch { }
                 }
@@ -205,7 +298,11 @@ namespace KCert.Core.Discovery
 
             // 1단계에 이미 포함된 경로는 제외하여 중복 탐색 차단
             roots.ExceptWith(fastRoots);
-            return roots.Where(Directory.Exists).ToList();
+            return roots.Where(r =>
+            {
+                try { return Directory.Exists(r); }
+                catch { return false; }
+            }).ToList();
         }
 
         /// <summary>
@@ -316,19 +413,31 @@ namespace KCert.Core.Discovery
             string sysDrive = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\').ToUpperInvariant();
             if (string.Equals(cleanDriveLetter, sysDrive, StringComparison.OrdinalIgnoreCase)) return false;
 
-            // 1. OS 드라이브 타입 판별
+            // 1. OS 드라이브 타입 판별 (Network, CDRom, Ram, NoRootDirectory 우선 배제)
             try
             {
                 var drive = new DriveInfo(cleanDriveLetter + "\\");
-                if (drive.DriveType == DriveType.CDRom) return false;
-                string fmt = (drive.DriveFormat ?? "").ToUpperInvariant();
-                if (fmt == "CDFS" || fmt == "UDF" || fmt == "ISO9660") return false;
+                var dt = drive.DriveType;
+                if (dt != DriveType.Fixed && dt != DriveType.Removable) return false;
 
-                if (HardwareGuard.NativeStorageInterop.GetDriveType(cleanDriveLetter + "\\") == HardwareGuard.NativeStorageInterop.DRIVE_CDROM) return false;
+                uint win32Type = HardwareGuard.NativeStorageInterop.GetDriveType(cleanDriveLetter + "\\");
+                if (win32Type != HardwareGuard.NativeStorageInterop.DRIVE_FIXED &&
+                    win32Type != HardwareGuard.NativeStorageInterop.DRIVE_REMOVABLE)
+                {
+                    return false;
+                }
+
                 var details = HardwareGuard.NativeStorageInterop.QueryDriveDetails(cleanDriveLetter);
                 if (details != null && details.IsOpticalOrCdRom) return false;
+                if (details != null && details.IsUsb) return true;
 
-                if (drive.DriveType == DriveType.Removable) return true;
+                if (dt == DriveType.Removable) return true;
+
+                if (drive.IsReady)
+                {
+                    string fmt = (drive.DriveFormat ?? "").ToUpperInvariant();
+                    if (fmt == "CDFS" || fmt == "UDF" || fmt == "ISO9660") return false;
+                }
             }
             catch { }
 
@@ -408,11 +517,25 @@ namespace KCert.Core.Discovery
         /// <summary>
         /// 안전하게 인증서 파일(DER/CER)들을 재귀 탐색합니다. (NPKI, GPKI, EPKI, MPKI 호환, 동일 비표준 폴더 내 복수 인증서 전수 탐색)
         /// </summary>
-        public static IEnumerable<string> SafeEnumerateCertFiles(string rootPath, CancellationToken ct = default, int maxDepth = 5)
+        public static IEnumerable<string> SafeEnumerateCertFiles(string rootPath, CancellationToken ct = default, int maxDepth = 5, int maxDirectories = 3000)
         {
             var results = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(rootPath)) return results;
+
+            var visitedDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var queue = new Queue<(string Path, int Depth)>();
-            queue.Enqueue((rootPath, 0));
+
+            try
+            {
+                var fullRoot = Path.GetFullPath(rootPath);
+                visitedDirs.Add(fullRoot);
+                queue.Enqueue((fullRoot, 0));
+            }
+            catch
+            {
+                visitedDirs.Add(rootPath);
+                queue.Enqueue((rootPath, 0));
+            }
 
             while (queue.Count > 0)
             {
@@ -502,18 +625,34 @@ namespace KCert.Core.Discovery
                     // 접근 권한 거부 등 무시
                 }
 
-                // 지정된 탐색 깊이 초과 시 하위 폴더 순회 건너뜀 (불필요한 전체 디스크 I/O 완전 방지)
-                if (depth < maxDepth)
+                // 지정된 탐색 깊이 및 디렉터리 안전 상한 초과 시 하위 폴더 순회 건너뜀
+                if (depth < maxDepth && visitedDirs.Count < maxDirectories)
                 {
                     try
                     {
                         var subDirs = Directory.GetDirectories(current);
                         foreach (var sub in subDirs)
                         {
+                            if (ct.IsCancellationRequested || visitedDirs.Count >= maxDirectories) break;
+
                             var name = Path.GetFileName(sub);
                             if (IsExcluded(name)) continue;
 
-                            queue.Enqueue((sub, depth + 1));
+                            try
+                            {
+                                // 심볼릭 링크/정션 포인트 무한 순환 루프 차단
+                                if ((File.GetAttributes(sub) & FileAttributes.ReparsePoint) != 0)
+                                {
+                                    continue;
+                                }
+
+                                string fullSub = Path.GetFullPath(sub);
+                                if (visitedDirs.Add(fullSub))
+                                {
+                                    queue.Enqueue((fullSub, depth + 1));
+                                }
+                            }
+                            catch { }
                         }
                     }
                     catch
@@ -529,22 +668,36 @@ namespace KCert.Core.Discovery
         /// <summary>
         /// 예외(권한 거부, 손상된 섹터, 심볼릭 링크 루프) 없이 안전하게 재귀 파일 검색을 수행합니다.
         /// </summary>
-        public static IEnumerable<string> SafeEnumerateFiles(string rootPath, string pattern, CancellationToken ct = default)
+        public static IEnumerable<string> SafeEnumerateFiles(string rootPath, string pattern, CancellationToken ct = default, int maxDepth = 6, int maxDirectories = 3000)
         {
             if (pattern.Equals("signCert.der", StringComparison.OrdinalIgnoreCase))
             {
-                return SafeEnumerateCertFiles(rootPath, ct);
+                return SafeEnumerateCertFiles(rootPath, ct, maxDepth: maxDepth, maxDirectories: maxDirectories);
             }
 
             var results = new List<string>();
-            var queue = new Queue<string>();
-            queue.Enqueue(rootPath);
+            if (string.IsNullOrWhiteSpace(rootPath)) return results;
+
+            var visitedDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var queue = new Queue<(string Path, int Depth)>();
+
+            try
+            {
+                var fullRoot = Path.GetFullPath(rootPath);
+                visitedDirs.Add(fullRoot);
+                queue.Enqueue((fullRoot, 0));
+            }
+            catch
+            {
+                visitedDirs.Add(rootPath);
+                queue.Enqueue((rootPath, 0));
+            }
 
             while (queue.Count > 0)
             {
                 if (ct.IsCancellationRequested) break;
 
-                var current = queue.Dequeue();
+                var (current, depth) = queue.Dequeue();
 
                 try
                 {
@@ -556,20 +709,38 @@ namespace KCert.Core.Discovery
                     // 접근 권한 거부 등 무시
                 }
 
-                try
+                if (depth < maxDepth && visitedDirs.Count < maxDirectories)
                 {
-                    var subDirs = Directory.GetDirectories(current);
-                    foreach (var sub in subDirs)
+                    try
                     {
-                        var name = Path.GetFileName(sub);
-                        if (IsExcluded(name)) continue;
+                        var subDirs = Directory.GetDirectories(current);
+                        foreach (var sub in subDirs)
+                        {
+                            if (ct.IsCancellationRequested || visitedDirs.Count >= maxDirectories) break;
 
-                        queue.Enqueue(sub);
+                            var name = Path.GetFileName(sub);
+                            if (IsExcluded(name)) continue;
+
+                            try
+                            {
+                                if ((File.GetAttributes(sub) & FileAttributes.ReparsePoint) != 0)
+                                {
+                                    continue;
+                                }
+
+                                string fullSub = Path.GetFullPath(sub);
+                                if (visitedDirs.Add(fullSub))
+                                {
+                                    queue.Enqueue((fullSub, depth + 1));
+                                }
+                            }
+                            catch { }
+                        }
                     }
-                }
-                catch
-                {
-                    // 접근 권한 거부 등 무시
+                    catch
+                    {
+                        // 접근 권한 거부 등 무시
+                    }
                 }
             }
 

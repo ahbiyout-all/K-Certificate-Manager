@@ -23,6 +23,24 @@ namespace KCert.Core.Discovery
         public TimeSpan LastDeepStageDuration { get; private set; } = TimeSpan.Zero;
 
         /// <summary>
+        /// [0단계 Local Fast-Pass] 외부/네트워크 드라이브 대기 없이 PC 로컬 표준 경로(LocalLow, C:\)만 0.05초 이내로 즉시 스캔합니다.
+        /// </summary>
+        public async Task<List<DiscoveredCertLocation>> ScanLocalFastAsync(CancellationToken cancellationToken = default)
+        {
+            var sw = Stopwatch.StartNew();
+
+            var results = await Task.Run(() =>
+            {
+                var localRoots = CertLocationScanner.GetLocalProfileFastRoots();
+                return ScanRootsParallel(localRoots, maxDepth: 3, maxDirectories: 1500, cancellationToken);
+            }, cancellationToken);
+
+            sw.Stop();
+            LastFastStageDuration = sw.Elapsed;
+            return results;
+        }
+
+        /// <summary>
         /// [1단계 Fast-Pass] 표준 경로만 병렬 I/O로 즉시 스캔하여 0.1초 내외로 반환합니다.
         /// </summary>
         public async Task<List<DiscoveredCertLocation>> ScanFastAsync(CancellationToken cancellationToken = default)
@@ -31,10 +49,25 @@ namespace KCert.Core.Discovery
 
             var results = await Task.Run(() =>
             {
-                var bag = new ConcurrentBag<DiscoveredCertLocation>();
                 var fastRoots = CertLocationScanner.GetFastStandardRoots();
+                return ScanRootsParallel(fastRoots, maxDepth: 3, maxDirectories: 1500, cancellationToken);
+            }, cancellationToken);
 
-                Parallel.ForEach(fastRoots, new ParallelOptions
+            sw.Stop();
+            LastFastStageDuration = sw.Elapsed;
+            return results;
+        }
+
+        private static List<DiscoveredCertLocation> ScanRootsParallel(
+            IEnumerable<string> roots,
+            int maxDepth,
+            int maxDirectories,
+            CancellationToken cancellationToken)
+        {
+            var bag = new ConcurrentBag<DiscoveredCertLocation>();
+            try
+            {
+                Parallel.ForEach(roots, new ParallelOptions
                 {
                     CancellationToken = cancellationToken,
                     MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount)
@@ -46,8 +79,12 @@ namespace KCert.Core.Discovery
                     {
                         if (!Directory.Exists(root)) return;
 
-                        // 표준 경로는 깊이 3단계 이내에 모두 위치함 (신속 탐색)
-                        var derFiles = CertLocationScanner.SafeEnumerateCertFiles(root, cancellationToken, maxDepth: 3);
+                        var derFiles = CertLocationScanner.SafeEnumerateCertFiles(
+                            root,
+                            cancellationToken,
+                            maxDepth: maxDepth,
+                            maxDirectories: maxDirectories);
+
                         foreach (var der in derFiles)
                         {
                             if (cancellationToken.IsCancellationRequested) break;
@@ -58,18 +95,20 @@ namespace KCert.Core.Discovery
                             }
                         }
                     }
+                    catch (OperationCanceledException)
+                    {
+                    }
                     catch (Exception ex)
                     {
                         Debug.WriteLine($"[FastScan Root Skip] {root}: {ex.Message}");
                     }
                 });
+            }
+            catch (OperationCanceledException)
+            {
+            }
 
-                return bag.ToList();
-            }, cancellationToken);
-
-            sw.Stop();
-            LastFastStageDuration = sw.Elapsed;
-            return results;
+            return bag.ToList();
         }
 
         /// <summary>
@@ -86,6 +125,8 @@ namespace KCert.Core.Discovery
 
             await Task.Run(() =>
             {
+                if (cancellationToken.IsCancellationRequested) return;
+
                 var deepRoots = CertLocationScanner.GetDeepSearchRoots();
                 var seenDers = new ConcurrentDictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
                 if (alreadyFoundDerPaths != null)
@@ -104,41 +145,50 @@ namespace KCert.Core.Discovery
                     }
                 }
 
-                Parallel.ForEach(deepRoots, new ParallelOptions
+                try
                 {
-                    CancellationToken = cancellationToken,
-                    MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount)
-                }, root =>
-                {
-                    if (cancellationToken.IsCancellationRequested) return;
-
-                    try
+                    Parallel.ForEach(deepRoots, new ParallelOptions
                     {
-                        if (!Directory.Exists(root)) return;
+                        CancellationToken = cancellationToken,
+                        MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount)
+                    }, root =>
+                    {
+                        if (cancellationToken.IsCancellationRequested) return;
 
-                        // 비표준 심층 탐색은 maxDepth=5로 설정하여 NPKI/GPKI 중첩 서브디렉터리까지 완벽 탐색
-                        var derFiles = CertLocationScanner.SafeEnumerateCertFiles(root, cancellationToken, maxDepth: 5);
-                        foreach (var der in derFiles)
+                        try
                         {
-                            if (cancellationToken.IsCancellationRequested) break;
+                            if (!Directory.Exists(root)) return;
 
-                            var fullDer = Path.GetFullPath(der);
-                            if (seenDers.TryAdd(fullDer, true))
+                            // 비표준 심층 탐색은 maxDepth=5로 설정하여 NPKI/GPKI 중첩 서브디렉터리까지 완벽 탐색
+                            var derFiles = CertLocationScanner.SafeEnumerateCertFiles(root, cancellationToken, maxDepth: 5, maxDirectories: 3000);
+                            foreach (var der in derFiles)
                             {
-                                var loc = BuildDiscoveredLocation(fullDer);
-                                if (loc != null)
+                                if (cancellationToken.IsCancellationRequested) break;
+
+                                var fullDer = Path.GetFullPath(der);
+                                if (seenDers.TryAdd(fullDer, true))
                                 {
-                                    Interlocked.Increment(ref newCount);
-                                    onCertDiscovered?.Invoke(loc);
+                                    var loc = BuildDiscoveredLocation(fullDer);
+                                    if (loc != null)
+                                    {
+                                        Interlocked.Increment(ref newCount);
+                                        onCertDiscovered?.Invoke(loc);
+                                    }
                                 }
                             }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"[DeepScan Root Skip] {root}: {ex.Message}");
-                    }
-                });
+                        catch (OperationCanceledException)
+                        {
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[DeepScan Root Skip] {root}: {ex.Message}");
+                        }
+                    });
+                }
+                catch (OperationCanceledException)
+                {
+                }
             }, cancellationToken);
 
             sw.Stop();

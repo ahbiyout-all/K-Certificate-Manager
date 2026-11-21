@@ -138,14 +138,19 @@ namespace KCert.Core.HardwareGuard
                 {
                     try
                     {
-                        if (drive == null || !drive.IsReady) continue;
-                        if (drive.DriveType == DriveType.CDRom) continue;
+                        if (drive == null) continue;
+
+                        var driveType = drive.DriveType;
+                        if (driveType != DriveType.Fixed && driveType != DriveType.Removable) continue;
 
                         var root = drive.RootDirectory.FullName;
                         string cleanLetter = root.TrimEnd('\\').ToUpperInvariant();
 
-                        // Win32 DRIVE_CDROM API 직통 검증
-                        if (NativeStorageInterop.GetDriveType(root) == NativeStorageInterop.DRIVE_CDROM) continue;
+                        // Win32 Fixed/Removable API 직통 검증 (Network, CD-ROM, RamDisk 차단)
+                        uint win32Type = NativeStorageInterop.GetDriveType(root);
+                        if (win32Type != NativeStorageInterop.DRIVE_FIXED && win32Type != NativeStorageInterop.DRIVE_REMOVABLE) continue;
+
+                        if (!drive.IsReady) continue;
 
                         string format = (drive.DriveFormat ?? "").ToUpperInvariant();
                         if (format == "CDFS" || format == "ISO9660" || format == "UDF") continue;
