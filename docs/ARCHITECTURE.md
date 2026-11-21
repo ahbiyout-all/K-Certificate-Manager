@@ -83,17 +83,17 @@
 1. **`KCert.Core.Parser` (순수 ASN.1 파싱 & OID 분석 서브시스템)**:
    - 순수 ASN.1 DER 바이너리 TLV 파서 및 OID 인코더/디코더 (`KCertAsn1Reader.cs`)
    - PKCS#8 개인키 암호화 알고리즘(SEED, ARIA, AES, 3DES, PBKDF2) 정밀 분석기 (`KCertKeyAnalyzer.cs`)
-   - NPKI 8대 공인기관, GPKI, EPKI, MPKI 한국형 정책 OID 역해석 엔진 (`KoreanCertPolicyOids.cs`)
+   - NPKI 8대 공인기관, GPKI, EPKI, MPKI 한국형 정책 OID 역해석 엔진 (`KoreanCertPolicyOids.cs`) 및 RSA 3072-bit 전환 보안강도(`CertSecurityPosture`) 진단
    - `signCert.der` + `signPri.key` 키 쌍 정합성 및 만료 임박(30일) 정밀 판별기 (`CertPairValidator.cs`)
-   - 원클릭 고속 메타데이터 추출기 (`KCertParser.cs`)
-2. **`KCert.Core.Discovery` (2단계 초고속 탐색 서브시스템)**:
-   - 2단계 분리형(Fast-Pass 0.1초 즉시 로딩 + Deep-Pass 백그라운드 스트리밍) 스캔 파이프라인 (`FastScanPipeline.cs`, 말단 `\MPKI`/`/MPKI` 포함 GPKI/EPKI 자동 분류 및 다중 인증서 혼재 `class1` 폴더 스템 기반 개인키 매칭 `FindMatchingPrivateKey`)
-   - `AppData\LocalLow`, 사용자 홈, 시스템 드라이브 루트(`C:\GPKI\Certificate\class1|class2`), 연결된 USB 표준 경로 지능형 자동 탐색 (`CertLocationScanner.cs`)
-   - 권한 거부 및 시스템 특수 폴더(`CA`, `Root`, `CRL`, `Government of Korea`, `ldap`) 자동 스킵 안전 BFS 재귀 탐색기
+   - 원클릭 고속 메타데이터 추출기 (`KCertParser.cs` — `personal` OU · 개인 영문병기 패턴 우선 및 문맥 기반 기관 판별, `CryptoSecurityGrade` 산출)
+2. **`KCert.Core.Discovery` (3단계 비차단 초고속 탐색 서브시스템)**:
+   - **3단계 비차단 분리형 스캔 파이프라인 (`FastScanPipeline.cs`)**: `0단계 Local Fast-Pass` (외장/네트워크 대기 없이 PC 로컬 표준 경로 즉시 스캔) ➔ `1단계 Drive Fast-Pass` (준비된 이동식 드라이브 병렬 스캔) ➔ `2단계 Deep-Pass` (비표준·심층 경로 백그라운드 스트리밍). 말단 `\MPKI`/`/MPKI` 포함 GPKI/EPKI 자동 분류 및 다중 `class1` 스템 매칭(`FindMatchingPrivateKey`)·`SafeGetFullPath` 예외 가드 적용.
+   - OS `DriveType` 사전 필터링(네트워크/CD-ROM 차단) + 병렬 바운디드 드라이브 준비 상태 검사(`IsDriveReadyBounded`, 350ms 상한)로 `MainWindow` 시작 시 `응답없음` 원천 제거 (`CertLocationScanner.cs`).
+   - 권한 거부 및 시스템 특수 폴더(`CA`, `Root`, `CRL`, `Government of Korea`, `ldap`) 자동 스킵 안전 BFS 재귀 탐색기 및 `SearchLocationsDialog` 기본 경로 적용 시 3단계 Fast-Pass 보존.
 3. **`KCert.Core.Diagnostics` (지능형 진단 & 중복 탐지 서브시스템)**:
-   - 비표준/중첩 디렉터리 정밀 진단 및 표준 계층 경로 자동 복구(Auto-Repair) 엔진 (`CertIntegrityDoctor.cs` — `specificDerPath` 기반 다중 `class1` 폴더 정밀 진단 및 동일 경로/동일 파일 자기덮어쓰기 `IOException` 방지 가드 포함; Web `handleRepairFolders` 및 WPF `DiagnosticsRepairDialog`에서 표준 복사 완료 후 원본 비표준 폴더 즉시 안전 휴지통 격리 + 활동 로그·토스트 연동)
-   - 시스템 전역 드라이브(C/D/E/USB) 중복 인증서 클러스터링 및 잉여 복사본 분석 엔진 (`KCertAntiDuplicationEngine.cs` — PC 표준 경로를 USB 사본보다 우선 보존하는 `ScorePrimary` 및 `DerSha256` 누락 시 일련번호·발급기관·CN 폴백 그룹핑 적용)
-   - 만료 위험 5단계 평가 및 인증기관별 공식 갱신 포털 자동 라우팅 엔진 (`CertExpirationAlarmEngine.cs`)
+   - 비표준/중첩 디렉터리 정밀 진단 및 표준 계층 경로 자동 복구(Auto-Repair) 엔진 (`CertIntegrityDoctor.cs` — 동적 개인키 파일명 보고, GPKI/EPKI `cn=` 단일 RDN 경로 정규화 및 다중 인증서 분리 `SubjectDn` 보존, `specificDerPath` 정밀 진단 및 동일 경로 자기덮어쓰기 `IOException` 방지 가드 포함).
+   - 시스템 전역 드라이브(C/D/E/USB) 중복 인증서 클러스터링 및 잉여 복사본 분석 엔진 (`KCertAntiDuplicationEngine.cs` — PC 표준 경로를 USB 사본보다 우선 보존하는 `ScorePrimary` 및 `DerSha256` 누락 시 일련번호·발급기관·CN 폴백 그룹핑 적용).
+   - 만료 위험 5단계 평가 및 인증기관별 공식 갱신 포털 자동 라우팅 엔진 (`CertExpirationAlarmEngine.cs` — `RenewalGuidanceDialog`/`renewalStore` 발급기관(Issuer) 및 카테고리 우선 매칭 적용).
 4. **`KCert.Core.Vault` (보안 금고 & 원자적 트랜잭션 서브시스템)**:
    - 원본-대상 해시 검증 및 실패 시 자동 롤백을 지원하는 원자적 전송기 (`CertTransferEngine.cs` — `class1` 계층 보존 및 말단 `\GPKI`/`\EPKI` 판별)
    - AES-256-GCM + PBKDF2(10만 회) 기반 독자 보안 금고 패키징/복원 엔진 (`CertVaultPacker.cs`, `.kcertpack`)
@@ -209,11 +209,22 @@
 
 ---
 
-## 15. 메타데이터 & 개발자
+## 15. RSA 3072-bit 보안강도 진단 & 2026 국내 인증 동향 아키텍처 (`v2.2.0`)
+
+1. **오프라인 X.509 공개키 비트 길이 · 서명 알고리즘 판별 (`certParser.ts`, `KCertParser.cs`, `KoreanCertPolicyOids.cs`)**:
+   - Web ASN.1 DER 파서와 WPF `System.Security.Cryptography.X509Certificates`에서 RSA 모듈러스 비트 길이(1024 / 2048 / 3072 / 4096-bit) 및 ECDSA 커브·서명 해시(`sha1` / `sha256`)를 자동 추출합니다.
+   - KISA 2026 안내 및 2027.02.15 5대 공동인증기관 RSA 3072-bit 상향 로드맵에 맞춰 **`3072-bit 권장` (`Recommended3072`)**, **`2048-bit 전환 대상` (`Transition2048`)**, **`1024-bit·SHA-1 취약` (`WeakLegacy`)** 3단계 보안등급을 산출합니다.
+   - 기존 RSA 2048-bit 인증서는 만료일까지 정상 사용 가능하므로 과잉 경고를 배제하고, `1024-bit` 이하 또는 `SHA-1` 인증서만 취약(`⚠️`) 재발급 대상으로 표출합니다.
+2. **2026 법령 동향 · 7대 인증 체계 가이드 통합 (`SecurityGuideModal.tsx`, `SecurityGuideDialog.xaml`, `DiagnosticsRepairModal.tsx`, `DiagnosticsRepairDialog.xaml`)**:
+   - GPKI·EPKI 비액티브엑스(HTML5) · 모바일 공무원증 병행, 금융인증서(3년) · 민간 간편인증(6개사) 비교, 2026.08.28 「전자정부법 시행령」 모바일 신분증 8종 안내 및 `보안강도 점검 (3072-bit)` 진단 탭·원클릭 리포트 복사를 Web/WPF 양쪽에 동시 구축했습니다.
+
+---
+
+## 16. 메타데이터 & 개발자
 - **개발자**: AhBiYout
 - **GitHub 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
 - **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **소속**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr)
 - **소속회사**: (주)청운정보시스템 ( cisnet.co.kr )
-- **버전**: `v2.1.1` (SemVer 2.0.0)
+- **버전**: `v2.2.0` (SemVer 2.0.0)
 

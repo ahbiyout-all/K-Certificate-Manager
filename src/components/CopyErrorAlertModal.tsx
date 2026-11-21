@@ -107,7 +107,7 @@ export const CopyErrorAlertModal: React.FC<CopyErrorAlertModalProps> = ({
 
   const config = getCategoryConfig();
 
-  const handleCopyTechnicalLog = () => {
+  const handleCopyTechnicalLog = async () => {
     const logContent = `[K-인증서 매니저 복사 오류 리포트]
 오류 유형: ${config.badge}
 제목: ${config.title}
@@ -118,10 +118,15 @@ export const CopyErrorAlertModal: React.FC<CopyErrorAlertModalProps> = ({
 상세 정보: ${errorInfo.technicalDetail || '없음'}
 발생 시간: ${new Date().toLocaleString('ko-KR')}`;
 
-    navigator.clipboard.writeText(logContent).then(() => {
-      setCopiedLog(true);
-      setTimeout(() => setCopiedLog(false), 2000);
-    });
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(logContent);
+        setCopiedLog(true);
+        setTimeout(() => setCopiedLog(false), 2000);
+      }
+    } catch {
+      // ignore clipboard error
+    }
   };
 
   const defaultSolutions = [

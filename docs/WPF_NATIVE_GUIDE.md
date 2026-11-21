@@ -1,6 +1,6 @@
 # K-인증서 매니저 C# WPF MVVM 데스크톱 버전 개발 가이드
 
-K-Certificate Manager (K-인증서 매니저)의 **C# .NET 10 / .NET 8 WPF MVVM 네이티브 윈도우 데스크톱 애플리케이션 (`v2.1.1`)** 아키텍처 및 빌드 가이드입니다.
+K-Certificate Manager (K-인증서 매니저)의 **C# .NET 10 / .NET 8 WPF MVVM 네이티브 윈도우 데스크톱 애플리케이션 (`v2.2.0`)** 아키텍처 및 빌드 가이드입니다.
 
 ---
 
@@ -14,16 +14,16 @@ KCertManager.sln (솔루션 파일)
 │   ├── Parser/                       # 순수 ASN.1 DER 파서, PKCS#8 키 분석기 및 한국형 OID 매핑
 │   │   ├── KCertAsn1Reader.cs        # [신규] 순수 C# ASN.1 DER TLV 파서 & OID 인코더/디코더
 │   │   ├── KCertKeyAnalyzer.cs       # [신규] PKCS#8 개인키 암호화 알고리즘 (SEED/ARIA/3DES/AES/PBKDF2) 분석기
-│   │   ├── KoreanCertPolicyOids.cs   # NPKI·GPKI·EPKI·MPKI 한국형 정책 OID 역해석 엔진
+│   │   ├── KoreanCertPolicyOids.cs   # NPKI·GPKI·EPKI·MPKI 한국형 정책 OID 역해석 + RSA 3072-bit 보안강도 판별
 │   │   ├── CertPairValidator.cs      # signCert.der + signPri.key 키 쌍 정합성 및 만료 판별기
-│   │   ├── KCertMetadata.cs          # 통합 인증서 메타데이터 모델 (KeyInfo 포함)
-│   │   └── KCertParser.cs            # 원클릭 고속 메타데이터 추출기
-│   ├── Discovery/                    # 2단계 초고속 스캔 및 전역 안전 BFS 탐색
-│   │   ├── FastScanPipeline.cs       # 2단계 분리형(Fast-Pass 0.1s + Deep-Pass 백그라운드) 파이프라인
+│   │   ├── KCertMetadata.cs          # 통합 인증서 메타데이터 모델 (KeyInfo · SecurityPosture 포함)
+│   │   └── KCertParser.cs            # 원클릭 고속 메타데이터 추출기 (개인 성명 vs 기관 문맥 정밀 판별)
+│   ├── Discovery/                    # 3단계 비차단 초고속 스캔 및 전역 안전 BFS 탐색
+│   │   ├── FastScanPipeline.cs       # 3단계 비차단(0단계 Local Fast-Pass ➔ 1단계 Drive Fast-Pass ➔ 2단계 Deep-Pass) + SafeGetFullPath
 │   │   ├── DiscoveredCertLocation.cs
-│   │   └── CertLocationScanner.cs
+│   │   └── CertLocationScanner.cs    # OS DriveType 필터 · 바운디드 IsDriveReadyBounded · 안전 BFS
 │   ├── Diagnostics/                  # 비표준 복구(Auto-Repair), 중복 탐지, 만료 알람
-│   │   ├── CertIntegrityDoctor.cs    # 중첩 폴더 감지 및 표준 계층 경로 자동 복구 엔진
+│   │   ├── CertIntegrityDoctor.cs    # 중첩 폴더 감지, 동적 키 파일명 · GPKI/EPKI cn= 표준 경로 자동 복구 엔진
 │   │   ├── KCertAntiDuplicationEngine.cs # [신규] 전역 디스크 중복 인증서 탐지 및 잉여 복사본 분석
 │   │   └── CertExpirationAlarmEngine.cs  # [신규] 만료 위험 5단계 산출 및 공식 갱신 포털 자동 매칭
 │   ├── Vault/                        # 보안 금고(.kcertpack), PFX 변환, 원자적 전송, 안전 휴지통
@@ -70,8 +70,9 @@ KCertManager.sln (솔루션 파일)
         ├── ExpiredCleanupDialog.xaml / .cs   # 984px 광폭 만료 인증서 정리 창
         ├── TrashDialog.xaml / .cs            # 안전 휴지통 + DPAPI 암호화 보호 보관함 & 비동기 복원 예외 가드
         ├── SettingsDialog.xaml / .cs         # 환경 설정(알림음 볼륨, 테마, 시작 안내) 창
+        ├── SecurityGuideDialog.xaml / .cs    # 보안 수칙 · 2026 인증 동향(RSA 3072-bit · 모바일 신분증) · 7대 인증 비교 창
         ├── ActivityLogDialog.xaml / .cs      # 작업 로그 및 보안 삭제 증적 창 (Frozen 번호 열)
-        ├── RenewalGuidanceDialog.xaml / .cs  # 인증서 갱신 안내 및 공식 포털 연결 창
+        ├── RenewalGuidanceDialog.xaml / .cs  # 인증서 갱신 안내 및 공식 포털 연결 창 (발급기관 우선 정밀 매칭)
         └── AboutDialog.xaml / .cs            # 프로그램 정보 및 한·영 2종 라이선스 고지 창
 ```
 
@@ -82,7 +83,7 @@ KCertManager.sln (솔루션 파일)
 ## ⚡ 2. 핵심 기능 및 기술 구현 특징
 
 1. **모던 일체형 타이틀바 (`WindowChrome`) & 4종 테마**:
-   - Windows 기본 흰색 타이틀바를 제거하고, 앱 내부 헤더(`🛡️ K-인증서 매니저 v2.1.1`) 우측에 최소화(`─`), 최대화/복원(`□`/`❐`), 종료(`✕`) 버튼을 일체형으로 통합.
+   - Windows 기본 흰색 타이틀바를 제거하고, 앱 내부 헤더(`🛡️ K-인증서 매니저 v2.2.0`) 우측에 최소화(`─`), 최대화/복원(`□`/`❐`), 종료(`✕`) 버튼을 일체형으로 통합.
    - 다크 · 회색 · 화이트 · 베이지 4가지 테마 전환 시 타이틀바부터 하단 상태바까지 완벽 색상 동기화.
    - **다크 테마 시작 즉시 시인성 완벽 보장**: `App.xaml` 정적 리소스에 `AccentTextBrush` 및 `MutedTextBrush`를 선언하고 윈도우 인스턴스화 시점에 `ApplyTheme("dark")`를 3중 사전 주입하여 시작 즉시 검은색 글자로 뭉개지는 현상을 영구 차단.
 2. **일반 사용자 친화적 [간편 모드] vs [상세 모드] 듀얼 UX & 쉬운 표현 UI (v2.1.0)**:
@@ -113,10 +114,14 @@ KCertManager.sln (솔루션 파일)
     - `DiagnosticsRepairDialog` + `CertIntegrityDoctor`: 비표준 폴더를 표준 경로로 복사한 뒤 2패스로 중복 제거·안전 휴지통 격리 및 활동 로그 기록; 동일 경로/동일 파일 자기덮어쓰기 `IOException` 방지 가드 적용.
     - `KCertAntiDuplicationEngine`: PC 로컬 표준 경로를 USB 사본보다 우선(`PrimaryInstance`) 선정해 원본 오삭제 방지 및 `DerSha256` 누락 폴백 그룹핑 지원.
     - `SafetyTrashManager` / `CertTransferEngine` / `FastScanPipeline`: 볼륨 간 이동·덮어쓰기 전 `ReadOnly` 속성 재귀 해제, `GPKI`/`EPKI` `class1` 계층 보존, 말단 `\MPKI`·`/MPKI` GPKI 인식 보완.
-12. **`Class1` 기관·특수목적 필터/배지 & CI 컴파일·5차 수명주기 안정화 (`v2.1.1` 최신)**:
+12. **`Class1` 기관·특수목적 필터/배지 & CI 컴파일·수명주기 안정화 (`v2.1.1`)**:
     - `CertificateItem` (`IsClass1`, `ShowClass1Badge`, `Class1BadgeText`) 및 `MainWindow.xaml` `CLASS1` 라디오 필터로 `CLASS1 · 공무원(GPKI)` / `CLASS1 · 교육(EPKI)` / `CLASS1 · 기관` 인증서를 개인키 쌍 기준으로 선별 표시하고 Root/CA/CRL을 제외합니다.
     - `DiagnosticsRepairDialog.xaml.cs` `System.Text.RegularExpressions` 참조 추가 및 `CertificateScannerService`/`CertificateBackupService` 널 경고(`CS8601`/`CS8604`) 해소로 .NET/WPF CI 빌드를 무결하게 유지합니다.
     - `MainViewModel.DispatchSafe` · `MainWindow.OnClosed` · `PcToUsbTransferViewModel.Dispose` · `UpdateNotificationDialog` CTS 정리 및 `TrashDialog`/`CertificateDetailDialog`/`ExpiredCleanupDialog`/`TargetDrivePickerDialog` 비동기 `try/catch`·`TryCreateBrush`·`Owner` 바인딩으로 종료 시 레이스 컨디션과 메모리 누수를 원천 차단합니다.
+13. **3단계 비차단 시작 스캔, RSA 3072-bit 보안강도 점검 & 심층 감사 보강 (`v2.2.0` 최신)**:
+    - **3단계 비차단 시작 스캔 & `응답없음` 원천 해소**: `0단계 Local Fast-Pass` ➔ `1단계 Drive Fast-Pass` ➔ `2단계 Deep-Pass` 분리, `CertLocationScanner` OS `DriveType` 필터 및 `IsDriveReadyBounded` 병렬 바운디드 검사, 단일 `DrivesChanged` 디바운스로 시작 직후 멈춤 현상을 해소했습니다.
+    - **RSA 3072-bit 보안강도 진단 & 2026 동향 UI**: `SecurityGuideDialog.xaml`, `DiagnosticsRepairDialog.xaml`(`보안강도 점검 (3072-bit)` 탭), `CertificateDetailDialog.xaml`, `RenewalGuidanceDialog.xaml`에서 2027.02.15 3072-bit 전환 대상 식별, 7대 국내 인증 체계 비교 및 2026.08.28 모바일 신분증 동향을 제공합니다.
+    - **작업 차수 191~193 심층 감사 수정**: 개인 성명 `(기관용)` 오분류 교정(`KCertParser`), `CertIntegrityDoctor` 동적 키 파일명 & `cn=` 표준 경로 정밀화, `RenewalGuidanceDialog` 발급기관(Issuer) 우선 매칭, `MainWindow.OpenTargetDrivePickerForCertificatesAsync` 전환, `SearchLocationsDialog` Fast-Pass 유지 및 `DispatchSafeAsync`·`SafeGetFullPath` 스레드·경로 하드닝을 완료했습니다.
 
 ---
 
@@ -126,13 +131,13 @@ KCertManager.sln (솔루션 파일)
 - **Windows 10 / 11 (x64 / ARM64)**
 - **.NET 10.0 SDK** 또는 **.NET 8.0 SDK** (Visual Studio 2022 이상)
 
-### 📦 배포 바이너리 및 인스톨러 (`dist/v2.1.1/`)
+### 📦 배포 바이너리 및 인스톨러 (`dist/v2.2.0/`)
 
 | 구분 | 파일명 | 예상 용량 | .NET 런타임 설치 필요 여부 | 특징 및 권장 환경 |
 | :--- | :--- | :--- | :--- | :--- |
-| **정식 설치 마법사** | `kcert-manager-v2.1.1-setup.exe` | **약 35~75MB** | **불필요 (완전 단독 실행)** | Inno Setup 기반 Unpacked Multi-File 설치, 방화벽 규칙 자동 등록, 무인 셀프 업데이트 지원. |
-| **데스크톱 풀버전** | `KCertManager_v2.1.1.exe` | **약 60~75MB** | **불필요 (완전 단독 실행)** | .NET 런타임 및 WPF 라이브러리가 내장된 독립 실행형(Self-Contained). 모든 윈도우 PC에서 바로 실행 가능. |
-| **라이트 에디션** | `KCertManager-Lite_v2.1.1.exe` | **약 1~2MB** | **필요 (.NET Desktop Runtime)** | 초경량 프레임워크 종속형(Framework-Dependent). 네트워크 전송 및 USB 보관에 최적화된 초소형 바이너리. |
+| **정식 설치 마법사** | `kcert-manager-v2.2.0-setup.exe` | **약 35~75MB** | **불필요 (완전 단독 실행)** | Inno Setup 기반 Unpacked Multi-File 설치, 방화벽 규칙 자동 등록, 무인 셀프 업데이트 지원. |
+| **데스크톱 풀버전** | `KCertManager_v2.2.0.exe` | **약 60~75MB** | **불필요 (완전 단독 실행)** | .NET 런타임 및 WPF 라이브러리가 내장된 독립 실행형(Self-Contained). 모든 윈도우 PC에서 바로 실행 가능. |
+| **라이트 에디션** | `KCertManager-Lite_v2.2.0.exe` | **약 1~2MB** | **필요 (.NET Desktop Runtime)** | 초경량 프레임워크 종속형(Framework-Dependent). 네트워크 전송 및 USB 보관에 최적화된 초소형 바이너리. |
 
 > 💡 **두 파일의 용량이 동일(약 1~2MB)하게 나오는 경우 원인 및 해결책:**
 > - `build.bat` 실행 시 로컬 환경에 `.NET 8 win-x64 런타임 팩`이 캐시되어 있지 않으면, 1차 독립실행형 빌드가 프레임워크 종속 모드로 자동 폴백되어 두 파일이 모두 라이트 버전과 동일한 옵션으로 빌드됩니다.

@@ -222,16 +222,21 @@ export const CertificateList: React.FC<CertificateListProps> = ({
     };
   }, []);
 
-  const handleCopyCertPath = (certId: string, sourceLocation: string) => {
+  const handleCopyCertPath = async (certId: string, sourceLocation: string) => {
+    if (!sourceLocation) return;
     try {
-      navigator.clipboard.writeText(sourceLocation);
-      setCopiedPathId(certId);
-      onNotifyCopy?.(`📋 경로가 클립보드에 복사되었습니다: ${sourceLocation}`);
-      if (copiedPathTimerRef.current !== null) {
-        window.clearTimeout(copiedPathTimerRef.current);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(sourceLocation);
+        setCopiedPathId(certId);
+        onNotifyCopy?.(`📋 경로가 클립보드에 복사되었습니다: ${sourceLocation}`);
+        if (copiedPathTimerRef.current !== null) {
+          window.clearTimeout(copiedPathTimerRef.current);
+        }
+        copiedPathTimerRef.current = window.setTimeout(() => setCopiedPathId(null), 1500);
       }
-      copiedPathTimerRef.current = window.setTimeout(() => setCopiedPathId(null), 1500);
-    } catch {}
+    } catch {
+      // ignore clipboard error in restricted iframe
+    }
   };
 
   const handleStartResize = (colKey: string, e: React.MouseEvent) => {

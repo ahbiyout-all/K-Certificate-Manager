@@ -297,11 +297,21 @@ export function matchCertToInstitution(
   const dept = (cert.departmentOrOrg || '').toLowerCase();
   const subject = (cert.subjectDn || '').toLowerCase();
   const policy = (cert.policy || '').toLowerCase();
-  const combinedText = `${issuer} ${dept} ${subject} ${policy}`;
+  const issuerPolicyText = `${issuer} ${policy}`;
+  const holderText = `${dept} ${subject}`;
+  const combinedText = `${issuerPolicyText} ${holderText}`;
 
-  // 1. Check custom items first with priority
   const safeInsts = (institutions && institutions.length > 0) ? institutions : getAllInstitutions();
+  const isNpkiCategory = cert.category === 'NPKI_BANK' || cert.category === 'NPKI_CORP';
 
+  // 1. Check custom items first (issuer/policy priority, then full metadata)
+  for (const inst of safeInsts) {
+    if (inst && inst.isCustom && inst.aliases && inst.aliases.length > 0) {
+      if (inst.aliases.some(alias => alias && issuerPolicyText.includes(alias.toLowerCase()))) {
+        return inst;
+      }
+    }
+  }
   for (const inst of safeInsts) {
     if (inst && inst.isCustom && inst.aliases && inst.aliases.length > 0) {
       if (inst.aliases.some(alias => alias && combinedText.includes(alias.toLowerCase()))) {
@@ -310,40 +320,93 @@ export function matchCertToInstitution(
     }
   }
 
-  // 2. Check GPKI / Government
-  if (cert && (cert.category === 'GPKI_GOV' || combinedText.includes('gpki') || combinedText.includes('행정') || combinedText.includes('공무원'))) {
+  // 2. Check GPKI / Government strictly via category or issuing authority first
+  if (
+    cert.category === 'GPKI_GOV' ||
+    issuer.includes('gpki') ||
+    issuer.includes('행정전자서명') ||
+    issuer.includes('mpki') ||
+    issuer.includes('국방전자서명') ||
+    (!isNpkiCategory && (combinedText.includes('gpki') || combinedText.includes('행정전자서명') || dept.includes('행정') || dept.includes('정부')))
+  ) {
     const gpki = safeInsts.find(i => i && i.id === 'GPKI');
     if (gpki) return gpki;
   }
 
-  // 3. Check EPKI / Education
-  if (cert && (cert.category === 'EPKI_EDU' || combinedText.includes('epki') || combinedText.includes('교육') || combinedText.includes('나이스') || combinedText.includes('에듀파인'))) {
+  // 3. Check EPKI / Education strictly via category or issuing authority first
+  if (
+    cert.category === 'EPKI_EDU' ||
+    issuer.includes('epki') ||
+    issuer.includes('교육부') ||
+    issuer.includes('교육행정전자서명') ||
+    (!isNpkiCategory && (combinedText.includes('epki') || combinedText.includes('교육행정전자서명') || dept.includes('교육청') || dept.includes('학교')))
+  ) {
     const epki = safeInsts.find(i => i && i.id === 'EPKI');
     if (epki) return epki;
   }
 
-  // 4. Check Aliases across all institutions
+  // 4. Match explicit non-generic CORP/STOCK CA issuers first (KICA, SIGNKOREA, CROSSCERT, TRADESIGN, INITECH)
+  const corpCaIds = new Set(['KICA', 'SIGNKOREA', 'CROSSCERT', 'TRADESIGN', 'INITECH']);
   for (const inst of safeInsts) {
-    if (inst && inst.aliases && inst.aliases.length > 0) {
-      if (inst.aliases.some(alias => alias && alias.length >= 2 && combinedText.includes(alias.toLowerCase()))) {
+    if (!inst || !corpCaIds.has(inst.id) || !inst.aliases?.length) continue;
+    if (inst.aliases.some(alias => alias && alias.length >= 2 && issuerPolicyText.includes(alias.toLowerCase()))) {
+      return inst;
+    }
+  }
+
+  // 5. Match specific Bank institutions (from issuer/policy first, then holder OU/subject for yessign bank certs)
+  const skipGenericAndGov = new Set(['GPKI', 'EPKI', 'YESSIGN_GENERIC', 'KICA', 'SIGNKOREA', 'CROSSCERT', 'TRADESIGN', 'INITECH']);
+  for (const inst of safeInsts) {
+    if (!inst || skipGenericAndGov.has(inst.id) || !inst.aliases?.length) continue;
+    if (inst.aliases.some(alias => alias && alias.length >= 2 && issuerPolicyText.includes(alias.toLowerCase()))) {
+      return inst;
+    }
+  }
+
+  const isYessignOrUnknownIssuer =
+    !issuer ||
+    issuer.includes('yessign') ||
+    issuer.includes('금융결제원') ||
+    issuer.includes('알 수 없음');
+
+  if (isYessignOrUnknownIssuer || cert.category === 'NPKI_BANK') {
+    for (const inst of safeInsts) {
+      if (!inst || skipGenericAndGov.has(inst.id) || !inst.aliases?.length) continue;
+      if (inst.aliases.some(alias => alias && alias.length >= 2 && holderText.includes(alias.toLowerCase()))) {
         return inst;
       }
     }
   }
 
-  // 5. Check Category Fallbacks
-  if (cert && cert.category === 'NPKI_BANK') {
-    const yessign = safeInsts.find(i => i && i.id === 'YESSIGN_GENERIC') || safeInsts[0];
-    if (yessign) return yessign;
+  // 6. Check YESSIGN_GENERIC if issuer explicitly identifies 금융결제원 / yessign
+  const yessignGeneric = safeInsts.find(i => i && i.id === 'YESSIGN_GENERIC');
+  if (yessignGeneric && (issuer.includes('yessign') || issuer.includes('금융결제원') || issuer.includes('금결원'))) {
+    return yessignGeneric;
   }
 
-  if (cert && cert.category === 'NPKI_CORP') {
+  // 7. Fallback alias scan only when issuer was unrecognized (excluding GPKI/EPKI when cert is NPKI)
+  if (!issuer || issuer.includes('알 수 없음')) {
+    for (const inst of safeInsts) {
+      if (!inst || !inst.aliases?.length) continue;
+      if (isNpkiCategory && (inst.id === 'GPKI' || inst.id === 'EPKI')) continue;
+      if (inst.aliases.some(alias => alias && alias.length >= 2 && holderText.includes(alias.toLowerCase()))) {
+        return inst;
+      }
+    }
+  }
+
+  // 8. Check Category Fallbacks
+  if (cert.category === 'NPKI_BANK') {
+    if (yessignGeneric) return yessignGeneric;
+  }
+
+  if (cert.category === 'NPKI_CORP') {
     const kica = safeInsts.find(i => i && i.id === 'KICA') || safeInsts[0];
     if (kica) return kica;
   }
 
-  // 6. Generic Fallback
-  const fallback = safeInsts.find(i => i && i.id === 'YESSIGN_GENERIC') || safeInsts[0] || DEFAULT_INSTITUTION_DIRECTORY['YESSIGN_GENERIC'];
+  // 9. Generic Fallback
+  const fallback = yessignGeneric || safeInsts[0] || DEFAULT_INSTITUTION_DIRECTORY['YESSIGN_GENERIC'];
   return fallback || DEFAULT_INSTITUTION_DIRECTORY['YESSIGN_GENERIC'];
 }
 

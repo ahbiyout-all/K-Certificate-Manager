@@ -7,7 +7,7 @@
 ## 📌 프로젝트 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v2.1.1` (Semantic Versioning: `2.1.1`)
+- **현재 버전**: `v2.2.0` (Semantic Versioning: `2.2.0`)
 - **개발자**: AhBiYout
 - **GitHub 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
 - **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
@@ -22,11 +22,12 @@
 | 파일명 | 설명 |
 | :--- | :--- |
 | [`VERSIONING_POLICY.md`](./VERSIONING_POLICY.md) | **버전 관리 표준 정책**: SemVer 2.0.0 (MAJOR.MINOR.PATCH) 3단계 분류, 의사결정 트리 및 동기화 체크리스트 |
-| [`PATCHNOTES.md`](./PATCHNOTES.md) | **버전 릴리스 패치노트**: v1.0.0부터 최신 **v2.1.1**까지의 상세 기능 변경, 보안 패치 및 감사 이력 |
-| [`GITHUB_DOCS.md`](./GITHUB_DOCS.md) | **GitHub 공식 기술/운영 레퍼런스**: v2.1.1 기능 명세, 빌드/린트 검증, Inno Setup 및 방화벽 자동 등록 통합 안내 |
-| [`BLOG_v2.1.1.md`](./BLOG_v2.1.1.md) | **공식 구글 블로그 배포 통합 문서 (최신)**: v2.1.1 블로그 게시용 전용 문서 (`[작성 모드]` & `[HTML 편집 모드]` 듀얼 제공) |
-| [`BLOGGER_POST_COMPOSE_MODE.md`](./BLOGGER_POST_COMPOSE_MODE.md) | **구글 블로그 전용 원고 [작성 모드 (서식 있는 텍스트)]**: Blogger 에디터에 그대로 복사·붙여넣기하는 최신 **v2.1.1** 서식 지원 마크다운 원고 |
-| [`BLOGGER_POST_HTML_MODE.html`](./BLOGGER_POST_HTML_MODE.html) | **구글 블로그 전용 원고 [HTML 편집 모드]**: Blogger HTML 모드에 즉시 붙여넣기 가능한 최신 **v2.1.1** 반응형 모던 인라인 HTML 원고 |
+| [`PATCHNOTES.md`](./PATCHNOTES.md) | **버전 릴리스 패치노트**: v1.0.0부터 최신 **v2.2.0**까지의 상세 기능 변경, 보안 패치 및 감사 이력 |
+| [`GITHUB_DOCS.md`](./GITHUB_DOCS.md) | **GitHub 공식 기술/운영 레퍼런스**: v2.2.0 기능 명세, 빌드/린트 검증, Inno Setup 및 방화벽 자동 등록 통합 안내 |
+| [`BLOG_v2.2.0.md`](./BLOG_v2.2.0.md) | **공식 구글 블로그 배포 통합 문서 (최신)**: v2.2.0 블로그 게시용 전용 문서 (`[작성 모드]` & `[HTML 편집 모드]` 듀얼 제공) |
+| [`BLOGGER_POST_COMPOSE_MODE.md`](./BLOGGER_POST_COMPOSE_MODE.md) | **구글 블로그 전용 원고 [작성 모드 (서식 있는 텍스트)]**: Blogger 에디터에 그대로 복사·붙여넣기하는 최신 **v2.2.0** 서식 지원 마크다운 원고 |
+| [`BLOGGER_POST_HTML_MODE.html`](./BLOGGER_POST_HTML_MODE.html) | **구글 블로그 전용 원고 [HTML 편집 모드]**: Blogger HTML 모드에 즉시 붙여넣기 가능한 최신 **v2.2.0** 반응형 모던 인라인 HTML 원고 |
+| [`BLOG_v2.1.1.md`](./BLOG_v2.1.1.md) | **공식 구글 블로그 배포 통합 문서**: v2.1.1 구글 블로그(Blogger) 게시용 전용 문서 (`[작성 모드]` & `[HTML 편집 모드]` 듀얼 제공) |
 | [`BLOG_v2.1.0.md`](./BLOG_v2.1.0.md) | **공식 구글 블로그 배포 통합 문서**: v2.1.0 구글 블로그(Blogger) 게시용 전용 문서 (`[작성 모드]` & `[HTML 편집 모드]` 듀얼 제공) |
 | [`BLOG_v1.9.0.md`](./BLOG_v1.9.0.md) | **공식 구글 블로그 배포 통합 문서**: v1.9.0 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
 | [`BLOG_v1.8.0.md`](./BLOG_v1.8.0.md) | **공식 구글 블로그 배포 통합 문서**: v1.8.0 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
@@ -38,16 +39,16 @@
 | [`LICENSE.md`](./LICENSE.md) | **소프트웨어 라이선스 & 법적 고지**: 한국어(`LICENSE_KR.txt`)·영어(`LICENSE_EN.txt`) 2종 라이선스 정의, 무상 이용 조건 및 보증 부인 |
 | [`USER_GUIDE.md`](./USER_GUIDE.md) | **사용자 매뉴얼**: 쉬운 일상 표현 UI, 반응형 카드 레이아웃, `Class1` 기관 배지·필터, 2026 동향·RSA 3072-bit 보안강도 점검 및 USB 백업/복구 가이드 |
 | [`KOREA_CERT_TRENDS_2026.md`](./KOREA_CERT_TRENDS_2026.md) | **2026 대한민국 인증서·전자서명 동향 가이드**: RSA 3072-bit 상향(2027.02.15), GPKI·EPKI 비액티브엑스 전환, 금융·간편인증 비교, 2026.08.28 모바일 신분증 시행령 안내 |
-| [`BUILD_GUIDE.md`](./BUILD_GUIDE.md) | **빌드 및 배포 가이드**: .NET 10 / .NET 8 자동 감지 빌드(`build.bat`/`build.ps1`), 버전별 분리 출력(`dist/v2.1.1/`), Inno Setup(`kcert-manager-v2.1.1-setup.exe`) 안내 |
-| [`GITHUB_GUIDE.md`](./GITHUB_GUIDE.md) | **GitHub 운영·CI/CD 및 릴리스 배포 가이드**: 저장소 구조, GitHub Actions 매트릭스(`build.yml`), v2.1.1 릴리스 배포 파이프라인, 이슈/PR 기여 가이드 |
+| [`BUILD_GUIDE.md`](./BUILD_GUIDE.md) | **빌드 및 배포 가이드**: .NET 10 / .NET 8 자동 감지 빌드(`build.bat`/`build.ps1`), 버전별 분리 출력(`dist/v2.2.0/`), Inno Setup(`kcert-manager-v2.2.0-setup.exe`) 안내 |
+| [`GITHUB_GUIDE.md`](./GITHUB_GUIDE.md) | **GitHub 운영·CI/CD 및 릴리스 배포 가이드**: 저장소 구조, GitHub Actions 매트릭스(`build.yml`), v2.2.0 릴리스 배포 파이프라인, 이슈/PR 기여 가이드 |
 | [`AUTO_UPDATE_GUIDE.md`](./AUTO_UPDATE_GUIDE.md) | **자동 업데이트 가이드**: GitHub 이동 없는 인앱 자동 다운로드·무인 셀프 설치(`DownloadAndInstallAsync`, `apply_self_update.ps1`, Web 3단계 업데이트) 명세 |
-| [`WPF_NATIVE_GUIDE.md`](./WPF_NATIVE_GUIDE.md) | **C# WPF 데스크톱 개발 가이드**: v2.1.1 MVVM 아키텍처, `Class1` 필터/배지, 유동 네온 테두리, 인앱 자동 업데이트, Pass 5 수명주기·Dispatcher 안전성 명세 |
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | **시스템 아키텍처**: 인증서 파일 쌍·`class1` 경로 규격, 양방향 전송 파이프라인, 5대 서브시스템, 7대 보안 하드닝 및 수명주기/JSON 스키마 설계 |
+| [`WPF_NATIVE_GUIDE.md`](./WPF_NATIVE_GUIDE.md) | **C# WPF 데스크톱 개발 가이드**: v2.2.0 MVVM 아키텍처, 3단계 비블로킹 시작 스캔, RSA 3072-bit 보안강도 진단, `Class1` 필터/배지, Dispatcher 안전성 명세 |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | **시스템 아키텍처**: 인증서 파일 쌍·`class1` 경로 규격, 3단계 스캔 파이프라인, RSA 3072-bit 정책 진단, 5대 서브시스템, 7대 보안 하드닝 및 JSON 스키마 설계 |
 | [`PURE_CREATIVE_DLL_ARCHITECTURE.md`](./PURE_CREATIVE_DLL_ARCHITECTURE.md) | **순수 창작 DLL 아키텍처 및 세부 동작 원리서**: 100% C# 순수 창작 `KCert.Core.dll` 및 `KCert.Crypto.dll`의 5대 서브시스템, ASN.1 바이너리 파서, PKCS#8 키 분석기, 중복 탐지, PFX 변환 엔진 기술 명세 |
 | [`KCERT_CRYPTO_DLL_SPECIFICATION.md`](./KCERT_CRYPTO_DLL_SPECIFICATION.md) | **KCert.Crypto.dll 순수 창작 암호화 & 전자서명 엔진 기술 명세서**: KISA SEED-128 (RFC 4269), KISA ARIA (RFC 5794), PKCS#8 signPri.key 복호화, VID 영지식 본인확인, RSA-SHA256 전자서명 시뮬레이션 동작 원리 및 기존 DLL 결함 교정 상세서 |
 | [`KCERT_CORE_DLL_DESIGN_SPECIFICATION.md`](./KCERT_CORE_DLL_DESIGN_SPECIFICATION.md) | **KCert.Core.dll 주요 설계 사양서**: 5대 핵심 영역(기능 명세, 동작 원리, 데이터 흐름, 에러 처리 전략, .NET 8 WPF 환경과의 연동 방식)을 총망라한 엔지니어링 종합 설계서 |
 | [`KCERT_CORE_DLL_SPEC.md`](./KCERT_CORE_DLL_SPEC.md) | **KCert.Core.dll 기술 명세서**: 순수 창작 코어 라이브러리 동작 원리, OID 역해석, 화이트리스트 안전 전송, WMI 가드 및 C#/C++/Rust/Python 타 언어 연동 명세 |
-| [`WORK_LOG.md`](./WORK_LOG.md) | **공식 작업 일지**: 개발 요구사항, 차수별 구현 내역(작업 차수 188 포함), 보안 감사 및 검증 이력 |
+| [`WORK_LOG.md`](./WORK_LOG.md) | **공식 작업 일지**: 개발 요구사항, 차수별 구현 내역(작업 차수 193 포함), 보안 감사 및 검증 이력 |
 
 ---
 
@@ -141,7 +142,10 @@
 31. **`Class1` 기관·특수목적 인증서 구분 배지·필터 & 5차 심층 수명주기 안정화 (v2.1.1 최신 보강)**
     - `C:\GPKI\Certificate\class1` · EPKI · USB `class1`에서 개인키(`.key`/`.pri`) 쌍을 보유한 실사용 기관 인증서만 선별 표시(Root/CA/CRL 및 중복 `_env.cer` 제외)하고 `CLASS1 · 공무원(GPKI)` / `CLASS1 · 교육(EPKI)` / `CLASS1 · 기관` 배지와 사이드바 `CLASS1` 카테고리 필터·키워드 검색을 제공합니다.
     - CI `.NET`/`WPF` 컴파일 오류(`Regex`/`RegexOptions` 누락, `CS8601`/`CS8604`)를 해소하고, WPF `DispatchSafe`/`OnClosed`/`IDisposable`/예외 가드 및 Web 타이머·리스너 정리, JSON/스토리지 프로토타입 오염 방지 검증을 전역 적용했습니다.
-32. **2026 국내 인증서 동향 가이드, RSA 3072-bit 보안강도 점검 & 7대 인증 체계 비교 (Web & WPF 동시 반영)**
+32. **2026 국내 인증서 동향 가이드, RSA 3072-bit 보안강도 점검 & 7대 인증 체계 비교 (`v2.2.0`, Web & WPF 동시 반영)**
     - Web(`certParser` / `certDiagnostics`)과 C# WPF(`KCert.Core`) 오프라인 X.509 ASN.1 파서에서 공개키 알고리즘·키 비트 길이(1024/2048/3072/4096-bit, ECDSA)·서명 알고리즘을 분석해 `3072-bit 권장` / `2048-bit 전환 대상` / `1024-bit·SHA-1 취약` 3단계 보안강도를 진단합니다.
-    - 상세 사이드바·상세 모달·진단 및 복구 모달(`보안강도 점검 (3072-bit)` 탭)·보안 수칙/동향 가이드(`2026 보안강도·법령 동향`, `국내 인증서 전체 비교`)·기관별 갱신 안내를 Web과 WPF에 동시 반영했습니다.
+    - 상세 사이드바·상세 모달·진단 및 복구 모달(`보안강도 점검 (3072-bit)` 탭)·보안 수칙/동향 가이드(`SecurityGuideModal` · `SecurityGuideDialog`)·기관별 갱신 안내를 Web과 WPF에 동시 반영했습니다.
+33. **WPF 시작 무응답 해소 3단계 비차단 스캔 & 심층 전수 감사(작업 차수 189~193, `v2.2.0`)**
+    - **3단계 비차단 시작 스캔 파이프라인**: 앱 시작 시 `0단계 Local Fast-Pass` ➔ `1단계 Drive Fast-Pass` ➔ `2단계 Deep-Pass` 분리 및 OS `DriveType` 기반 네트워크/가상/광학 드라이브 WMI I/O 차단·바운디드 드라이브 준비 검사(`IsDriveReadyBounded`)로 시작 직후 `응답없음` 현상을 원천 해소했습니다.
+    - **전수 감사 결함 수정**: 개인 성명(`김지원`, `이정원` 등)의 `(기관용)` 오분류 교정, `CertIntegrityDoctor` 동적 키 파일명 및 `GPKI`/`EPKI` `cn=` 표준 경로 정밀화, `RenewalGuidanceDialog`·`renewalStore` 발급기관(Issuer) 우선 매칭으로 `NPKI` 인증서 오분류 차단, Web 비동기 클립보드·새로고침 시퀀스 가드·`targetDrive` 널 안전성 및 콜센터 번호 정합성을 완성했습니다.
 

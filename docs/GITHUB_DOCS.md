@@ -1,4 +1,4 @@
-# 🐙 GitHub Documentation: K-Certificate Manager (K-인증서 매니저) v2.1.1
+# 🐙 GitHub Documentation: K-Certificate Manager (K-인증서 매니저) v2.2.0
 
 ---
 
@@ -6,21 +6,21 @@
 
 **K-Certificate Manager (K-인증서 매니저)**는 대한민국 공무원 행정전자서명(GPKI/EPKI/MPKI) 및 금융 공동인증서(NPKI)를 자동 탐색하고, PC와 이동식 USB 메모리 간에 양방향으로 안전하게 복사·백업·복원하는 오픈소스 보안 관리 도구입니다.
 
-### 🌟 Key Features in v2.1.1
-1. **Class1 Institutional Certificate Pairing, Badges & Sidebar Filter (`CertLocationScanner.cs`, `Sidebar.tsx`, `CertificateList.tsx`, `MainWindow.xaml`)**:
-   - `C:\GPKI\Certificate\class1`, EPKI, USB `class1` 경로에서 개인키(`.key`/`.pri`) 쌍을 보유한 실사용 기관·특수목적 인증서만 선별 표시하고 Root/CA/CRL·중복 `_env.cer`를 자동 제외.
-   - `CLASS1 · 공무원(GPKI)`, `CLASS1 · 교육(EPKI)`, `CLASS1 · 기관` 배지 시각 구분 및 사이드바 `'CLASS1'` 필터·키워드(`class1`, `공무원`, `교육`, `기관`, `관인`, `특수`) 검색 지원.
-2. **In-App Auto-Download & Silent Self-Update (`UpdateCheckerService.cs`, `updateChecker.ts`)**: 업데이트 창에서 확인 클릭 시 GitHub 웹페이지로 이동하지 않고 설치 패키지를 직접 다운로드·검증(PE `MZ` / SHA-256) 후 무인 셀프 설치(`/SILENT`) 및 자동 재실행까지 원스톱 처리.
-3. **WPF-Web Visual Parity & Responsive CSS Grid `auto-fill` (`CertificateList.tsx`, `index.css`)**: WPF 다크 테마(`#0F1219` / `#1A1F2C`)를 Web 콘솔에 동일 적용하고, 화면 너비에 맞춰 카드가 자동 리플로우되는 CSS Grid `auto-fill` 레이아웃 및 다크/파스텔 블랙 모달 고대비 교정 완비.
-4. **Plain-Korean-First UX & Collapsible Details (Web & WPF)**: 어려운 기술 용어를 쉬운 일상 표현+용어 병기로 통일하고 긴 설명을 접이식 토글(`더보기` / WPF `Expander`)로 정리해 사용자 인식률 극대화.
-5. **Folder-Open Root Targeting, Auto-Repair Wizard & 5-Pass Audit Hardening**:
-   - `OperationCompleteModal` / `OperationCompleteDialog`의 `'복사된 폴더 열기'` 실행 시 실제 드라이브 루트(`E:\NPKI\...`) 정밀 조합 및 탐색기 연동 지원.
-   - `App.tsx` `handleRepairFolders` · `DiagnosticsRepairDialog` · `CertIntegrityDoctor`(`specificDerPath` 정밀 진단 & 동일 경로 `IOException` 방어)의 표준 경로 복사 후 원본 즉시 안전 휴지통(`SafetyTrash`) 이동 및 활동 로그·토스트 알림 연동 완성.
-   - **CI & Pass 5 안정화**: `DiagnosticsRepairDialog.xaml.cs` `Regex` 컴파일 오류 및 `CS8601`/`CS8604` 널 경고 해소, `MainViewModel.DispatchSafe`·`OnClosed`·`IDisposable`·비동기 `try/catch` 수명주기 정리, Web 타이머/리스너 누수 제거 및 `localStorage`/JSON 스키마·프로토타입 오염 방어 강화.
-   - `TargetDrivePickerDialog` `C:\` 자가 복사 판별 보정, `KCertAntiDuplicationEngine` PC 표준 원본 우선 선정, `SafetyTrashManager` `ReadOnly` 속성 해제 및 Web `skip` 0건 가드·`USB:\` 표준 경로·`certParser` 폴더 정규화 반영.
-6. **Pure C# Core DLL Architecture (`KCert.Core.dll` & `KCert.Crypto.dll`)**: 외부 의존성 0%의 순수 X.509/ASN.1 파서 및 SEED-128 / ARIA / RSA-SHA256 암호화 라이브러리 탑재.
-7. **Encrypted Vault & Restricted USB Recovery (`💾 USB로 복구`)**: Windows DPAPI(CurrentUser) 및 AES-256 이중 암호화 보관소(`protected_restored_manifest.dat`) 및 PC 오염 방지를 위한 USB 전용 복원 기능.
-8. **Inno Setup Production Installer (`installer.iss`) & Version-Numbered Build Pipeline**: Unpacked Multi-File 설치, 기존 프로세스 안전 종료(`TerminateAppProcesses`), 방화벽 규칙 사전 자동 등록, `/VERYSILENT /NORESTART` 무인 설치 및 `/dist/v2.1.1/` 모듈별 분리 출력 지원.
+### 🌟 Key Features in v2.2.0
+1. **3-Stage Non-Blocking Startup Scan & WMI Drive Hardening (`FastScanPipeline.cs`, `CertLocationScanner.cs`, `CertificateScannerService.cs`, `MainViewModel.cs`)**:
+   - `0단계 Local Fast-Pass` ➔ `1단계 Drive Fast-Pass` ➔ `2단계 Deep-Pass` 비차단 분리 스캔과 OS `DriveType` 필터링, 병렬 바운디드 드라이브 준비 검사(`IsDriveReadyBounded`), 단일 `DrivesChanged` 디바운스 구독으로 앱 시작 직후 `응답없음` 현상을 근본 해소.
+2. **2026 Korea Cert Trends Guide & RSA 3072-bit Security Posture (`certParser.ts`, `KoreanCertPolicyOids.cs`, `SecurityGuideModal.tsx`, `SecurityGuideDialog.xaml`, `DiagnosticsRepairModal.tsx`, `DiagnosticsRepairDialog.xaml`)**:
+   - 오프라인 X.509 ASN.1 파서로 공개키 비트 길이(1024/2048/3072/4096-bit, ECDSA)와 서명 알고리즘을 분석해 `3072-bit 권장` / `2048-bit 전환 대상` / `1024-bit·SHA-1 취약` 3단계 진단 및 `보안강도 점검 (3072-bit)` 탭 제공.
+   - 2027.02.15 5대 공동인증기관 RSA 3072-bit 전환, GPKI·EPKI 비액티브엑스(HTML5)·모바일 공무원증 병행, 금융·간편인증 비교, 2026.08.28 전자정부법 시행령 모바일 신분증 8종 동향 수록 (`SecurityGuideModal` / `SecurityGuideDialog`).
+3. **Comprehensive Audit & Accuracy Fixes (Work Orders 191–193)**:
+   - 개인 성명(`김지원`, `이정원` 등) `(기관용)` 오분류 교정 (`KCertParser.cs`, `certParser.ts`), `CertIntegrityDoctor` 동적 키 파일명 & GPKI/EPKI `cn=` 표준 경로 정밀화, `RenewalGuidanceDialog`/`renewalStore` 발급기관(Issuer) 우선 매칭으로 NPKI 오매칭 차단.
+   - WPF `DispatchSafeAsync` 스레드 안전성·`OpenTargetDrivePickerForCertificatesAsync`·`SafeGetFullPath`·`SearchLocationsDialog` Fast-Pass 유지 및 Web 비동기 클립보드·새로고침 시퀀스 가드·`targetDrive` 널 안전성·기관 콜센터 번호 정합화.
+4. **Class1 Institutional Certificate Pairing, Badges & Sidebar Filter (`CertLocationScanner.cs`, `Sidebar.tsx`, `CertificateList.tsx`, `MainWindow.xaml`)**:
+   - `C:\GPKI\Certificate\class1`, EPKI, USB `class1` 경로에서 개인키(`.key`/`.pri`) 쌍을 보유한 실사용 기관·특수목적 인증서만 선별 표시하고 `CLASS1 · 공무원(GPKI)` / `CLASS1 · 교육(EPKI)` / `CLASS1 · 기관` 배지 및 `'CLASS1'` 필터 제공.
+5. **In-App Auto-Download & Silent Self-Update (`UpdateCheckerService.cs`, `updateChecker.ts`)**: 업데이트 창에서 확인 클릭 시 GitHub 웹페이지로 이동하지 않고 설치 패키지를 직접 다운로드·검증(PE `MZ` / SHA-256) 후 무인 셀프 설치(`/SILENT`) 및 자동 재실행까지 원스톱 처리.
+6. **WPF-Web Visual Parity, Pure C# Core DLL & Encrypted Vault (`KCert.Core.dll`, `KCert.Crypto.dll`)**:
+   - 통합 다크 테마(`#0F1219`), 반응형 CSS Grid `auto-fill` 카드 뷰, 쉬운 일상 표현 + `더보기`, 외부 의존성 0% 순수 X.509/ASN.1 & SEED-128/ARIA/RSA-SHA256 라이브러리, DPAPI/AES-256 보호 보관함 및 제한된 USB 복구(`💾 USB로 복구`) 제공.
+7. **Inno Setup Production Installer (`installer.iss`) & Version-Numbered Build Pipeline**: Unpacked Multi-File 설치, 기존 프로세스 안전 종료(`TerminateAppProcesses`), 방화벽 규칙 사전 자동 등록, `/VERYSILENT /NORESTART` 무인 설치 및 `/dist/v2.2.0/` 모듈별 분리 출력 지원.
 
 ---
 
@@ -44,12 +44,12 @@ npm run build
 # 통합 자동 빌드 스크립트 실행
 .\build.ps1
 
-# 빌드 결과물 (dist/v2.1.1/ 폴더 생성)
+# 빌드 결과물 (dist/v2.2.0/ 폴더 생성)
 # ├── web/           (Vite 프로덕션 번들)
 # ├── win-x64/       (C# WPF 데스크톱 실행 바이너리 KCertManager.exe & Lite)
 # ├── core-dll/      (순수 독립 C# DLL KCert.Core.dll / KCert.Crypto.dll)
 # ├── unpacked/      (클린 무설치 폴더 풀림 구조)
-# └── installer/     (Inno Setup kcert-manager-v2.1.1-setup.exe)
+# └── installer/     (Inno Setup kcert-manager-v2.2.0-setup.exe)
 ```
 
 ---
@@ -58,12 +58,12 @@ npm run build
 
 - **AppID**: `{{8F5B123A-4C2E-497B-902B-6277D8C7B8E1}}`
 - **Installation Directory**: `{autopf}\K-Certificate Manager` (Unpacked Multi-File)
-- **Silent Install Support**: `kcert-manager-v2.1.1-setup.exe /VERYSILENT /NORESTART`
+- **Silent Install Support**: `kcert-manager-v2.2.0-setup.exe /VERYSILENT /NORESTART`
 - **Firewall Registration (netsh.exe)**:
   - `netsh.exe advfirewall firewall add rule name="K-Certificate Manager"`
-  - `netsh.exe advfirewall firewall add rule name="K-Certificate Manager v2.1.1"`
+  - `netsh.exe advfirewall firewall add rule name="K-Certificate Manager v2.2.0"`
   - `netsh.exe advfirewall firewall add rule name="K-인증서 매니저"`
-  - `netsh.exe advfirewall firewall add rule name="K-인증서 매니저 v2.1.1"`
+  - `netsh.exe advfirewall firewall add rule name="K-인증서 매니저 v2.2.0"`
 
 ---
 

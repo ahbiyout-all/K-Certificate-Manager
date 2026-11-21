@@ -133,7 +133,7 @@ export const SecurityGuideModal: React.FC<SecurityGuideModalProps> = ({
                     <span>
                       <strong>분실·유출 시 즉시 폐기:</strong>{' '}
                       <a href="https://www.gpki.go.kr" target="_blank" rel="noreferrer" className="text-blue-600 underline">
-                        행정전자서명인증센터(1544-6720)
+                        행정전자서명인증센터(02-818-7777)
                       </a>
                       에 폐기를 신청하세요.
                     </span>

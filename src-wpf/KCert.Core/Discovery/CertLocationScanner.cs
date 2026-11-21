@@ -264,34 +264,41 @@ namespace KCert.Core.Discovery
                 roots.Add(Path.Combine(programFilesX86, "NPKI"));
             }
 
-            // 4. 모든 연결 드라이브(C: 및 USB, 외장/보조 디스크; 네트워크/CD-ROM 제외)의 비표준 백업/중첩 폴더 탐색
+            // 4. 모든 연결 드라이브(C: 및 USB, 외장/보조 디스크; 네트워크/CD-ROM 제외)의 비표준 백업/중첩 폴더 병렬 탐색
             try
             {
-                foreach (var drive in DriveInfo.GetDrives())
+                var scannableDrives = DriveInfo.GetDrives().Where(IsScannableDriveType).ToList();
+                var driveRootsBag = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
+                var probeTasks = scannableDrives.Select(drive => Task.Run(() =>
                 {
                     try
                     {
-                        if (!IsScannableDriveType(drive)) continue;
-                        if (!IsDriveReadyBounded(drive, 1200)) continue;
-
+                        if (!IsDriveReadyBounded(drive, 1200)) return;
                         var driveRoot = drive.RootDirectory.FullName;
-                        roots.Add(Path.Combine(driveRoot, "공인인증서"));
-                        roots.Add(Path.Combine(driveRoot, "공인인증서백업"));
-                        roots.Add(Path.Combine(driveRoot, "인증서"));
-                        roots.Add(Path.Combine(driveRoot, "인증서백업"));
-                        roots.Add(Path.Combine(driveRoot, "인증서_백업"));
-                        roots.Add(Path.Combine(driveRoot, "Cert"));
-                        roots.Add(Path.Combine(driveRoot, "Certificates"));
-                        roots.Add(Path.Combine(driveRoot, "Backup"));
-                        roots.Add(Path.Combine(driveRoot, "만료인증서"));
-                        roots.Add(Path.Combine(driveRoot, "인증서_만료"));
-                        roots.Add(Path.Combine(driveRoot, "GPKI", "GPKI"));
-                        roots.Add(Path.Combine(driveRoot, "NPKI", "NPKI"));
-                        roots.Add(Path.Combine(driveRoot, "EPKI", "EPKI"));
-                        roots.Add(Path.Combine(driveRoot, "Certificate"));
-                        roots.Add(Path.Combine(driveRoot, "Cert_Backup"));
+                        driveRootsBag.TryAdd(driveRoot, 0);
                     }
                     catch { }
+                })).ToArray();
+
+                Task.WaitAll(probeTasks, 1500);
+
+                foreach (var driveRoot in driveRootsBag.Keys)
+                {
+                    roots.Add(Path.Combine(driveRoot, "공인인증서"));
+                    roots.Add(Path.Combine(driveRoot, "공인인증서백업"));
+                    roots.Add(Path.Combine(driveRoot, "인증서"));
+                    roots.Add(Path.Combine(driveRoot, "인증서백업"));
+                    roots.Add(Path.Combine(driveRoot, "인증서_백업"));
+                    roots.Add(Path.Combine(driveRoot, "Cert"));
+                    roots.Add(Path.Combine(driveRoot, "Certificates"));
+                    roots.Add(Path.Combine(driveRoot, "Backup"));
+                    roots.Add(Path.Combine(driveRoot, "만료인증서"));
+                    roots.Add(Path.Combine(driveRoot, "인증서_만료"));
+                    roots.Add(Path.Combine(driveRoot, "GPKI", "GPKI"));
+                    roots.Add(Path.Combine(driveRoot, "NPKI", "NPKI"));
+                    roots.Add(Path.Combine(driveRoot, "EPKI", "EPKI"));
+                    roots.Add(Path.Combine(driveRoot, "Certificate"));
+                    roots.Add(Path.Combine(driveRoot, "Cert_Backup"));
                 }
             }
             catch { }

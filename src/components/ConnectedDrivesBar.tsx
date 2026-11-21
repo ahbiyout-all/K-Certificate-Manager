@@ -65,16 +65,21 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
     } catch {}
   };
 
-  const handleCopyVsn = (e: React.MouseEvent, driveId: string, vsn: string) => {
+  const handleCopyVsn = async (e: React.MouseEvent, driveId: string, vsn: string) => {
     e.stopPropagation();
+    if (!vsn) return;
     try {
-      navigator.clipboard.writeText(vsn);
-      setCopiedVsnId(driveId);
-      if (copiedVsnTimerRef.current) {
-        clearTimeout(copiedVsnTimerRef.current);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(vsn);
+        setCopiedVsnId(driveId);
+        if (copiedVsnTimerRef.current) {
+          clearTimeout(copiedVsnTimerRef.current);
+        }
+        copiedVsnTimerRef.current = setTimeout(() => setCopiedVsnId(null), 1500);
       }
-      copiedVsnTimerRef.current = setTimeout(() => setCopiedVsnId(null), 1500);
-    } catch {}
+    } catch {
+      // ignore clipboard error
+    }
   };
 
   return (

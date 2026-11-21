@@ -738,7 +738,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-[924px] overflow-hidden relative">
         {/* Duplicate Prevention Check Modal Overlay ('중복 방지 체크' 및 덮어쓰기 여부 확인) */}
-        {showDuplicateModal && duplicateResult && (
+        {showDuplicateModal && duplicateResult && targetDrive && (
           <div className="absolute inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
             <div className="bg-white rounded-2xl shadow-2xl border-2 border-amber-400 w-full max-w-xl overflow-hidden animate-scaleIn flex flex-col max-h-[90%]">
               {/* Dialog Header */}
@@ -1728,6 +1728,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                         <button
                           type="button"
                           onClick={() => {
+                            if (!targetDrive) return;
                             const updated = simulatedLockedDriveIds.filter(id => id !== targetDrive.id);
                             setSimulatedLockedDriveIds(updated);
                             runWriteCheck(targetDrive, updated, false);
@@ -2054,7 +2055,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                         시도: {currentAttempt}/3회
                       </span>
                     </span>
-                    <span className="text-slate-400 font-semibold">{targetDrive.letter} 드라이브</span>
+                    <span className="text-slate-400 font-semibold">{targetDrive?.letter ?? ''} 드라이브</span>
                   </div>
 
                   {/* Active Auto-Retry Alert Banner */}

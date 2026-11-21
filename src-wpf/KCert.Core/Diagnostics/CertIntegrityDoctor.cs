@@ -257,7 +257,7 @@ namespace KCert.Core.Diagnostics
                         if (!keyAnalysis.IsValidAsn1)
                         {
                             flags |= CertAnomalyFlags.CorruptedAsn1Header;
-                            issues.Add($"signPri.key 손상: {keyAnalysis.Description}");
+                            issues.Add($"{Path.GetFileName(keyFile)} 손상: {keyAnalysis.Description}");
                         }
                     }
                 }
@@ -297,7 +297,7 @@ namespace KCert.Core.Diagnostics
                 }
 
                 // 5. 표준 정규화 서브경로(CanonicalSubPath) 도출
-                string canonicalSubPath = GenerateCanonicalSubPath(meta, folderPath, sysType);
+                string canonicalSubPath = GenerateCanonicalSubPath(meta, folderPath, sysType, siblingSignCount > 1);
 
                 string recAction = "인증서 상태가 양호하며 정상 사용 가능합니다.";
                 if (flags != CertAnomalyFlags.None)
@@ -509,27 +509,83 @@ namespace KCert.Core.Diagnostics
             }
         }
 
-        private static string GenerateCanonicalSubPath(KCertMetadata? meta, string folderPath, CertSystemType sysType)
+        private static string GenerateCanonicalSubPath(KCertMetadata? meta, string folderPath, CertSystemType sysType, bool hasMultipleSiblings = false)
         {
-            string userFolder = meta?.SubjectDn ?? Path.GetFileName(folderPath);
-            if (string.IsNullOrWhiteSpace(userFolder)) userFolder = "user";
-
-            // Subject DN 내 특수문자 정리
-            string safeUserFolder = SanitizeFolderName(userFolder);
+            string trimmedFolder = (folderPath ?? string.Empty).TrimEnd('\\', '/');
+            string existingLeaf = Path.GetFileName(trimmedFolder) ?? string.Empty;
+            var containerNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "npki", "gpki", "epki", "user", "certificate", "class1", "class2", "backup", "temp", "kcert", "인증서", "백업"
+            };
+            bool isValidExistingCnLeaf = !hasMultipleSiblings &&
+                                         !string.IsNullOrWhiteSpace(existingLeaf) &&
+                                         !containerNames.Contains(existingLeaf) &&
+                                         existingLeaf.StartsWith("cn=", StringComparison.OrdinalIgnoreCase);
 
             bool isClass1 = (meta?.IsClass1 ?? false) ||
                             (!string.IsNullOrEmpty(folderPath) &&
                              Regex.IsMatch(folderPath, @"(?:^|[\\/])class1(?:$|[\\/])", RegexOptions.IgnoreCase));
             string classTier = isClass1 ? "class1" : "class2";
 
-            if (sysType == CertSystemType.GPKI)
+            if (sysType == CertSystemType.GPKI || sysType == CertSystemType.EPKI)
             {
-                return Path.Combine("GPKI", "Certificate", classTier, safeUserFolder);
+                string gpkiLeaf;
+                if (isValidExistingCnLeaf)
+                {
+                    gpkiLeaf = existingLeaf;
+                }
+                else
+                {
+                    string rawSubject = meta?.SubjectDn?.Trim() ?? string.Empty;
+                    var cnMatch = Regex.Match(rawSubject, @"(?:^|,)\s*(cn\s*=\s*[^,]+)", RegexOptions.IgnoreCase);
+                    if (cnMatch.Success)
+                    {
+                        var val = Regex.Replace(cnMatch.Groups[1].Value, @"^cn\s*=\s*", string.Empty, RegexOptions.IgnoreCase).Trim();
+                        gpkiLeaf = $"cn={val}";
+                    }
+                    else if (!string.IsNullOrWhiteSpace(meta?.CommonName))
+                    {
+                        gpkiLeaf = $"cn={meta.CommonName.Trim()}";
+                    }
+                    else if (!string.IsNullOrWhiteSpace(existingLeaf) && !containerNames.Contains(existingLeaf))
+                    {
+                        gpkiLeaf = existingLeaf;
+                    }
+                    else
+                    {
+                        gpkiLeaf = "user";
+                    }
+                }
+
+                string safeGpkiLeaf = SanitizeFolderName(gpkiLeaf);
+                string rootType = sysType == CertSystemType.GPKI ? "GPKI" : "EPKI";
+                return Path.Combine(rootType, "Certificate", classTier, safeGpkiLeaf);
             }
-            if (sysType == CertSystemType.EPKI)
+
+            string userFolder;
+            if (isValidExistingCnLeaf)
             {
-                return Path.Combine("EPKI", "Certificate", classTier, safeUserFolder);
+                userFolder = existingLeaf;
             }
+            else if (!string.IsNullOrWhiteSpace(meta?.SubjectDn))
+            {
+                userFolder = meta.SubjectDn.Trim();
+            }
+            else if (!string.IsNullOrWhiteSpace(meta?.CommonName))
+            {
+                userFolder = $"cn={meta.CommonName.Trim()}";
+            }
+            else if (!string.IsNullOrWhiteSpace(existingLeaf) && !containerNames.Contains(existingLeaf))
+            {
+                userFolder = existingLeaf;
+            }
+            else
+            {
+                userFolder = "user";
+            }
+
+            // Subject DN 내 특수문자 정리
+            string safeUserFolder = SanitizeFolderName(userFolder);
 
             // NPKI 기본
             string caFolder = "yessign";

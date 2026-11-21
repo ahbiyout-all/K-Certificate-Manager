@@ -73,7 +73,15 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
 
     if (!wasOpenRef.current) {
       wasOpenRef.current = true;
-      setActiveTab(initialTab);
+      let resolvedTab = initialTab;
+      if (initialTab === 'duplicates' && dupSummary.redundantCount === 0) {
+        if (repairCandidates.length > 0) {
+          resolvedTab = 'repairs';
+        } else if (cryptoSummary.legacyWeakCount > 0) {
+          resolvedTab = 'crypto';
+        }
+      }
+      setActiveTab(resolvedTab);
       setActionBanner(null);
 
       const defaultDupIds = dupSummary.groups.flatMap((g) =>
@@ -91,7 +99,7 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
 
     const validRepairIds = new Set(repairCandidates.map((r) => r.cert.id));
     setSelectedRepairIds((prev) => prev.filter((id) => validRepairIds.has(id)));
-  }, [isOpen, initialTab, dupSummary, repairCandidates]);
+  }, [isOpen, initialTab, dupSummary, repairCandidates, cryptoSummary.legacyWeakCount]);
 
   if (!isOpen) return null;
 
@@ -147,7 +155,7 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
     cryptoFilter === 'ALL' ? true : item.posture === cryptoFilter
   );
 
-  const handleCopyCryptoAudit = () => {
+  const handleCopyCryptoAudit = async () => {
     const lines = [
       `[K-인증서 매니저 - 2027.02 보안강도(RSA 3072-bit) 점검 결과]`,
       `전체 ${cryptoSummary.totalScanned}건 · 3072-bit+ 충족 ${cryptoSummary.recommended3072Count}건 · 2048-bit 현행유효 ${cryptoSummary.standard2048Count}건 · 취약 ${cryptoSummary.legacyWeakCount}건`,
@@ -158,9 +166,13 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
       ),
     ];
     try {
-      navigator.clipboard.writeText(lines.join('\n'));
-      setActionBanner('보안강도(RSA 3072-bit) 점검 리포트를 클립보드에 복사했습니다.');
-    } catch {}
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(lines.join('\n'));
+        setActionBanner('보안강도(RSA 3072-bit) 점검 리포트를 클립보드에 복사했습니다.');
+      }
+    } catch {
+      // ignore clipboard permission errors in restricted environments
+    }
   };
 
   return (

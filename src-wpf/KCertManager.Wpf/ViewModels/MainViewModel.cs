@@ -136,17 +136,9 @@ namespace KCertManager.Wpf.ViewModels
                 }
             };
 
+            // UsbStorageGuard already fires DrivesChanged alongside DriveArrived/DriveRemoved for the same debounced batch;
+            // subscribe only to DrivesChanged to prevent duplicate scan cancellation storms.
             _driveWatcher.DrivesChanged += (s, e) =>
-            {
-                onDrivesChangedAction();
-            };
-
-            _driveWatcher.DriveArrived += (s, driveName) =>
-            {
-                onDrivesChangedAction();
-            };
-
-            _driveWatcher.DriveRemoved += (s, driveName) =>
             {
                 onDrivesChangedAction();
             };
@@ -213,7 +205,6 @@ namespace KCertManager.Wpf.ViewModels
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher == null || dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
             {
-                action();
                 return Task.CompletedTask;
             }
             if (dispatcher.CheckAccess())
@@ -222,6 +213,19 @@ namespace KCertManager.Wpf.ViewModels
                 return Task.CompletedTask;
             }
             return dispatcher.InvokeAsync(action).Task;
+        }
+
+        private static string? SafeGetFullPath(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return null;
+            try
+            {
+                return Path.GetFullPath(path);
+            }
+            catch
+            {
+                return path.Trim();
+            }
         }
 
         #region Properties
@@ -1373,13 +1377,28 @@ namespace KCertManager.Wpf.ViewModels
 
                 if (customPaths != null)
                 {
-                    _customSearchPaths = customPaths.ToList();
+                    var normalizedCustom = customPaths
+                        .Where(p => !string.IsNullOrWhiteSpace(p))
+                        .Select(p => SafeGetFullPath(p)?.TrimEnd('\\', '/') ?? p.Trim())
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                    var normalizedDefaults = CertLocationScanner.GetStandardRoots()
+                        .Where(p => !string.IsNullOrWhiteSpace(p))
+                        .Select(p => SafeGetFullPath(p)?.TrimEnd('\\', '/') ?? p.Trim())
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                    bool matchesDefaultsExactly =
+                        normalizedCustom.Count == normalizedDefaults.Count &&
+                        normalizedCustom.All(p => normalizedDefaults.Contains(p));
+
+                    _customSearchPaths = matchesDefaultsExactly ? new List<string>() : normalizedCustom;
                 }
 
-                // 사용자 지정 경로가 전달된 경우 해당 경로로 집중 탐색
+                // 사용자 지정 경로(또는 필터링된 표준 경로)가 실제로 기본값과 다른 경우 해당 경로로 집중 탐색
                 if (_customSearchPaths.Count > 0)
                 {
-                    var list = await Task.Run(() => _scannerService.ScanCertificates(_customSearchPaths), ct);
+                    var list = await Task.Run(() => _scannerService.ScanCertificates(_customSearchPaths, ct), ct);
                     if (scanGen != _scanGeneration || ct.IsCancellationRequested) return;
 
                     AttachCertEvents(list);
@@ -1423,21 +1442,19 @@ namespace KCertManager.Wpf.ViewModels
                 var mergedFastMap = new Dictionary<string, CertificateItem>(StringComparer.OrdinalIgnoreCase);
                 foreach (var item in localList)
                 {
-                    if (!string.IsNullOrWhiteSpace(item.DerFilePath))
+                    var key = SafeGetFullPath(item.DerFilePath);
+                    if (!string.IsNullOrEmpty(key))
                     {
-                        mergedFastMap[Path.GetFullPath(item.DerFilePath)] = item;
+                        mergedFastMap[key] = item;
                     }
                 }
                 foreach (var item in fastDriveList)
                 {
-                    if (!string.IsNullOrWhiteSpace(item.DerFilePath))
+                    var key = SafeGetFullPath(item.DerFilePath);
+                    if (!string.IsNullOrEmpty(key) && !mergedFastMap.ContainsKey(key))
                     {
-                        var key = Path.GetFullPath(item.DerFilePath);
-                        if (!mergedFastMap.ContainsKey(key))
-                        {
-                            AttachCertEvent(item);
-                            mergedFastMap[key] = item;
-                        }
+                        AttachCertEvent(item);
+                        mergedFastMap[key] = item;
                     }
                 }
 
@@ -1457,18 +1474,16 @@ namespace KCertManager.Wpf.ViewModels
                 {
                     try
                     {
-                        var seenDers = new HashSet<string>(
-                            mergedFastList.Where(x => !string.IsNullOrWhiteSpace(x.DerFilePath))
-                                          .Select(x => Path.GetFullPath(x.DerFilePath)),
-                            StringComparer.OrdinalIgnoreCase);
-                        var seenSigs = new HashSet<string>(
-                            mergedFastList.Where(x => !string.IsNullOrWhiteSpace(x.DerFilePath))
-                                          .Select(x =>
-                                          {
-                                              var dir = Path.GetDirectoryName(Path.GetFullPath(x.DerFilePath)) ?? string.Empty;
-                                              return $"{dir}|{x.SerialNumber}|{x.SubjectDn}";
-                                          }),
-                            StringComparer.OrdinalIgnoreCase);
+                        var seenDers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        var seenSigs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        foreach (var x in mergedFastList)
+                        {
+                            var fullDer = SafeGetFullPath(x.DerFilePath);
+                            if (string.IsNullOrEmpty(fullDer)) continue;
+                            seenDers.Add(fullDer);
+                            var dir = Path.GetDirectoryName(fullDer) ?? string.Empty;
+                            seenSigs.Add($"{dir}|{x.SerialNumber}|{x.SubjectDn}");
+                        }
 
                         var batchLock = new object();
                         var pendingBatch = new List<CertificateItem>();
@@ -1491,8 +1506,10 @@ namespace KCertManager.Wpf.ViewModels
                                 bool addedAny = false;
                                 foreach (var item in toAdd)
                                 {
-                                    string? newDer = string.IsNullOrWhiteSpace(item.DerFilePath) ? null : Path.GetFullPath(item.DerFilePath);
-                                    if (newDer != null && _allCertificates.Any(x => !string.IsNullOrWhiteSpace(x.DerFilePath) && string.Equals(Path.GetFullPath(x.DerFilePath), newDer, StringComparison.OrdinalIgnoreCase)))
+                                    var newDer = SafeGetFullPath(item.DerFilePath);
+                                    if (newDer != null && _allCertificates.Any(x =>
+                                        !string.IsNullOrWhiteSpace(x.DerFilePath) &&
+                                        string.Equals(SafeGetFullPath(x.DerFilePath), newDer, StringComparison.OrdinalIgnoreCase)))
                                     {
                                         continue;
                                     }
@@ -1531,21 +1548,26 @@ namespace KCertManager.Wpf.ViewModels
 
                         FlushPendingBatch();
 
+                        int finalTotal = 0;
                         await DispatchSafeAsync(() =>
                         {
                             if (scanGen != _scanGeneration) return;
+                            finalTotal = TotalCount;
                             StatusMessage = $"전체 스캔 완료: 총 {TotalCount}개 인증서 (PC: {ComputerCount}개, USB: {UsbCount}개" +
                                             (newDiscovered > 0 ? $", 비표준 {newDiscovered}개 추가 감지" : "") + ").";
                         });
 
-                        ActivityLogService.Instance.Log(
-                            LogCategory.SCAN,
-                            LogLevel.SUCCESS,
-                            "인증서 2단계 전체 스캔 완료",
-                            $"총 {_allCertificates.Count}개 인증서 (Fast-Pass: {mergedFastList.Count}개, Deep-Pass 추가: {newDiscovered}개)",
-                            "Local System",
-                            "Memory",
-                            _allCertificates.Count);
+                        if (scanGen == _scanGeneration && !ct.IsCancellationRequested)
+                        {
+                            ActivityLogService.Instance.Log(
+                                LogCategory.SCAN,
+                                LogLevel.SUCCESS,
+                                "인증서 2단계 전체 스캔 완료",
+                                $"총 {finalTotal}개 인증서 (Fast-Pass: {mergedFastList.Count}개, Deep-Pass 추가: {newDiscovered}개)",
+                                "Local System",
+                                "Memory",
+                                finalTotal);
+                        }
                     }
                     catch (OperationCanceledException)
                     {
@@ -1592,9 +1614,12 @@ namespace KCertManager.Wpf.ViewModels
             {
                 if (e.PropertyName == nameof(CertificateItem.IsSelected))
                 {
-                    OnPropertyChanged(nameof(SelectedCertificatesCount));
-                    (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
-                    (DeleteSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                    DispatchSafe(() =>
+                    {
+                        OnPropertyChanged(nameof(SelectedCertificatesCount));
+                        (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                        (DeleteSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                    });
                 }
             };
         }
@@ -1637,8 +1662,8 @@ namespace KCertManager.Wpf.ViewModels
                     {
                         AllDrives = new ObservableCollection<DriveItem>(all);
 
-                        // 1. 순수 이동식 USB 드라이브 (CD-ROM 배제)
-                        var drives = all.Where(d => d.IsRemovable && !d.IsCdRom).ToList();
+                        // 1. 순수 이동식 USB 드라이브 (CD-ROM 및 빈 카드 리더 슬롯 배제)
+                        var drives = all.Where(d => d.IsRemovable && !d.IsCdRom && d.IsReady).ToList();
                         RemovableDrives = new ObservableCollection<DriveItem>(drives);
 
                         // 2. 백업 및 복사 가능한 전체 대상 드라이브 (로컬 디스크 C:, D: 및 USB E:, F: 등 - CD-ROM 완전 배제)
@@ -1928,23 +1953,20 @@ namespace KCertManager.Wpf.ViewModels
             await RefreshDrivesAsync();
 
             Views.TargetDrivePickerDialog? dialog = null;
-            Application.Current?.Dispatcher?.Invoke(() =>
+            bool? res = null;
+            await DispatchSafeAsync(() =>
             {
                 dialog = new Views.TargetDrivePickerDialog(selected, AvailableTargetDrives)
                 {
-                    Owner = Application.Current.MainWindow
+                    Owner = Application.Current?.MainWindow
                 };
+                res = dialog.ShowDialog();
             });
 
-            if (dialog != null)
+            if (dialog != null && res == true && dialog.SelectedDrive != null)
             {
-                bool? res = null;
-                Application.Current?.Dispatcher?.Invoke(() => { res = dialog.ShowDialog(); });
-                if (res == true && dialog.SelectedDrive != null)
-                {
-                    SelectedTargetDrive = dialog.SelectedDrive;
-                    await ExecuteBackupWithConflictOptionAsync(selected, dialog.SelectedDrive, dialog.ConflictOption);
-                }
+                SelectedTargetDrive = dialog.SelectedDrive;
+                await ExecuteBackupWithConflictOptionAsync(selected, dialog.SelectedDrive, dialog.ConflictOption);
             }
         }
 
@@ -2075,18 +2097,14 @@ namespace KCertManager.Wpf.ViewModels
             if (duplicateConflicts.Any())
             {
                 Views.DuplicateConflictDialog? dupDialog = null;
-                Application.Current?.Dispatcher?.Invoke(() =>
+                bool? dupRes = null;
+                await DispatchSafeAsync(() =>
                 {
                     dupDialog = new Views.DuplicateConflictDialog(duplicateConflicts, targetDrive)
                     {
-                        Owner = Application.Current.MainWindow
+                        Owner = Application.Current?.MainWindow
                     };
-                });
-
-                bool? dupRes = null;
-                Application.Current?.Dispatcher?.Invoke(() =>
-                {
-                    dupRes = dupDialog?.ShowDialog();
+                    dupRes = dupDialog.ShowDialog();
                 });
 
                 if (dupRes != true || dupDialog == null)
@@ -2151,11 +2169,11 @@ namespace KCertManager.Wpf.ViewModels
                                 IsSuccess = true,
                                 Message = $"이미 대상 드라이브({targetDriveName})의 동일한 폴더에 보관 중인 원본입니다 (자가 복사 생략)."
                             };
-                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() => 
+                            DispatchSafe(() =>
                             {
                                 _backupHistory.Insert(0, sameResult);
                                 UpdateBackupHistoryIndices();
-                            }));
+                            });
                             skippedCount++;
                             continue;
                         }
@@ -2175,11 +2193,11 @@ namespace KCertManager.Wpf.ViewModels
                                 IsSuccess = true,
                                 Message = $"[중복 방지 건너뜀] 대상 드라이브에 이미 동일한 인증서가 존재하여 복사를 건너뛰었습니다."
                             };
-                            Application.Current?.Dispatcher?.BeginInvoke(new Action(() => 
+                            DispatchSafe(() =>
                             {
                                 _backupHistory.Insert(0, skipResult);
                                 UpdateBackupHistoryIndices();
-                            }));
+                            });
                             ActivityLogService.Instance.Log(
                                 LogCategory.BACKUP,
                                 LogLevel.INFO,
@@ -2224,22 +2242,22 @@ namespace KCertManager.Wpf.ViewModels
                                     IsSuccess = false,
                                     Message = $"기존 폴더 백업 이름 변경 실패로 덮어쓰기를 중단했습니다: {ex.Message}"
                                 };
-                                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                                DispatchSafe(() =>
                                 {
                                     _backupHistory.Insert(0, renameFailResult);
                                     UpdateBackupHistoryIndices();
-                                }));
+                                });
                                 continue;
                             }
                         }
 
                         // [중복 처리 3: 덮어쓰기(overwrite)]
                         var result = _backupService.BackupCertificateToDrive(cert, targetDriveName);
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() => 
+                        DispatchSafe(() =>
                         {
                             _backupHistory.Insert(0, result);
                             UpdateBackupHistoryIndices();
-                        }));
+                        });
                         if (result.IsSuccess)
                         {
                             success++;
@@ -2283,11 +2301,11 @@ namespace KCertManager.Wpf.ViewModels
                             IsSuccess = false,
                             Message = $"복사 중 예외 발생: {ex.Message}"
                         };
-                        Application.Current?.Dispatcher?.BeginInvoke(new Action(() => 
+                        DispatchSafe(() =>
                         {
                             _backupHistory.Insert(0, failResult);
                             UpdateBackupHistoryIndices();
-                        }));
+                        });
                     }
                 }
             });
@@ -2459,23 +2477,20 @@ namespace KCertManager.Wpf.ViewModels
             await RefreshDrivesAsync();
 
             Views.TargetDrivePickerDialog? dialog = null;
-            Application.Current?.Dispatcher?.Invoke(() =>
+            bool? res = null;
+            await DispatchSafeAsync(() =>
             {
                 dialog = new Views.TargetDrivePickerDialog(list, AvailableTargetDrives)
                 {
                     Owner = Application.Current?.MainWindow
                 };
+                res = dialog.ShowDialog();
             });
 
-            if (dialog != null)
+            if (dialog != null && res == true && dialog.SelectedDrive != null)
             {
-                bool? res = null;
-                Application.Current?.Dispatcher?.Invoke(() => { res = dialog.ShowDialog(); });
-                if (res == true && dialog.SelectedDrive != null)
-                {
-                    SelectedTargetDrive = dialog.SelectedDrive;
-                    await ExecuteBackupWithConflictOptionAsync(list, dialog.SelectedDrive, dialog.ConflictOption);
-                }
+                SelectedTargetDrive = dialog.SelectedDrive;
+                await ExecuteBackupWithConflictOptionAsync(list, dialog.SelectedDrive, dialog.ConflictOption);
             }
         }
 
@@ -2674,7 +2689,7 @@ namespace KCertManager.Wpf.ViewModels
                     StatusMessage = $"새 버전(v{info.LatestVersion}) 감지됨";
 
                     bool runFallbackSelfUpdate = false;
-                    Application.Current?.Dispatcher?.Invoke(() =>
+                    await DispatchSafeAsync(() =>
                     {
                         try
                         {
@@ -2703,11 +2718,11 @@ namespace KCertManager.Wpf.ViewModels
                         var selfRes = await UpdateCheckerService.DownloadAndInstallAsync(info);
                         if (selfRes.Success && selfRes.ShouldShutdownForInstall)
                         {
-                            Application.Current?.Dispatcher?.Invoke(() => Application.Current?.Shutdown());
+                            await DispatchSafeAsync(() => Application.Current?.Shutdown());
                         }
                         else if (!selfRes.Success)
                         {
-                            Application.Current?.Dispatcher?.Invoke(() =>
+                            await DispatchSafeAsync(() =>
                                 MessageBox.Show(selfRes.Message, "자동 업데이트 오류", MessageBoxButton.OK, MessageBoxImage.Warning));
                         }
                     }
@@ -2718,7 +2733,7 @@ namespace KCertManager.Wpf.ViewModels
                     if (!isSilentWhenUpToDate)
                     {
                         StatusMessage = $"현재 버전(v{info.CurrentVersion})이 최신 버전입니다.";
-                        Application.Current?.Dispatcher?.Invoke(() =>
+                        await DispatchSafeAsync(() =>
                         {
                             MessageBox.Show(
                                 $"현재 최신 버전(v{info.CurrentVersion})을 사용 중입니다.",
@@ -2739,7 +2754,7 @@ namespace KCertManager.Wpf.ViewModels
                 if (!isSilentWhenUpToDate)
                 {
                     StatusMessage = "업데이트 확인 실패";
-                    Application.Current?.Dispatcher?.Invoke(() =>
+                    await DispatchSafeAsync(() =>
                     {
                         MessageBox.Show($"업데이트 확인 중 오류가 발생했습니다:\n{ex.Message}", "업데이트 확인", MessageBoxButton.OK, MessageBoxImage.Warning);
                     });

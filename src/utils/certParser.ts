@@ -583,15 +583,38 @@ export function parseDerBasic(derBytes: Uint8Array): {
       isSystemCa = true;
     } else {
       // 2. 기관용 공용 인증서 (GPKI / EPKI) 패턴 분석 (예: 001행정안전부001, 경상북도교육감001, 001대법원(특수목적용)001)
+      // 주의: 김지원, 이정원, 김진실, 최부영, 우청하 등 일반 개인 성명에 포함된 단일 음절('원','실','부','청','처') 오탐 방지
       const agencyMatch = rawCn.match(/^(?:[0-9]{3})?([가-힣A-Za-z0-9\(\)\s_\-]+?)(?:[0-9]{3,})?$/);
       const stripped = agencyMatch ? agencyMatch[1].trim() : rawCn;
 
-      const isAgencyKeywords = stripped.includes('청') || stripped.includes('부') || stripped.includes('원') ||
-                               stripped.includes('처') || stripped.includes('실') || stripped.includes('본부') ||
-                               stripped.includes('교육감') || stripped.includes('시장') || stripped.includes('도지사') ||
-                               stripped.includes('구청장') || stripped.includes('군수') || stripped.includes('기관') ||
-                               stripped.includes('관인') || stripped.includes('특수목적') || stripped.includes('서버') ||
-                               stripped.includes('공단') || stripped.includes('공사');
+      const isClass1Like = ouMatches.some(u => /^class1$/i.test(u)) || upperRaw.includes('CA134040003');
+      const hasPersonalOu = ouMatches.some(u => /^personal(?:4ib)?$/i.test(u) || u === '개인');
+      const hasParenthesizedPersonalCn = /^[가-힣]{2,6}\([A-Za-z\s\-]*\)(?:\d{4,})?$/.test(rawCn);
+      const isExplicitPersonal =
+        hasParenthesizedPersonalCn ||
+        (hasPersonalOu && !isClass1Like) ||
+        (category === 'NPKI_BANK' && !policy.includes('법인') && !policy.includes('기관'));
+
+      const multiCharAgencyTerms = [
+        '교육청', '국세청', '관세청', '경찰청', '소방청', '병무청', '조달청', '통계청', '기상청', '산림청', '특허청',
+        '검찰청', '해양경찰청', '문화재청', '방위사업청', '식품의약품안전처', '질병관리청', '농촌진흥청', '중소벤처기업부',
+        '행정안전부', '기획재정부', '외교부', '법무부', '국방부', '교육부', '통일부', '환경부', '보건복지부',
+        '고용노동부', '국토교통부', '농림축산식품부', '산업통상자원부', '과학기술정보통신부', '문화체육관광부',
+        '해양수산부', '여성가족부', '국가보훈부', '법제처', '인사혁신처', '감사원', '국정원', '국가정보원',
+        '대법원', '헌법재판소', '대통령실', '국무조정실', '연구원', '진흥원', '교육원', '연수원', '개발원', '정보원',
+        '위원회', '대한민국정부', '시청', '구청', '군청', '도청', '관리청', '본부', '교육감', '도지사', '구청장',
+        '군수', '특별시장', '광역시장', '기관', '관인', '특수목적', '서버', '센터', '공단', '공사',
+      ];
+      const hasLeadingAgencyCode = /^\d{3}[가-힣]/.test(rawCn);
+      const hasShortSuffixCue =
+        !isExplicitPersonal &&
+        (isClass1Like || hasLeadingAgencyCode || stripped.length >= 4) &&
+        (stripped.endsWith('청') || stripped.endsWith('부') || stripped.endsWith('원') ||
+         stripped.endsWith('처') || stripped.endsWith('실') || stripped.endsWith('시장'));
+
+      const isAgencyKeywords =
+        (!isExplicitPersonal && multiCharAgencyTerms.some(term => stripped.includes(term))) ||
+        hasShortSuffixCue;
 
       if (isAgencyKeywords) {
         isInstitutional = true;

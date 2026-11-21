@@ -49,15 +49,19 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
     };
   }, []);
 
-  const handleCopyText = (key: string, value: string, label: string) => {
+  const handleCopyText = async (key: string, value: string, label: string) => {
     if (!value) return;
     try {
-      navigator.clipboard.writeText(value);
-      setCopiedKey(key);
-      onNotifyCopy?.(`📋 ${label}이(가) 클립보드에 복사되었습니다.`);
-      if (copyTimerRef.current !== null) window.clearTimeout(copyTimerRef.current);
-      copyTimerRef.current = window.setTimeout(() => setCopiedKey(null), 1500);
-    } catch {}
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+        setCopiedKey(key);
+        onNotifyCopy?.(`📋 ${label}이(가) 클립보드에 복사되었습니다.`);
+        if (copyTimerRef.current !== null) window.clearTimeout(copyTimerRef.current);
+        copyTimerRef.current = window.setTimeout(() => setCopiedKey(null), 1500);
+      }
+    } catch {
+      // ignore clipboard error in restricted iframe
+    }
   };
 
   const handleCopyAllDetails = () => {

@@ -149,23 +149,64 @@ namespace KCertManager.Wpf.Views
                 foreach (var cert in _userCertificates)
                 {
                     bool isMatch = false;
-                    string combined = $"{cert.IssuerName} {cert.SubjectDn} {cert.CommonName} {cert.Organization}".ToLower();
+                    string issuerText = $"{cert.IssuerName} {cert.CaSignatureName}".ToLowerInvariant();
+                    string holderText = $"{cert.SubjectDn} {cert.CommonName} {cert.Organization}".ToLowerInvariant();
+                    string policyText = (cert.PolicyUsage ?? string.Empty).ToLowerInvariant();
+                    bool hasExplicitIssuer = !string.IsNullOrWhiteSpace(issuerText) && !issuerText.Contains("알 수 없음");
 
-                    bool isOtherNpki =
-                        combined.Contains("kica") || combined.Contains("한국정보인증") || combined.Contains("signgate") ||
-                        combined.Contains("crosscert") || combined.Contains("한국전자인증") ||
-                        combined.Contains("signkorea") || combined.Contains("코스콤") || combined.Contains("증권") ||
-                        combined.Contains("tradesign") || combined.Contains("한국무역정보통신") || combined.Contains("무역") ||
-                        combined.Contains("inipass") || combined.Contains("이니텍");
+                    bool isGpkiIssuer = issuerText.Contains("gpki") || issuerText.Contains("행정전자서명") || issuerText.Contains("정부") || issuerText.Contains("mpki");
+                    bool isEpkiIssuer = issuerText.Contains("epki") || issuerText.Contains("교육부") || issuerText.Contains("교육행정전자서명");
+                    bool isYessignIssuer = issuerText.Contains("yessign") || issuerText.Contains("금융결제원");
+                    bool isKicaIssuer = issuerText.Contains("kica") || issuerText.Contains("한국정보인증") || issuerText.Contains("signgate");
+                    bool isCrosscertIssuer = issuerText.Contains("crosscert") || issuerText.Contains("한국전자인증");
+                    bool isSignkoreaIssuer = issuerText.Contains("signkorea") || issuerText.Contains("코스콤");
+                    bool isTradesignIssuer = issuerText.Contains("tradesign") || issuerText.Contains("한국무역정보통신");
+                    bool isInipassIssuer = issuerText.Contains("inipass") || issuerText.Contains("이니텍");
 
-                    if (inst.Id == "GPKI" && (cert.Category == CertCategory.GPKI || combined.Contains("gpki") || combined.Contains("행정"))) isMatch = true;
-                    else if (inst.Id == "EPKI" && (cert.Category == CertCategory.EPKI || combined.Contains("epki") || combined.Contains("교육"))) isMatch = true;
-                    else if (inst.Id == "YESSIGN" && (combined.Contains("yessign") || combined.Contains("금융결제원") || combined.Contains("은행") || (cert.Category == CertCategory.NPKI && !isOtherNpki))) isMatch = true;
-                    else if (inst.Id == "KICA" && (combined.Contains("kica") || combined.Contains("한국정보인증") || combined.Contains("signgate"))) isMatch = true;
-                    else if (inst.Id == "CROSSCERT" && (combined.Contains("crosscert") || combined.Contains("한국전자인증"))) isMatch = true;
-                    else if (inst.Id == "SIGNKOREA" && (combined.Contains("signkorea") || combined.Contains("코스콤") || combined.Contains("증권"))) isMatch = true;
-                    else if (inst.Id == "TRADESIGN" && (combined.Contains("tradesign") || combined.Contains("한국무역정보통신") || combined.Contains("무역"))) isMatch = true;
-                    else if (inst.Id == "INIPASS" && (combined.Contains("inipass") || combined.Contains("이니텍"))) isMatch = true;
+                    bool hasExplicitOtherNpkiCa = isKicaIssuer || isCrosscertIssuer || isSignkoreaIssuer || isTradesignIssuer || isInipassIssuer;
+                    bool hasExplicitAnyNpkiCa = isYessignIssuer || hasExplicitOtherNpkiCa;
+
+                    if (inst.Id == "GPKI")
+                    {
+                        isMatch = cert.Category == CertCategory.GPKI ||
+                                  isGpkiIssuer ||
+                                  (!hasExplicitAnyNpkiCa && cert.Category != CertCategory.NPKI && (holderText.Contains("gpki") || holderText.Contains("행정")));
+                    }
+                    else if (inst.Id == "EPKI")
+                    {
+                        isMatch = cert.Category == CertCategory.EPKI ||
+                                  isEpkiIssuer ||
+                                  (!hasExplicitAnyNpkiCa && cert.Category != CertCategory.NPKI && (holderText.Contains("epki") || holderText.Contains("교육")));
+                    }
+                    else if (inst.Id == "KICA")
+                    {
+                        isMatch = isKicaIssuer || (!hasExplicitAnyNpkiCa && !hasExplicitIssuer && (holderText.Contains("kica") || holderText.Contains("한국정보인증") || holderText.Contains("signgate")));
+                    }
+                    else if (inst.Id == "CROSSCERT")
+                    {
+                        isMatch = isCrosscertIssuer || (!hasExplicitAnyNpkiCa && !hasExplicitIssuer && (holderText.Contains("crosscert") || holderText.Contains("한국전자인증")));
+                    }
+                    else if (inst.Id == "SIGNKOREA")
+                    {
+                        isMatch = isSignkoreaIssuer ||
+                                  (!hasExplicitAnyNpkiCa && policyText.Contains("증권")) ||
+                                  (!hasExplicitAnyNpkiCa && !hasExplicitIssuer && (holderText.Contains("signkorea") || holderText.Contains("코스콤") || holderText.Contains("증권")));
+                    }
+                    else if (inst.Id == "TRADESIGN")
+                    {
+                        isMatch = isTradesignIssuer ||
+                                  (!hasExplicitAnyNpkiCa && policyText.Contains("무역")) ||
+                                  (!hasExplicitAnyNpkiCa && !hasExplicitIssuer && (holderText.Contains("tradesign") || holderText.Contains("한국무역정보통신") || holderText.Contains("무역")));
+                    }
+                    else if (inst.Id == "INIPASS")
+                    {
+                        isMatch = isInipassIssuer || (!hasExplicitAnyNpkiCa && !hasExplicitIssuer && (holderText.Contains("inipass") || holderText.Contains("이니텍")));
+                    }
+                    else if (inst.Id == "YESSIGN")
+                    {
+                        isMatch = isYessignIssuer ||
+                                  (cert.Category == CertCategory.NPKI && !hasExplicitOtherNpkiCa);
+                    }
 
                     if (isMatch)
                     {

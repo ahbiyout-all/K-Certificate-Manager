@@ -45,10 +45,16 @@ This software is permanently distributed free of charge (Free License) for civil
     return `${licenseSummaryKR}\n\n--------------------------------------------------------------------------------\n\n${licenseSummaryEN}`;
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(getCopyText());
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(getCopyText());
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch {
+      // ignore clipboard error
+    }
   };
 
   const openSourceLibraries = [

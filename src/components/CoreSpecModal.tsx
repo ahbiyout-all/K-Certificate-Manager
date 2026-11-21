@@ -31,7 +31,7 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
 
   if (!isOpen) return null;
 
-  const copySpecSummary = () => {
+  const copySpecSummary = async () => {
     const text = `[KCert.Core.dll & KCert.Crypto.dll 순수 창작 기술 명세 요약]
 - 버전: v${APP_VERSION} (.NET 10.0 / .NET 8.0 제로 의존성 순수 창작 DLL 듀오)
 - 저작권: ${DEVELOPER_INFO.author} (${DEVELOPER_INFO.blog})
@@ -41,9 +41,15 @@ export const CoreSpecModal: React.FC<CoreSpecModalProps> = ({ isOpen, onClose })
   2. KCert.Core.Parser: OID 역해석 (5대 NPKI 기관 및 GPKI/EPKI), 고속 ASN.1 DER 디코더
   3. KCert.Core.Discovery: AppData\\LocalLow 등 2단계 초고속 Fast-Pass/Deep-Pass 안전 탐색
   4. KCert.Core.HardwareGuard: Win32 DeviceIoControl 버스 식별(USB/NVMe), WMI 핫플러그 감시, 쓰기방지 락 프로브`;
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch {
+      // ignore clipboard error
+    }
   };
 
   return (

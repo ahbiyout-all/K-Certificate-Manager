@@ -1,9 +1,9 @@
-# K-Certificate Manager (K-인증서 매니저) v2.1.1
+# K-Certificate Manager (K-인증서 매니저) v2.2.0
 
 <div align="center">
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Version](https://img.shields.io/badge/Version-v2.1.1-green.svg)
+![Version](https://img.shields.io/badge/Version-v2.2.0-green.svg)
 ![React](https://img.shields.io/badge/React-19.0-61dafb.svg)
 ![Vite](https://img.shields.io/badge/Vite-6.2-646cff.svg)
 ![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512bd4.svg)
@@ -17,23 +17,22 @@
 
 ---
 
-## 🚀 최신 릴리스 정보 (Latest Release: v2.1.1)
+## 🚀 최신 릴리스 정보 (Latest Release: v2.2.0)
 
-> **버전**: `v2.1.1` (Semantic Versioning 2.0.0 PATCH Release)  
-> **출시일**: 2026-11-16  
+> **버전**: `v2.2.0` (Semantic Versioning 2.0.0 MINOR Release)  
+> **출시일**: 2026-11-21  
 > **상세 변경 내역**: [docs/PATCHNOTES.md](./docs/PATCHNOTES.md) • [GitHub 문서](./docs/GITHUB_DOCS.md) • [GitHub 배포 가이드](./docs/GITHUB_GUIDE.md) • [버전 관리 정책](./docs/VERSIONING_POLICY.md)
 
-### 🌟 v2.1.1 핵심 업데이트 및 안정화 내용
-- **복사된 폴더 탐색기 드라이브 루트 정밀 타겟팅 (`OperationCompleteModal`, `BackupModal`, `OperationCompleteDialog`)**:
-  - `'복사된 폴더 열기'` 클릭 시 `resolveCopiedFolderPath`로 드라이브 문자 뒤 누락 백슬래시(`\`)와 `targetPath`·`targetDiskName` 조합을 정규화해 실제 드라이브 루트(`E:\NPKI\...` 등)를 정확히 지정·호출 (`window.open`/`alert` 미사용 안전 폴백 포함)
-- **비표준 경로 정위치 복구 마법사·안전 휴지통 격리 워크플로우 완성 (`App.tsx`, `DiagnosticsRepairDialog`, `CertIntegrityDoctor`)**:
-  - 비표준 경로 인증서를 표준 위치로 복사한 직후 중복 ID 정리 후 원본을 안전 휴지통(`SafetyTrash`)으로 즉시 격리 이동하고 `RESTORE`/`DELETE` 활동 로그와 성공 토스트를 일관되게 기록·표시
-  - WPF `CertIntegrityDoctor.RepairToStandardHierarchy`에 동일 폴더 조기 반환 및 동일 파일 자기덮어쓰기 `IOException` 방지 가드 적용
-- **전수 감사 기반 경로·중복·무결성 안정화 (Web & WPF)**:
-  - **Web**: `skip` 전략으로 실제 복사 `0`건일 때 허위 `"0건 완료"` 모달 대신 `중복 건너뛰기 완료` 화면과 `INFO` 로그·토스트만 출력 (`UsbToPcModal`, `App.tsx`); `USB:\NPKI|GPKI\Certificate|EPKI\Certificate` 표준 경로 인식(`certPathUtils.ts`), `sourceLocation` 폴더명 정규화·TradeSign 법인(`NPKI_CORP`) 분류(`certParser.ts`), `class1` 계층·발급기관+일련번호 중복 판정·외장 SSD/고속 USB 필터 통일(`usbToPcService.ts`, `backupService.ts`, `driveFilter.ts`)
-  - **WPF**: `SafetyTrashManager` 볼륨 간 이동·덮어쓰기 전 `ReadOnly` 속성 재귀 해제, `CertTransferEngine`/`CertificateBackupService`/`UsbTransferViewModel` `class1` 계층 보존 및 동적 시스템 드라이브 적용, `KCertAntiDuplicationEngine` PC 표준 경로 우선(`PrimaryInstance`) 보존 및 SHA-256 누락 폴백 그룹핑, `FastScanPipeline` 말단 `\MPKI` GPKI 인식 보강
-- **v2.1.0 ~ v2.0.0 핵심 기반 계승**:
-  - GitHub 이동 없는 인앱 자동 다운로드·무인 셀프 설치 엔진(`UpdateCheckerService` & `updateChecker.ts`), WPF-Web 다크 테마(`#0F1219` / `#1A1F2C`) 통합 & CSS Grid `auto-fill` 반응형 카드 뷰, 전역 쉬운 일상 표현 + `더보기`/`Expander` UI, 60fps 무한 유동 애니메이션 테두리, Windows DPAPI/AES-256 암호화 보호 보관함, `/dist/v2.1.1/` 버전별 분리 배포 파이프라인 완비
+### 🌟 v2.2.0 핵심 업데이트 및 신규 기능
+- **WPF 앱 시작 무응답(응답없음) 해소 & 3단계 비블로킹 초기 스캔 엔진 (`MainViewModel`, `CertLocationScanner`, `FastScanPipeline`, `UsbStorageGuard`)**:
+  - 시작 직후 UI 블로킹을 유발하던 `DriveInfo.GetDrives()`·네트워크 드라이브·대용량 디렉터리 동기 탐색을 제거하고 **Phase-0 Local Fast-Pass**(`ScanLocalFastAsync`)로 로컬 표준 보관함(`AppData\LocalLow\NPKI`, `C:\GPKI`, `C:\EPKI`)을 즉시 표출
+  - OS `DriveType` 사전 필터로 연결 끊긴 SMB 네트워크 드라이브·CD-ROM·RAM 드라이브를 `IsReady`/`CreateFile` 호출 전 즉시 제외하고, 드라이브별 시간제한 타임아웃 프로브, `ReparsePoint` 심볼릭 링크 순환 가드, `_scanCts` 스캔 취소 및 Deep-Pass 배치 UI 갱신 적용
+- **2026 RSA 3072-bit 상향(2027.02 의무화) 및 인증서 보안 강도 진단 스위트 (Web & WPF)**:
+  - `RSA-3072` / `ECDSA-256` 보안 강도 기준 검증, 취약 키 길이·갱신 대상 인증서 식별 및 2027년 2월 권고·의무화 일정 대응 안내 제공
+- **2026 국내 인증 동향·모바일 신분증(8종)·비액티브엑스 GPKI/EPKI·금융/간편인증 가이드 통합**:
+  - `SecurityGuideModal.tsx`·`koreanCertTrends2026.ts`·`RenewalGuidanceModal.tsx`(Web) 및 `SecurityGuideDialog.xaml`·`RenewalGuidanceDialog.xaml`(WPF)을 통해 행정·교육 Non-ActiveX 및 클라우드 전환, 금융인증서 vs. 민간 간편인증 비교/갱신, 모바일 신분증 8종 및 2026 전자서명 법령 동향을 앱 내 통합 제공
+- **v2.1.1 ~ v2.0.0 핵심 안정화 계승**:
+  - `Class1` 기관·특수목적 인증서 개인키 페어링 & 구분 배지, 비표준 경로 정위치 복구 + 안전 휴지통 격리(`SafetyTrash`), 복사 완료 폴더 드라이브 루트 탐색기 호출, 인앱 3-Tier 자동 업데이트·무인 셀프 설치, DPAPI/AES-256 보호 보관함 및 `/dist/v2.2.0/` 버전별 분리 배포 파이프라인 완비
 
 ---
 
@@ -123,7 +122,7 @@ npm run dev
 build.bat
 ```
 
-빌드가 완료되면 `dist/v2.1.1/` 폴더에 버전별 하위 디렉터리(`web`, `win-x64`, `core-dll`, `unpacked`, `installer`)로 배포용 포터블 실행 파일 및 Inno Setup 설치 프로그램(`kcert-manager-v2.1.1-setup.exe`)이 체계적으로 분리 생성됩니다.
+빌드가 완료되면 `dist/v2.2.0/` 폴더에 버전별 하위 디렉터리(`web`, `win-x64`, `core-dll`, `unpacked`, `installer`)로 배포용 포터블 실행 파일 및 Inno Setup 설치 프로그램(`kcert-manager-v2.2.0-setup.exe`)이 체계적으로 분리 생성됩니다.
 
 ---
 

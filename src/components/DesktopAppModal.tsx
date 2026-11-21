@@ -33,11 +33,17 @@ export const DesktopAppModal: React.FC<DesktopAppModalProps> = ({ isOpen, onClos
 
   if (!isOpen) return null;
 
-  const copyLaunchCommand = () => {
+  const copyLaunchCommand = async () => {
     const text = `kcert-manager.cmd`;
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch {
+      // ignore clipboard error
+    }
   };
 
   return (

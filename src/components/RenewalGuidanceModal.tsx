@@ -27,6 +27,7 @@ import { CertificateItem } from '../types';
 import { BRANDING_ASSETS } from '../data/brandingAssets';
 import { RenewalInstitution, CertRenewalGroup } from '../data/renewalInstitutions';
 import { RENEWAL_ALTERNATIVE_TIPS } from '../data/koreanCertTrends2026';
+import { isCertificateExpired } from '../utils/certParser';
 import { 
   getAllInstitutions, 
   saveInstitution, 
@@ -86,9 +87,9 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
   const groups: CertRenewalGroup[] = groupCertsWithCustomInstitutions(selectedCerts, institutions);
 
   const totalCerts = selectedCerts.length;
-  const expiredCount = selectedCerts.filter(c => c.daysRemaining <= 0).length;
-  const expiringCount = selectedCerts.filter(c => c.daysRemaining > 0 && c.daysRemaining <= 30).length;
-  const validCount = selectedCerts.filter(c => c.daysRemaining > 30).length;
+  const expiredCount = selectedCerts.filter(c => isCertificateExpired(c)).length;
+  const expiringCount = selectedCerts.filter(c => !isCertificateExpired(c) && c.daysRemaining <= 30).length;
+  const validCount = selectedCerts.filter(c => !isCertificateExpired(c) && c.daysRemaining > 30).length;
 
   // Filter groups
   const filteredGroups = groups.filter(g => {
@@ -124,7 +125,11 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
       text += `· 고객센터: ${g.institution.callCenter}\n`;
       text += `· 대상 인증서 (${g.certs.length}건):\n`;
       g.certs.forEach(c => {
-        const statusText = c.daysRemaining <= 0 ? '만료됨' : c.daysRemaining <= 30 ? `만료임박(D-${c.daysRemaining})` : `정상(D-${c.daysRemaining})`;
+        const statusText = isCertificateExpired(c)
+          ? '만료됨'
+          : c.daysRemaining <= 30
+            ? `만료임박(D-${c.daysRemaining})`
+            : `정상(D-${c.daysRemaining})`;
         text += `  - ${c.name} [${c.departmentOrOrg || c.policy}] (만료일: ${c.validTo} / ${statusText})\n`;
       });
       text += `\n`;
@@ -664,8 +669,8 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
 
                     <div className="space-y-2">
                       {certs.map((cert, index) => {
-                        const isExpired = cert.daysRemaining <= 0;
-                        const isExpiring = cert.daysRemaining > 0 && cert.daysRemaining <= 30;
+                        const isExpired = isCertificateExpired(cert);
+                        const isExpiring = !isExpired && cert.daysRemaining <= 30;
 
                         return (
                           <div
@@ -769,14 +774,6 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
                     <p className="font-bold text-indigo-950 mb-0.5">4. 갱신 완료 후</p>
                     <p>메인 화면에서 <strong>[새로고침(F5)]</strong> 후 새 인증서를 USB에 다시 복사하세요.</p>
                   </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
-                  {RENEWAL_ALTERNATIVE_TIPS.map((tip) => (
-                    <div key={tip.title} className="bg-white p-3 rounded-lg border border-indigo-200">
-                      <p className="font-bold text-indigo-950 mb-1">{tip.title}</p>
-                      <p className="text-[11.5px] text-slate-700 leading-relaxed">{tip.desc}</p>
-                    </div>
-                  ))}
                 </div>
               </div>
             )}

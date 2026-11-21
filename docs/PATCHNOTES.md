@@ -14,6 +14,22 @@
 
 ---
 
+### 🚀 [v2.2.0] - 2026-11-21
+**변경 구분**: `MINOR` (2026 국내 인증서 정책·RSA 3072-bit 보안 강도 진단 및 4대 동향 가이드 통합(Web & WPF), WPF 앱 시작 무응답(응답없음) 해소 3단계 비블로킹 초기 스캔 엔진 탑재, 8대 영역 `v2.2.0` 버전 동기화)
+#### ✨ 주요 신규 기능 및 성능·안정화 (Features, Security Posture & Startup Engine)
+- **WPF 앱 시작 무응답(응답없음) 해소 & 3단계 비블로킹 초기 스캔 엔진 (`MainViewModel`, `CertificateScannerService`, `CertLocationScanner`, `FastScanPipeline`, `UsbStorageGuard`, `NativeStorageInterop`, `UsbDriveWatcher`, `MainWindow`)**:
+  - **Phase-0 Local Fast-Pass (`ScanLocalFastAsync`)**: 앱 시작 시 로컬 표준 인증서 경로(`AppData\LocalLow\NPKI`, `C:\GPKI`, `C:\EPKI` 등)를 먼저 비동기 스캔해 UI를 즉시 렌더링한 뒤, 이동식·외부 드라이브를 후속 Deep-Pass로 분리 탐색.
+  - **OS `DriveType` 사전 필터 및 드라이브 타임아웃 가드**: 연결이 끊긴 SMB 네트워크 드라이브(`DriveType.Network`), 광학 드라이브(`CDRom`), RAM 디스크를 `IsReady`/`CreateFile` 호출 이전에 차단하고 드라이브별 시간제한 프로브를 적용해 I/O 행(Hang) 원천 제거.
+  - **재귀 순환 방어·취소·배치 갱신**: `FileAttributes.ReparsePoint` 심볼릭 링크/정션 무한 루프 방어, `_scanCts` 기반 이전 스캔 즉시 취소, Deep-Pass 발견 항목 배치 UI 반영으로 UI 스레드 포화 차단.
+- **2026 RSA 3072-bit 상향(2027.02 의무화) 및 인증서 보안 강도 진단 스위트 (Web & WPF)**:
+  - `RSA-3072` / `ECDSA-256` 보안 강도 기준 평가, `RSA-2048` 이하 또는 취약 해시/만료 예정 인증서 식별 및 갱신 안내 배지·진단 리포트 제공 (`certParser.ts`, `SecurityPostureCard`, `KoreanCertPolicyOids.cs`, `CertificateItem.cs`).
+- **2026 국내 인증 동향 4대 핵심 주제 통합 (Web & WPF & 가이드 문서)**:
+  - **1) RSA 3072-bit 상향 및 보안강도 진단**, **2) GPKI·EPKI 비액티브엑스(Non-ActiveX) 및 클라우드 전환 안내**, **3) 금융인증서·민간 간편인증 비교 및 갱신 가이드**, **4) 모바일 신분증(8종) 전자서명 및 2026 법령 동향**을 Web 모달(`SecurityGuideModal.tsx`, `DiagnosticsRepairModal.tsx`, `RenewalGuidanceModal.tsx`)과 WPF 다이얼로그(`SecurityGuideDialog.xaml`, `DiagnosticsRepairDialog.xaml`, `RenewalGuidanceDialog.xaml`)·툴바에 동시 반영.
+- **8대 영역 `v2.2.0` 공식 버전 동기화**:
+  - `package.json`, `src/version.ts`, `TrashModal.tsx`, WPF 3종 `.csproj`, `UpdateCheckerService.cs`, XAML/CS UI(`MainWindow`, `AboutDialog`, `UpdateNotificationDialog`), `installer.iss`, `build.ps1/.bat/.cmd`, `.github/workflows/build.yml`, `README.md` 및 `/docs` 문서 전체를 `v2.2.0`으로 동기화.
+
+---
+
 ### 🚀 [v2.1.1] - 2026-11-16 (최신 안정화 반영: 2026-11-18)
 **변경 구분**: `PATCH` (복사 완료 폴더 실제 드라이브 루트 탐색기 타겟팅 보강, 비표준 정위치 복구 후 안전 휴지통 격리 워크플로우 완성, `Class1` 기관·특수목적 인증서 개인키 페어링·GPKI/EPKI 구분 배지·사이드바 필터 신설 및 Web/WPF 5차 심층 전수 감사 안정화)
 #### ✨ 주요 보강 및 안정화 (Improvements, Bug Fixes & Stability)

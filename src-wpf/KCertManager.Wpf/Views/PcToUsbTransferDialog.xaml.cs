@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
@@ -38,7 +39,17 @@ namespace KCertManager.Wpf.Views
         {
             if (e.PropertyName == nameof(PcToUsbTransferViewModel.SelectedTargetDrive))
             {
-                UpdateDriveCardBorder();
+                if (Dispatcher == null || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+                    return;
+
+                if (Dispatcher.CheckAccess())
+                {
+                    UpdateDriveCardBorder();
+                }
+                else
+                {
+                    Dispatcher.BeginInvoke(new Action(UpdateDriveCardBorder));
+                }
             }
         }
 

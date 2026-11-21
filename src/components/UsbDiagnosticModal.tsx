@@ -131,22 +131,27 @@ export const UsbDiagnosticModal: React.FC<UsbDiagnosticModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleCopyVsn = (vsn: string) => {
+  const handleCopyVsn = async (vsn: string) => {
+    if (!vsn) return;
     try {
-      navigator.clipboard?.writeText(vsn);
-      setCopiedVsn(vsn);
-      if (copiedVsnTimerRef.current !== null) window.clearTimeout(copiedVsnTimerRef.current);
-      copiedVsnTimerRef.current = window.setTimeout(() => setCopiedVsn(null), 2000);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(vsn);
+        setCopiedVsn(vsn);
+        if (copiedVsnTimerRef.current !== null) window.clearTimeout(copiedVsnTimerRef.current);
+        copiedVsnTimerRef.current = window.setTimeout(() => setCopiedVsn(null), 2000);
+      }
     } catch {}
   };
 
-  const handleCopyAllLogs = () => {
+  const handleCopyAllLogs = async () => {
     try {
       const text = exportWmiDiagnosticLogAsText(drives);
-      navigator.clipboard?.writeText(text);
-      setCopiedLogs(true);
-      if (copiedLogsTimerRef.current !== null) window.clearTimeout(copiedLogsTimerRef.current);
-      copiedLogsTimerRef.current = window.setTimeout(() => setCopiedLogs(false), 2000);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        setCopiedLogs(true);
+        if (copiedLogsTimerRef.current !== null) window.clearTimeout(copiedLogsTimerRef.current);
+        copiedLogsTimerRef.current = window.setTimeout(() => setCopiedLogs(false), 2000);
+      }
     } catch {}
   };
 

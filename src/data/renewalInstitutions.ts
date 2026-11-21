@@ -320,7 +320,7 @@ export const DEFAULT_INSTITUTION_DIRECTORY: Record<string, RenewalInstitution> =
     portalName: '한국전자인증 공식 홈페이지',
     portalUrl: 'https://www.crosscert.com',
     menuGuide: '인증서 관리 > 인증서 갱신 신청',
-    callCenter: '1566-0578',
+    callCenter: '1566-0566',
     description: '개인/법인 범용공동인증서, 글로벌 SSL/TLS 보안서버 인증서 갱신 포털',
     notice: '만료 30일 전부터 갱신할 수 있으며, 2027.02.15 이후 RSA 3072-bit 상향 규격이 적용됩니다.',
     aliases: ['한국전자인증', 'crosscert', '크로스써트'],

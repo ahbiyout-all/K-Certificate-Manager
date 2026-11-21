@@ -52,11 +52,17 @@ export const CertificateDetailModal: React.FC<CertificateDetailModalProps> = ({
   const isInstitutional = isInstitutionalOrClass1(cert);
   const cryptoMeta = getCryptoPostureMeta(cert);
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = async (text: string) => {
     if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedPath(true);
-    setTimeout(() => setCopiedPath(false), 2000);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        setCopiedPath(true);
+        setTimeout(() => setCopiedPath(false), 2000);
+      }
+    } catch {
+      // ignore clipboard error in restricted iframe
+    }
   };
 
   return (

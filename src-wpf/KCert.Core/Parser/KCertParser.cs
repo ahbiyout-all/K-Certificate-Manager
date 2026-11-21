@@ -451,16 +451,45 @@ namespace KCert.Core.Parser
 
             // 3. 기관용 공용 인증서 (GPKI / EPKI) 패턴 분석
             // 예: 001행정안전부001, 001대법원(특수목적용)001, 경상북도교육감001, 서울특별시장001, 001한국지능정보사회진흥원001
+            // 주의: 김지원, 이정원, 김진실, 최부영, 우청하 등 일반 개인 성명에 포함된 단일 음절('원','실','부','청','처') 오탐 방지
             var agencyMatch = Regex.Match(cleanName, @"^(?:[0-9]{3})?([가-힣A-Za-z0-9\(\)\s_\-]+?)(?:[0-9]{3,})?$");
             string strippedName = agencyMatch.Success ? agencyMatch.Groups[1].Value.Trim() : cleanName;
 
-            bool hasAgencyKeywords = strippedName.Contains("청") || strippedName.Contains("부") || strippedName.Contains("원") ||
-                                     strippedName.Contains("처") || strippedName.Contains("실") || strippedName.Contains("본부") ||
-                                     strippedName.Contains("교육감") || strippedName.Contains("시장") || strippedName.Contains("도지사") ||
-                                     strippedName.Contains("구청장") || strippedName.Contains("군수") || strippedName.Contains("기관") ||
-                                     strippedName.Contains("관인") || strippedName.Contains("특수목적") || strippedName.Contains("서버") ||
-                                     strippedName.Contains("센터") || strippedName.Contains("공단") || strippedName.Contains("공사") ||
-                                     policy.UsageDescription.Contains("기관");
+            bool hasPersonalOu = ous.Any(u =>
+                u.Equals("personal4IB", StringComparison.OrdinalIgnoreCase) ||
+                u.Equals("personal", StringComparison.OrdinalIgnoreCase) ||
+                u.Equals("개인", StringComparison.OrdinalIgnoreCase));
+            bool hasParenthesizedPersonalCn = Regex.IsMatch(cleanName, @"^[가-힣]{2,6}\([A-Za-z\s\-]*\)(?:[0-9]{4,})?$");
+            bool isExplicitPersonal =
+                hasParenthesizedPersonalCn ||
+                (hasPersonalOu && !isClass1) ||
+                (policy.SystemType == CertSystemType.NPKI &&
+                 !policy.UsageDescription.Contains("법인") &&
+                 !policy.UsageDescription.Contains("기관") &&
+                 !policy.UsageDescription.Contains("특수목적"));
+
+            string[] multiCharAgencyTerms =
+            {
+                "교육청", "국세청", "관세청", "경찰청", "소방청", "병무청", "조달청", "통계청", "기상청", "산림청", "특허청",
+                "검찰청", "해양경찰청", "문화재청", "방위사업청", "식품의약품안전처", "질병관리청", "농촌진흥청", "중소벤처기업부",
+                "행정안전부", "기획재정부", "외교부", "법무부", "국방부", "교육부", "통일부", "환경부", "보건복지부",
+                "고용노동부", "국토교통부", "농림축산식품부", "산업통상자원부", "과학기술정보통신부", "문화체육관광부",
+                "해양수산부", "여성가족부", "국가보훈부", "법제처", "인사혁신처", "감사원", "국정원", "국가정보원",
+                "대법원", "헌법재판소", "대통령실", "국무조정실", "연구원", "진흥원", "교육원", "연수원", "개발원", "정보원",
+                "위원회", "대한민국정부", "시청", "구청", "군청", "도청", "관리청", "본부", "교육감", "도지사", "구청장",
+                "군수", "특별시장", "광역시장", "기관", "관인", "특수목적", "서버", "센터", "공단", "공사"
+            };
+
+            bool hasLeadingAgencyCode = Regex.IsMatch(cleanName, @"^\d{3}[가-힣]");
+            bool hasShortSuffixCue = !isExplicitPersonal &&
+                                     (isClass1 || hasLeadingAgencyCode || strippedName.Length >= 4) &&
+                                     (strippedName.EndsWith("청") || strippedName.EndsWith("부") || strippedName.EndsWith("원") ||
+                                      strippedName.EndsWith("처") || strippedName.EndsWith("실") || strippedName.EndsWith("시장"));
+
+            bool hasAgencyKeywords =
+                (!isExplicitPersonal && multiCharAgencyTerms.Any(term => strippedName.Contains(term, StringComparison.OrdinalIgnoreCase))) ||
+                hasShortSuffixCue ||
+                (!isExplicitPersonal && (policy.UsageDescription.Contains("기관") || policy.UsageDescription.Contains("관인") || policy.UsageDescription.Contains("특수목적")));
 
             if (hasAgencyKeywords)
             {

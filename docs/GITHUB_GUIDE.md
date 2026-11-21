@@ -24,12 +24,12 @@
 * **`feature/*` / `bugfix/*`**: 신규 기능 구현 및 결함 수정을 위한 작업 브랜치.
 
 ### 2) 시맨틱 버저닝 (SemVer 2.0.0) 태깅
-* 태그 형식: `v{MAJOR}.{MINOR}.{PATCH}` (예: `v2.1.1`)
+* 태그 형식: `v{MAJOR}.{MINOR}.{PATCH}` (예: `v2.2.0`)
 * 태그 생성 시 GitHub Actions가 버전 문자열을 추출하여 Inno Setup 인스톨러 컴파일 및 GitHub Release 본문을 자동 생성합니다.
 * 동적 버전 판별 3단계 파이프라인:
-  1. **1차 기준**: Git Tag 문자열 (예: `v2.1.1` ➔ `2.1.1`)
+  1. **1차 기준**: Git Tag 문자열 (예: `v2.2.0` ➔ `2.2.0`)
   2. **2차 기준**: `package.json`의 `"version"` 필드
-  3. **3차 기준**: `docs/PATCHNOTES.md` 상단 최신 릴리스 헤더 (`### 🚀 [v2.1.1]`)
+  3. **3차 기준**: `docs/PATCHNOTES.md` 상단 최신 릴리스 헤더 (`### 🚀 [v2.2.0]`)
 
 ---
 
@@ -59,38 +59,39 @@
 * **트리거**: `v*` 태그 푸시, `main` 브랜치 푸시 또는 수동 실행(`workflow_dispatch`)
 * **러너 환경**: `windows-latest`
 * **주요 단계**:
-  1. **버전 자동 감지**: `package.json` 및 Git 참조에서 릴리스 버전(`2.1.1`) 추출
+  1. **버전 자동 감지**: `package.json` 및 Git 참조에서 릴리스 버전(`2.2.0`) 추출
   2. **런타임 환경 구성**: Node.js 24 런타임 및 .NET 10.0 / 8.0 SDK 설치
   3. **Web 콘솔 빌드**: `npm run build`를 통해 `dist/` 정적 번들 생성
   4. **C# WPF 데스크톱 컴파일**:
      * 순수 코어 라이브러리 `KCert.Core.dll` 및 암호화 라이브러리 `KCert.Crypto.dll` 빌드
-     * 정식 독립 실행형 데스크톱 앱 `KCertManager_v2.1.1.exe` (Self-Contained) 빌드
-     * 초경량 에디션 `KCertManager-Lite_v2.1.1.exe` (Framework-Dependent) 빌드
+     * 정식 독립 실행형 데스크톱 앱 `KCertManager_v2.2.0.exe` (Self-Contained) 빌드
+     * 초경량 에디션 `KCertManager-Lite_v2.2.0.exe` (Framework-Dependent) 빌드
   5. **Inno Setup 인스톨러 패키징**:
      * Inno Setup 6 자동 다운로드 및 ISCC 컴파일
-     * 폴더 풀림(Unpacked Multi-File) 레이아웃 설치 프로그램 `kcert-manager-v2.1.1-setup.exe` 생성
+     * 폴더 풀림(Unpacked Multi-File) 레이아웃 설치 프로그램 `kcert-manager-v2.2.0-setup.exe` 생성
      * Windows 방화벽 인바운드 규칙 사전 등록 및 무인 설치 스위치 검증
   6. **GitHub Release 자동 발행 (`softprops/action-gh-release@v2`)**:
      * 태그 기반 Release 생성 및 릴리스 노트 자동 등록
-     * 공식 설치 파일(`dist/v2.1.1/installer/kcert-manager-v2.1.1-setup.exe`) 단독 첨부 배포
+     * 공식 설치 파일(`dist/v2.2.0/installer/kcert-manager-v2.2.0-setup.exe`) 단독 첨부 배포
 
 ---
 
-## 📦 4. 최신 v2.1.1 GitHub Release 배포 명세
+## 📦 4. 최신 v2.2.0 GitHub Release 배포 명세
 
-* **릴리스 태그**: `v2.1.1`
-* **릴리스 타이틀**: `K-Certificate Manager v2.1.1 (PATCH Release)`
+* **릴리스 태그**: `v2.2.0`
+* **릴리스 타이틀**: `K-Certificate Manager v2.2.0 (MINOR Release)`
 * **공식 첨부 자산 (Assets)**:
-  * `kcert-manager-v2.1.1-setup.exe` (~40MB, Inno Setup 윈도우 정식 설치 프로그램)
+  * `kcert-manager-v2.2.0-setup.exe` (~40MB, Inno Setup 윈도우 정식 설치 프로그램)
 * **핵심 기능 요약**:
-  1. **인앱 자동 다운로드 · 무인 셀프 설치 엔진 (`DownloadAndInstallAsync`)**: 업데이트 팝업에서 확인 시 GitHub 브라우저 이동 없이 직접 패키지를 다운로드·검증 후 자동 설치 및 앱 재시작 수행
-  2. **WPF-Web 다크 테마 패리티 & CSS Grid `auto-fill` 반응형 카드 레이아웃**: Web 콘솔 기본 다크 테마 통일, 모달 대비 수정 및 화면 너비 기반 인증서 카드 자동 리플로우
-  3. **전역 UI 쉬운 일상 표현 우선 + 접이식 안내 개편**: Web 26개 모듈과 WPF 다이얼로그 전체의 문구 간결화 및 `더보기` / `Expander` 적용
-  4. **폴더 열기 드라이브 루트 보정 · 정위치 복구 마법사 · Class1 기관 구분 및 5차 전수 감사 안정화**:
-     * `OperationCompleteModal`/`OperationCompleteDialog` 실제 드라이브 루트(`E:\NPKI\...`) 탐색기 타겟팅, 비표준 복구 후 안전 휴지통 격리 및 활동 로그·토스트 연동(`handleRepairFolders` · `DiagnosticsRepairDialog` · `CertIntegrityDoctor` `specificDerPath`)
-     * `Class1` (`C:\GPKI\Certificate\class1`, EPKI, USB `class1`) 개인키 쌍 필터링, `CLASS1 · 공무원(GPKI)`/`교육(EPKI)`/`기관` 배지 구분 및 사이드바 `'CLASS1'` 필터·키워드 검색 지원
-     * `.NET`/`WPF` CI 컴파일(`Regex`/널 참조 경고) 해소, `DispatchSafe`/`OnClosed`/`IDisposable` 수명주기 정리 및 Web 타이머·리스너 누수·JSON 스키마 하드닝 완료
-  5. **빌드 파이프라인 `/dist/v2.1.1/` 분리 배포**: `/dist/v2.1.1/web`, `/win-x64`, `/core-dll`, `/unpacked`, `/installer`
+  1. **3단계 비차단 시작 스캔 & WMI 드라이브 하드닝**: `0단계 Local Fast-Pass` ➔ `1단계 Drive Fast-Pass` ➔ `2단계 Deep-Pass` 분리, OS `DriveType` 필터·바운디드 드라이브 준비 검사(`IsDriveReadyBounded`) 및 단일 `DrivesChanged` 디바운스로 앱 시작 직후 `응답없음` 원천 해소
+  2. **2026 국내 인증 동향 · RSA 3072-bit 보안강도 점검 & 7대 인증 체계 비교 (Web & WPF)**:
+     * 오프라인 X.509 ASN.1 파서 기반 공개키 비트 길이(1024/2048/3072/4096-bit, ECDSA) 및 서명 알고리즘(`3072-bit 권장` / `2048-bit 전환 대상` / `1024-bit·SHA-1 취약`) 진단
+     * `보안 수칙·동향`(`SecurityGuideModal`/`SecurityGuideDialog`), `진단 및 복구`(`보안강도 점검` 탭), `갱신 안내`에 2027.02.15 RSA 3072-bit, GPKI·EPKI 비액티브엑스, 2026.08.28 모바일 신분증 8종 동향 통합
+  3. **전수 감사 안정화 (작업 차수 191~193)**:
+     * 개인 성명 `(기관용)` 오분류 교정, `CertIntegrityDoctor` 동적 키 파일명 & `cn=` 표준 경로 정밀화, `RenewalGuidanceDialog`/`renewalStore` 발급기관(Issuer) 우선 매칭
+     * WPF `DispatchSafeAsync`·`SafeGetFullPath`·`OpenTargetDrivePickerForCertificatesAsync`·`SearchLocationsDialog` Fast-Pass 유지 및 Web 비동기 클립보드·새로고침 시퀀스·`targetDrive` 널 가드 적용
+  4. **인앱 자동 다운로드 · 다크 테마 Visual Parity · `Class1` 필터 기반 계승** (`v2.1.x`)
+  5. **빌드 파이프라인 `/dist/v2.2.0/` 분리 배포**: `/dist/v2.2.0/web`, `/win-x64`, `/core-dll`, `/unpacked`, `/installer`
 
 ---
 
@@ -108,7 +109,7 @@ K-인증서 매니저는 사용자가 최신 버전을 놓치지 않도록 GitHu
 [ 3단계: /repos/:owner/:repo/tags (Git 태그 직결 엔드포인트) ]
        │
        ▼
-[ 최신 v2.1.1 버전 즉각 감지 & 확인 시 앱 내 자동 다운로드·무인 셀프 설치 실행 ]
+[ 최신 v2.2.0 버전 즉각 감지 & 확인 시 앱 내 자동 다운로드·무인 셀프 설치 실행 ]
 ```
 
 * **타임스탬프 캐시 버스팅**: `?_t=Date.now()` 파라미터 및 `Cache-Control: no-cache` 헤더를 적용하여 GitHub API의 로컬 브라우저/프록시 캐시 문제를 완전 해결
@@ -138,7 +139,7 @@ GitHub 공개 저장소 운영 시 민감한 개인 인증서 정보가 원격�
 
 1. **버그 제보 (Bug Report)**:
    * [GitHub Issues](https://github.com/AhBiYout-all/K-Certificate-Manager/issues)에서 새로운 이슈를 생성합니다.
-   * 운영체제 버전(Windows 10 / 11), 사용 중인 K-인증서 매니저 버전(예: `v2.1.1`), 오류 발생 경로 및 스크린샷을 첨부해 주시면 신속히 반영됩니다.
+   * 운영체제 버전(Windows 10 / 11), 사용 중인 K-인증서 매니저 버전(예: `v2.2.0`), 오류 발생 경로 및 스크린샷을 첨부해 주시면 신속히 반영됩니다.
 2. **기능 제안 (Feature Request)**:
    * 새로운 공인인증서 경로 지원, UI 편의 기능 등 다양한 아이디어를 Issue로 남겨주세요.
 3. **Pull Request (PR) 가이드**:

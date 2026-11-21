@@ -230,7 +230,7 @@ namespace KCertManager.Wpf.Views
 
                     _openTargetPickerHandler = (targets) =>
                     {
-                        DispatchUi(() => OpenTargetDrivePickerForCertificates(targets));
+                        DispatchUi(() => _ = OpenTargetDrivePickerForCertificatesAsync(targets));
                     };
                     ViewModel.RequestOpenTargetDrivePicker += _openTargetPickerHandler;
                 }
@@ -760,7 +760,7 @@ namespace KCertManager.Wpf.Views
             dialog.ShowDialog();
         }
 
-        public async void OpenTargetDrivePickerForCertificates(System.Collections.Generic.IList<CertificateItem> targets)
+        public async Task OpenTargetDrivePickerForCertificatesAsync(System.Collections.Generic.IList<CertificateItem> targets)
         {
             if (ViewModel == null || targets == null || !targets.Any()) return;
 
@@ -793,7 +793,7 @@ namespace KCertManager.Wpf.Views
         {
             if (sender is Button btn && btn.DataContext is CertificateItem item)
             {
-                OpenTargetDrivePickerForCertificates(new System.Collections.Generic.List<CertificateItem> { item });
+                _ = OpenTargetDrivePickerForCertificatesAsync(new System.Collections.Generic.List<CertificateItem> { item });
             }
         }
 
@@ -801,7 +801,7 @@ namespace KCertManager.Wpf.Views
         {
             if (CertDataGrid.SelectedItem is CertificateItem item)
             {
-                OpenTargetDrivePickerForCertificates(new System.Collections.Generic.List<CertificateItem> { item });
+                _ = OpenTargetDrivePickerForCertificatesAsync(new System.Collections.Generic.List<CertificateItem> { item });
             }
             else
             {
@@ -884,7 +884,7 @@ namespace KCertManager.Wpf.Views
                 }
             }
 
-            OpenTargetDrivePickerForCertificates(selected);
+            _ = OpenTargetDrivePickerForCertificatesAsync(selected);
         }
 
         private void BackupAll_Click(object sender, RoutedEventArgs e)
@@ -903,7 +903,7 @@ namespace KCertManager.Wpf.Views
                 return;
             }
 
-            OpenTargetDrivePickerForCertificates(all);
+            _ = OpenTargetDrivePickerForCertificatesAsync(all);
         }
 
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)

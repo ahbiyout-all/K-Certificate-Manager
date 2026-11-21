@@ -11,11 +11,12 @@ using System.Threading.Tasks;
 namespace KCert.Core.Discovery
 {
     /// <summary>
-    /// 2단계 분리형 초고속 인증서 스캔 최적화 파이프라인 (Fast-Pass & Deep-Pass Engine)
+    /// 3단계 비차단 초고속 인증서 스캔 최적화 파이프라인 (0단계 Local Fast-Pass, 1단계 Fast-Pass, 2단계 Deep-Pass)
     /// </summary>
     /// <remarks>
-    /// 1단계(Fast-Pass): 표준 NPKI/GPKI/EPKI 경로만 0.05~0.1초 만에 즉각 스캔하여 사용자 화면을 즉시 갱신
-    /// 2단계(Deep-Pass): 비표준 및 보조 저장소를 백그라운드 스레드에서 점진적으로 스캔하여 UI에 병합
+    /// 0단계(Local Fast-Pass): 외장/네트워크 드라이브 지연 없이 PC 로컬 표준 경로(LocalLow, C:\)만 즉시 스캔
+    /// 1단계(Fast-Pass): 준비된 로컬·이동식 드라이브 표준 경로를 고속 병렬 스캔
+    /// 2단계(Deep-Pass): 비표준 및 심층 경로를 백그라운드 스레드에서 점진적으로 스캔하여 UI에 병합
     /// </remarks>
     public class FastScanPipeline
     {
@@ -165,7 +166,7 @@ namespace KCert.Core.Discovery
                             {
                                 if (cancellationToken.IsCancellationRequested) break;
 
-                                var fullDer = Path.GetFullPath(der);
+                                var fullDer = SafeGetFullPath(der);
                                 if (seenDers.TryAdd(fullDer, true))
                                 {
                                     var loc = BuildDiscoveredLocation(fullDer);
@@ -231,6 +232,19 @@ namespace KCert.Core.Discovery
             catch
             {
                 return null;
+            }
+        }
+
+        private static string SafeGetFullPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return string.Empty;
+            try
+            {
+                return Path.GetFullPath(path);
+            }
+            catch
+            {
+                return path;
             }
         }
     }

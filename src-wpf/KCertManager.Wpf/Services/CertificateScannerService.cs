@@ -13,7 +13,7 @@ using KCertManager.Wpf.Models;
 namespace KCertManager.Wpf.Services
 {
     /// <summary>
-    /// 2단계 분리형 초고속 인증서 스캐너 서비스 (Fast-Pass: 0.1초 즉시 로딩, Deep-Pass: 백그라운드 실시간 갱신)
+    /// 3단계 비차단 초고속 인증서 스캐너 서비스 (0단계 Local Fast-Pass + 1단계 Drive Fast-Pass + 2단계 Deep-Pass)
     /// </summary>
     public class CertificateScannerService
     {
@@ -59,7 +59,7 @@ namespace KCertManager.Wpf.Services
                 {
                     if (ct.IsCancellationRequested) return;
 
-                    var canonicalDer = Path.GetFullPath(loc.DerFilePath);
+                    var canonicalDer = SafeGetFullPath(loc.DerFilePath);
                     if (!seenDerPaths.TryAdd(canonicalDer, true)) return;
 
                     var item = ParseCertificateFile(canonicalDer);
@@ -125,7 +125,7 @@ namespace KCertManager.Wpf.Services
             {
                 if (ct.IsCancellationRequested) return;
 
-                var canonicalDer = Path.GetFullPath(loc.DerFilePath);
+                var canonicalDer = SafeGetFullPath(loc.DerFilePath);
                 if (!seenDerPaths.TryAdd(canonicalDer, true)) return;
 
                 var item = ParseCertificateFile(canonicalDer);
@@ -141,7 +141,7 @@ namespace KCertManager.Wpf.Services
             }, existingDerPaths, ct);
         }
 
-        public List<CertificateItem> ScanCertificates(IEnumerable<string>? customPaths = null)
+        public List<CertificateItem> ScanCertificates(IEnumerable<string>? customPaths = null, CancellationToken ct = default)
         {
             var results = new List<CertificateItem>();
             var searchPaths = new HashSet<string>(customPaths ?? GetDefaultSearchPaths(), StringComparer.OrdinalIgnoreCase);
@@ -151,22 +151,35 @@ namespace KCertManager.Wpf.Services
 
             // 병렬 드라이브/루트 탐색 적용
             var derFilesBag = new ConcurrentBag<string>();
-            Parallel.ForEach(searchPaths, new ParallelOptions { MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount) }, rootPath =>
+            try
             {
-                try
+                Parallel.ForEach(searchPaths, new ParallelOptions
                 {
-                    if (Directory.Exists(rootPath))
+                    CancellationToken = ct,
+                    MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount)
+                }, rootPath =>
+                {
+                    if (ct.IsCancellationRequested) return;
+                    try
                     {
-                        var files = CertLocationScanner.SafeEnumerateCertFiles(rootPath, maxDepth: 5);
-                        foreach (var f in files) derFilesBag.Add(f);
+                        if (Directory.Exists(rootPath))
+                        {
+                            var files = CertLocationScanner.SafeEnumerateCertFiles(rootPath, ct, maxDepth: 5);
+                            foreach (var f in files) derFilesBag.Add(f);
+                        }
                     }
-                }
-                catch { }
-            });
+                    catch { }
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                return results;
+            }
 
             foreach (var derPath in derFilesBag)
             {
-                var canonicalDer = Path.GetFullPath(derPath);
+                if (ct.IsCancellationRequested) break;
+                var canonicalDer = SafeGetFullPath(derPath);
                 if (globalSeenDerFiles.Contains(canonicalDer)) continue;
 
                 var item = ParseCertificateFile(canonicalDer);
@@ -281,6 +294,19 @@ namespace KCertManager.Wpf.Services
             {
                 System.Diagnostics.Debug.WriteLine($"[Parse Error] {derFilePath}: {ex.Message}");
                 return null;
+            }
+        }
+
+        private static string SafeGetFullPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return string.Empty;
+            try
+            {
+                return Path.GetFullPath(path);
+            }
+            catch
+            {
+                return path;
             }
         }
     }

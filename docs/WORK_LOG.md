@@ -7,7 +7,7 @@
 ## 📌 프로젝트 기본 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v2.1.1` (Semantic Versioning 2.0.0 PATCH Release)
+- **현재 버전**: `v2.2.0` (Semantic Versioning 2.0.0 MINOR Release)
 - **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
 - **구글 공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **공식 홈페이지**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr) ((주)청운정보시스템)
@@ -16,6 +16,94 @@
 ---
 
 ## 📅 작업 기록 상세 내역
+
+### 📝 [작업 차수 193] v2.2.0 3차 심층 전수 감사(Self-Reflection & Deep Audit) 결함 수정 및 전체 문서 v2.2.0 현행화
+- **작업 일시**: 2026-11-21 12:15 KST
+- **요청 사항**:
+  - `자아성찰(Self-Reflection & Deep Audit) 과 오류 수정 그리고 문서들 업데이트`
+- **코드 감사 및 결함 수정 내역**:
+  1. **인증서 갱신 기관 매칭 오분류 결함 교정 (`RenewalGuidanceDialog.xaml.cs`, `src/utils/renewalStore.ts`)**:
+     - 기존 로직이 보유자 이름·소속(`SubjectDn`, `CommonName`, `departmentOrOrg`)의 부분 문자열(`행정`, `교육`, `무역`, `증권` 등)을 발급기관(`IssuerName` / `issuer`)보다 먼저 또는 동일 비중으로 검사해 일반 `NPKI`(금융결제원 `yessign` 등) 인증서가 `GPKI`, `EPKI` 또는 타 공인인증기관으로 오매칭·중복 집계되던 결함을 수정.
+     - WPF·Web 모두 **인증서 분류(`Category`) 및 명시적 발급기관(`IssuerName`/`CaSignatureName`/`issuer`)과 정책 OID를 최우선 판별**하고, 금융결제원(`yessign`) 또는 미식별 발급자일 때만 보유자 OU/소속 기반 세부 은행 힌트 매칭을 허용하도록 재설계.
+  2. **스캐너 취소 토큰 누락 및 경로 정규화 예외 방어 (`CertificateScannerService.cs`, `FastScanPipeline.cs`)**:
+     - `CertificateScannerService.ScanCertificates` 내부 `SafeEnumerateCertFiles(rootPath, maxDepth: 5)` 호출 시 `CancellationToken ct`가 누락되어 있던 부분을 전달하도록 보완.
+     - `CertificateScannerService` 및 `FastScanPipeline` 병렬 탐색 루프 내 무방비 `Path.GetFullPath(...)` 호출을 `SafeGetFullPath` 헬퍼로 감싸 비정상 경로문자열로 인한 루프 중단 방지 및 클래스 XML 주석을 3단계 비차단 파이프라인 기준으로 현행화.
+  3. **기관 고객센터 전화번호 정합성 교정 (`src/data/renewalInstitutions.ts`, `src/components/SecurityGuideModal.tsx`)**:
+     - 한국전자인증(CrossCert) 고객센터 번호 오기(`1566-0578` ➔ 공식 `1566-0566`) 및 보안 수칙 모달 내 GPKI 행정전자서명인증센터 번호(`1544-6720` ➔ 공식 `02-818-7777`)를 WPF·웹 마스터 디렉터리와 일치시킴.
+- **문서 전체 `v2.2.0` 현행화 내역**:
+  1. `docs/README.md`, `docs/ARCHITECTURE.md`, `docs/GITHUB_DOCS.md`, `docs/GITHUB_GUIDE.md`, `docs/BUILD_GUIDE.md`, `docs/WPF_NATIVE_GUIDE.md`, `docs/USER_GUIDE.md`를 모두 `v2.2.0` (3단계 비차단 시작 스캔, RSA 3072-bit 보안강도 점검, 2026 인증 동향 7대 비교, 작업 차수 191~193 수정) 기준으로 현행화.
+  2. `docs/BLOG_v2.2.0.md` (Compose + HTML 듀얼 원고) 신규 작성 및 `docs/BLOGGER_POST_COMPOSE_MODE.md`, `docs/BLOGGER_POST_HTML_MODE.html`, `docs/WORK_LOG.md` 최신화 완료.
+- **검증 결과**:
+  - `src-wpf` 전체 `.cs` 및 `.xaml` 정적 구문·리소스·이벤트 검증 오류 0건 및 Web `compile_applet` + `lint_applet` 동시 통과 확인.
+
+---
+
+### 📝 [작업 차수 192] v2.2.0 2차 심층 전수 감사(Self-Reflection & Deep Audit) 및 파서·복구·비동기·널 가드 결함 수정
+- **작업 일시**: 2026-11-21 11:30 KST
+- **요청 사항**:
+  - `자아성찰(Self-Reflection & Deep Audit) 과 오류 수정`
+- **원인 분석 및 수정 내역**:
+  1. **개인 성명 `(기관용)` 오탐 및 정책 덮어쓰기 결함 수정 (`KCertParser.cs`, `certParser.ts`)**:
+     - 기존 CN 문자열 검사에서 `"원"`, `"실"`, `"부"`, `"청"`, `"처"` 단일 음절 포함 여부를 무조건 검사하여 `김지원`, `이정원`, `김진실`, `최부영`, `우청하` 등 일반 개인 성명이 `(기관용)`으로 오분류되던 문제를 수정.
+     - `personal`/`personal4IB` OU, `이름(영문)` 개인 패턴, 개인용 NPKI 정책을 우선 판별하고, 다음절 공식 기관명·3자리 기관코드·`class1`/기관 정책 OID 등 문맥 기반 조건을 적용하여 오탐을 원천 차단.
+  2. **인증서 무결성 진단·표준 경로 복구 정합성 보강 (`CertIntegrityDoctor.cs`)**:
+     - 개인키 ASN.1 손상 진단 시 실제 검사한 키 파일명(`sigPri.key`, `*_sig.key` 등) 대신 `"signPri.key 손상"`으로 고정 출력되던 메시지를 동적 파일명(`Path.GetFileName(keyFile)`)으로 개선.
+     - `GenerateCanonicalSubPath`에서 GPKI/EPKI 표준 경로(`GPKI\Certificate\class1|2\cn=...`) 도출 시 전체 `SubjectDn` 대신 단일 `cn=...` RDN을 추출하도록 교정하고, 다중 인증서 분리(`siblingSignCount > 1`) 시 부모 임시 폴더명이 아닌 각 인증서 고유의 `cn`/`SubjectDn`으로 표준화되도록 보강.
+  3. **WPF 비이벤트 `async void` 메서드 제거 (`MainWindow.xaml.cs`)**:
+     - `OpenTargetDrivePickerForCertificates` 메서드를 `async void`에서 `async Task OpenTargetDrivePickerForCertificatesAsync`로 전환하고 모든 내부 호출부를 일관되게 갱신.
+  4. **Web 백업 모달 `targetDrive` 널 안전성 보강 (`BackupModal.tsx`)**:
+     - 중복 확인 오버레이, 쓰기 보호 해제 재검사 핸들러, 복사 진행률 배너에서 `targetDrive` 널 가드 및 옵셔널 체이닝 적용.
+- **검증 결과**:
+  - `src-wpf` 전체 `.cs` 및 `.xaml` 정적 구문·리소스·이벤트·`async void` 전수 감사 오류 0건 통과 및 Web `compile_applet` + `lint_applet` 동시 통과 확인.
+
+---
+
+### 📝 [작업 차수 191] v2.2.0 심층 전수 감사(Self-Reflection & Deep Audit) 및 Web·WPF·문서 결함 일괄 수정
+- **작업 일시**: 2026-11-21 11:00 KST
+- **요청 사항**:
+  - `**자아성찰(Self-Reflection & Deep Audit)** 과 **오류 수정**`
+- **수정 및 안정화 내역**:
+  1. **WPF 스레드 안전성 · 이벤트 폭풍 차단 · 3단계 Fast-Pass 보존 (`MainViewModel.cs`, `CertificateScannerService.cs`, `CertLocationScanner.cs`, `PcToUsbTransferDialog.xaml.cs`)**:
+     - `UsbStorageGuard`의 단일 이벤트 배치에서 중복 구독되던 `DriveArrived`/`DriveRemoved` 핸들러를 제거하고 `_driveWatcher.DrivesChanged`만 구독해 USB 장착/해제 시 스캔 중복 취소 폭풍 방지.
+     - `DispatchSafeAsync` 종료 분기에서 워커 스레드로 UI 액션이 실행되던 버그를 교정하고, 백그라운드 스캔 중 `_allCertificates.Count` 비안전 접근·`Path.GetFullPath` 예외·`AttachCertEvent` 크로스-스레드 알림·직접 `Dispatcher.Invoke/BeginInvoke` 호출을 모두 `DispatchSafe`/`DispatchSafeAsync` 및 `SafeGetFullPath`로 일원화.
+     - `SearchLocationsDialog`에서 기본 경로 그대로 적용 시 `_customSearchPaths`가 영구 활성화되어 3단계 비블로킹 Fast-Pass를 우회하던 문제 수정 및 `ScanCertificates` `CancellationToken` 연동.
+     - `CertLocationScanner.GetDeepSearchRoots()`의 드라이브 준비 상태 검사(`IsDriveReadyBounded`) 병렬화 및 `RemovableDrives` 내 미준비 빈 카드 슬롯 필터링.
+     - `PcToUsbTransferDialog.xaml.cs`의 `ViewModel_PropertyChanged`에 `Dispatcher` 종료·`CheckAccess()` 가드 보강.
+  2. **Web 콘솔 중복 UI · 상태 판별 · 비동기 클립보드·새로고침 동시성 보강 (`RenewalGuidanceModal.tsx`, `DiagnosticsRepairModal.tsx`, `App.tsx`, 클립보드 9개 모달/컴포넌트)**:
+     - `RenewalGuidanceModal.tsx`: 접이식 FAQ 내부에 중복 렌더링되던 `RENEWAL_ALTERNATIVE_TIPS` 블록을 제거하고, 만료 상태 판별을 `isCertificateExpired` 헬퍼로 통일.
+     - `DiagnosticsRepairModal.tsx`: 중복·복구 건수 `0`이고 취약 인증서만 존재할 경우 보안강도(`crypto`) 또는 경로 복구(`repairs`) 탭이 자동 선택되도록 개선.
+     - Web 전역(`DiagnosticsRepairModal`, `CertificateDetailModal`, `CertificateDetailSidebar`, `CertificateList`, `DesktopAppModal`, `CoreSpecModal`, `LicenseModal`, `ConnectedDrivesBar`, `CopyErrorAlertModal`, `UsbDiagnosticModal`)의 `navigator.clipboard.writeText` 호출을 `async/await` 기반 예외 처리로 전환해 iframe 권한 거부 시 미처리 프로미스 거부 및 거짓 복사 배너 방지.
+     - `App.tsx`: `refreshScanSeqRef` 시퀀스 가드를 도입해 연속 새로고침 시 이전 타이머가 `isScanning`을 조기 해제하지 않도록 수정.
+  3. **문서 파일명 오기 교정 (`README.md`, `docs/PATCHNOTES.md`)**:
+     - 존재하지 않는 `CertTrendsModal.tsx`·`CertTrendsDialog.xaml` 표기를 실제 구현 모듈(`SecurityGuideModal.tsx`, `DiagnosticsRepairModal.tsx`, `RenewalGuidanceModal.tsx`, `SecurityGuideDialog.xaml`, `DiagnosticsRepairDialog.xaml`, `RenewalGuidanceDialog.xaml`)로 정정.
+- **검증 결과**:
+  - C#/XAML 정적 구문·리소스·이벤트·`using` 교차 검증 오류 0건 및 Web `compile_applet` + `lint_applet` 통과 확인.
+
+---
+
+### 📝 [작업 차수 190] v2.2.0 MINOR 버전업 및 8대 영역 전역 버전 동기화
+- **작업 일시**: 2026-11-21 10:15 KST
+- **요청 사항**:
+  - 2026 국내 인증 동향·RSA 3072-bit 보안강도 진단 기능 추가(Web & WPF) 및 WPF 시작 무응답(응답없음) 해소 3단계 스캔 엔진 반영에 따른 `v2.2.0` (MINOR) 버전업
+- **동기화 내역**:
+  1. Web 콘솔(`package.json`, `src/version.ts`, `TrashModal.tsx`) 버전 `2.2.0` / 출시일 `2026-11-21` 갱신
+  2. WPF 솔루션(`KCertManager.Wpf.csproj`, `KCert.Core.csproj`, `KCert.Crypto.csproj`, `UpdateCheckerService.cs`, `MainWindow.xaml`, `AboutDialog.xaml/.cs`, `UpdateNotificationDialog.xaml`) 버전 및 조립 정보 `2.2.0` 동기화
+  3. 배포·CI 스크립트(`installer.iss`, `build.ps1`, `build.bat`, `build.cmd`, `.github/workflows/build.yml`) 및 문서(`README.md`, `PATCHNOTES.md`, `WORK_LOG.md`, `USER_GUIDE.md`, `AUTO_UPDATE_GUIDE.md`) `v2.2.0` 일괄 반영
+- **검증 결과**:
+  - C#/XAML 정적 구문 검증 오류 0건 및 Web `compile_applet` + `lint_applet` 통과 확인
+
+---
+
+### 📝 [작업 차수 189] WPF 시작 무응답(응답없음) 해소 및 3단계 비블로킹 초기 스캔 엔진 구축
+- **작업 일시**: 2026-11-21 09:30 KST
+- **요청 사항**:
+  - 앱 시작 후 인증서를 찾지 못하고 일정 시간 `응답없음` 상태가 유지되는 현상 원인 분석 및 해결
+- **원인 및 수정 내역**:
+  1. `NativeStorageInterop.cs` / `UsbStorageGuard.cs`: `DriveInfo.GetDrives()` 호출 전 OS `DriveType` 필터로 네트워크(`Network`), 광학(`CDRom`), RAM 드라이브 사전 배제 및 드라이브 프로브 타임아웃 가드 적용
+  2. `CertLocationScanner.cs` / `FastScanPipeline.cs`: `FileAttributes.ReparsePoint` 심볼릭 링크·정션 순환 탐색 차단 및 로컬 표준 경로 우선 스캔 경로(`ScanLocalFastAsync`) 분리
+  3. `CertificateScannerService.cs` / `UsbDriveWatcher.cs` / `MainViewModel.cs` / `MainWindow.xaml.cs`: Phase-0 Local Fast-Pass 즉시 표출 + Deep-Pass 배치 UI 갱신 + `_scanCts` 스캔 취소 연동으로 UI 스레드 블로킹 완전 제거
+
+---
 
 ### 📝 [작업 차수 188] .NET/WPF CI 컴파일 오류 교정 및 4~5차 심층 전수 감사(Self-Reflection & Deep Audit) 전역 안정화
 - **작업 일시**: 2026-11-18 01:45 KST

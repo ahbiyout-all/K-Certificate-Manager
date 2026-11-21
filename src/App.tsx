@@ -642,6 +642,7 @@ export default function App() {
   };
 
   const handleRefreshRef = useRef<(customMessage?: string, integrityVerified?: boolean, checksumText?: string) => Promise<void>>(async () => {});
+  const refreshScanSeqRef = useRef(0);
 
   // Global F5 shortcut for in-app refresh
   useEffect(() => {
@@ -657,6 +658,7 @@ export default function App() {
 
   // Refresh scan simulation (allows custom toast message and integrity verified badge after copy operations)
   const handleRefresh = async (customMessage?: string, integrityVerified?: boolean, checksumText?: string) => {
+    const scanSeq = ++refreshScanSeqRef.current;
     setIsScanning(true);
 
     // 1. Recalculate validity and remaining days against current time synchronously from latest ref
@@ -707,6 +709,7 @@ export default function App() {
 
     // 3. Briefly simulate disk I/O scan
     await new Promise(r => setTimeout(r, 650));
+    if (scanSeq !== refreshScanSeqRef.current) return;
     setIsScanning(false);
 
     // 4. Update scan time with seconds so user sees instantaneous feedback
