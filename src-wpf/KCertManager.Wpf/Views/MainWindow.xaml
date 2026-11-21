@@ -179,10 +179,10 @@
                                 </StackPanel>
                             </Button>
 
-                            <Button Click="OpenSecurityGuide_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0">
+                            <Button Click="OpenSecurityGuide_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" ToolTip="인증서 보안 수칙 · 2026 제도 동향 · 국내 인증서 비교">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="🛡️" Margin="0,0,4,0"/>
-                                    <TextBlock Text="보안 수칙"/>
+                                    <TextBlock Text="보안 수칙·동향"/>
                                 </StackPanel>
                             </Button>
 
@@ -1259,8 +1259,9 @@
                                             <StackPanel>
                                                 <TextBlock Text="🛡️ 암호화 규격 및 정책" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,0,10"/>
 
-                                                <TextBlock Text="전자서명 알고리즘:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                                <TextBlock Text="{Binding SelectedCertificate.SignatureAlgorithm}" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,8"/>
+                                                <TextBlock Text="공개키 · 전자서명 규격:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Text="{Binding SelectedCertificate.PublicKeySpecText}" FontSize="11.5" FontFamily="Consolas, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,4"/>
+                                                <TextBlock Text="{Binding SelectedCertificate.CryptoPostureLabel}" FontSize="11" FontWeight="Bold" Foreground="{Binding SelectedCertificate.CryptoPostureColorHex, FallbackValue='#F59E0B', TargetNullValue='#F59E0B'}" Margin="0,0,0,8" TextWrapping="Wrap"/>
 
                                                 <!-- Policy OID -->
                                                 <Grid Margin="0,0,0,8">

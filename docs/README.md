@@ -36,7 +36,8 @@
 | [`BLOG_v1.6.5.md`](./BLOG_v1.6.5.md) | **공식 구글 블로그 배포 문서**: v1.6.5 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
 | [`BLOG_v1.5.0.md`](./BLOG_v1.5.0.md) | **공식 구글 블로그 배포 문서**: v1.5.0 공식 구글 블로그(Blogger) 게시용 10단계 표준 마크다운 원고 |
 | [`LICENSE.md`](./LICENSE.md) | **소프트웨어 라이선스 & 법적 고지**: 한국어(`LICENSE_KR.txt`)·영어(`LICENSE_EN.txt`) 2종 라이선스 정의, 무상 이용 조건 및 보증 부인 |
-| [`USER_GUIDE.md`](./USER_GUIDE.md) | **사용자 매뉴얼**: 쉬운 일상 표현 UI, 반응형 카드 레이아웃, `Class1` 기관 배지·필터, 인앱 자동 업데이트 및 USB 백업/복구 가이드 |
+| [`USER_GUIDE.md`](./USER_GUIDE.md) | **사용자 매뉴얼**: 쉬운 일상 표현 UI, 반응형 카드 레이아웃, `Class1` 기관 배지·필터, 2026 동향·RSA 3072-bit 보안강도 점검 및 USB 백업/복구 가이드 |
+| [`KOREA_CERT_TRENDS_2026.md`](./KOREA_CERT_TRENDS_2026.md) | **2026 대한민국 인증서·전자서명 동향 가이드**: RSA 3072-bit 상향(2027.02.15), GPKI·EPKI 비액티브엑스 전환, 금융·간편인증 비교, 2026.08.28 모바일 신분증 시행령 안내 |
 | [`BUILD_GUIDE.md`](./BUILD_GUIDE.md) | **빌드 및 배포 가이드**: .NET 10 / .NET 8 자동 감지 빌드(`build.bat`/`build.ps1`), 버전별 분리 출력(`dist/v2.1.1/`), Inno Setup(`kcert-manager-v2.1.1-setup.exe`) 안내 |
 | [`GITHUB_GUIDE.md`](./GITHUB_GUIDE.md) | **GitHub 운영·CI/CD 및 릴리스 배포 가이드**: 저장소 구조, GitHub Actions 매트릭스(`build.yml`), v2.1.1 릴리스 배포 파이프라인, 이슈/PR 기여 가이드 |
 | [`AUTO_UPDATE_GUIDE.md`](./AUTO_UPDATE_GUIDE.md) | **자동 업데이트 가이드**: GitHub 이동 없는 인앱 자동 다운로드·무인 셀프 설치(`DownloadAndInstallAsync`, `apply_self_update.ps1`, Web 3단계 업데이트) 명세 |
@@ -140,3 +141,7 @@
 31. **`Class1` 기관·특수목적 인증서 구분 배지·필터 & 5차 심층 수명주기 안정화 (v2.1.1 최신 보강)**
     - `C:\GPKI\Certificate\class1` · EPKI · USB `class1`에서 개인키(`.key`/`.pri`) 쌍을 보유한 실사용 기관 인증서만 선별 표시(Root/CA/CRL 및 중복 `_env.cer` 제외)하고 `CLASS1 · 공무원(GPKI)` / `CLASS1 · 교육(EPKI)` / `CLASS1 · 기관` 배지와 사이드바 `CLASS1` 카테고리 필터·키워드 검색을 제공합니다.
     - CI `.NET`/`WPF` 컴파일 오류(`Regex`/`RegexOptions` 누락, `CS8601`/`CS8604`)를 해소하고, WPF `DispatchSafe`/`OnClosed`/`IDisposable`/예외 가드 및 Web 타이머·리스너 정리, JSON/스토리지 프로토타입 오염 방지 검증을 전역 적용했습니다.
+32. **2026 국내 인증서 동향 가이드, RSA 3072-bit 보안강도 점검 & 7대 인증 체계 비교 (Web & WPF 동시 반영)**
+    - Web(`certParser` / `certDiagnostics`)과 C# WPF(`KCert.Core`) 오프라인 X.509 ASN.1 파서에서 공개키 알고리즘·키 비트 길이(1024/2048/3072/4096-bit, ECDSA)·서명 알고리즘을 분석해 `3072-bit 권장` / `2048-bit 전환 대상` / `1024-bit·SHA-1 취약` 3단계 보안강도를 진단합니다.
+    - 상세 사이드바·상세 모달·진단 및 복구 모달(`보안강도 점검 (3072-bit)` 탭)·보안 수칙/동향 가이드(`2026 보안강도·법령 동향`, `국내 인증서 전체 비교`)·기관별 갱신 안내를 Web과 WPF에 동시 반영했습니다.
+

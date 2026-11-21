@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using KCert.Core.Parser;
 
 namespace KCertManager.Wpf.Models
 {
@@ -80,6 +81,34 @@ namespace KCertManager.Wpf.Models
         public string Organization { get; set; } = string.Empty;
         public string OrganizationalUnit { get; set; } = string.Empty;
         public string SignatureAlgorithm { get; set; } = "sha256RSA";
+        public string PublicKeyAlgorithm { get; set; } = "RSA";
+        public int PublicKeyBitLength { get; set; } = 2048;
+        public CryptoSecurityPosture SecurityPosture { get; set; } = CryptoSecurityPosture.Standard2048Transition;
+
+        public string PublicKeySpecText =>
+            $"{(string.IsNullOrWhiteSpace(PublicKeyAlgorithm) ? "RSA" : PublicKeyAlgorithm)} {(PublicKeyBitLength > 0 ? PublicKeyBitLength : 2048)}-bit · {SignatureAlgorithm}";
+
+        public string CryptoPostureLabel => SecurityPosture switch
+        {
+            CryptoSecurityPosture.Recommended3072 => "✓ 차세대 3072-bit+ 충족",
+            CryptoSecurityPosture.LegacyWeak => "✕ 취약 규격 (즉시 교체 권장)",
+            _ => "ⓘ 현행 2048-bit (2027.02 전환 예정)"
+        };
+
+        public string CryptoPostureDetailText => SecurityPosture switch
+        {
+            CryptoSecurityPosture.Recommended3072 => "2027.02 KISA 보안강도 상향 기준(RSA 3072-bit+)을 충족합니다.",
+            CryptoSecurityPosture.LegacyWeak => "1024-bit 이하 또는 SHA-1 구형 서명이 감지되었습니다. 즉시 재발급을 권장합니다.",
+            _ => "만료일까지 정상 사용 가능하며, 2027.02.15 이후 갱신 시 RSA 3072-bit로 전환됩니다."
+        };
+
+        public string CryptoPostureColorHex => SecurityPosture switch
+        {
+            CryptoSecurityPosture.Recommended3072 => "#10B981",
+            CryptoSecurityPosture.LegacyWeak => "#F43F5E",
+            _ => "#F59E0B"
+        };
+
         public string PolicyUsage { get; set; } = "일반 공동인증서";
         public string PolicyOid { get; set; } = string.Empty;
         public bool IsPairIntegrityValid { get; set; } = true;

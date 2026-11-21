@@ -9,7 +9,9 @@ using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using KCert.Core.Diagnostics;
+using KCert.Core.Parser;
 using KCertManager.Wpf.Models;
 using KCertManager.Wpf.Services;
 
@@ -77,6 +79,17 @@ namespace KCertManager.Wpf.Views
         public event PropertyChangedEventHandler? PropertyChanged;
     }
 
+    public class CryptoAuditVm
+    {
+        public string CommonName { get; set; } = string.Empty;
+        public string PublicKeySpecText { get; set; } = string.Empty;
+        public string MetaSummary { get; set; } = string.Empty;
+        public string Recommendation { get; set; } = string.Empty;
+        public string PostureLabel { get; set; } = string.Empty;
+        public string PostureColorHex { get; set; } = "#F59E0B";
+        public CryptoSecurityPosture Posture { get; set; }
+    }
+
     public partial class DiagnosticsRepairDialog : Window
     {
         private readonly ObservableCollection<CertificateItem> _allCerts;
@@ -84,6 +97,11 @@ namespace KCertManager.Wpf.Views
         private readonly Func<Task> _refreshCallback;
         private readonly List<DuplicateGroupVm> _dupGroups = new();
         private readonly List<RepairCandidateVm> _repairCandidates = new();
+        private readonly List<CryptoAuditVm> _cryptoAuditItems = new();
+        private string _cryptoFilterMode = "ALL";
+        private int _cryptoCount3072;
+        private int _cryptoCount2048;
+        private int _cryptoCountWeak;
 
         public bool HasMadeChanges { get; private set; }
 
@@ -104,6 +122,7 @@ namespace KCertManager.Wpf.Views
         {
             _dupGroups.Clear();
             _repairCandidates.Clear();
+            _cryptoAuditItems.Clear();
 
             var certs = _allCerts.Where(c => c != null).ToList();
 
@@ -209,9 +228,39 @@ namespace KCertManager.Wpf.Views
             ListRepairCandidates.ItemsSource = null;
             ListRepairCandidates.ItemsSource = _repairCandidates;
 
+            // 3. Crypto Strength Audit (2027.02 RSA 3072-bit readiness)
+            _cryptoCount3072 = 0;
+            _cryptoCount2048 = 0;
+            _cryptoCountWeak = 0;
+
+            foreach (var cert in certs.OrderBy(c => c.SecurityPosture == CryptoSecurityPosture.LegacyWeak ? 0 : c.SecurityPosture == CryptoSecurityPosture.Standard2048Transition ? 1 : 2).ThenBy(c => c.RemainingDays))
+            {
+                if (cert.SecurityPosture == CryptoSecurityPosture.Recommended3072) _cryptoCount3072++;
+                else if (cert.SecurityPosture == CryptoSecurityPosture.LegacyWeak) _cryptoCountWeak++;
+                else _cryptoCount2048++;
+
+                _cryptoAuditItems.Add(new CryptoAuditVm
+                {
+                    CommonName = !string.IsNullOrWhiteSpace(cert.CommonName) ? cert.CommonName : "공동인증서",
+                    PublicKeySpecText = cert.PublicKeySpecText,
+                    MetaSummary = $"{cert.AccurateIssuerName} · {cert.StorageLocationType} ({cert.DriveLetter}) · 만료일 {cert.NotAfter:yyyy-MM-dd}",
+                    Recommendation = cert.CryptoPostureDetailText,
+                    PostureLabel = cert.CryptoPostureLabel,
+                    PostureColorHex = cert.CryptoPostureColorHex,
+                    Posture = cert.SecurityPosture
+                });
+            }
+
+            TxtCryptoCount3072.Text = $"{_cryptoCount3072}건";
+            TxtCryptoCount2048.Text = $"{_cryptoCount2048}건";
+            TxtCryptoCountWeak.Text = $"{_cryptoCountWeak}건";
+
             TxtTabDupCount.Text = $"({totalRedundant})";
             TxtTabRepairCount.Text = $"({_repairCandidates.Count})";
-            TxtSummaryStats.Text = $"전체 {certs.Count}건 스캔 · 중복 사본 {totalRedundant}건 · 복구 대상 {_repairCandidates.Count}건";
+            TxtTabCryptoCount.Text = _cryptoCountWeak > 0
+                ? $"({_cryptoCountWeak} 취약)"
+                : $"({_cryptoCount3072}/{certs.Count})";
+            TxtSummaryStats.Text = $"전체 {certs.Count}건 · 중복 {totalRedundant}건 · 복구 {_repairCandidates.Count}건 · 3072-bit+ {_cryptoCount3072}건";
 
             bool hasDups = _dupGroups.Count > 0;
             EmptyDuplicatesState.Visibility = hasDups ? Visibility.Collapsed : Visibility.Visible;
@@ -220,6 +269,8 @@ namespace KCertManager.Wpf.Views
             bool hasRepairs = _repairCandidates.Count > 0;
             EmptyRepairsState.Visibility = hasRepairs ? Visibility.Collapsed : Visibility.Visible;
             ScrollRepairs.Visibility = hasRepairs ? Visibility.Visible : Visibility.Collapsed;
+
+            ApplyCryptoFilter();
         }
 
         private static string GetFingerprintKey(CertificateItem cert)
@@ -299,26 +350,96 @@ namespace KCertManager.Wpf.Views
             return (destRoot, Path.Combine(destRoot, sub));
         }
 
-        private void SwitchTab(bool showDuplicates)
+        private void SwitchTab(int tabIndex)
         {
-            PanelDuplicates.Visibility = showDuplicates ? Visibility.Visible : Visibility.Collapsed;
-            PanelRepairs.Visibility = showDuplicates ? Visibility.Collapsed : Visibility.Visible;
+            PanelDuplicates.Visibility = tabIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+            PanelRepairs.Visibility = tabIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
+            PanelCrypto.Visibility = tabIndex == 2 ? Visibility.Visible : Visibility.Collapsed;
 
-            BtnExecuteDuplicates.Visibility = showDuplicates ? Visibility.Visible : Visibility.Collapsed;
-            BtnExecuteRepairs.Visibility = showDuplicates ? Visibility.Collapsed : Visibility.Visible;
+            BtnExecuteDuplicates.Visibility = tabIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+            BtnExecuteRepairs.Visibility = tabIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
 
-            if (TryFindResource(showDuplicates ? "PrimaryButton" : "SecondaryButton") is Style dupStyle)
-                BtnTabDuplicates.Style = dupStyle;
-            if (TryFindResource(showDuplicates ? "SecondaryButton" : "PrimaryButton") is Style repStyle)
-                BtnTabRepairs.Style = repStyle;
+            var primary = TryFindResource("PrimaryButton") as Style;
+            var secondary = TryFindResource("SecondaryButton") as Style;
+            if (primary != null && secondary != null)
+            {
+                BtnTabDuplicates.Style = tabIndex == 0 ? primary : secondary;
+                BtnTabRepairs.Style = tabIndex == 1 ? primary : secondary;
+                BtnTabCrypto.Style = tabIndex == 2 ? primary : secondary;
+            }
 
-            TxtFooterHint.Text = showDuplicates
-                ? "표준 원본은 자동 보존되며, 선택한 중복 사본은 휴지통으로 안전 격리됩니다."
-                : "표준 위치로 안전 복사 후 기존 비표준 폴더를 선택적으로 휴지통 정리합니다.";
+            TxtFooterHint.Text = tabIndex switch
+            {
+                0 => "표준 원본은 자동 보존되며, 선택한 중복 사본은 휴지통으로 안전 격리됩니다.",
+                1 => "표준 위치로 안전 복사 후 기존 비표준 폴더를 선택적으로 휴지통 정리합니다.",
+                _ => $"2027.02 보안강도 상향 점검: 3072-bit+ {_cryptoCount3072}건 · 2048-bit {_cryptoCount2048}건 · 취약 {_cryptoCountWeak}건"
+            };
         }
 
-        private void BtnTabDuplicates_Click(object sender, RoutedEventArgs e) => SwitchTab(true);
-        private void BtnTabRepairs_Click(object sender, RoutedEventArgs e) => SwitchTab(false);
+        private void ApplyCryptoFilter()
+        {
+            var filtered = _cryptoAuditItems.Where(item => _cryptoFilterMode switch
+            {
+                "WEAK" => item.Posture == CryptoSecurityPosture.LegacyWeak,
+                "2048" => item.Posture == CryptoSecurityPosture.Standard2048Transition,
+                "3072" => item.Posture == CryptoSecurityPosture.Recommended3072,
+                _ => true
+            }).ToList();
+
+            ListCryptoAudit.ItemsSource = null;
+            ListCryptoAudit.ItemsSource = filtered;
+
+            bool hasItems = filtered.Count > 0;
+            EmptyCryptoState.Visibility = hasItems ? Visibility.Collapsed : Visibility.Visible;
+            ScrollCrypto.Visibility = hasItems ? Visibility.Visible : Visibility.Collapsed;
+
+            var primary = TryFindResource("PrimaryButton") as Style;
+            var secondary = TryFindResource("SecondaryButton") as Style;
+            if (primary != null && secondary != null)
+            {
+                BtnCryptoFilterAll.Style = _cryptoFilterMode == "ALL" ? primary : secondary;
+                BtnCryptoFilterWeak.Style = _cryptoFilterMode == "WEAK" ? primary : secondary;
+                BtnCryptoFilter2048.Style = _cryptoFilterMode == "2048" ? primary : secondary;
+                BtnCryptoFilter3072.Style = _cryptoFilterMode == "3072" ? primary : secondary;
+            }
+        }
+
+        private void BtnCryptoFilter_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string tag)
+            {
+                _cryptoFilterMode = tag;
+                ApplyCryptoFilter();
+            }
+        }
+
+        private void BtnCopyCryptoReport_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var lines = new List<string>
+                {
+                    "[K-인증서 매니저 - 2027.02 보안강도(RSA 3072-bit) 점검 결과]",
+                    $"전체 {_cryptoAuditItems.Count}건 · 3072-bit+ {_cryptoCount3072}건 · 2048-bit {_cryptoCount2048}건 · 취약 {_cryptoCountWeak}건",
+                    string.Empty
+                };
+                for (int i = 0; i < _cryptoAuditItems.Count; i++)
+                {
+                    var item = _cryptoAuditItems[i];
+                    lines.Add($"{i + 1}. {item.CommonName} | {item.PublicKeySpecText} | {item.PostureLabel} | {item.MetaSummary}");
+                }
+                Clipboard.SetText(string.Join(Environment.NewLine, lines));
+                ShowFeedback("✅ RSA 3072-bit 보안강도 점검 리포트를 클립보드에 복사했습니다.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"클립보드 복사 중 오류: {ex.Message}", "복사 안내", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void BtnTabDuplicates_Click(object sender, RoutedEventArgs e) => SwitchTab(0);
+        private void BtnTabRepairs_Click(object sender, RoutedEventArgs e) => SwitchTab(1);
+        private void BtnTabCrypto_Click(object sender, RoutedEventArgs e) => SwitchTab(2);
 
         private void BtnSelectRecommendedDups_Click(object sender, RoutedEventArgs e)
         {

@@ -84,8 +84,17 @@
                                 <ColumnDefinition Width="130"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="서명 알고리즘" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
-                            <TextBlock Grid.Column="1" x:Name="TxtAlgo" Text="sha256WithRSAEncryption (2048 bit)" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12"/>
+                            <TextBlock Text="공개키·서명 규격" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                            <TextBlock Grid.Column="1" x:Name="TxtAlgo" Text="RSA 2048-bit · sha256RSA" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontFamily="Consolas, Segoe UI"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="보안강도 진단 (2027.02)" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                            <TextBlock Grid.Column="1" x:Name="TxtCryptoPosture" Text="ⓘ 현행 2048-bit (2027.02 전환 예정)" Foreground="#F59E0B" FontWeight="Bold" FontSize="12" TextWrapping="Wrap"/>
                         </Grid>
 
                         <Grid>

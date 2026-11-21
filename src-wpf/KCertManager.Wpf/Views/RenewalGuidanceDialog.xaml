@@ -150,8 +150,13 @@
         <!-- Footer -->
         <Border Grid.Row="3" Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="12" Margin="0,14,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
             <Grid>
-                <TextBlock Text="※ 공식 보안 발급기관 페이지로 직접 연결됩니다." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                <Button Content="닫기" Style="{StaticResource SecondaryButton}" Click="BtnClose_Click" HorizontalAlignment="Right" Width="80"/>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="※ 2027.02.15부터 5대 공동인증기관 신규·갱신 시 RSA 3072-bit가 순차 적용됩니다. 개인 은행·공공용은 클라우드 금융인증서(3년)·민간 간편인증 병행을 권장합니다."
+                           FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,12,0"/>
+                <Button Grid.Column="1" Content="닫기" Style="{StaticResource SecondaryButton}" Click="BtnClose_Click" HorizontalAlignment="Right" Width="80"/>
             </Grid>
         </Border>
     </Grid>

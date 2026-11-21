@@ -784,7 +784,8 @@ namespace KCertManager.Wpf.ViewModels
                 sb.AppendLine($"유효기간: {cert.NotBefore:yyyy-MM-dd HH:mm:ss} ~ {cert.NotAfter:yyyy-MM-dd HH:mm:ss}");
                 sb.AppendLine($"상태: {cert.StatusDisplayText}");
                 sb.AppendLine($"일련번호: {cert.SerialNumber}");
-                sb.AppendLine($"전자서명 알고리즘: {cert.SignatureAlgorithm}");
+                sb.AppendLine($"공개키/서명 규격: {cert.PublicKeySpecText}");
+                sb.AppendLine($"2027.02 보안강도: {cert.CryptoPostureLabel}");
                 sb.AppendLine($"정책 OID: {cert.PolicyOid} ({cert.PolicyUsage})");
                 sb.AppendLine($"소유자 DN: {cert.SubjectDn}");
                 sb.AppendLine($"발급자 DN: {cert.IssuerName}");

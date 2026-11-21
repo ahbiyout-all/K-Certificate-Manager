@@ -24,6 +24,7 @@ import { getDriveColorInfo } from '../utils/driveColors';
 import { getAccurateIssuerInfo } from '../utils/issuerUtils';
 import { isUsbCertificate } from '../utils/driveFilter';
 import { isClass1Certificate, isInstitutionalOrClass1 } from '../utils/certPathUtils';
+import { getCryptoPostureMeta } from '../utils/certParser';
 
 interface CertificateDetailModalProps {
   cert: CertificateItem | null;
@@ -49,6 +50,7 @@ export const CertificateDetailModal: React.FC<CertificateDetailModalProps> = ({
   const isUsb = isUsbCertificate(cert);
   const isClass1 = isClass1Certificate(cert);
   const isInstitutional = isInstitutionalOrClass1(cert);
+  const cryptoMeta = getCryptoPostureMeta(cert);
 
   const copyToClipboard = (text: string) => {
     if (!text) return;
@@ -349,12 +351,34 @@ export const CertificateDetailModal: React.FC<CertificateDetailModalProps> = ({
               <div className="py-2.5 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <div className="text-xs text-slate-400">공개키 알고리즘:</div>
-                  <div className="font-medium text-slate-800 mt-0.5">RSA 2048-bit (전자서명 표준)</div>
+                  <div className="font-mono font-semibold text-slate-800 mt-0.5 tabular-nums">
+                    {cert.keyAlgorithm || 'RSA'} {cert.keyBitLength || 2048}-bit
+                  </div>
                 </div>
 
                 <div>
                   <div className="text-xs text-slate-400">서명 알고리즘:</div>
-                  <div className="font-medium text-slate-800 mt-0.5">sha256WithRSAEncryption</div>
+                  <div className="font-mono font-medium text-slate-800 mt-0.5 break-all">
+                    {cert.signatureAlgorithm || 'sha256WithRSAEncryption'}
+                  </div>
+                </div>
+              </div>
+
+              {/* 2027.02 Security Strength Readiness */}
+              <div className="py-2.5">
+                <div className="text-xs text-slate-400 mb-1">2027.02 KISA 보안강도 전환 기준 진단:</div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg border border-slate-200 bg-slate-50">
+                  <div>
+                    <div
+                      className="text-xs font-bold"
+                      style={{ color: cryptoMeta.colorHex }}
+                    >
+                      {cryptoMeta.badgeText}
+                    </div>
+                    <div className="text-[11px] text-slate-600 mt-0.5">
+                      {cryptoMeta.detailText}
+                    </div>
+                  </div>
                 </div>
               </div>
 

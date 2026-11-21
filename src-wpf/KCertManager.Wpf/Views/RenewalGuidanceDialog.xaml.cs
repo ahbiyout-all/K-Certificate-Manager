@@ -38,8 +38,8 @@ namespace KCertManager.Wpf.Views
                     PortalUrl = "https://www.gpki.go.kr",
                     MenuGuide = "인증서 발급/관리 > 인증서 갱신 (만료 30일 전부터 가능)",
                     CallCenter = "02-818-7777 / 044-205-2000",
-                    Description = "중앙부처, 지자체 공무원 및 정부기관 업무(온-나라, 전자결재, 공문서유통 등) 전자서명 갱신 센터",
-                    Notice = "만료 전 온라인 갱신이 가능하나, 이미 만료된 경우 소속기관 인증담당자(RA)를 통해 재발급을 진행하세요."
+                    Description = "중앙부처, 지자체 공무원 및 정부기관 업무(온-나라, 전자결재 등) 비액티브엑스(HTML5)·보안토큰 인증 갱신 센터",
+                    Notice = "Chrome/Edge 표준 웹 인증 및 모바일 공무원증 병행 체제로 전환 중입니다. 만료 전 온라인 갱신, 만료 후에는 기관 인증담당자(RA) 재발급이 필요합니다."
                 },
                 new()
                 {
@@ -52,8 +52,8 @@ namespace KCertManager.Wpf.Views
                     PortalUrl = "https://www.epki.go.kr",
                     MenuGuide = "인증서 관리 > 인증서 갱신 (만료 30일 전부터 가능)",
                     CallCenter = "053-714-0777",
-                    Description = "시도교육청, 초·중·고교 교원 및 국공립대 임직원(나이스, K-에듀파인 등) 인증서 갱신 센터",
-                    Notice = "만료 30일 전부터 본인인증을 통해 온라인 갱신 가능하며, 만료 후에는 신규발급을 신청해야 합니다."
+                    Description = "시도교육청, 초·중·고교 교원 및 국공립대 임직원(나이스 NEIS, K-에듀파인) HTML5 브라우저 표준 인증서 갱신 센터",
+                    Notice = "만료 30일 전부터 비액티브엑스 웹 포털에서 온라인 갱신 가능하며, 만료 후에는 소속 학교 담당자 승인으로 신규 발급을 신청해야 합니다."
                 },
                 new()
                 {
@@ -66,8 +66,8 @@ namespace KCertManager.Wpf.Views
                     PortalUrl = "https://www.yessign.or.kr",
                     MenuGuide = "인증서 갱신 > 본인확인 및 암호 재설정",
                     CallCenter = "1577-5500",
-                    Description = "시중 16개 은행(KB국민, 신한, 하나, 우리, NH농협, IBK기업 등) 이용자 공인/공동인증서 갱신",
-                    Notice = "거래하시는 각 은행 인터넷뱅킹 [인증센터] 메뉴에서도 동일하게 갱신하실 수 있습니다."
+                    Description = "시중 16개 은행(KB국민, 신한, 하나, 우리, NH농협, IBK기업 등) 이용자 공동인증서 갱신",
+                    Notice = "주거래 은행 [인증센터]에서 갱신하며, 개인 사용자는 클라우드 금융인증서(3년)와 병행 발급할 수 있습니다. (2027.02.15부터 신규 RSA 3072-bit 적용)"
                 },
                 new()
                 {
@@ -81,7 +81,7 @@ namespace KCertManager.Wpf.Views
                     MenuGuide = "인증서 갱신/발급 > 범용/사업자 인증서 갱신",
                     CallCenter = "1577-8787",
                     Description = "국내 1호 공인인증기관. 법인·개인사업자 범용 공동인증서 및 전자입찰/조달청 나라장터용 인증서 갱신",
-                    Notice = "사업자 인증서 갱신 시 법인 서류 확인 또는 대표자 본인확인이 필요할 수 있습니다."
+                    Notice = "사업자 인증서 갱신 시 법인 서류 확인이 필요할 수 있으며, 2027.02.15 이후 신규·갱신 발급분부터 RSA 3072-bit 규격이 순차 적용됩니다."
                 },
                 new()
                 {
@@ -95,7 +95,7 @@ namespace KCertManager.Wpf.Views
                     MenuGuide = "인증서 관리 > 갱신 신청",
                     CallCenter = "1566-0566",
                     Description = "글로벌 인증 및 국내 법인/개인 범용 공동인증서, 세금계산서 전용 인증서 갱신",
-                    Notice = "만료일 30일 전부터 갱신이 가능합니다."
+                    Notice = "만료일 30일 전부터 갱신 가능하며, 2027.02.15 이후 RSA 3072-bit 상향 규격이 적용됩니다."
                 },
                 new()
                 {
@@ -109,7 +109,7 @@ namespace KCertManager.Wpf.Views
                     MenuGuide = "인증서 관리 > 증권/금융투자/범용 갱신",
                     CallCenter = "1577-7337",
                     Description = "증권사(키움, 미래에셋, 한국투자, 삼성증권 등) 주식거래 및 펀드/금융투자 전용 인증서 갱신",
-                    Notice = "이용하시는 증권사 HTS/MTS 내 인증센터에서도 간편하게 갱신할 수 있습니다."
+                    Notice = "거래 증권사 HTS/MTS 인증센터에서도 갱신할 수 있으며, 2027.02.15부터 신규 RSA 3072-bit 규격으로 전환됩니다."
                 },
                 new()
                 {
@@ -123,21 +123,21 @@ namespace KCertManager.Wpf.Views
                     MenuGuide = "인증서 관리 > 갱신 메뉴",
                     CallCenter = "1566-2119",
                     Description = "무역, 관세청 통관, 관세, 수출입, 전자입찰 특화 사업자 인증서 갱신 센터",
-                    Notice = "수출입 무역업체 필수 인증서 갱신을 지원합니다."
+                    Notice = "수출입 무역업체 필수 인증서 갱신을 지원하며, 2027.02.15 RSA 3072-bit 적용 대상입니다."
                 },
                 new()
                 {
                     Id = "INIPASS",
-                    Name = "이니텍 전자인증센터 (Inipass)",
+                    Name = "이니텍 기업·레거시 전자인증 (Inipass)",
                     ShortName = "이니텍 Inipass",
                     Category = "BANK",
-                    CategoryLabel = "통합전자인증",
+                    CategoryLabel = "기업·금융 레거시 연계",
                     PortalName = "Inipass 공식 포털",
                     PortalUrl = "https://www.inipass.com",
-                    MenuGuide = "인증서 갱신센터 > 갱신 프로세스 실행",
+                    MenuGuide = "기존 기업·금융 사설인증 연계 고객 유지 및 이관 안내",
                     CallCenter = "1566-4119",
-                    Description = "금융기관 및 기업체 통합 인증 프로세스 연동 인증서 갱신 지원",
-                    Notice = "주요 공공기관 연계 갱신을 지원합니다."
+                    Description = "기존 금융·기업 사설·레거시 연계 인증 유지 안내",
+                    Notice = "기존 기업/금융 고객 전용 유지·이관 안내 대상입니다. 신규 개인 공동인증서 발급은 5대 공동인증기관 또는 주거래 은행 금융인증서를 이용하세요."
                 }
             };
 

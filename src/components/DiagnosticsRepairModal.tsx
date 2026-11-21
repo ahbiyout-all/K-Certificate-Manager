@@ -12,11 +12,13 @@ import {
   Laptop,
   Check,
   Sparkles,
+  Copy,
 } from 'lucide-react';
-import { CertificateItem } from '../types';
+import { CertificateItem, CryptoPosture } from '../types';
 import {
   analyzeDuplicateCertificates,
   analyzePathRepairs,
+  analyzeCryptoSecurity,
   PathRepairCandidate,
 } from '../utils/certDiagnostics';
 
@@ -24,7 +26,7 @@ interface DiagnosticsRepairModalProps {
   isOpen: boolean;
   onClose: () => void;
   certificates: CertificateItem[];
-  initialTab?: 'duplicates' | 'repairs';
+  initialTab?: 'duplicates' | 'repairs' | 'crypto';
   onMoveDuplicatesToTrash: (certsToTrash: CertificateItem[]) => void;
   onRepairFolders: (
     candidates: PathRepairCandidate[],
@@ -40,7 +42,8 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
   onMoveDuplicatesToTrash,
   onRepairFolders,
 }) => {
-  const [activeTab, setActiveTab] = useState<'duplicates' | 'repairs'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'duplicates' | 'repairs' | 'crypto'>(initialTab);
+  const [cryptoFilter, setCryptoFilter] = useState<'ALL' | CryptoPosture>('ALL');
   const [selectedDupIds, setSelectedDupIds] = useState<string[]>([]);
   const [selectedRepairIds, setSelectedRepairIds] = useState<string[]>([]);
   const [trashSourceAfterRepair, setTrashSourceAfterRepair] = useState(true);
@@ -54,6 +57,11 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
 
   const repairCandidates = useMemo(
     () => analyzePathRepairs(certificates),
+    [certificates]
+  );
+
+  const cryptoSummary = useMemo(
+    () => analyzeCryptoSecurity(certificates),
     [certificates]
   );
 
@@ -133,6 +141,26 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
     setActionBanner(
       `비표준 인증서 ${selectedRepairItems.length}건을 표준 위치로 복구했습니다 (SHA-256 손상 검사 완료).`
     );
+  };
+
+  const filteredCryptoItems = cryptoSummary.items.filter((item) =>
+    cryptoFilter === 'ALL' ? true : item.posture === cryptoFilter
+  );
+
+  const handleCopyCryptoAudit = () => {
+    const lines = [
+      `[K-인증서 매니저 - 2027.02 보안강도(RSA 3072-bit) 점검 결과]`,
+      `전체 ${cryptoSummary.totalScanned}건 · 3072-bit+ 충족 ${cryptoSummary.recommended3072Count}건 · 2048-bit 현행유효 ${cryptoSummary.standard2048Count}건 · 취약 ${cryptoSummary.legacyWeakCount}건`,
+      '',
+      ...cryptoSummary.items.map(
+        (item, idx) =>
+          `${idx + 1}. ${item.cert.name} | ${item.keyAlgorithm} ${item.keyBitLength}-bit · ${item.signatureAlgorithm} | ${item.summaryLabel} | 만료일 ${item.cert.validTo}`
+      ),
+    ];
+    try {
+      navigator.clipboard.writeText(lines.join('\n'));
+      setActionBanner('보안강도(RSA 3072-bit) 점검 리포트를 클립보드에 복사했습니다.');
+    } catch {}
   };
 
   return (
@@ -248,6 +276,42 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                 }}
               >
                 {repairCandidates.length}건
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('crypto');
+                setActionBanner(null);
+              }}
+              className={`px-3.5 py-2 text-xs font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'crypto'
+                  ? 'border-[#3B82F6] text-[#60A5FA]'
+                  : 'border-transparent hover:opacity-85'
+              }`}
+              style={
+                activeTab !== 'crypto'
+                  ? { color: 'var(--wpf-text-secondary)' }
+                  : undefined
+              }
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>보안강도 점검 (3072-bit)</span>
+              <span
+                className="tabular-nums font-extrabold text-[11px]"
+                style={{
+                  color:
+                    cryptoSummary.legacyWeakCount > 0
+                      ? '#EF4444'
+                      : cryptoSummary.recommended3072Count > 0
+                      ? '#10B981'
+                      : '#F59E0B',
+                }}
+              >
+                {cryptoSummary.legacyWeakCount > 0
+                  ? `${cryptoSummary.legacyWeakCount}건 취약`
+                  : `${cryptoSummary.recommended3072Count}/${cryptoSummary.totalScanned}`}
               </span>
             </button>
           </div>
@@ -472,7 +536,8 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                 ))}
               </>
             )
-          ) : repairCandidates.length === 0 ? (
+          ) : activeTab === 'repairs' ? (
+            repairCandidates.length === 0 ? (
             <div
               className="py-12 px-6 text-center rounded-[8px] space-y-2"
               style={{
@@ -593,6 +658,156 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                 })}
               </div>
             </>
+            )
+          ) : (
+            <>
+              <div
+                className="p-3.5 rounded-[8px] space-y-2"
+                style={{
+                  backgroundColor: 'var(--wpf-bg-card)',
+                  border: '1px solid var(--wpf-border)',
+                }}
+              >
+                <div className="text-xs font-bold flex items-center justify-between gap-2 flex-wrap">
+                  <span>2027.02.15 KISA RSA 3072-bit 보안강도 상향 기준 점검</span>
+                  <span className="text-[11px] font-normal tabular-nums" style={{ color: 'var(--wpf-text-secondary)' }}>
+                    2026.04.27 공지 · 2027.02.15 신규/갱신 순차 전환
+                  </span>
+                </div>
+                <p className="text-[11.5px] leading-relaxed" style={{ color: 'var(--wpf-text-secondary)' }}>
+                  현재 사용 중인 RSA 2048-bit 인증서는 만료일까지 정상 사용할 수 있으며, 2027.02.15 이후 신규 발급 및 갱신 시 RSA 3072-bit 규격이 적용됩니다.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 tabular-nums">
+                  <button
+                    type="button"
+                    onClick={() => setCryptoFilter((prev) => (prev === 'recommended_3072' ? 'ALL' : 'recommended_3072'))}
+                    className="text-left p-2.5 rounded-[6px] cursor-pointer transition-colors"
+                    style={{
+                      backgroundColor: 'var(--wpf-bg-dark)',
+                      border: cryptoFilter === 'recommended_3072' ? '1px solid #16A34A' : '1px solid var(--wpf-border)',
+                    }}
+                  >
+                    <div className="text-[11px]" style={{ color: 'var(--wpf-text-secondary)' }}>차세대 규격 (3072-bit+)</div>
+                    <div className="text-base font-bold text-[#10B981] mt-0.5">{cryptoSummary.recommended3072Count}건</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCryptoFilter((prev) => (prev === 'standard_2048_transition' ? 'ALL' : 'standard_2048_transition'))}
+                    className="text-left p-2.5 rounded-[6px] cursor-pointer transition-colors"
+                    style={{
+                      backgroundColor: 'var(--wpf-bg-dark)',
+                      border: cryptoFilter === 'standard_2048_transition' ? '1px solid #D97706' : '1px solid var(--wpf-border)',
+                    }}
+                  >
+                    <div className="text-[11px]" style={{ color: 'var(--wpf-text-secondary)' }}>현행 유효 (2048-bit · 전환 예정)</div>
+                    <div className="text-base font-bold text-[#F59E0B] mt-0.5">{cryptoSummary.standard2048Count}건</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCryptoFilter((prev) => (prev === 'legacy_weak' ? 'ALL' : 'legacy_weak'))}
+                    className="text-left p-2.5 rounded-[6px] cursor-pointer transition-colors"
+                    style={{
+                      backgroundColor: 'var(--wpf-bg-dark)',
+                      border: cryptoFilter === 'legacy_weak' ? '1px solid #DC2626' : '1px solid var(--wpf-border)',
+                    }}
+                  >
+                    <div className="text-[11px]" style={{ color: 'var(--wpf-text-secondary)' }}>취약 규격 (1024-bit / SHA-1)</div>
+                    <div className="text-base font-bold text-[#F43F5E] mt-0.5">{cryptoSummary.legacyWeakCount}건</div>
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 text-[11px]">
+                  {[
+                    { id: 'ALL' as const, label: `전체 (${cryptoSummary.totalScanned})` },
+                    { id: 'legacy_weak' as const, label: `취약 (${cryptoSummary.legacyWeakCount})` },
+                    { id: 'standard_2048_transition' as const, label: `2048-bit (${cryptoSummary.standard2048Count})` },
+                    { id: 'recommended_3072' as const, label: `3072-bit+ (${cryptoSummary.recommended3072Count})` },
+                  ].map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setCryptoFilter(f.id)}
+                      className={`px-2.5 py-1 rounded-[4px] font-bold cursor-pointer tabular-nums ${
+                        cryptoFilter === f.id ? 'bg-[#2563EB] text-white' : 'wpf-btn-secondary wpf-native'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyCryptoAudit}
+                  className="wpf-btn-secondary wpf-native px-2.5 py-1 text-[11px] flex items-center gap-1 cursor-pointer"
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>점검 리포트 복사</span>
+                </button>
+              </div>
+
+              {filteredCryptoItems.length === 0 ? (
+                <div
+                  className="py-10 px-6 text-center rounded-[8px] text-xs"
+                  style={{
+                    backgroundColor: 'var(--wpf-bg-card)',
+                    border: '1px solid var(--wpf-border)',
+                    color: 'var(--wpf-text-secondary)',
+                  }}
+                >
+                  선택한 조건에 해당하는 인증서가 없습니다.
+                </div>
+              ) : (
+                <div
+                  className="rounded-[8px] divide-y overflow-hidden"
+                  style={{
+                    backgroundColor: 'var(--wpf-bg-card)',
+                    border: '1px solid var(--wpf-border)',
+                  }}
+                >
+                  {filteredCryptoItems.map((item) => {
+                    const postureColor =
+                      item.posture === 'recommended_3072'
+                        ? '#10B981'
+                        : item.posture === 'legacy_weak'
+                        ? '#F43F5E'
+                        : '#F59E0B';
+                    return (
+                      <div
+                        key={item.cert.id}
+                        className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                        style={{ borderColor: 'var(--wpf-border)' }}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-bold truncate">{item.cert.name}</span>
+                            <span
+                              className="text-[11px] font-mono tabular-nums"
+                              style={{ color: 'var(--wpf-accent-text)' }}
+                            >
+                              {item.keyAlgorithm} {item.keyBitLength}-bit · {item.signatureAlgorithm}
+                            </span>
+                          </div>
+                          <div className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--wpf-text-secondary)' }}>
+                            {item.cert.issuer} · {item.cert.sourceDrive} · 만료일 {item.cert.validTo}
+                          </div>
+                          <div className="text-[11px] mt-1" style={{ color: 'var(--wpf-text-secondary)' }}>
+                            {item.recommendation}
+                          </div>
+                        </div>
+                        <div
+                          className="text-[11px] font-bold shrink-0 tabular-nums"
+                          style={{ color: postureColor }}
+                        >
+                          {item.summaryLabel}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -610,9 +825,15 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                 선택된 사본 <strong>{selectedDupCerts.length}건</strong> · 예상 정리 용량{' '}
                 <strong>{formatBytes(selectedReclaimableBytes)}</strong>
               </span>
-            ) : (
+            ) : activeTab === 'repairs' ? (
               <span className="tabular-nums">
                 복구 대상 <strong>{selectedRepairItems.length}건</strong> 선택됨
+              </span>
+            ) : (
+              <span className="tabular-nums">
+                보안강도 점검 <strong>{cryptoSummary.totalScanned}건</strong> · 3072-bit+{' '}
+                <strong>{cryptoSummary.recommended3072Count}건</strong> · 취약{' '}
+                <strong>{cryptoSummary.legacyWeakCount}건</strong>
               </span>
             )}
           </div>
@@ -636,7 +857,7 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>선택 항목 휴지통으로 이동 ({selectedDupCerts.length})</span>
               </button>
-            ) : (
+            ) : activeTab === 'repairs' ? (
               <button
                 type="button"
                 disabled={selectedRepairItems.length === 0}
@@ -646,7 +867,7 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                 <Check className="w-3.5 h-3.5" />
                 <span>표준 위치로 복구 ({selectedRepairItems.length})</span>
               </button>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

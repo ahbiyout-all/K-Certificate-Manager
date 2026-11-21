@@ -26,6 +26,7 @@ import {
 import { CertificateItem } from '../types';
 import { BRANDING_ASSETS } from '../data/brandingAssets';
 import { RenewalInstitution, CertRenewalGroup } from '../data/renewalInstitutions';
+import { RENEWAL_ALTERNATIVE_TIPS } from '../data/koreanCertTrends2026';
 import { 
   getAllInstitutions, 
   saveInstitution, 
@@ -132,7 +133,8 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
     text += `* 갱신 안내 사항:\n`;
     text += `1. 공동인증서 갱신은 만료 30일 전부터 만료일 당일까지 가능합니다.\n`;
     text += `2. 이미 만료된 인증서는 갱신이 불가하며 신규/재발급 신청이 필요합니다.\n`;
-    text += `3. 사이트 URL이나 기관명이 변경된 경우 [기관 정보 수정] 버튼으로 언제든 최신 주소로 변경 가능합니다.`;
+    text += `3. 2027.02.15부터 5대 공동인증기관 신규 발급·갱신 시 RSA 3072-bit 규격이 순차 적용됩니다.\n`;
+    text += `4. 개인 은행·공공용은 클라우드 금융인증서(3년) 또는 민간 간편인증을 병행하면 파일 복사 없이 편리합니다.`;
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -693,8 +695,10 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
                                     {cert.serialNumber}
                                   </span>
                                 </div>
-                                <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+                                <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5 flex-wrap tabular-nums">
                                   <span>용도: {cert.policy}</span>
+                                  <span>·</span>
+                                  <span>규격: {cert.keyAlgorithm || 'RSA'} {cert.keyBitLength || 2048}-bit</span>
                                   <span>·</span>
                                   <span>위치: {cert.sourceDrive}</span>
                                 </div>
@@ -747,25 +751,44 @@ export const RenewalGuidanceModal: React.FC<RenewalGuidanceModalProps> = ({
               <ChevronDown className={`w-4 h-4 text-indigo-700 transition-transform ${showFaqGuide ? 'rotate-180' : ''}`} />
             </button>
             {showFaqGuide && (
-              <div className="px-4.5 pb-4 grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs text-indigo-900 leading-relaxed">
-                <div className="bg-white/80 p-3 rounded-lg border border-indigo-100">
-                  <p className="font-bold text-indigo-950 mb-0.5">1. 사이트 주소 변경 시</p>
-                  <p>기관명·도메인이 바뀌면 <strong>[정보/URL 수정]</strong>에서 바로 새 주소로 수정하세요.</p>
+              <div className="px-4.5 pb-4 space-y-2.5 text-xs text-indigo-900 leading-relaxed">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  <div className="bg-white/80 p-3 rounded-lg border border-indigo-100">
+                    <p className="font-bold text-indigo-950 mb-0.5">1. 사이트 주소 변경 시</p>
+                    <p>기관명·도메인이 바뀌면 <strong>[정보/URL 수정]</strong>에서 바로 새 주소로 수정하세요.</p>
+                  </div>
+                  <div className="bg-white/80 p-3 rounded-lg border border-indigo-100">
+                    <p className="font-bold text-indigo-950 mb-0.5">2. 갱신 가능 기간</p>
+                    <p>만료 <strong>30일 전 ~ 만료일 당일</strong>까지만 온라인 갱신이 가능합니다.</p>
+                  </div>
+                  <div className="bg-white/80 p-3 rounded-lg border border-indigo-100">
+                    <p className="font-bold text-indigo-950 mb-0.5">3. 페이지가 열리지 않을 때</p>
+                    <p><strong>[검색으로 찾기]</strong>를 누르면 최신 갱신 안내 페이지를 찾아줍니다.</p>
+                  </div>
+                  <div className="bg-white/80 p-3 rounded-lg border border-indigo-100">
+                    <p className="font-bold text-indigo-950 mb-0.5">4. 갱신 완료 후</p>
+                    <p>메인 화면에서 <strong>[새로고침(F5)]</strong> 후 새 인증서를 USB에 다시 복사하세요.</p>
+                  </div>
                 </div>
-                <div className="bg-white/80 p-3 rounded-lg border border-indigo-100">
-                  <p className="font-bold text-indigo-950 mb-0.5">2. 갱신 가능 기간</p>
-                  <p>만료 <strong>30일 전 ~ 만료일 당일</strong>까지만 온라인 갱신이 가능합니다.</p>
-                </div>
-                <div className="bg-white/80 p-3 rounded-lg border border-indigo-100">
-                  <p className="font-bold text-indigo-950 mb-0.5">3. 페이지가 열리지 않을 때</p>
-                  <p><strong>[검색으로 찾기]</strong>를 누르면 최신 갱신 안내 페이지를 찾아줍니다.</p>
-                </div>
-                <div className="bg-white/80 p-3 rounded-lg border border-indigo-100">
-                  <p className="font-bold text-indigo-950 mb-0.5">4. 갱신 완료 후</p>
-                  <p>메인 화면에서 <strong>[새로고침(F5)]</strong> 후 새 인증서를 USB에 다시 복사하세요.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
+                  {RENEWAL_ALTERNATIVE_TIPS.map((tip) => (
+                    <div key={tip.title} className="bg-white p-3 rounded-lg border border-indigo-200">
+                      <p className="font-bold text-indigo-950 mb-1">{tip.title}</p>
+                      <p className="text-[11.5px] text-slate-700 leading-relaxed">{tip.desc}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 grid grid-cols-1 md:grid-cols-2 gap-3">
+            {RENEWAL_ALTERNATIVE_TIPS.map((tip) => (
+              <div key={tip.title} className="space-y-0.5">
+                <div className="font-bold text-slate-900">{tip.title}</div>
+                <div className="text-[11.5px] text-slate-600 leading-relaxed">{tip.desc}</div>
+              </div>
+            ))}
           </div>
         </div>
 

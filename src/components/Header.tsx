@@ -466,9 +466,10 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 onClick={onOpenSecurityGuide}
                 className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+                title="인증서 보안 수칙 · 2026 동향·비교"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
-                <span>보안 수칙</span>
+                <span>보안 수칙·동향</span>
               </button>
 
               {onCheckUpdates && (

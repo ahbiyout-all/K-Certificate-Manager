@@ -53,6 +53,7 @@ import { DiagnosticsRepairModal } from './components/DiagnosticsRepairModal';
 import {
   analyzeDuplicateCertificates,
   analyzePathRepairs,
+  analyzeCryptoSecurity,
   buildCanonicalCertPath,
   extractDriveLetterFromPathOrLabel,
   PathRepairCandidate,
@@ -1757,11 +1758,12 @@ export default function App() {
   const diagnosticsIssueCount = useMemo(() => {
     const dupSum = analyzeDuplicateCertificates(certificates);
     const repCands = analyzePathRepairs(certificates);
+    const cryptoSum = analyzeCryptoSecurity(certificates);
     return (
       dupSum.groups.reduce(
         (sum, g) => sum + g.redundantEntries.filter(e => e.defaultChecked).length,
         0
-      ) + repCands.length
+      ) + repCands.length + cryptoSum.legacyWeakCount
     );
   }, [certificates]);
 

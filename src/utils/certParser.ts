@@ -1,4 +1,4 @@
-import { CertificateItem, CertCategory, CertStatus } from '../types';
+import { CertificateItem, CertCategory, CertStatus, CryptoPosture } from '../types';
 
 /**
  * ArrayBuffer를 16진수 문자열로 변환
@@ -122,6 +122,284 @@ export function extractDerValidityDates(derBytes: Uint8Array): {
     validTo: formatUtcDateStr(notAfterDate),
     daysRemaining,
     status,
+  };
+}
+
+interface DerTlvElement {
+  tag: number;
+  contentStart: number;
+  contentEnd: number;
+  nextOffset: number;
+}
+
+function readDerTlv(bytes: Uint8Array, offset: number, limit = bytes.length): DerTlvElement | null {
+  if (!bytes || offset < 0 || offset + 2 > limit) return null;
+  const tag = bytes[offset];
+  const lenByte = bytes[offset + 1];
+  let headerLen = 2;
+  let length = 0;
+
+  if ((lenByte & 0x80) === 0) {
+    length = lenByte;
+  } else {
+    const numOctets = lenByte & 0x7f;
+    if (numOctets <= 0 || numOctets > 4 || offset + 2 + numOctets > limit) return null;
+    headerLen = 2 + numOctets;
+    for (let i = 0; i < numOctets; i++) {
+      length = length * 256 + bytes[offset + 2 + i];
+    }
+  }
+
+  const contentStart = offset + headerLen;
+  const contentEnd = contentStart + length;
+  if (length < 0 || contentEnd > limit) return null;
+
+  return { tag, contentStart, contentEnd, nextOffset: contentEnd };
+}
+
+function readDerChildren(bytes: Uint8Array, start: number, end: number): DerTlvElement[] {
+  const children: DerTlvElement[] = [];
+  let cursor = start;
+  while (cursor < end) {
+    const el = readDerTlv(bytes, cursor, end);
+    if (!el || el.nextOffset <= cursor) break;
+    children.push(el);
+    cursor = el.nextOffset;
+  }
+  return children;
+}
+
+function decodeDerOid(bytes: Uint8Array, start: number, end: number): string {
+  if (end <= start) return '';
+  const first = bytes[start];
+  const firstNode = Math.min(Math.floor(first / 40), 2);
+  const secondNode = first - firstNode * 40;
+  const parts: number[] = [firstNode, secondNode];
+  let acc = 0;
+  for (let i = start + 1; i < end; i++) {
+    const b = bytes[i];
+    acc = acc * 128 + (b & 0x7f);
+    if ((b & 0x80) === 0) {
+      parts.push(acc);
+      acc = 0;
+    }
+  }
+  return parts.join('.');
+}
+
+const SIGNATURE_OID_NAMES: Record<string, string> = {
+  '1.2.840.113549.1.1.4': 'md5WithRSAEncryption',
+  '1.2.840.113549.1.1.5': 'sha1WithRSAEncryption',
+  '1.2.840.113549.1.1.10': 'RSASSA-PSS',
+  '1.2.840.113549.1.1.11': 'sha256WithRSAEncryption',
+  '1.2.840.113549.1.1.12': 'sha384WithRSAEncryption',
+  '1.2.840.113549.1.1.13': 'sha512WithRSAEncryption',
+  '1.2.840.10045.4.1': 'ecdsa-with-SHA1',
+  '1.2.840.10045.4.3.2': 'ecdsa-with-SHA256',
+  '1.2.840.10045.4.3.3': 'ecdsa-with-SHA384',
+  '1.2.840.10045.4.3.4': 'ecdsa-with-SHA512',
+  '1.2.410.200004.1.4': 'sha1WithRSAEncryption',
+  '1.2.410.200004.1.15': 'sha256WithRSAEncryption',
+};
+
+const EC_CURVE_OID_BITS: Record<string, number> = {
+  '1.2.840.10045.3.1.7': 256,
+  '1.3.132.0.34': 384,
+  '1.3.132.0.35': 521,
+  '1.3.132.0.10': 256,
+};
+
+export interface X509CryptoInfo {
+  keyAlgorithm: string;
+  keyBitLength: number;
+  signatureAlgorithm: string;
+  cryptoPosture: CryptoPosture;
+}
+
+export function classifyCryptoPosture(
+  keyAlgorithm = 'RSA',
+  keyBitLength = 2048,
+  signatureAlgorithm = 'sha256WithRSAEncryption'
+): CryptoPosture {
+  const sigLower = (signatureAlgorithm || '').toLowerCase();
+  const algUpper = (keyAlgorithm || 'RSA').toUpperCase();
+
+  if (sigLower.includes('sha1') || sigLower.includes('md5')) {
+    return 'legacy_weak';
+  }
+  if (algUpper.includes('EC') || algUpper.includes('ECDSA')) {
+    if (keyBitLength > 0 && keyBitLength < 256) return 'legacy_weak';
+    return 'recommended_3072';
+  }
+  if (keyBitLength > 0 && keyBitLength < 2048) {
+    return 'legacy_weak';
+  }
+  if (keyBitLength >= 3072) {
+    return 'recommended_3072';
+  }
+  return 'standard_2048_transition';
+}
+
+export function getCryptoPostureMeta(
+  cert: Pick<CertificateItem, 'keyAlgorithm' | 'keyBitLength' | 'signatureAlgorithm' | 'cryptoPosture'>
+): {
+  posture: CryptoPosture;
+  specText: string;
+  badgeText: string;
+  detailText: string;
+  colorHex: string;
+  bgHex: string;
+  borderHex: string;
+} {
+  const keyAlgorithm = cert.keyAlgorithm || 'RSA';
+  const keyBitLength = cert.keyBitLength || 2048;
+  const signatureAlgorithm = cert.signatureAlgorithm || 'sha256WithRSAEncryption';
+  const posture = cert.cryptoPosture || classifyCryptoPosture(keyAlgorithm, keyBitLength, signatureAlgorithm);
+
+  const specText = `${keyAlgorithm} ${keyBitLength}-bit · ${signatureAlgorithm}`;
+
+  if (posture === 'recommended_3072') {
+    return {
+      posture,
+      specText,
+      badgeText: `차세대 규격 충족 (${keyAlgorithm} ${keyBitLength}-bit)`,
+      detailText: '2027.02 KISA 보안강도 상향 기준(RSA 3072-bit+)을 충족하는 인증서입니다.',
+      colorHex: '#16A34A',
+      bgHex: 'rgba(22, 163, 74, 0.14)',
+      borderHex: 'rgba(22, 163, 74, 0.4)',
+    };
+  }
+  if (posture === 'legacy_weak') {
+    return {
+      posture,
+      specText,
+      badgeText: `취약 규격 교체 권장 (${keyAlgorithm} ${keyBitLength}-bit)`,
+      detailText: '1024-bit 이하 또는 SHA-1 구형 서명이 감지되었습니다. 즉시 재발급을 권장합니다.',
+      colorHex: '#DC2626',
+      bgHex: 'rgba(220, 38, 38, 0.14)',
+      borderHex: 'rgba(220, 38, 38, 0.4)',
+    };
+  }
+  return {
+    posture,
+    specText,
+    badgeText: `현행 유효 (${keyAlgorithm} ${keyBitLength}-bit · 2027.02 전환 예정)`,
+    detailText: '만료일까지 정상 사용 가능하며, 2027.02.15 이후 신규/갱신 시 RSA 3072-bit로 전환됩니다.',
+    colorHex: '#D97706',
+    bgHex: 'rgba(217, 119, 6, 0.14)',
+    borderHex: 'rgba(217, 119, 6, 0.4)',
+  };
+}
+
+/**
+ * ASN.1 DER X.509 인증서에서 서명 알고리즘 및 공개키 비트 길이 추출
+ */
+export function extractX509CryptoInfo(derBytes: Uint8Array): X509CryptoInfo {
+  let keyAlgorithm = 'RSA';
+  let keyBitLength = 2048;
+  let signatureAlgorithm = 'sha256WithRSAEncryption';
+
+  try {
+    const root = readDerTlv(derBytes, 0);
+    if (root && root.tag === 0x30) {
+      const certChildren = readDerChildren(derBytes, root.contentStart, root.contentEnd);
+      const tbs = certChildren[0];
+      const outerSigAlg = certChildren[1];
+
+      if (outerSigAlg && outerSigAlg.tag === 0x30) {
+        const sigChildren = readDerChildren(derBytes, outerSigAlg.contentStart, outerSigAlg.contentEnd);
+        const oidEl = sigChildren.find((c) => c.tag === 0x06);
+        if (oidEl) {
+          const oid = decodeDerOid(derBytes, oidEl.contentStart, oidEl.contentEnd);
+          if (SIGNATURE_OID_NAMES[oid]) {
+            signatureAlgorithm = SIGNATURE_OID_NAMES[oid];
+          } else if (oid) {
+            signatureAlgorithm = `OID ${oid}`;
+          }
+        }
+      }
+
+      if (tbs && tbs.tag === 0x30) {
+        const tbsChildren = readDerChildren(derBytes, tbs.contentStart, tbs.contentEnd);
+        const hasVersion = tbsChildren[0]?.tag === 0xa0;
+        const tbsSigIdx = hasVersion ? 2 : 1;
+        const spkiIdx = hasVersion ? 6 : 5;
+
+        // Fallback check on inner tbsCertificate.signature if outer was unknown
+        const innerSig = tbsChildren[tbsSigIdx];
+        if (signatureAlgorithm.startsWith('OID ') && innerSig && innerSig.tag === 0x30) {
+          const innerChildren = readDerChildren(derBytes, innerSig.contentStart, innerSig.contentEnd);
+          const oidEl = innerChildren.find((c) => c.tag === 0x06);
+          if (oidEl) {
+            const oid = decodeDerOid(derBytes, oidEl.contentStart, oidEl.contentEnd);
+            if (SIGNATURE_OID_NAMES[oid]) {
+              signatureAlgorithm = SIGNATURE_OID_NAMES[oid];
+            }
+          }
+        }
+
+        const spki = tbsChildren[spkiIdx];
+        if (spki && spki.tag === 0x30) {
+          const spkiChildren = readDerChildren(derBytes, spki.contentStart, spki.contentEnd);
+          const algSeq = spkiChildren[0];
+          const pubBitStr = spkiChildren[1];
+
+          let algOid = '';
+          let paramOid = '';
+          if (algSeq && algSeq.tag === 0x30) {
+            const algItems = readDerChildren(derBytes, algSeq.contentStart, algSeq.contentEnd);
+            if (algItems[0]?.tag === 0x06) {
+              algOid = decodeDerOid(derBytes, algItems[0].contentStart, algItems[0].contentEnd);
+            }
+            if (algItems[1]?.tag === 0x06) {
+              paramOid = decodeDerOid(derBytes, algItems[1].contentStart, algItems[1].contentEnd);
+            }
+          }
+
+          if (algOid === '1.2.840.10045.2.1') {
+            keyAlgorithm = 'ECDSA';
+            if (EC_CURVE_OID_BITS[paramOid]) {
+              keyBitLength = EC_CURVE_OID_BITS[paramOid];
+            } else if (pubBitStr && pubBitStr.tag === 0x03 && pubBitStr.contentEnd - pubBitStr.contentStart > 2) {
+              const coordBytes = Math.floor((pubBitStr.contentEnd - pubBitStr.contentStart - 2) / 2);
+              if (coordBytes > 0) keyBitLength = coordBytes * 8;
+            }
+          } else if (
+            (!algOid || algOid === '1.2.840.113549.1.1.1' || algOid === '1.2.840.113549.1.1.10') &&
+            pubBitStr &&
+            pubBitStr.tag === 0x03 &&
+            pubBitStr.contentEnd - pubBitStr.contentStart > 1
+          ) {
+            keyAlgorithm = 'RSA';
+            const keyStart = pubBitStr.contentStart + 1; // skip unusedBits byte
+            const rsaSeq = readDerTlv(derBytes, keyStart, pubBitStr.contentEnd);
+            if (rsaSeq && rsaSeq.tag === 0x30) {
+              const rsaItems = readDerChildren(derBytes, rsaSeq.contentStart, rsaSeq.contentEnd);
+              const modEl = rsaItems[0];
+              if (modEl && modEl.tag === 0x02) {
+                let s = modEl.contentStart;
+                while (s < modEl.contentEnd && derBytes[s] === 0x00) {
+                  s++;
+                }
+                const byteLen = modEl.contentEnd - s;
+                if (byteLen > 0) {
+                  keyBitLength = (byteLen - 1) * 8 + derBytes[s].toString(2).length;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch {
+    // Keep safe defaults
+  }
+
+  return {
+    keyAlgorithm,
+    keyBitLength,
+    signatureAlgorithm,
+    cryptoPosture: classifyCryptoPosture(keyAlgorithm, keyBitLength, signatureAlgorithm),
   };
 }
 
@@ -616,6 +894,7 @@ export async function scanDirectoryHandle(
         }
 
         const validity = extractDerValidityDates(bytes);
+        const cryptoInfo = extractX509CryptoInfo(bytes);
         const isInstitutional = Boolean(parsed.isInstitutional) || (isClass1 && !parsed.isSystemCa && hasKey);
 
         certs.push({
@@ -638,6 +917,10 @@ export async function scanDirectoryHandle(
           isSystemCa: parsed.isSystemCa,
           isInstitutional,
           isClass1,
+          keyAlgorithm: cryptoInfo.keyAlgorithm,
+          keyBitLength: cryptoInfo.keyBitLength,
+          signatureAlgorithm: cryptoInfo.signatureAlgorithm,
+          cryptoPosture: cryptoInfo.cryptoPosture,
           files: {
             certName: certFileHandle.name,
             keyName: keyFileHandle ? keyFileHandle.name : 'signPri.key (없음)',
@@ -740,6 +1023,7 @@ export async function groupUploadedCertFiles(fileList: FileList): Promise<Certif
         }
 
         const validity = extractDerValidityDates(certBytes);
+        const cryptoInfo = extractX509CryptoInfo(certBytes);
         const isInstitutional = Boolean(parsed.isInstitutional) || (isClass1 && !parsed.isSystemCa && hasKey);
 
         certs.push({
@@ -762,6 +1046,10 @@ export async function groupUploadedCertFiles(fileList: FileList): Promise<Certif
           isSystemCa: parsed.isSystemCa,
           isInstitutional,
           isClass1,
+          keyAlgorithm: cryptoInfo.keyAlgorithm,
+          keyBitLength: cryptoInfo.keyBitLength,
+          signatureAlgorithm: cryptoInfo.signatureAlgorithm,
+          cryptoPosture: cryptoInfo.cryptoPosture,
           files: {
             certName: certFile.name,
             keyName: matchedKeyFile ? matchedKeyFile.name : 'signPri.key (없음)',

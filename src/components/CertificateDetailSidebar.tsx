@@ -21,6 +21,7 @@ import { isUsbCertificate } from '../utils/driveFilter';
 import { isNonStandardCertPath, isClass1Certificate, isInstitutionalOrClass1 } from '../utils/certPathUtils';
 import { getAccurateIssuerInfo } from '../utils/issuerUtils';
 import { extractDriveLetterFromPathOrLabel } from '../utils/certDiagnostics';
+import { getCryptoPostureMeta } from '../utils/certParser';
 
 interface CertificateDetailSidebarProps {
   cert: CertificateItem | null;
@@ -62,6 +63,7 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
   const handleCopyAllDetails = () => {
     if (!cert) return;
     const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);
+    const cryptoMeta = getCryptoPostureMeta(cert);
     const fullText = [
       `인증서 명칭 (CN): ${cert.name}`,
       `카테고리: ${cert.category}`,
@@ -69,6 +71,8 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
       `소유자 전체 식별명 (Subject DN): ${cert.subjectDn}`,
       `일련번호 (Serial Number): ${cert.serialNumber}`,
       `유효기간: ${cert.validFrom} ~ ${cert.validTo} (잔여 ${cert.daysRemaining}일)`,
+      `공개키/서명 규격: ${cryptoMeta.specText}`,
+      `2027.02 보안강도: ${cryptoMeta.badgeText}`,
       `정책/용도: ${cert.policy}`,
       `저장 경로: ${cert.sourceLocation}`,
       `SHA-256 지문: ${cert.files.sha256}`,
@@ -153,6 +157,7 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
             const isClass1 = isClass1Certificate(cert);
             const isInstitutional = isInstitutionalOrClass1(cert);
             const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);
+            const cryptoMeta = getCryptoPostureMeta(cert);
 
             const statusBadgeStyle =
               cert.status === 'expired'
@@ -410,7 +415,31 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
 
                   <div>
                     <div className="text-[11px]" style={{ color: 'var(--wpf-text-secondary)' }}>
-                      전자서명 및 개인키 암호화:
+                      공개키 · 서명 규격:
+                    </div>
+                    <div
+                      className="text-[11.5px] font-mono font-semibold tabular-nums mt-0.5"
+                      style={{ color: 'var(--wpf-text-primary)' }}
+                    >
+                      {cryptoMeta.specText}
+                    </div>
+                    <div
+                      className="text-[11px] font-bold mt-1"
+                      style={{ color: cryptoMeta.colorHex }}
+                    >
+                      {cryptoMeta.badgeText}
+                    </div>
+                    <div
+                      className="text-[10.5px] leading-relaxed mt-0.5"
+                      style={{ color: 'var(--wpf-text-secondary)' }}
+                    >
+                      {cryptoMeta.detailText}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[11px]" style={{ color: 'var(--wpf-text-secondary)' }}>
+                      개인키 암호화 체계 (PKCS#8):
                     </div>
                     <div
                       className="text-[11.5px] mt-0.5"

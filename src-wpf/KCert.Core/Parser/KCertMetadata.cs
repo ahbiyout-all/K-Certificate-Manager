@@ -3,6 +3,16 @@ using System;
 namespace KCert.Core.Parser
 {
     /// <summary>
+    /// 2027.02 KISA 보안강도 상향 기준에 따른 암호화 규격 판정 등급
+    /// </summary>
+    public enum CryptoSecurityPosture
+    {
+        Recommended3072,
+        Standard2048Transition,
+        LegacyWeak
+    }
+
+    /// <summary>
     /// K-인증서 통합 상세 메타데이터 모델
     /// </summary>
     public class KCertMetadata
@@ -51,6 +61,15 @@ namespace KCert.Core.Parser
 
         /// <summary>서명 알고리즘 (예: sha256RSA)</summary>
         public string SignatureAlgorithm { get; set; } = "sha256RSA";
+
+        /// <summary>공개키 알고리즘 (예: RSA, ECDSA)</summary>
+        public string PublicKeyAlgorithm { get; set; } = "RSA";
+
+        /// <summary>공개키 비트 길이 (예: 1024, 2048, 3072)</summary>
+        public int PublicKeyBitLength { get; set; } = 2048;
+
+        /// <summary>2027.02 보안강도 전환 기준 진단 등급</summary>
+        public CryptoSecurityPosture SecurityPosture { get; set; } = CryptoSecurityPosture.Standard2048Transition;
 
         // -------------------------------------------------------------
         // 정책 OID 및 용도 정보

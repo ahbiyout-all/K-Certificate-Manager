@@ -224,6 +224,11 @@ namespace KCert.Core.Parser
                 // 개인키 분석
                 KeyAnalysisResult? keyInfo = hasKey ? KCertKeyAnalyzer.AnalyzeKeyFile(keyPath) : null;
 
+                // 공개키 알고리즘 및 비트 길이 추출 (RSA 2048/3072/1024, ECDSA 256/384)
+                var sigAlgName = cert.SignatureAlgorithm.FriendlyName ?? cert.SignatureAlgorithm.Value ?? "sha256RSA";
+                var (pubKeyAlg, pubKeyBits) = ExtractPublicKeySpecs(cert);
+                var securityPosture = ClassifySecurityPosture(pubKeyAlg, pubKeyBits, sigAlgName);
+
                 var meta = new KCertMetadata
                 {
                     DirectoryPath = dirPath,
@@ -235,7 +240,10 @@ namespace KCert.Core.Parser
                     Issuer = formattedIssuer,
                     CaSignatureName = caSignatureName,
                     SerialNumber = cert.SerialNumber ?? string.Empty,
-                    SignatureAlgorithm = cert.SignatureAlgorithm.FriendlyName ?? "sha256RSA",
+                    SignatureAlgorithm = sigAlgName,
+                    PublicKeyAlgorithm = pubKeyAlg,
+                    PublicKeyBitLength = pubKeyBits,
+                    SecurityPosture = securityPosture,
                     CommonName = formattedName,
                     Organization = formattedOrg,
                     OrganizationalUnit = string.Join(" / ", ous),
@@ -565,6 +573,74 @@ namespace KCert.Core.Parser
                 }
             }
             return list;
+        }
+
+        private static (string Algorithm, int BitLength) ExtractPublicKeySpecs(X509Certificate2 cert)
+        {
+            try
+            {
+                using var rsa = cert.GetRSAPublicKey();
+                if (rsa != null && rsa.KeySize > 0)
+                {
+                    return ("RSA", rsa.KeySize);
+                }
+            }
+            catch { }
+
+            try
+            {
+                using var ecdsa = cert.GetECDsaPublicKey();
+                if (ecdsa != null && ecdsa.KeySize > 0)
+                {
+                    return ("ECDSA", ecdsa.KeySize);
+                }
+            }
+            catch { }
+
+            try
+            {
+                var oid = cert.PublicKey?.Oid?.Value ?? string.Empty;
+                var rawKeyLen = cert.PublicKey?.EncodedKeyValue?.RawData?.Length ?? 0;
+                if (oid == "1.2.840.10045.2.1")
+                {
+                    int ecBits = rawKeyLen >= 96 ? 384 : 256;
+                    return ("ECDSA", ecBits);
+                }
+                if (rawKeyLen >= 380) return ("RSA", 3072);
+                if (rawKeyLen >= 250) return ("RSA", 2048);
+                if (rawKeyLen > 0 && rawKeyLen < 200) return ("RSA", 1024);
+            }
+            catch { }
+
+            return ("RSA", 2048);
+        }
+
+        public static CryptoSecurityPosture ClassifySecurityPosture(string keyAlgorithm, int keyBitLength, string signatureAlgorithm)
+        {
+            var sigLower = (signatureAlgorithm ?? string.Empty).ToLowerInvariant();
+            if (sigLower.Contains("sha1") || sigLower.Contains("md5"))
+            {
+                return CryptoSecurityPosture.LegacyWeak;
+            }
+
+            var algUpper = (keyAlgorithm ?? "RSA").ToUpperInvariant();
+            if (algUpper.Contains("EC"))
+            {
+                return (keyBitLength > 0 && keyBitLength < 256)
+                    ? CryptoSecurityPosture.LegacyWeak
+                    : CryptoSecurityPosture.Recommended3072;
+            }
+
+            if (keyBitLength > 0 && keyBitLength < 2048)
+            {
+                return CryptoSecurityPosture.LegacyWeak;
+            }
+            if (keyBitLength >= 3072)
+            {
+                return CryptoSecurityPosture.Recommended3072;
+            }
+
+            return CryptoSecurityPosture.Standard2048Transition;
         }
     }
 }

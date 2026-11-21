@@ -1,5 +1,5 @@
-import { CertificateItem, DiskDrive } from '../types';
-import { isCertificateExpired } from './certParser';
+import { CertificateItem, CryptoPosture, DiskDrive } from '../types';
+import { classifyCryptoPosture, isCertificateExpired } from './certParser';
 import {
   isNonStandardCertPath,
   isRareLocalLowGpkiPath,
@@ -389,5 +389,90 @@ export function prepareSafeUsbEject(
     message:
       '웹 브라우저의 파일 핸들 참조를 모두 해제했습니다. 브라우저 보안 정책상 물리 전원 차단은 불가하므로, Windows 작업 표시줄의 [하드웨어 안전하게 제거]를 눌러 분리해 주세요.',
     requiresOsTrayConfirmation: true,
+  };
+}
+
+export interface CryptoSecurityAuditItem {
+  cert: CertificateItem;
+  posture: CryptoPosture;
+  keyAlgorithm: string;
+  keyBitLength: number;
+  signatureAlgorithm: string;
+  summaryLabel: string;
+  recommendation: string;
+}
+
+export interface CryptoSecuritySummary {
+  totalScanned: number;
+  recommended3072Count: number;
+  standard2048Count: number;
+  legacyWeakCount: number;
+  items: CryptoSecurityAuditItem[];
+}
+
+export function analyzeCryptoSecurity(certs: CertificateItem[]): CryptoSecuritySummary {
+  const rankMap: Record<CryptoPosture, number> = {
+    legacy_weak: 0,
+    standard_2048_transition: 1,
+    recommended_3072: 2,
+  };
+
+  let recommended3072Count = 0;
+  let standard2048Count = 0;
+  let legacyWeakCount = 0;
+
+  const items: CryptoSecurityAuditItem[] = certs.map((cert) => {
+    const keyAlgorithm = cert.keyAlgorithm || 'RSA';
+    const keyBitLength = cert.keyBitLength || 2048;
+    const signatureAlgorithm = cert.signatureAlgorithm || 'sha256WithRSAEncryption';
+    const posture =
+      cert.cryptoPosture || classifyCryptoPosture(keyAlgorithm, keyBitLength, signatureAlgorithm);
+
+    if (posture === 'recommended_3072') {
+      recommended3072Count++;
+      return {
+        cert,
+        posture,
+        keyAlgorithm,
+        keyBitLength,
+        signatureAlgorithm,
+        summaryLabel: '차세대 규격 충족',
+        recommendation: '2027.02 보안강도 상향 기준(RSA 3072-bit+)을 충족합니다.',
+      };
+    }
+
+    if (posture === 'legacy_weak') {
+      legacyWeakCount++;
+      return {
+        cert,
+        posture,
+        keyAlgorithm,
+        keyBitLength,
+        signatureAlgorithm,
+        summaryLabel: '취약 규격 (교체 권장)',
+        recommendation: '1024-bit 이하 또는 SHA-1 구형 서명 규격입니다. 즉시 재발급을 권장합니다.',
+      };
+    }
+
+    standard2048Count++;
+    return {
+      cert,
+      posture,
+      keyAlgorithm,
+      keyBitLength,
+      signatureAlgorithm,
+      summaryLabel: '현행 유효 (2027.02 전환 예정)',
+      recommendation: '만료일까지 정상 사용 가능하며, 2027.02.15 이후 갱신 시 RSA 3072-bit로 전환됩니다.',
+    };
+  });
+
+  items.sort((a, b) => rankMap[a.posture] - rankMap[b.posture] || a.cert.daysRemaining - b.cert.daysRemaining);
+
+  return {
+    totalScanned: certs.length,
+    recommended3072Count,
+    standard2048Count,
+    legacyWeakCount,
+    items,
   };
 }

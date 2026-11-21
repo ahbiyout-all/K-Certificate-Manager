@@ -65,7 +65,9 @@ namespace KCertManager.Wpf.Views
             TxtSubjectDn.Text = _cert.SubjectDn;
             TxtIssuerDn.Text = _cert.IssuerName;
             TxtSerial.Text = _cert.SerialNumber;
-            TxtAlgo.Text = _cert.SignatureAlgorithm;
+            TxtAlgo.Text = _cert.PublicKeySpecText;
+            TxtCryptoPosture.Text = $"{_cert.CryptoPostureLabel} — {_cert.CryptoPostureDetailText}";
+            TxtCryptoPosture.Foreground = TryCreateBrush(_cert.CryptoPostureColorHex, System.Windows.Media.Color.FromRgb(245, 158, 11));
             TxtPolicy.Text = $"{_cert.PolicyUsage} (OID: {_cert.PolicyOid})";
 
             TxtNotBefore.Text = _cert.NotBefore.ToString("yyyy-MM-dd HH:mm:ss");

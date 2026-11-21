@@ -4,6 +4,8 @@ export type AppTheme = 'dark' | 'gray' | 'white' | 'beige' | 'pastel-white' | 'p
 
 export type CertStatus = 'valid' | 'expiring' | 'expired';
 
+export type CryptoPosture = 'recommended_3072' | 'standard_2048_transition' | 'legacy_weak';
+
 export interface CertFileDetail {
   certName: string; // signCert.der or SignCert.der
   keyName: string;  // signPri.key or SignPri.key
@@ -37,6 +39,10 @@ export interface CertificateItem {
   isSystemCa?: boolean; // 시스템 루트/중계 CA 인증서 여부
   isInstitutional?: boolean; // 기관용/전자관인/특수목적용 공용 인증서 여부
   isClass1?: boolean; // GPKI/EPKI class1 (기관·특수목적) 경로 기반 인증서 여부
+  keyAlgorithm?: string; // 예: RSA, ECDSA
+  keyBitLength?: number; // 예: 1024, 2048, 3072, 4096
+  signatureAlgorithm?: string; // 예: sha256WithRSAEncryption
+  cryptoPosture?: CryptoPosture; // 2027.02 RSA 3072-bit 보안강도 기준 판정
   keyEncryptionAlgorithm?: string;
   files: CertFileDetail;
   isRemovableMedia?: boolean;
