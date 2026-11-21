@@ -1039,6 +1039,10 @@ namespace KCertManager.Wpf.ViewModels
 
                 var res = app.Resources;
                 System.Windows.Media.Color bgDark, bgCard, bgCardHover, textPrimary, textSecondary, borderColor, accentText, mutedText;
+                System.Windows.Media.Color accentBlue, accentBlueHover, accentGreen, accentRose;
+                System.Windows.Media.Color selectedRowBg, selectedRowText, inactiveSelectedRowBg, inactiveSelectedRowText;
+                System.Windows.Media.Color copiedRowBg, copiedRowText;
+                System.Windows.Media.Color scrollBarTrack, scrollBarThumb, scrollBarThumbHover;
                 System.Windows.Media.Color toolTipBg, toolTipText, toolTipBorder;
 
                 if (themeName == "dark" || themeName == "pastel-black")
@@ -1052,39 +1056,89 @@ namespace KCertManager.Wpf.ViewModels
                     accentText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#60A5FA");
                     mutedText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#94A3B8");
 
+                    accentBlue = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2563EB");
+                    accentBlueHover = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1D4ED8");
+                    accentGreen = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#10B981");
+                    accentRose = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F43F5E");
+
+                    selectedRowBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E3A8A");
+                    selectedRowText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF");
+                    inactiveSelectedRowBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#172554");
+                    inactiveSelectedRowText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E2E8F0");
+                    copiedRowBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#065F46");
+                    copiedRowText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E6FFFA");
+
+                    scrollBarTrack = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#161B26");
+                    scrollBarThumb = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#475569");
+                    scrollBarThumbHover = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#64748B");
+
                     toolTipBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E293B");
                     toolTipText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F8FAFC");
                     toolTipBorder = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#3B82F6");
                 }
                 else if (themeName == "gray" || themeName == "pastel-gray")
                 {
-                    bgDark = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E2E8F0");
-                    bgCard = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF");
-                    bgCardHover = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F1F5F9");
-                    textPrimary = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#0F172A");
-                    textSecondary = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E293B");
-                    borderColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#94A3B8");
-                    accentText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1D4ED8");
-                    mutedText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#475569");
+                    // Misty Mineral Slate: zero pure-white glare with deep ink slate text (~11.2:1)
+                    bgDark = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#CCD4DF");
+                    bgCard = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#DFE5EC");
+                    bgCardHover = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#D3DCE6");
+                    textPrimary = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#19222D");
+                    textSecondary = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2C3847");
+                    borderColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#9CA9B9");
+                    accentText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1A4673");
+                    mutedText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#495667");
+
+                    accentBlue = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#245687");
+                    accentBlueHover = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1B446D");
+                    accentGreen = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#16654B");
+                    accentRose = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#B92B47");
+
+                    selectedRowBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#CBDCEE");
+                    selectedRowText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#122030");
+                    inactiveSelectedRowBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#D4DFEC");
+                    inactiveSelectedRowText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#19222D");
+                    copiedRowBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#CCE2D8");
+                    copiedRowText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#133829");
+
+                    scrollBarTrack = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#CCD4DF");
+                    scrollBarThumb = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#8A97A8");
+                    scrollBarThumbHover = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#586678");
 
                     toolTipBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E293B");
-                    toolTipText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F8FAFC");
-                    toolTipBorder = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#475569");
+                    toolTipText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#EEF2F6");
+                    toolTipBorder = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#495667");
                 }
                 else if (themeName == "beige" || themeName == "pastel-beige")
                 {
-                    bgDark = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F5F2EB");
-                    bgCard = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF");
-                    bgCardHover = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#EEE9DE");
-                    textPrimary = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1C1917");
-                    textSecondary = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#292524");
-                    borderColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#D6CEBF");
-                    accentText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E40AF");
-                    mutedText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#44403C");
+                    // Warm Oat Paper: low blue-light glare-free matte paper with espresso charcoal text (~11.6:1)
+                    bgDark = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E6DFD1");
+                    bgCard = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F1ECE1");
+                    bgCardHover = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#DDD5C5");
+                    textPrimary = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#24201B");
+                    textSecondary = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#3E3830");
+                    borderColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#C4BAA7");
+                    accentText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E4971");
+                    mutedText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#595146");
 
-                    toolTipBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#292524");
-                    toolTipText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FAFAF9");
-                    toolTipBorder = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#D97706");
+                    accentBlue = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2C5A85");
+                    accentBlueHover = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#21476B");
+                    accentGreen = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E6B4F");
+                    accentRose = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#B4324B");
+
+                    selectedRowBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#D6E2ED");
+                    selectedRowText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#182430");
+                    inactiveSelectedRowBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#DCE4EC");
+                    inactiveSelectedRowText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#24201B");
+                    copiedRowBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#D5E6DA");
+                    copiedRowText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#193A27");
+
+                    scrollBarTrack = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E6DFD1");
+                    scrollBarThumb = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#A99F8D");
+                    scrollBarThumbHover = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#746B5C");
+
+                    toolTipBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2C2620");
+                    toolTipText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F5F1E8");
+                    toolTipBorder = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#B88228");
                 }
                 else // white (pastel-white)
                 {
@@ -1097,6 +1151,22 @@ namespace KCertManager.Wpf.ViewModels
                     accentText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1D4ED8");
                     mutedText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#475569");
 
+                    accentBlue = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2563EB");
+                    accentBlueHover = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1D4ED8");
+                    accentGreen = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#059669");
+                    accentRose = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E11D48");
+
+                    selectedRowBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#DBEAFE");
+                    selectedRowText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#0F172A");
+                    inactiveSelectedRowBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E2E8F0");
+                    inactiveSelectedRowText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#0F172A");
+                    copiedRowBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#D1FAE5");
+                    copiedRowText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#065F46");
+
+                    scrollBarTrack = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F1F5F9");
+                    scrollBarThumb = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#94A3B8");
+                    scrollBarThumbHover = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#475569");
+
                     toolTipBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#0F172A");
                     toolTipText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF");
                     toolTipBorder = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2563EB");
@@ -1108,6 +1178,19 @@ namespace KCertManager.Wpf.ViewModels
                 res["TextPrimary"] = textPrimary;
                 res["TextSecondary"] = textSecondary;
                 res["BorderColor"] = borderColor;
+                res["AccentBlue"] = accentBlue;
+                res["AccentBlueHover"] = accentBlueHover;
+                res["AccentGreen"] = accentGreen;
+                res["AccentRose"] = accentRose;
+                res["SelectedRowBg"] = selectedRowBg;
+                res["SelectedRowText"] = selectedRowText;
+                res["InactiveSelectedRowBg"] = inactiveSelectedRowBg;
+                res["InactiveSelectedRowText"] = inactiveSelectedRowText;
+                res["CopiedRowBg"] = copiedRowBg;
+                res["CopiedRowText"] = copiedRowText;
+                res["ScrollBarTrack"] = scrollBarTrack;
+                res["ScrollBarThumb"] = scrollBarThumb;
+                res["ScrollBarThumbHover"] = scrollBarThumbHover;
                 res["ToolTipBg"] = toolTipBg;
                 res["ToolTipText"] = toolTipText;
                 res["ToolTipBorder"] = toolTipBorder;
@@ -1120,9 +1203,27 @@ namespace KCertManager.Wpf.ViewModels
                 res["BorderBrush"] = new System.Windows.Media.SolidColorBrush(borderColor);
                 res["AccentTextBrush"] = new System.Windows.Media.SolidColorBrush(accentText);
                 res["MutedTextBrush"] = new System.Windows.Media.SolidColorBrush(mutedText);
+                res["AccentBlueBrush"] = new System.Windows.Media.SolidColorBrush(accentBlue);
+                res["AccentBlueHoverBrush"] = new System.Windows.Media.SolidColorBrush(accentBlueHover);
+                res["AccentGreenBrush"] = new System.Windows.Media.SolidColorBrush(accentGreen);
+                res["AccentRoseBrush"] = new System.Windows.Media.SolidColorBrush(accentRose);
+                res["SelectedRowBgBrush"] = new System.Windows.Media.SolidColorBrush(selectedRowBg);
+                res["SelectedRowTextBrush"] = new System.Windows.Media.SolidColorBrush(selectedRowText);
+                res["InactiveSelectedRowBgBrush"] = new System.Windows.Media.SolidColorBrush(inactiveSelectedRowBg);
+                res["InactiveSelectedRowTextBrush"] = new System.Windows.Media.SolidColorBrush(inactiveSelectedRowText);
+                res["CopiedRowBgBrush"] = new System.Windows.Media.SolidColorBrush(copiedRowBg);
+                res["CopiedRowTextBrush"] = new System.Windows.Media.SolidColorBrush(copiedRowText);
+                res["ScrollBarTrackBrush"] = new System.Windows.Media.SolidColorBrush(scrollBarTrack);
+                res["ScrollBarThumbBrush"] = new System.Windows.Media.SolidColorBrush(scrollBarThumb);
+                res["ScrollBarThumbHoverBrush"] = new System.Windows.Media.SolidColorBrush(scrollBarThumbHover);
                 res["ToolTipBgBrush"] = new System.Windows.Media.SolidColorBrush(toolTipBg);
                 res["ToolTipTextBrush"] = new System.Windows.Media.SolidColorBrush(toolTipText);
                 res["ToolTipBorderBrush"] = new System.Windows.Media.SolidColorBrush(toolTipBorder);
+
+                res[SystemColors.HighlightBrushKey] = new System.Windows.Media.SolidColorBrush(selectedRowBg);
+                res[SystemColors.HighlightTextBrushKey] = new System.Windows.Media.SolidColorBrush(selectedRowText);
+                res[SystemColors.InactiveSelectionHighlightBrushKey] = new System.Windows.Media.SolidColorBrush(inactiveSelectedRowBg);
+                res[SystemColors.InactiveSelectionHighlightTextBrushKey] = new System.Windows.Media.SolidColorBrush(inactiveSelectedRowText);
             }
             catch (Exception ex)
             {

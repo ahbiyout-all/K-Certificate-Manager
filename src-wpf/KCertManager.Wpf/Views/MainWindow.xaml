@@ -844,12 +844,6 @@
                                 </ContextMenu>
                             </DataGrid.ContextMenu>
                             <DataGrid.Resources>
-                                <!-- Subtle navy highlight brushes for clean, organized row selection without blinding blue fill -->
-                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#1E3A8A"/>
-                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#FFFFFF"/>
-                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#172554"/>
-                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#E2E8F0"/>
-
                                 <Style TargetType="DataGridColumnHeader">
                                     <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
                                     <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
@@ -876,7 +870,7 @@
                                     <Style.Triggers>
                                         <Trigger Property="IsSelected" Value="True">
                                             <Setter Property="Background" Value="Transparent"/>
-                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
                                         </Trigger>
                                     </Style.Triggers>
                                 </Style>
@@ -887,12 +881,12 @@
                                     <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsRecentlyCopied}" Value="True">
-                                            <Setter Property="Background" Value="#065F46"/>
-                                            <Setter Property="Foreground" Value="#E6FFFA"/>
+                                            <Setter Property="Background" Value="{DynamicResource CopiedRowBgBrush}"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource CopiedRowTextBrush}"/>
                                         </DataTrigger>
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter Property="Background" Value="#1E3A8A"/>
-                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="Background" Value="{DynamicResource SelectedRowBgBrush}"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
                                         </Trigger>
                                         <Trigger Property="IsMouseOver" Value="True">
                                             <Setter Property="Background" Value="{DynamicResource BgCardHoverBrush}"/>

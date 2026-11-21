@@ -25,12 +25,12 @@ export const THEME_OPTIONS: ThemeOption[] = [
   {
     id: 'gray',
     name: '회색 테마',
-    subName: 'Cool Slate Gray',
-    description: '차분하고 정돈된 실버 슬레이트 모노 톤 (#E2E8F0 / #FFFFFF)',
-    swatchPrimary: '#FFFFFF',
-    swatchSecondary: '#E2E8F0',
-    swatchBorder: '#94A3B8',
-    tag: '차분함'
+    subName: 'Misty Mineral Slate',
+    description: '순백 눈부심을 제거한 저자극 매트 미네랄 슬레이트 (#CCD4DF / #DFE5EC)',
+    swatchPrimary: '#DFE5EC',
+    swatchSecondary: '#CCD4DF',
+    swatchBorder: '#9CA9B9',
+    tag: '눈 편안'
   },
   {
     id: 'white',
@@ -45,11 +45,11 @@ export const THEME_OPTIONS: ThemeOption[] = [
   {
     id: 'beige',
     name: '베이지 테마',
-    subName: 'Warm Cream Beige',
-    description: '따뜻하고 편안한 크림 베이지 테마 (#F5F2EB / #FFFFFF)',
-    swatchPrimary: '#FFFFFF',
-    swatchSecondary: '#F5F2EB',
-    swatchBorder: '#D6CEBF',
-    tag: '포근함'
+    subName: 'Warm Oat Paper',
+    description: '블루라이트 자극을 낮춘 따뜻한 미표백 오트 페이퍼 톤 (#E6DFD1 / #F1ECE1)',
+    swatchPrimary: '#F1ECE1',
+    swatchSecondary: '#E6DFD1',
+    swatchBorder: '#C4BAA7',
+    tag: '저자극'
   }
 ];

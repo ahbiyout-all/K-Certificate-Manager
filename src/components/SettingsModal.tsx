@@ -808,13 +808,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           >
                             <div className="flex items-center justify-between w-full">
                               <div
-                                className="w-4 h-4 rounded-full border shadow-2xs shrink-0"
-                                style={{ backgroundColor: opt.swatchPrimary, borderColor: opt.swatchBorder }}
-                              />
+                                className="w-5 h-5 rounded-full border shadow-2xs shrink-0 overflow-hidden flex"
+                                style={{ borderColor: opt.swatchBorder }}
+                              >
+                                <span className="w-1/2 h-full" style={{ backgroundColor: opt.swatchPrimary }} />
+                                <span className="w-1/2 h-full" style={{ backgroundColor: opt.swatchSecondary }} />
+                              </div>
                               {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
                             </div>
                             <span className="text-xs font-bold">{opt.name}</span>
-                            <span className="text-[10px] text-slate-400 truncate">{opt.description}</span>
+                            <span className="text-[10px] text-slate-500 line-clamp-2 leading-snug">{opt.description}</span>
                           </button>
                         );
                       })}

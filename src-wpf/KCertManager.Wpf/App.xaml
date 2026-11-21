@@ -26,6 +26,15 @@
         <Color x:Key="ToolTipBg">#1E293B</Color>
         <Color x:Key="ToolTipText">#F8FAFC</Color>
         <Color x:Key="ToolTipBorder">#3B82F6</Color>
+        <Color x:Key="SelectedRowBg">#1E3A8A</Color>
+        <Color x:Key="SelectedRowText">#FFFFFF</Color>
+        <Color x:Key="InactiveSelectedRowBg">#172554</Color>
+        <Color x:Key="InactiveSelectedRowText">#E2E8F0</Color>
+        <Color x:Key="CopiedRowBg">#065F46</Color>
+        <Color x:Key="CopiedRowText">#E6FFFA</Color>
+        <Color x:Key="ScrollBarTrack">#161B26</Color>
+        <Color x:Key="ScrollBarThumb">#475569</Color>
+        <Color x:Key="ScrollBarThumbHover">#64748B</Color>
 
         <SolidColorBrush x:Key="BgDarkBrush" Color="{StaticResource BgDark}"/>
         <SolidColorBrush x:Key="BgCardBrush" Color="{StaticResource BgCard}"/>
@@ -42,6 +51,15 @@
         <SolidColorBrush x:Key="ToolTipBgBrush" Color="{StaticResource ToolTipBg}"/>
         <SolidColorBrush x:Key="ToolTipTextBrush" Color="{StaticResource ToolTipText}"/>
         <SolidColorBrush x:Key="ToolTipBorderBrush" Color="{StaticResource ToolTipBorder}"/>
+        <SolidColorBrush x:Key="SelectedRowBgBrush" Color="{StaticResource SelectedRowBg}"/>
+        <SolidColorBrush x:Key="SelectedRowTextBrush" Color="{StaticResource SelectedRowText}"/>
+        <SolidColorBrush x:Key="InactiveSelectedRowBgBrush" Color="{StaticResource InactiveSelectedRowBg}"/>
+        <SolidColorBrush x:Key="InactiveSelectedRowTextBrush" Color="{StaticResource InactiveSelectedRowText}"/>
+        <SolidColorBrush x:Key="CopiedRowBgBrush" Color="{StaticResource CopiedRowBg}"/>
+        <SolidColorBrush x:Key="CopiedRowTextBrush" Color="{StaticResource CopiedRowText}"/>
+        <SolidColorBrush x:Key="ScrollBarTrackBrush" Color="{StaticResource ScrollBarTrack}"/>
+        <SolidColorBrush x:Key="ScrollBarThumbBrush" Color="{StaticResource ScrollBarThumb}"/>
+        <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="{StaticResource ScrollBarThumbHover}"/>
 
         <!-- Global Font -->
         <FontFamily x:Key="AppFont">Segoe UI, Malgun Gothic, sans-serif</FontFamily>
@@ -57,6 +75,14 @@
         </Style>
 
         <Style TargetType="Label">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+
+        <Style TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+
+        <Style TargetType="CheckBox">
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         </Style>
 
@@ -156,7 +182,7 @@
         </Style>
         <!-- Success Button Style (Emerald Green) -->
         <Style x:Key="SuccessButton" TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource AccentGreenBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource AccentGreenBrush}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Padding" Value="14,8"/>
@@ -172,7 +198,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#059669"/>
+                                <Setter Property="Opacity" Value="0.9"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.45"/>
@@ -185,7 +211,7 @@
 
         <!-- Danger Button Style (Rose Red) -->
         <Style x:Key="DangerButton" TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource AccentRoseBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource AccentRoseBrush}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Padding" Value="14,8"/>
@@ -201,7 +227,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#E11D48"/>
+                                <Setter Property="Opacity" Value="0.9"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.45"/>
@@ -237,7 +263,7 @@
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="RootBorder" Property="Background" Value="{DynamicResource AccentBlueBrush}"/>
-                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="#3B82F6"/>
+                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="{DynamicResource AccentBlueHoverBrush}"/>
                                 <Setter Property="Foreground" Value="White"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
                             </Trigger>
@@ -351,11 +377,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#2563EB"/>
+                                <Setter Property="Background" Value="{DynamicResource AccentBlueBrush}"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="#1D4ED8"/>
+                                <Setter Property="Background" Value="{DynamicResource AccentBlueHoverBrush}"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -517,13 +543,13 @@
                                             <Thumb>
                                                 <Thumb.Template>
                                                     <ControlTemplate TargetType="{x:Type Thumb}">
-                                                        <Border Background="#475569" CornerRadius="3" Margin="0,1,0,1"/>
+                                                        <Border Background="{DynamicResource ScrollBarThumbBrush}" CornerRadius="3" Margin="0,1,0,1"/>
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter Property="Background" Value="#64748B"/>
+                                                                <Setter Property="Background" Value="{DynamicResource ScrollBarThumbHoverBrush}"/>
                                                             </Trigger>
                                                             <Trigger Property="IsDragging" Value="True">
-                                                                <Setter Property="Background" Value="#3B82F6"/>
+                                                                <Setter Property="Background" Value="{DynamicResource AccentBlueBrush}"/>
                                                             </Trigger>
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>
@@ -549,8 +575,8 @@
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="{x:Type ScrollBar}">
-                                <Grid SnapsToDevicePixels="True" Background="#161B26">
-                                    <Border BorderThickness="1,0,0,0" BorderBrush="#2D3546" HorizontalAlignment="Stretch"/>
+                                <Grid SnapsToDevicePixels="True" Background="{DynamicResource ScrollBarTrackBrush}">
+                                    <Border BorderThickness="1,0,0,0" BorderBrush="{DynamicResource BorderBrush}" HorizontalAlignment="Stretch"/>
                                     <Track x:Name="PART_Track" IsDirectionReversed="True">
                                         <Track.DecreaseRepeatButton>
                                             <RepeatButton Command="{x:Static ScrollBar.PageUpCommand}" Opacity="0" Focusable="False"/>
@@ -559,13 +585,13 @@
                                             <Thumb>
                                                 <Thumb.Template>
                                                     <ControlTemplate TargetType="{x:Type Thumb}">
-                                                        <Border Background="#475569" CornerRadius="4" Margin="2,0,2,0"/>
+                                                        <Border Background="{DynamicResource ScrollBarThumbBrush}" CornerRadius="4" Margin="2,0,2,0"/>
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter Property="Background" Value="#64748B"/>
+                                                                <Setter Property="Background" Value="{DynamicResource ScrollBarThumbHoverBrush}"/>
                                                             </Trigger>
                                                             <Trigger Property="IsDragging" Value="True">
-                                                                <Setter Property="Background" Value="#3B82F6"/>
+                                                                <Setter Property="Background" Value="{DynamicResource AccentBlueBrush}"/>
                                                             </Trigger>
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>

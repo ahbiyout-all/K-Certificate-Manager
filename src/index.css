@@ -53,94 +53,94 @@
 
 [data-theme="gray"],
 [data-theme="pastel-gray"] {
-  --wpf-bg-dark: #E2E8F0;
-  --wpf-bg-card: #FFFFFF;
-  --wpf-bg-hover: #F1F5F9;
-  --wpf-border: #94A3B8;
-  --wpf-text-primary: #0F172A;
-  --wpf-text-secondary: #1E293B;
-  --wpf-text-muted: #475569;
-  --wpf-accent-blue: #2563EB;
-  --wpf-accent-blue-hover: #1D4ED8;
-  --wpf-accent-text: #1D4ED8;
-  --wpf-accent-green: #059669;
-  --wpf-accent-rose: #E11D48;
-  --wpf-selected-row: #DBEAFE;
-  --wpf-selected-row-text: #0F172A;
-  --wpf-selected-row-secondary: #1E40AF;
-  --wpf-copied-row: #D1FAE5;
-  --wpf-copied-row-text: #065F46;
-  --wpf-copied-row-secondary: #047857;
-  --wpf-badge-cat-bg: #DBEAFE;
-  --wpf-badge-cat-text: #1E40AF;
-  --wpf-badge-valid-bg: #D1FAE5;
-  --wpf-badge-valid-border: #10B981;
-  --wpf-badge-valid-text: #065F46;
-  --wpf-badge-expiring-bg: #FEF3C7;
-  --wpf-badge-expiring-border: #D97706;
-  --wpf-badge-expiring-text: #92400E;
-  --wpf-badge-expired-bg: #FFE4E6;
-  --wpf-badge-expired-border: #E11D48;
-  --wpf-badge-expired-text: #9F1239;
-  --wpf-badge-gpki-bg: #EEF2FF;
-  --wpf-badge-gpki-border: #818CF8;
-  --wpf-badge-gpki-text: #3730A3;
-  --wpf-badge-epki-bg: #CCFBF1;
-  --wpf-badge-epki-border: #14B8A6;
-  --wpf-badge-epki-text: #0F766E;
-  --wpf-badge-corp-bg: #F3E8FF;
-  --wpf-badge-corp-border: #C084FC;
-  --wpf-badge-corp-text: #6B21A8;
-  --wpf-scrollbar-track: #E2E8F0;
-  --wpf-scrollbar-thumb: #94A3B8;
-  --wpf-scrollbar-thumb-hover: #475569;
-  --card-inner-bg: #FFFFFF;
+  --wpf-bg-dark: #CCD4DF;
+  --wpf-bg-card: #DFE5EC;
+  --wpf-bg-hover: #D3DCE6;
+  --wpf-border: #9CA9B9;
+  --wpf-text-primary: #19222D;
+  --wpf-text-secondary: #2C3847;
+  --wpf-text-muted: #495667;
+  --wpf-accent-blue: #245687;
+  --wpf-accent-blue-hover: #1B446D;
+  --wpf-accent-text: #1A4673;
+  --wpf-accent-green: #16654B;
+  --wpf-accent-rose: #B92B47;
+  --wpf-selected-row: #CBDCEE;
+  --wpf-selected-row-text: #122030;
+  --wpf-selected-row-secondary: #1A4673;
+  --wpf-copied-row: #CCE2D8;
+  --wpf-copied-row-text: #133829;
+  --wpf-copied-row-secondary: #16513B;
+  --wpf-badge-cat-bg: #D1DDEB;
+  --wpf-badge-cat-text: #1A4673;
+  --wpf-badge-valid-bg: #CBE2D7;
+  --wpf-badge-valid-border: #2C7A5B;
+  --wpf-badge-valid-text: #133B2B;
+  --wpf-badge-expiring-bg: #E9DFC4;
+  --wpf-badge-expiring-border: #A87624;
+  --wpf-badge-expiring-text: #593A0A;
+  --wpf-badge-expired-bg: #EAD0D6;
+  --wpf-badge-expired-border: #B4455D;
+  --wpf-badge-expired-text: #6D1428;
+  --wpf-badge-gpki-bg: #D5DBE8;
+  --wpf-badge-gpki-border: #5C6B9E;
+  --wpf-badge-gpki-text: #273263;
+  --wpf-badge-epki-bg: #CBE0DF;
+  --wpf-badge-epki-border: #2F7A77;
+  --wpf-badge-epki-text: #12403E;
+  --wpf-badge-corp-bg: #DCD5E8;
+  --wpf-badge-corp-border: #785CA3;
+  --wpf-badge-corp-text: #3E216B;
+  --wpf-scrollbar-track: #CCD4DF;
+  --wpf-scrollbar-thumb: #8A97A8;
+  --wpf-scrollbar-thumb-hover: #586678;
+  --card-inner-bg: #DFE5EC;
 }
 
 [data-theme="beige"],
 [data-theme="pastel-beige"] {
-  --wpf-bg-dark: #F5F2EB;
-  --wpf-bg-card: #FFFFFF;
-  --wpf-bg-hover: #EEE9DE;
-  --wpf-border: #D6CEBF;
-  --wpf-text-primary: #1C1917;
-  --wpf-text-secondary: #292524;
-  --wpf-text-muted: #44403C;
-  --wpf-accent-blue: #2563EB;
-  --wpf-accent-blue-hover: #1D4ED8;
-  --wpf-accent-text: #1E40AF;
-  --wpf-accent-green: #059669;
-  --wpf-accent-rose: #E11D48;
-  --wpf-selected-row: #DBEAFE;
-  --wpf-selected-row-text: #1C1917;
-  --wpf-selected-row-secondary: #1E40AF;
-  --wpf-copied-row: #D1FAE5;
-  --wpf-copied-row-text: #065F46;
-  --wpf-copied-row-secondary: #047857;
-  --wpf-badge-cat-bg: #DBEAFE;
-  --wpf-badge-cat-text: #1E40AF;
-  --wpf-badge-valid-bg: #D1FAE5;
-  --wpf-badge-valid-border: #10B981;
-  --wpf-badge-valid-text: #065F46;
-  --wpf-badge-expiring-bg: #FEF3C7;
-  --wpf-badge-expiring-border: #D97706;
-  --wpf-badge-expiring-text: #92400E;
-  --wpf-badge-expired-bg: #FFE4E6;
-  --wpf-badge-expired-border: #E11D48;
-  --wpf-badge-expired-text: #9F1239;
-  --wpf-badge-gpki-bg: #EEF2FF;
-  --wpf-badge-gpki-border: #818CF8;
-  --wpf-badge-gpki-text: #3730A3;
-  --wpf-badge-epki-bg: #CCFBF1;
-  --wpf-badge-epki-border: #14B8A6;
-  --wpf-badge-epki-text: #0F766E;
-  --wpf-badge-corp-bg: #F3E8FF;
-  --wpf-badge-corp-border: #C084FC;
-  --wpf-badge-corp-text: #6B21A8;
-  --wpf-scrollbar-track: #EEE9DE;
-  --wpf-scrollbar-thumb: #A8A29E;
-  --wpf-scrollbar-thumb-hover: #78716C;
-  --card-inner-bg: #FFFFFF;
+  --wpf-bg-dark: #E6DFD1;
+  --wpf-bg-card: #F1ECE1;
+  --wpf-bg-hover: #DDD5C5;
+  --wpf-border: #C4BAA7;
+  --wpf-text-primary: #24201B;
+  --wpf-text-secondary: #3E3830;
+  --wpf-text-muted: #595146;
+  --wpf-accent-blue: #2C5A85;
+  --wpf-accent-blue-hover: #21476B;
+  --wpf-accent-text: #1E4971;
+  --wpf-accent-green: #1E6B4F;
+  --wpf-accent-rose: #B4324B;
+  --wpf-selected-row: #D6E2ED;
+  --wpf-selected-row-text: #182430;
+  --wpf-selected-row-secondary: #1E4971;
+  --wpf-copied-row: #D5E6DA;
+  --wpf-copied-row-text: #193A27;
+  --wpf-copied-row-secondary: #1E5336;
+  --wpf-badge-cat-bg: #D9E2EA;
+  --wpf-badge-cat-text: #1E4971;
+  --wpf-badge-valid-bg: #D5E4D9;
+  --wpf-badge-valid-border: #3B7D5A;
+  --wpf-badge-valid-text: #183E29;
+  --wpf-badge-expiring-bg: #EBE0C6;
+  --wpf-badge-expiring-border: #A67322;
+  --wpf-badge-expiring-text: #593909;
+  --wpf-badge-expired-bg: #ECD5D8;
+  --wpf-badge-expired-border: #B14B5B;
+  --wpf-badge-expired-text: #6B1726;
+  --wpf-badge-gpki-bg: #DCE0EA;
+  --wpf-badge-gpki-border: #626F9C;
+  --wpf-badge-gpki-text: #2A3561;
+  --wpf-badge-epki-bg: #D5E3DF;
+  --wpf-badge-epki-border: #3B7C73;
+  --wpf-badge-epki-text: #16423D;
+  --wpf-badge-corp-bg: #E2DAE9;
+  --wpf-badge-corp-border: #7D62A1;
+  --wpf-badge-corp-text: #432469;
+  --wpf-scrollbar-track: #E6DFD1;
+  --wpf-scrollbar-thumb: #A99F8D;
+  --wpf-scrollbar-thumb-hover: #746B5C;
+  --card-inner-bg: #F1ECE1;
 }
 
 [data-theme="white"],
@@ -260,7 +260,7 @@
 }
 
 .wpf-btn-success {
-  background-color: #10B981;
+  background-color: var(--wpf-accent-green);
   color: #FFFFFF;
   border: 1px solid transparent;
   border-radius: 6px;
@@ -268,7 +268,7 @@
   transition: background-color 0.15s ease, transform 0.1s ease;
 }
 .wpf-btn-success:hover:not(:disabled) {
-  background-color: #059669;
+  filter: brightness(0.92);
 }
 
 .wpf-nav-radio {
@@ -284,7 +284,7 @@
 }
 .wpf-nav-radio-active {
   background-color: var(--wpf-accent-blue);
-  border-color: #3B82F6;
+  border-color: var(--wpf-accent-blue-hover);
   color: #FFFFFF;
   font-weight: 600;
 }
@@ -644,10 +644,189 @@ button:active:not(:disabled) {
   color: #E9D5FF !important;
 }
 
-/* Explicit Light/Beige/Gray Select Option Readability */
+/* Explicit Theme Select Option Readability */
 [data-theme="dark"] select option,
 [data-theme="pastel-black"] select option {
   background-color: #1A1F2C;
   color: #F8FAFC;
+}
+
+[data-theme="gray"] select option,
+[data-theme="pastel-gray"] select option {
+  background-color: #DFE5EC;
+  color: #19222D;
+}
+
+[data-theme="beige"] select option,
+[data-theme="pastel-beige"] select option {
+  background-color: #F1ECE1;
+  color: #24201B;
+}
+
+[data-theme="white"] select option,
+[data-theme="pastel-white"] select option,
+[data-theme="classic"] select option {
+  background-color: #FFFFFF;
+  color: #0F172A;
+}
+
+/* ==========================================================================
+   NON-DARK LOW-GLARE MODAL & SUB-PANEL ADAPTATION (Gray & Beige Themes)
+   Eliminates harsh #FFFFFF / bg-slate-50 glare inside legacy modals & forms
+   while keeping dark header translucent badges (bg-white/10..30) intact
+   ========================================================================== */
+
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) :is(
+  [class~="from-white"],
+  [class*="from-white/"],
+  [class~="from-blue-50"],
+  [class*="from-blue-50/"],
+  [class~="from-emerald-50"],
+  [class*="from-emerald-50/"],
+  [class~="from-slate-50"],
+  [class*="from-slate-50/"],
+  [class~="from-slate-100"],
+  [class*="from-slate-100/"]
+):not(.wpf-native) {
+  background-image: none !important;
+  background-color: var(--wpf-bg-card) !important;
+  color: var(--wpf-text-primary) !important;
+}
+
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) :is(
+  .bg-white,
+  [class*="bg-white/80"],
+  [class*="bg-white/90"],
+  [class*="bg-white/95"]
+):not(.wpf-native) {
+  background-color: var(--wpf-bg-card) !important;
+  border-color: var(--wpf-border) !important;
+  color: var(--wpf-text-primary) !important;
+}
+
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) :is(
+  .bg-slate-50,
+  [class*="bg-slate-50/"],
+  .bg-slate-100,
+  [class*="bg-slate-100/"],
+  .bg-gray-50,
+  .bg-gray-100
+):not(.wpf-native) {
+  background-color: var(--wpf-bg-dark) !important;
+  color: var(--wpf-text-primary) !important;
+}
+
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) :is(
+  .bg-slate-200,
+  [class*="bg-slate-200/"]
+):not(.wpf-native) {
+  background-color: var(--wpf-bg-hover) !important;
+  color: var(--wpf-text-primary) !important;
+}
+
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) :is(
+  .text-slate-950,
+  .text-slate-900,
+  .text-slate-800,
+  .text-slate-700
+):not(.wpf-native) {
+  color: var(--wpf-text-primary) !important;
+}
+
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) :is(
+  .text-slate-600,
+  .text-slate-500
+):not(.wpf-native) {
+  color: var(--wpf-text-muted) !important;
+}
+
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) :is(
+  .bg-white,
+  .bg-slate-50,
+  [class*="bg-slate-50/"],
+  .bg-slate-100,
+  [class*="bg-slate-100/"]
+) .text-slate-400:not(.wpf-native) {
+  color: var(--wpf-text-muted) !important;
+}
+
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) :is(
+  .border-slate-300,
+  .border-slate-200,
+  [class*="border-slate-200/"],
+  .border-slate-100,
+  .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+  .divide-slate-100 > :not([hidden]) ~ :not([hidden])
+):not(.wpf-native) {
+  border-color: var(--wpf-border) !important;
+}
+
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) input:not(.wpf-native):not([type="checkbox"]),
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) select:not(.wpf-native),
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) textarea:not(.wpf-native) {
+  background-color: var(--wpf-bg-card) !important;
+  border-color: var(--wpf-border) !important;
+  color: var(--wpf-text-primary) !important;
+}
+
+/* Soften bright semantic -50 / -100 callout boxes inside Gray & Beige modals */
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) :is(
+  .bg-blue-50,
+  [class*="bg-blue-50/"],
+  .bg-blue-100,
+  [class*="bg-blue-100/"]
+):not(.wpf-native) {
+  background-color: var(--wpf-badge-cat-bg) !important;
+  border-color: var(--wpf-border) !important;
+}
+
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) :is(
+  .bg-emerald-50,
+  [class*="bg-emerald-50/"],
+  .bg-emerald-100,
+  [class*="bg-emerald-100/"]
+):not(.wpf-native) {
+  background-color: var(--wpf-badge-valid-bg) !important;
+  border-color: var(--wpf-badge-valid-border) !important;
+}
+
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) :is(
+  .bg-amber-50,
+  [class*="bg-amber-50/"],
+  .bg-amber-100,
+  [class*="bg-amber-100/"]
+):not(.wpf-native) {
+  background-color: var(--wpf-badge-expiring-bg) !important;
+  border-color: var(--wpf-badge-expiring-border) !important;
+}
+
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) :is(
+  .bg-rose-50,
+  [class*="bg-rose-50/"],
+  .bg-rose-100,
+  [class*="bg-rose-100/"]
+):not(.wpf-native) {
+  background-color: var(--wpf-badge-expired-bg) !important;
+  border-color: var(--wpf-badge-expired-border) !important;
+}
+
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) :is(
+  .bg-indigo-50,
+  [class*="bg-indigo-50/"],
+  .bg-indigo-100,
+  [class*="bg-indigo-100/"]
+):not(.wpf-native) {
+  background-color: var(--wpf-badge-gpki-bg) !important;
+  border-color: var(--wpf-badge-gpki-border) !important;
+}
+
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) :is(
+  .bg-purple-50,
+  [class*="bg-purple-50/"],
+  .bg-purple-100,
+  [class*="bg-purple-100/"]
+):not(.wpf-native) {
+  background-color: var(--wpf-badge-corp-bg) !important;
+  border-color: var(--wpf-badge-corp-border) !important;
 }
 

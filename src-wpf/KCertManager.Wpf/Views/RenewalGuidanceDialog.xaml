@@ -69,7 +69,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="🔍" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <TextBox x:Name="TxtSearchKeyword" TextChanged="TxtSearchKeyword_TextChanged"
-                                 Background="Transparent" BorderThickness="0" Foreground="White" FontSize="12" VerticalAlignment="Center"/>
+                                 Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TextPrimaryBrush}" CaretBrush="{DynamicResource TextPrimaryBrush}" FontSize="12" VerticalAlignment="Center"/>
                     </Grid>
                 </Border>
             </Grid>
