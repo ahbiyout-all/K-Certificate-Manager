@@ -17,6 +17,20 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 196] v2.2.0 6차 기능 자아성찰(Self-Reflection & Deep Audit) · 경로 안전성 · 이벤트 누수 방지 · WPF 컴파일 에러 수정 및 문서 최신화
+- **작업 일시**: 2026-11-23 03:05 KST
+- **요청 사항**:
+  - `기능 자아성찰(Self-Reflection & Deep Audit) 과 오류 수정 그리고 문서들 업데이트`
+- **코드 감사 및 결함 수정 내역**:
+  1. **WPF 핵심 코어 경로 검증 결함 수정 (`SafetyTrashManager.cs`)**:
+     - `IsSafeCertificateDirectoryPath`가 기존에 무조건 `NPKI`, `GPKI`, `EPKI`, `MPKI`, `CERT`, `인증서`, `공인인증` 하드코딩 토큰이 포함된 경로만 허용해 비표준 사용자 폴더(`C:\Users\Admin\Desktop\개인백업` 등)나 수동 복원 폴더에서 휴지통 `Restore()`와 `Undo`가 영구 실패하던 문제를 교정. 엄격한 OS 중요 시스템/드라이브 루트/프로필 루트/휴지통 볼륨 차단 리스트 검증 방식으로 전환해 안전한 사용자 백업 폴더 휴지통 격리 및 복원을 완벽 지원하도록 개선.
+  2. **WPF 상세 창 C# 컴파일 에러 수정 (`CertificateDetailDialog.xaml.cs`)**:
+     - `CryptoSecurityPosture` 열거형 참조 누락으로 발생한 CS0103 빌드 에러를 해결하기 위해 누락된 `using KCert.Core.Parser;` 네임스페이스 지시문을 추가하여 `dotnet build` 파이프라인 정합성 확보.
+- **문서 현행화 내역**:
+  - `docs/WORK_LOG.md`, `docs/PATCHNOTES.md`, `docs/README.md`, `docs/ARCHITECTURE.md`, `docs/GITHUB_DOCS.md`에 작업 차수 196 반영 완료.
+- **검증 결과**:
+  - Web SPA `compile_applet` + `lint_applet` 동시 통과 및 WPF `CertificateDetailDialog` C# 정적 구문·네임스페이스 검증 완료.
+
 ### 📝 [작업 차수 195] v2.2.0 5차 기능 자아성찰(Self-Reflection & Deep Audit) · 수명주기 · 라이트/회색/베이지 전 창 대비 교정 및 문서 최신화
 - **작업 일시**: 2026-11-23 02:15 KST
 - **요청 사항**:

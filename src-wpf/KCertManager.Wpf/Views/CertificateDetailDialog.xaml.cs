@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Windows;
 using KCertManager.Wpf.Models;
 using KCertManager.Wpf.Services;
+using KCert.Core.Parser;
 
 namespace KCertManager.Wpf.Views
 {

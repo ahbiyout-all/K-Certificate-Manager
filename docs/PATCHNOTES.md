@@ -50,6 +50,12 @@
 - **Web 7대 컴포넌트 CSS 토큰 일원화 (`SimpleTransferHero`, `ConnectedDrivesBar`, `Header`, `Sidebar`, `CertificateList`, `CertificateDetailSidebar`, `DiagnosticsRepairModal`)**:
   - 모든 하드코딩 파스텔 녹색/호박/적색/청색 hex 값을 `var(--wpf-accent-green)`, `var(--wpf-accent-text)`, `var(--wpf-badge-expiring-text)`, `var(--wpf-accent-rose)`, `var(--wpf-selected-row-secondary)`로 이관해 4대 테마 전 구간에서 명도 대비를 일관되게 보장.
 
+#### 🛠️ 6차 심층 전수 감사 · 경로 안전성 및 WPF 빌드 정합성 완성 (2026-11-23)
+- **WPF 핵심 코어 경로 검증 결함 수정 (`SafetyTrashManager.cs`)**:
+  - `IsSafeCertificateDirectoryPath`가 기존에 무조건 `NPKI`, `GPKI`, `EPKI`, `MPKI`, `CERT`, `인증서`, `공인인증` 하드코딩 토큰이 포함된 경로만 허용해 비표준 사용자 폴더(`C:\Users\Admin\Desktop\개인백업` 등)나 수동 복원 폴더에서 휴지통 `Restore()`와 `Undo`가 영구 실패하던 문제를 교정. 엄격한 OS 중요 시스템/드라이브 루트/프로필 루트/휴지통 볼륨 차단 리스트 검증 방식으로 전환해 안전한 사용자 백업 폴더 휴지통 격리 및 복원을 완벽 지원하도록 개선.
+- **WPF 상세 창 C# 컴파일 에러 수정 (`CertificateDetailDialog.xaml.cs`)**:
+  - `CryptoSecurityPosture` 열거형 참조 누락으로 발생한 CS0103 빌드 에러를 해결하기 위해 누락된 `using KCert.Core.Parser;` 네임스페이스 지시문을 추가하여 `dotnet build` 파이프라인 정합성 확보.
+
 ---
 
 ### 🚀 [v2.1.1] - 2026-11-16 (최신 안정화 반영: 2026-11-18)
