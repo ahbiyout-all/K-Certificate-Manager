@@ -172,7 +172,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span
             className="tabular-nums shrink-0 ml-2 font-bold"
             style={{
-              color: categoryFilter === 'CLASS1' ? '#FFFFFF' : '#4338CA',
+              color: categoryFilter === 'CLASS1' ? '#FFFFFF' : 'var(--wpf-badge-gpki-text)',
             }}
           >
             {counts.class1}
@@ -189,13 +189,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <span
             className="truncate"
-            style={{ color: categoryFilter === 'EXPIRED' ? '#FFFFFF' : '#E11D48' }}
+            style={{ color: categoryFilter === 'EXPIRED' ? '#FFFFFF' : 'var(--wpf-accent-rose)' }}
           >
             만료된 인증서
           </span>
           <span
             className="font-bold tabular-nums shrink-0 ml-2"
-            style={{ color: categoryFilter === 'EXPIRED' ? '#FFFFFF' : '#E11D48' }}
+            style={{ color: categoryFilter === 'EXPIRED' ? '#FFFFFF' : 'var(--wpf-accent-rose)' }}
           >
             {counts.expired}
           </span>
@@ -211,14 +211,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <span
             className="flex items-center gap-1.5 truncate"
-            style={{ color: categoryFilter === 'NON_STANDARD' ? '#FFFFFF' : '#D97706' }}
+            style={{ color: categoryFilter === 'NON_STANDARD' ? '#FFFFFF' : 'var(--wpf-badge-expiring-text)' }}
           >
             <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">다른 폴더 인증서</span>
           </span>
           <span
             className="font-bold tabular-nums shrink-0 ml-2"
-            style={{ color: categoryFilter === 'NON_STANDARD' ? '#FFFFFF' : '#D97706' }}
+            style={{ color: categoryFilter === 'NON_STANDARD' ? '#FFFFFF' : 'var(--wpf-badge-expiring-text)' }}
           >
             {counts.nonStandard}
           </span>
@@ -271,7 +271,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span
             className="font-bold tabular-nums shrink-0 ml-2"
             style={{
-              color: sourceFilter === 'REMOVABLE' ? '#FFFFFF' : '#10B981',
+              color: sourceFilter === 'REMOVABLE' ? '#FFFFFF' : 'var(--wpf-accent-green)',
             }}
           >
             {counts.usb}
@@ -370,12 +370,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className="wpf-native rounded-[8px] p-2.5"
           style={{
             backgroundColor: 'var(--wpf-bg-dark)',
-            border: '1px solid #10B981',
+            border: '1px solid var(--wpf-accent-green)',
           }}
         >
           <div className="flex items-center gap-1.5 mb-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#10B981] shrink-0" />
-            <span className="text-[11px] font-bold text-[#10B981]">
+            <ShieldCheck className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--wpf-accent-green)' }} />
+            <span className="text-[11px] font-bold" style={{ color: 'var(--wpf-accent-green)' }}>
               오프라인 로컬 보호
             </span>
           </div>

@@ -17,6 +17,54 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 195] v2.2.0 5차 기능 자아성찰(Self-Reflection & Deep Audit) · 수명주기 · 라이트/회색/베이지 전 창 대비 교정 및 문서 최신화
+- **작업 일시**: 2026-11-23 02:15 KST
+- **요청 사항**:
+  - `기능 자아성찰(Self-Reflection & Deep Audit) 과 오류 수정 그리고 문서들 업데이트`
+- **코드 감사 및 결함 수정 내역**:
+  1. **WPF 기능·수명주기·테마 동기화 결함 수정 (`MainWindow.xaml.cs`, `WpfAnimatedBorderHelper.cs`, `UsbTransferViewModel.cs`, `UsbTransferDialog.xaml.cs`, `MainViewModel.cs`)**:
+     - **사이드바 대상 드라이브 테두리 실시간 테마 연동 (`MainWindow.xaml.cs`)**: `ViewModel_PropertyChanged`가 `MainViewModel.CurrentTheme` 변경을 감지하도록 보강해 다크 ↔ 회색/베이지/화이트 테마 전환 즉시 `SidebarTargetDriveBorder`가 갱신되도록 수정.
+     - **유동 테두리 헬퍼 밝은 테마 검은 글자 결함 해소 (`WpfAnimatedBorderHelper.cs`)**: 선택된 드라이브 카드(`isSelected == true`)가 기존 고정 `#142341`(진한 네이비) 배경을 사용해 회색/베이지/화이트 테마에서 어두운 `TextPrimaryBrush`가 읽히지 않던 문제를 교정. `BgCardBrush` 휘도(Luminance)를 판별해 다크 테마는 `#142341` + `0.65` 글로우, 비다크 테마는 `SelectedRowBgBrush`(폴백 `#DBEAFE`) + `0.28` 부드러운 글로우를 적용.
+     - **USB ➔ PC 전송 창 `PropertyChanged` 누수 차단 (`UsbTransferViewModel.cs`, `UsbTransferDialog.xaml.cs`)**: `IDisposable` 구현 및 `_trackedCerts`·`DetachCertEvents()`를 도입해 재스캔/빈 드라이브/창 닫힘 시 개별 인증서 `PropertyChanged` 구독을 안전 해제.
+     - **`MainViewModel.IsDarkThemeActive` 정적 테마 상태 동기화 (`MainViewModel.cs`)**: `ApplyTheme(string)` 호출 시 현재 테마의 다크/비다크 여부를 갱신해 모델 파생 색상 속성에서도 즉시 테마 대비가 반영되도록 보완.
+  2. **WPF 6대 대화상자 `DataGrid` 선택 행 대비 일원화 (`PcToUsbTransferDialog.xaml`, `UsbTransferDialog.xaml`, `TrashDialog.xaml`, `SearchLocationsDialog.xaml`, `BackupHistoryDialog.xaml`, `ActivityLogDialog.xaml`)**:
+     - 하드코딩된 `#2563EB`/`#1D4ED8`/`#FFFFFF` 선택 오버라이드와 어두운 테마 전용 배지 텍스트를 `{DynamicResource SelectedRowBgBrush}`, `{DynamicResource SelectedRowTextBrush}`, `{DynamicResource AccentTextBrush}`로 교체해 회색/베이지/화이트 테마에서도 선택 행 가독성 확보.
+  3. **WPF 8종 대화상자·모델 비다크 테마 대비 및 `DataTrigger` 전환 (`OperationCompleteDialog.xaml`, `DuplicateConflictDialog.xaml(.cs)`, `TargetDrivePickerDialog.xaml.cs`, `MainWindow.xaml`, `DiagnosticsRepairDialog.xaml`, `CertificateDetailDialog.xaml.cs`, `RenewalGuidanceDialog.xaml`, `RenewalInstitutionItem.cs`, `CertificateItem.cs`, `AppLogItem.cs`)**:
+     - `OperationCompleteDialog`, `DuplicateConflictDialog`, `TargetDrivePickerDialog`, `CertificateDetailDialog`의 밝은 파스텔 hex(`#34D399`, `#60A5FA`, `#6EE7B7` 등)와 어두운 고정 배경을 `AccentGreenBrush`, `AccentTextBrush`, `AccentBlueBrush`, `AccentAmberBrush`, `AccentRoseBrush`, `TextPrimaryBrush`, `BgDarkBrush`, `BgCardBrush` 등 테마 브러시 리소스로 교체(`SelfCopyBadge`는 `#881337` 배경에 흰색 텍스트 대비 유지).
+     - `MainWindow.xaml`(보안강도 값), `DiagnosticsRepairDialog.xaml`(`Posture`), `RenewalGuidanceDialog.xaml`(`SummaryTone` + `RenewalInstitutionItem.SummaryTone`)에 `DataTrigger` 스타일을 적용해 테마 전환 즉시 전경 브러시가 자동 갱신되도록 개선하고, `CertificateItem.CryptoPostureColorHex`·`AppLogItem.LevelBadgeColor`도 `IsDarkThemeActive` 기준 분기로 정비.
+  4. **Web 7대 컴포넌트 하드코딩 파스텔 hex CSS 토큰화 (`SimpleTransferHero.tsx`, `ConnectedDrivesBar.tsx`, `Header.tsx`, `Sidebar.tsx`, `CertificateList.tsx`, `CertificateDetailSidebar.tsx`, `DiagnosticsRepairModal.tsx`)**:
+     - 회색(*Misty Mineral Slate*)·베이지(*Warm Oat Paper*)·화이트 테마 배경에서 시인성이 떨어지던 `#10B981`, `#34D399`, `#6EE7B7`, `#60A5FA`, `#F59E0B`, `#FDE68A`, `#F43F5E`, `#EF4444` 텍스트·아이콘·테두리를 `var(--wpf-accent-green)`, `var(--wpf-accent-text)`, `var(--wpf-badge-expiring-text)`, `var(--wpf-accent-rose)` 및 `isInspected` 행 전용 `var(--wpf-selected-row-secondary)` 토큰으로 교체.
+- **문서 현행화 내역**:
+  - `docs/WORK_LOG.md`, `docs/PATCHNOTES.md`, `docs/README.md`, `docs/ARCHITECTURE.md`, `docs/GITHUB_DOCS.md`에 작업 차수 195 반영 완료.
+- **검증 결과**:
+  - Web SPA `compile_applet` + `lint_applet` 동시 통과 및 `src-wpf` 전체 `.xaml`/`.cs` XML·State-Machine C# 렉서·`DynamicResource`/`StaticResource`·`DataTrigger` 바인딩 정적 감사 오류 0건 확인.
+
+---
+
+### 📝 [작업 차수 194] v2.2.0 4차 심층 전수 감사(Self-Reflection & Deep Audit) · 저눈부심 회색/베이지 테마 · 선택 복사 격리 및 문서 최신화
+- **작업 일시**: 2026-11-23 01:15 KST
+- **요청 사항**:
+  - `자아성찰(Self-Reflection & Deep Audit) 과 오류 수정 그리고 문서들 업데이트`
+  - 비다크 테마 중 기존 **회색·베이지** 테마의 눈부심 완화 및 고가독성 배색 교정(Web & WPF 동시 적용)
+  - 인증서 보관함 선택 복사 시 전체 목록 또는 단일 행 클릭(`inspectedCert`)이 섞이지 않고 `selectedIds ∩ visibleCertificates` 교집합만 복사되도록 분리
+- **코드 감사 및 결함 수정 내역**:
+  1. **눈이 편안한 저자극 회색·베이지 테마 개편 & 전 화면 대비 교정 (Web & WPF)**:
+     - **팔레트 교정 (`src/index.css`, `src/App.tsx`, `MainViewModel.ApplyTheme`)**: 회색 테마를 순백 눈부심이 없는 **Misty Mineral Slate (`#CCD4DF` / `#DFE5EC`)**, 베이지 테마를 저블루라이트 **Warm Oat Paper (`#E6DFD1` / `#F1ECE1`)**로 교체하고 11:1 이상 딥 잉크/에스프레소 텍스트 대비 적용.
+     - **Tailwind v4 `dark:` 오매칭 차단 (`src/index.css`)**: `@import "tailwindcss";` 직후 `@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, [data-theme="pastel-black"], [data-theme="pastel-black"] *));`를 선언해 OS 다크 모드 환경에서 회색/베이지/화이트 테마 선택 시 `dark:` 클래스가 강제 적용되던 결함 해결 및 `.bg-teal-50/100`, `.bg-cyan-50`, `.bg-sky-50`, `.bg-orange-50/100` 모달 콜아웃 저자극 오버라이드 확장.
+     - **Web·WPF 하드코딩 색상 토큰화**: `Sidebar.tsx`·`CertificateList.tsx` 하드코딩 hex 색상을 테마 CSS 변수(`var(--wpf-badge-gpki-text)`, `var(--wpf-accent-green)`, `var(--wpf-badge-expiring-text)`, `var(--wpf-accent-rose)`)로 교체. WPF `App.xaml`에 `AccentAmber`/`AccentAmberBrush`를 신설하고 `MainWindow.xaml`, `ExpiredCleanupDialog.xaml(.cs)`, `CertificateDetailDialog.xaml`, `RenewalGuidanceDialog.xaml`, `DiagnosticsRepairDialog.xaml`, `SecurityGuideDialog.xaml`, `AboutDialog.xaml`, `TrashDialog.xaml`의 하드코딩 hex 및 흰색 텍스트를 `{DynamicResource ...}` 테마 브러시로 일원화.
+  2. **선택 복사 · 필터 표시 · 단일 행 클릭 3중 격리 (`src/App.tsx`, `src/components/CertificateList.tsx`, `MainViewModel.cs`, `MainWindow.xaml.cs`)**:
+     - `App.tsx` `resolveSelectedBackupCerts`가 항상 `visibleCertificates`와 `selectedIds`의 교집합만 반환하고, `CertificateList.tsx` 필터 전체선택 토글도 현재 표시 목록(`sortedFilteredCerts`) 기준으로 깔끔하게 선택·해제되도록 정비해 숨은 항목이나 단일 행 클릭(`inspectedCert`) 혼입을 원천 차단.
+     - WPF `MainViewModel`(`BackupAllCommand`, `NextGuidedStep`, `ExecuteGuidedCopy`, `BackupAllAsync`) 및 `MainWindow.xaml.cs`(`CertDataGrid_SelectionChanged`, `BackupAll_Click`)에서 행 클릭 시 `IsSelected` 자동 변경 및 `_allCertificates`/`AllCertificates` fallback을 제거해 `FilteredCertificates`와 체크박스 상태가 엄격히 분리되도록 교정.
+  3. **시작 테마 영속화 및 워크플로우·수명주기 교정 (`App.xaml.cs`, `MainWindow.xaml.cs`, `SettingsDialog.xaml.cs`, `SettingsModal.tsx`, `App.tsx`)**:
+     - WPF 시작 시(`App.xaml.cs`, `MainWindow.xaml.cs`) 고정 `"dark"` 대신 `SettingsService.Instance.Settings.Theme ?? "dark"`를 적용하고, `SettingsDialog.xaml.cs`에 `"pastel-*"`/`"classic"` 테마 별칭 매핑 추가.
+     - Web `SettingsModal.tsx` 기본 `theme` prop을 `'dark'`로 통일하고 표시 배지를 현재 로캘화된 테마명으로 매핑; `App.tsx` `handleSelectWorkflow('pc_to_usb')` 0건 안내 유지 및 USB 마운트 리스너가 `handleRefreshRef.current` 최신 참조를 호출하도록 수정.
+- **문서 현행화 내역**:
+  - `README.md` (GitHub 대소문자 교정, 4종 테마 및 저눈부심 배색 반영, 루트 스크립트 목록 정정, 작업 차수 194 요약 추가), `docs/PATCHNOTES.md`, `docs/WORK_LOG.md`, `docs/USER_GUIDE.md`, `docs/ARCHITECTURE.md`, `docs/GITHUB_DOCS.md`, `docs/README.md` 동기화 완료.
+- **검증 결과**:
+  - Web SPA `compile_applet` + `lint_applet` 동시 실행 통과 및 `src-wpf` 전체 `.xaml`/`.cs` 정적 XML/리소스/구문 검증 오류 0건 확인.
+
+---
+
 ### 📝 [작업 차수 193] v2.2.0 3차 심층 전수 감사(Self-Reflection & Deep Audit) 결함 수정 및 전체 문서 v2.2.0 현행화
 - **작업 일시**: 2026-11-21 12:15 KST
 - **요청 사항**:

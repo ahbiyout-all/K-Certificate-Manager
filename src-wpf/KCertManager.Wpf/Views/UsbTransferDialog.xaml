@@ -110,12 +110,6 @@
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
                           ScrollViewer.CanContentScroll="False">
                     <DataGrid.Resources>
-                        <!-- Highlight colors -->
-                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#2563EB"/>
-                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#FFFFFF"/>
-                        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#1D4ED8"/>
-                        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#FFFFFF"/>
-
                         <!-- DataGrid Column Header Style (High Contrast & Visible with Horizontal & Vertical Dividers and Resizing Grippers) -->
                         <Style TargetType="DataGridColumnHeader">
                             <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
@@ -131,8 +125,8 @@
                             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#1E3A8A"/>
-                                    <Setter Property="Foreground" Value="White"/>
+                                    <Setter Property="Background" Value="{DynamicResource SelectedRowBgBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter Property="Background" Value="{DynamicResource BgCardHoverBrush}"/>
@@ -141,6 +135,7 @@
                         </Style>
                         <!-- DataGrid Cell Style with Horizontal & Vertical Dividers -->
                         <Style TargetType="DataGridCell">
+                            <Setter Property="Background" Value="Transparent"/>
                             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                             <Setter Property="BorderThickness" Value="0,0,1,1"/>
                             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
@@ -156,8 +151,8 @@
                             </Setter>
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#1E3A8A"/>
-                                    <Setter Property="Foreground" Value="White"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
                                 </Trigger>
                             </Style.Triggers>
                         </Style>

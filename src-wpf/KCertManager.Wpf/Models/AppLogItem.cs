@@ -37,13 +37,20 @@ namespace KCertManager.Wpf.Models
 
         public string FormattedTime => Timestamp.ToString("yyyy-MM-dd HH:mm:ss");
 
-        public string LevelBadgeColor => Level switch
+        public string LevelBadgeColor
         {
-            LogLevel.SUCCESS => "#34D399", // Emerald
-            LogLevel.WARN => "#FBBF24",    // Amber
-            LogLevel.ERROR => "#F87171",   // Rose
-            _ => "#93C5FD"                 // Blue
-        };
+            get
+            {
+                bool isDark = ViewModels.MainViewModel.IsDarkThemeActive;
+                return Level switch
+                {
+                    LogLevel.SUCCESS => isDark ? "#34D399" : "#16654B", // Emerald
+                    LogLevel.WARN => isDark ? "#FBBF24" : "#8A530B",    // Amber
+                    LogLevel.ERROR => isDark ? "#F87171" : "#B92B47",   // Rose
+                    _ => isDark ? "#93C5FD" : "#1A4673"                 // Blue
+                };
+            }
+        }
 
         public string CategoryBadgeText => Category switch
         {

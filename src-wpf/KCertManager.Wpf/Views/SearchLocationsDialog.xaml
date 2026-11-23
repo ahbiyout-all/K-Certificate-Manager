@@ -52,12 +52,6 @@
                       HeadersVisibility="Column"
                       RowHeight="44">
                 <DataGrid.Resources>
-                    <!-- Solid brushes for DataGrid selection highlight so WPF doesn't fallback to SystemColors.Highlight -->
-                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#2563EB"/>
-                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#FFFFFF"/>
-                    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#1D4ED8"/>
-                    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#FFFFFF"/>
-
                     <Style TargetType="DataGridColumnHeader">
                         <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
                         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
@@ -80,14 +74,20 @@
                                 </ControlTemplate>
                             </Setter.Value>
                         </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
+                            </Trigger>
+                        </Style.Triggers>
                     </Style>
                     <Style TargetType="DataGridRow">
                         <Setter Property="Background" Value="Transparent"/>
                         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                         <Style.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="#2563EB"/>
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Background" Value="{DynamicResource SelectedRowBgBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Background" Value="{DynamicResource BgCardHoverBrush}"/>

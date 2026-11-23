@@ -114,7 +114,7 @@
                 <!-- Empty State -->
                 <Border x:Name="EmptyDuplicatesState" Grid.Row="1" Visibility="Collapsed" Background="{DynamicResource BgCardBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="30">
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Text="✓ 중복 저장된 인증서가 없습니다" FontSize="15" FontWeight="Bold" Foreground="#34D399" HorizontalAlignment="Center"/>
+                        <TextBlock Text="✓ 중복 저장된 인증서가 없습니다" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource AccentGreenBrush}" HorizontalAlignment="Center"/>
                         <TextBlock Text="PC와 USB에 중복 없이 깔끔하게 보관되어 있습니다." FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                     </StackPanel>
                 </Border>
@@ -196,7 +196,7 @@
                 <!-- Empty State -->
                 <Border x:Name="EmptyRepairsState" Grid.Row="1" Visibility="Collapsed" Background="{DynamicResource BgCardBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="30">
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Text="✓ 잘못된 폴더 위치가 감지되지 않았습니다" FontSize="15" FontWeight="Bold" Foreground="#34D399" HorizontalAlignment="Center"/>
+                        <TextBlock Text="✓ 잘못된 폴더 위치가 감지되지 않았습니다" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource AccentGreenBrush}" HorizontalAlignment="Center"/>
                         <TextBlock Text="모든 인증서가 정부(GPKI)·교육(EPKI)·은행(NPKI) 표준 경로에 보관되어 있습니다." FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                     </StackPanel>
                 </Border>
@@ -216,7 +216,7 @@
                                         <StackPanel Grid.Column="1">
                                             <StackPanel Orientation="Horizontal">
                                                 <TextBlock Text="{Binding CommonName}" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                                <TextBlock Text="{Binding IssueTitle}" FontSize="12" FontWeight="Bold" Foreground="#F59E0B" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding IssueTitle}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentAmberBrush}" Margin="8,0,0,0" VerticalAlignment="Center"/>
                                             </StackPanel>
                                             <TextBlock Text="{Binding IssueDescription}" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,8" TextWrapping="Wrap"/>
 
@@ -228,13 +228,13 @@
                                                         <ColumnDefinition Width="*"/>
                                                     </Grid.ColumnDefinitions>
                                                     <StackPanel Grid.Column="0">
-                                                        <TextBlock Text="현재 위치 (비표준 · 미인식)" FontSize="10" FontWeight="Bold" Foreground="#F59E0B"/>
+                                                        <TextBlock Text="현재 위치 (비표준 · 미인식)" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentAmberBrush}"/>
                                                         <TextBlock Text="{Binding SourcePath}" FontSize="11" FontFamily="Consolas, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" ToolTip="{Binding SourcePath}"/>
                                                     </StackPanel>
-                                                    <TextBlock Grid.Column="1" Text="➔" FontSize="14" FontWeight="Bold" Foreground="#10B981" Margin="10,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="➔" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AccentGreenBrush}" Margin="10,0" VerticalAlignment="Center"/>
                                                     <StackPanel Grid.Column="2">
-                                                        <TextBlock Text="복구 위치 (표준 경로)" FontSize="10" FontWeight="Bold" Foreground="#34D399"/>
-                                                        <TextBlock Text="{Binding CanonicalPreviewPath}" FontSize="11" FontFamily="Consolas, Segoe UI" Foreground="#6EE7B7" TextTrimming="CharacterEllipsis" ToolTip="{Binding CanonicalPreviewPath}"/>
+                                                        <TextBlock Text="복구 위치 (표준 경로)" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentGreenBrush}"/>
+                                                        <TextBlock Text="{Binding CanonicalPreviewPath}" FontSize="11" FontFamily="Consolas, Segoe UI" Foreground="{DynamicResource AccentGreenBrush}" TextTrimming="CharacterEllipsis" ToolTip="{Binding CanonicalPreviewPath}"/>
                                                     </StackPanel>
                                                 </Grid>
                                             </Border>
@@ -273,19 +273,19 @@
                             <Border Grid.Column="0" Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,8,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                 <StackPanel>
                                     <TextBlock Text="차세대 규격 (3072-bit+)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                    <TextBlock x:Name="TxtCryptoCount3072" Text="0건" FontSize="16" FontWeight="Bold" Foreground="#10B981" Margin="0,2,0,0"/>
+                                    <TextBlock x:Name="TxtCryptoCount3072" Text="0건" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentGreenBrush}" Margin="0,2,0,0"/>
                                 </StackPanel>
                             </Border>
                             <Border Grid.Column="1" Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,8,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                 <StackPanel>
                                     <TextBlock Text="현행 유효 (2048-bit 전환 예정)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                    <TextBlock x:Name="TxtCryptoCount2048" Text="0건" FontSize="16" FontWeight="Bold" Foreground="#F59E0B" Margin="0,2,0,0"/>
+                                    <TextBlock x:Name="TxtCryptoCount2048" Text="0건" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentAmberBrush}" Margin="0,2,0,0"/>
                                 </StackPanel>
                             </Border>
                             <Border Grid.Column="2" Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="10,8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                 <StackPanel>
                                     <TextBlock Text="취약 규격 (1024-bit / SHA-1)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                    <TextBlock x:Name="TxtCryptoCountWeak" Text="0건" FontSize="16" FontWeight="Bold" Foreground="#F43F5E" Margin="0,2,0,0"/>
+                                    <TextBlock x:Name="TxtCryptoCountWeak" Text="0건" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentRoseBrush}" Margin="0,2,0,0"/>
                                 </StackPanel>
                             </Border>
                         </Grid>
@@ -324,7 +324,21 @@
                                             <TextBlock Text="{Binding MetaSummary}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0"/>
                                             <TextBlock Text="{Binding Recommendation}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0" TextWrapping="Wrap"/>
                                         </StackPanel>
-                                        <TextBlock Grid.Column="1" Text="{Binding PostureLabel}" FontSize="11.5" FontWeight="Bold" Foreground="{Binding PostureColorHex}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding PostureLabel}" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center" Margin="12,0,0,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{DynamicResource AccentAmberBrush}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Posture}" Value="Recommended3072">
+                                                            <Setter Property="Foreground" Value="{DynamicResource AccentGreenBrush}"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Posture}" Value="LegacyWeak">
+                                                            <Setter Property="Foreground" Value="{DynamicResource AccentRoseBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
                                     </Grid>
                                 </Border>
                             </DataTemplate>

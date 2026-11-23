@@ -201,7 +201,7 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                 border: '1px solid rgba(59, 130, 246, 0.35)',
               }}
             >
-              <Sparkles className="w-5 h-5 text-[#60A5FA]" />
+              <Sparkles className="w-5 h-5" style={{ color: 'var(--wpf-accent-text)' }} />
             </div>
             <div className="min-w-0">
               <h2 className="text-[15px] font-bold truncate">
@@ -240,14 +240,15 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
               }}
               className={`px-3.5 py-2 text-xs font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'duplicates'
-                  ? 'border-[#3B82F6] text-[#60A5FA]'
+                  ? 'border-[#2563EB]'
                   : 'border-transparent hover:opacity-85'
               }`}
-              style={
-                activeTab !== 'duplicates'
-                  ? { color: 'var(--wpf-text-secondary)' }
-                  : undefined
-              }
+              style={{
+                color:
+                  activeTab === 'duplicates'
+                    ? 'var(--wpf-accent-text)'
+                    : 'var(--wpf-text-secondary)',
+              }}
             >
               <CopyCheck className="w-4 h-4" />
               <span>중복 인증서 정리</span>
@@ -255,7 +256,9 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                 className="tabular-nums font-extrabold text-[11px]"
                 style={{
                   color:
-                    dupSummary.redundantCount > 0 ? '#F59E0B' : '#10B981',
+                    dupSummary.redundantCount > 0
+                      ? 'var(--wpf-badge-expiring-text)'
+                      : 'var(--wpf-accent-green)',
                 }}
               >
                 {dupSummary.redundantCount}건
@@ -270,21 +273,25 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
               }}
               className={`px-3.5 py-2 text-xs font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'repairs'
-                  ? 'border-[#3B82F6] text-[#60A5FA]'
+                  ? 'border-[#2563EB]'
                   : 'border-transparent hover:opacity-85'
               }`}
-              style={
-                activeTab !== 'repairs'
-                  ? { color: 'var(--wpf-text-secondary)' }
-                  : undefined
-              }
+              style={{
+                color:
+                  activeTab === 'repairs'
+                    ? 'var(--wpf-accent-text)'
+                    : 'var(--wpf-text-secondary)',
+              }}
             >
               <FolderSync className="w-4 h-4" />
               <span>잘못된 폴더 자동 복구</span>
               <span
                 className="tabular-nums font-extrabold text-[11px]"
                 style={{
-                  color: repairCandidates.length > 0 ? '#F59E0B' : '#10B981',
+                  color:
+                    repairCandidates.length > 0
+                      ? 'var(--wpf-badge-expiring-text)'
+                      : 'var(--wpf-accent-green)',
                 }}
               >
                 {repairCandidates.length}건
@@ -299,14 +306,15 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
               }}
               className={`px-3.5 py-2 text-xs font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'crypto'
-                  ? 'border-[#3B82F6] text-[#60A5FA]'
+                  ? 'border-[#2563EB]'
                   : 'border-transparent hover:opacity-85'
               }`}
-              style={
-                activeTab !== 'crypto'
-                  ? { color: 'var(--wpf-text-secondary)' }
-                  : undefined
-              }
+              style={{
+                color:
+                  activeTab === 'crypto'
+                    ? 'var(--wpf-accent-text)'
+                    : 'var(--wpf-text-secondary)',
+              }}
             >
               <ShieldCheck className="w-4 h-4" />
               <span>보안강도 점검 (3072-bit)</span>
@@ -315,10 +323,10 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                 style={{
                   color:
                     cryptoSummary.legacyWeakCount > 0
-                      ? '#EF4444'
+                      ? 'var(--wpf-accent-rose)'
                       : cryptoSummary.recommended3072Count > 0
-                      ? '#10B981'
-                      : '#F59E0B',
+                      ? 'var(--wpf-accent-green)'
+                      : 'var(--wpf-badge-expiring-text)',
                 }}
               >
                 {cryptoSummary.legacyWeakCount > 0
@@ -375,7 +383,7 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                   border: '1px solid var(--wpf-border)',
                 }}
               >
-                <CheckCircle2 className="w-10 h-10 text-[#10B981] mx-auto" />
+                <CheckCircle2 className="w-10 h-10 mx-auto" style={{ color: 'var(--wpf-accent-green)' }} />
                 <div className="text-sm font-bold">중복 저장된 인증서가 없습니다</div>
                 <p className="text-xs" style={{ color: 'var(--wpf-text-secondary)' }}>
                   현재 PC와 USB의 모든 인증서가 고유한 원본으로 깔끔하게 관리되고 있습니다.
@@ -388,7 +396,7 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                     className="flex items-center gap-2"
                     style={{ color: 'var(--wpf-text-secondary)' }}
                   >
-                    <ShieldCheck className="w-4 h-4 text-[#10B981] shrink-0" />
+                    <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: 'var(--wpf-accent-green)' }} />
                     <span>
                       각 묶음의 <strong>표준 원본 1개는 자동 보존</strong>되며 삭제되지 않습니다. 선택한 사본은 영구 삭제 대신 <strong>휴지통</strong>으로 이동합니다.
                     </span>
@@ -461,9 +469,9 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                       }}
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <ShieldCheck className="w-4 h-4 text-[#10B981] shrink-0" />
+                        <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: 'var(--wpf-accent-green)' }} />
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 text-xs font-bold text-[#34D399]">
+                          <div className="flex items-center gap-2 text-xs font-bold" style={{ color: 'var(--wpf-accent-green)' }}>
                             <span>표준 원본 · 자동 보존 (삭제 불가)</span>
                             <span style={{ color: 'var(--wpf-text-secondary)' }}>
                               · {group.primaryCert.sourceDrive}
@@ -498,9 +506,9 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                                 className="w-4 h-4 rounded accent-[#2563EB] cursor-pointer shrink-0"
                               />
                               {isUsb ? (
-                                <HardDrive className="w-4 h-4 text-[#34D399] shrink-0" />
+                                <HardDrive className="w-4 h-4 shrink-0" style={{ color: 'var(--wpf-accent-green)' }} />
                               ) : (
-                                <Laptop className="w-4 h-4 text-[#60A5FA] shrink-0" />
+                                <Laptop className="w-4 h-4 shrink-0" style={{ color: 'var(--wpf-accent-text)' }} />
                               )}
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2 text-xs">
@@ -512,9 +520,9 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                                     style={{
                                       color:
                                         entry.locationKind === 'PC_NON_STANDARD'
-                                          ? '#F59E0B'
+                                          ? 'var(--wpf-badge-expiring-text)'
                                           : isUsb
-                                          ? '#34D399'
+                                          ? 'var(--wpf-accent-green)'
                                           : 'var(--wpf-text-secondary)',
                                     }}
                                   >
@@ -557,7 +565,7 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                 border: '1px solid var(--wpf-border)',
               }}
             >
-              <CheckCircle2 className="w-10 h-10 text-[#10B981] mx-auto" />
+              <CheckCircle2 className="w-10 h-10 mx-auto" style={{ color: 'var(--wpf-accent-green)' }} />
               <div className="text-sm font-bold">잘못된 폴더 위치가 감지되지 않았습니다</div>
               <p className="text-xs" style={{ color: 'var(--wpf-text-secondary)' }}>
                 모든 인증서가 정부(GPKI)·교육(EPKI)·은행(NPKI) 표준 폴더에 올바르게 저장되어 있습니다.
@@ -570,7 +578,7 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                   className="flex items-center gap-2"
                   style={{ color: 'var(--wpf-text-secondary)' }}
                 >
-                  <AlertTriangle className="w-4 h-4 text-[#F59E0B] shrink-0" />
+                  <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: 'var(--wpf-badge-expiring-text)' }} />
                   <span>
                     먼저 표준 위치로 안전하게 복사·손상 검사(SHA-256)를 완료한 뒤 기존 비표준 폴더를 정리합니다.
                   </span>
@@ -613,7 +621,7 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                               <span className="text-sm font-bold">
                                 {item.cert.name}
                               </span>
-                              <span className="text-xs font-semibold text-[#F59E0B]">
+                              <span className="text-xs font-semibold" style={{ color: 'var(--wpf-badge-expiring-text)' }}>
                                 · {item.issueTitle}
                               </span>
                             </div>
@@ -641,7 +649,7 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                             }}
                           >
                             <div className="min-w-0">
-                              <div className="text-[10px] font-sans font-bold text-[#F59E0B] mb-0.5">
+                              <div className="text-[10px] font-sans font-bold mb-0.5" style={{ color: 'var(--wpf-badge-expiring-text)' }}>
                                 현재 위치 (비표준 · 미인식)
                               </div>
                               <div className="truncate" title={item.sourcePath}>
@@ -649,14 +657,15 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                               </div>
                             </div>
 
-                            <ArrowRight className="w-4 h-4 text-[#10B981] shrink-0 hidden lg:block" />
+                            <ArrowRight className="w-4 h-4 shrink-0 hidden lg:block" style={{ color: 'var(--wpf-accent-green)' }} />
 
                             <div className="min-w-0">
-                              <div className="text-[10px] font-sans font-bold text-[#34D399] mb-0.5">
+                              <div className="text-[10px] font-sans font-bold mb-0.5" style={{ color: 'var(--wpf-accent-green)' }}>
                                 복구 위치 (표준 경로)
                               </div>
                               <div
-                                className="truncate text-[#6EE7B7]"
+                                className="truncate font-semibold"
+                                style={{ color: 'var(--wpf-accent-green)' }}
                                 title={item.canonicalPath}
                               >
                                 {item.canonicalPath}
@@ -700,7 +709,7 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                     }}
                   >
                     <div className="text-[11px]" style={{ color: 'var(--wpf-text-secondary)' }}>차세대 규격 (3072-bit+)</div>
-                    <div className="text-base font-bold text-[#10B981] mt-0.5">{cryptoSummary.recommended3072Count}건</div>
+                    <div className="text-base font-bold mt-0.5" style={{ color: 'var(--wpf-accent-green)' }}>{cryptoSummary.recommended3072Count}건</div>
                   </button>
                   <button
                     type="button"
@@ -712,7 +721,7 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                     }}
                   >
                     <div className="text-[11px]" style={{ color: 'var(--wpf-text-secondary)' }}>현행 유효 (2048-bit · 전환 예정)</div>
-                    <div className="text-base font-bold text-[#F59E0B] mt-0.5">{cryptoSummary.standard2048Count}건</div>
+                    <div className="text-base font-bold mt-0.5" style={{ color: 'var(--wpf-badge-expiring-text)' }}>{cryptoSummary.standard2048Count}건</div>
                   </button>
                   <button
                     type="button"
@@ -724,7 +733,7 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                     }}
                   >
                     <div className="text-[11px]" style={{ color: 'var(--wpf-text-secondary)' }}>취약 규격 (1024-bit / SHA-1)</div>
-                    <div className="text-base font-bold text-[#F43F5E] mt-0.5">{cryptoSummary.legacyWeakCount}건</div>
+                    <div className="text-base font-bold mt-0.5" style={{ color: 'var(--wpf-accent-rose)' }}>{cryptoSummary.legacyWeakCount}건</div>
                   </button>
                 </div>
               </div>
@@ -781,10 +790,10 @@ export const DiagnosticsRepairModal: React.FC<DiagnosticsRepairModalProps> = ({
                   {filteredCryptoItems.map((item) => {
                     const postureColor =
                       item.posture === 'recommended_3072'
-                        ? '#10B981'
+                        ? 'var(--wpf-accent-green)'
                         : item.posture === 'legacy_weak'
-                        ? '#F43F5E'
-                        : '#F59E0B';
+                        ? 'var(--wpf-accent-rose)'
+                        : 'var(--wpf-badge-expiring-text)';
                     return (
                       <div
                         key={item.cert.id}

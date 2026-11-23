@@ -93,8 +93,8 @@
                         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                         <Style.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="#2563EB"/>
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Background" Value="{DynamicResource SelectedRowBgBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Background" Value="{DynamicResource BgCardHoverBrush}"/>
@@ -102,7 +102,14 @@
                         </Style.Triggers>
                     </Style>
                     <Style TargetType="DataGridCell">
+                        <Setter Property="Background" Value="Transparent"/>
                         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
+                            </Trigger>
+                        </Style.Triggers>
                     </Style>
                 </DataGrid.Resources>
                 <DataGrid.Columns>

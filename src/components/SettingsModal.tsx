@@ -45,7 +45,7 @@ interface SettingsModalProps {
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
-  theme = 'pastel-white',
+  theme = 'dark',
   onThemeChange,
   appViewMode = 'simple',
   onToggleAppViewMode,
@@ -720,7 +720,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
                     <span>화면 모드 및 테마</span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
-                      {appViewMode === 'simple' ? '간편 모드' : '상세 모드'} · {theme}
+                      {appViewMode === 'simple' ? '간편 모드' : '상세 모드'} · {
+                        THEME_OPTIONS.find(
+                          opt =>
+                            theme === opt.id ||
+                            (theme === 'pastel-black' && opt.id === 'dark') ||
+                            (theme === 'pastel-gray' && opt.id === 'gray') ||
+                            ((theme === 'pastel-white' || theme === 'classic') && opt.id === 'white') ||
+                            (theme === 'pastel-beige' && opt.id === 'beige')
+                        )?.name || theme
+                      }
                     </span>
                   </h4>
                   <p className="text-xs text-slate-500 mt-0.5">

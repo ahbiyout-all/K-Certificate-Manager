@@ -145,7 +145,7 @@
                                 ToolTip="삭제한 인증서 임시 보관함 (암호화 보호 · AES-256)">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="🗑️" Margin="0,0,4,0"/>
-                                <TextBlock Text="{Binding TrashCount, StringFormat='{}휴지통 ({0})'}" Foreground="#FDA4AF"/>
+                                <TextBlock Text="{Binding TrashCount, StringFormat='{}휴지통 ({0})'}" Foreground="{DynamicResource AccentRoseBrush}"/>
                             </StackPanel>
                         </Button>
 
@@ -266,11 +266,11 @@
                         </Border>
 
                         <!-- Local Isolation Box -->
-                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="8" Padding="10" BorderBrush="#10B981" BorderThickness="1" Margin="0,0,0,12">
+                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="8" Padding="10" BorderBrush="{DynamicResource AccentGreenBrush}" BorderThickness="1" Margin="0,0,0,12">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                    <Ellipse Width="8" Height="8" Fill="#10B981" Margin="0,0,6,0"/>
-                                    <TextBlock Text="오프라인 로컬 보호" FontSize="11" FontWeight="Bold" Foreground="#10B981"/>
+                                    <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentGreenBrush}" Margin="0,0,6,0"/>
+                                    <TextBlock Text="오프라인 로컬 보호" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentGreenBrush}"/>
                                 </StackPanel>
                                 <TextBlock Text="인터넷 연결 없음 · 내 PC 안전 암호화" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>
@@ -323,17 +323,17 @@
                             <Grid Width="210">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="🏛️ " FontSize="12"/>
-                                    <TextBlock Text="Class1 기관·특수목적" VerticalAlignment="Center" Foreground="#818CF8"/>
+                                    <TextBlock Text="Class1 기관·특수목적" VerticalAlignment="Center" Foreground="{DynamicResource AccentTextBrush}"/>
                                 </StackPanel>
-                                <TextBlock Text="{Binding Class1Count}" HorizontalAlignment="Right" Foreground="#818CF8" FontWeight="Bold"/>
+                                <TextBlock Text="{Binding Class1Count}" HorizontalAlignment="Right" Foreground="{DynamicResource AccentTextBrush}" FontWeight="Bold"/>
                             </Grid>
                         </RadioButton>
 
                         <RadioButton GroupName="Filters" Click="Filter_Click" Tag="EXPIRED"
                                      Style="{StaticResource SidebarNavRadio}">
                             <Grid Width="210">
-                                <TextBlock Text="만료된 인증서" VerticalAlignment="Center" Foreground="#E11D48"/>
-                                <TextBlock Text="{Binding ExpiredCount}" HorizontalAlignment="Right" Foreground="#E11D48" FontWeight="Bold"/>
+                                <TextBlock Text="만료된 인증서" VerticalAlignment="Center" Foreground="{DynamicResource AccentRoseBrush}"/>
+                                <TextBlock Text="{Binding ExpiredCount}" HorizontalAlignment="Right" Foreground="{DynamicResource AccentRoseBrush}" FontWeight="Bold"/>
                             </Grid>
                         </RadioButton>
 
@@ -342,9 +342,9 @@
                             <Grid Width="210">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="⚠️ " FontSize="12"/>
-                                    <TextBlock Text="다른 폴더 인증서" VerticalAlignment="Center" Foreground="#D97706"/>
+                                    <TextBlock Text="다른 폴더 인증서" VerticalAlignment="Center" Foreground="{DynamicResource AccentAmberBrush}"/>
                                 </StackPanel>
-                                <TextBlock Text="{Binding CustomPathCount}" HorizontalAlignment="Right" Foreground="#D97706" FontWeight="Bold"/>
+                                <TextBlock Text="{Binding CustomPathCount}" HorizontalAlignment="Right" Foreground="{DynamicResource AccentAmberBrush}" FontWeight="Bold"/>
                             </Grid>
                         </RadioButton>
 
@@ -369,7 +369,7 @@
                                     <TextBlock Text="💾 " FontSize="12"/>
                                     <TextBlock Text="USB 메모리" VerticalAlignment="Center"/>
                                 </StackPanel>
-                                <TextBlock Text="{Binding UsbCount}" HorizontalAlignment="Right" Foreground="#059669" FontWeight="Bold"/>
+                                <TextBlock Text="{Binding UsbCount}" HorizontalAlignment="Right" Foreground="{DynamicResource AccentGreenBrush}" FontWeight="Bold"/>
                             </Grid>
                         </RadioButton>
 
@@ -405,7 +405,7 @@
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="인증서 보관함 목록" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,12,0"/>
                         <Border Background="{DynamicResource BgCardBrush}" CornerRadius="12" Padding="10,4" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0">
-                            <TextBlock Text="{Binding FilteredCertificates.Count, StringFormat='{}표시 중: {0}개'}" FontSize="12" Foreground="#60A5FA"/>
+                            <TextBlock Text="{Binding FilteredCertificates.Count, StringFormat='{}표시 중: {0}개'}" FontSize="12" Foreground="{DynamicResource AccentTextBrush}"/>
                         </Border>
                         <TextBlock Text="(더블클릭: 상세 보기)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>
@@ -447,13 +447,13 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="⚡ 간편 백업" FontSize="13" FontWeight="Bold" Foreground="#38BDF8" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="⚡ 간편 백업" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,10,0" VerticalAlignment="Center"/>
                             <TextBlock Text="복사 대상: " FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                             <!-- Target USB/Drive Card with Visual Glow & Dynamic Border Highlight -->
                             <Border CornerRadius="6" Padding="8,3" Margin="0,0,8,0">
                                 <Border.Style>
                                     <Style TargetType="Border">
-                                        <Setter Property="Background" Value="#0F172A"/>
+                                        <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
                                         <Setter Property="BorderThickness" Value="2"/>
                                         <Setter Property="BorderBrush">
                                             <Setter.Value>
@@ -495,7 +495,7 @@
                             <Button Click="OpenUsbTransfer_Click" Style="{StaticResource SecondaryButton}" Padding="12,6" ToolTip="USB 인증서를 내 PC로 가져오기">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="📥" Margin="0,0,5,0"/>
-                                    <TextBlock Text="USB ➔ PC 넣기" Foreground="#10B981" FontWeight="SemiBold"/>
+                                    <TextBlock Text="USB ➔ PC 넣기" Foreground="{DynamicResource AccentGreenBrush}" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </Button>
                         </StackPanel>
@@ -695,7 +695,7 @@
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
                                                     <StackPanel VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding FormattedFreeSpace}" FontSize="11" FontWeight="SemiBold" Foreground="#38BDF8"/>
+                                                        <TextBlock Text="{Binding FormattedFreeSpace}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextBrush}"/>
                                                         <TextBlock Text="{Binding StatusBadgeText}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                                     </StackPanel>
 
@@ -1046,7 +1046,7 @@
                                 <DataGridTemplateColumn Header="비밀키" Width="75">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="🔑 보유" FontSize="11" Foreground="#10B981" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="🔑 보유" FontSize="11" Foreground="{DynamicResource AccentGreenBrush}" HorizontalAlignment="Center"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
@@ -1217,7 +1217,7 @@
                                                     </Grid.ColumnDefinitions>
                                                     <StackPanel>
                                                         <TextBlock Text="일련번호 (Serial Number):" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                                        <TextBlock Text="{Binding SelectedCertificate.SerialNumber}" FontSize="11" FontFamily="Consolas" Foreground="#38BDF8" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                                        <TextBlock Text="{Binding SelectedCertificate.SerialNumber}" FontSize="11" FontFamily="Consolas" Foreground="{DynamicResource AccentTextBrush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
                                                     </StackPanel>
                                                     <Button Grid.Column="1" Click="CopyField_Click" Tag="{Binding SelectedCertificate.SerialNumber}" Style="{StaticResource SecondaryButton}" Padding="6,2" VerticalAlignment="Top" ToolTip="일련번호 복사">
                                                         <TextBlock Text="📋 복사" FontSize="10.5"/>
@@ -1242,7 +1242,7 @@
                                                     </StackPanel>
                                                     <StackPanel Grid.Column="1">
                                                         <TextBlock Text="만료 일자:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                                        <TextBlock Text="{Binding SelectedCertificate.NotAfter, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" FontSize="11.5" FontWeight="Bold" Foreground="#F43F5E" Margin="0,2,0,0"/>
+                                                        <TextBlock Text="{Binding SelectedCertificate.NotAfter, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource AccentRoseBrush}" Margin="0,2,0,0"/>
                                                     </StackPanel>
                                                 </Grid>
                                             </StackPanel>
@@ -1255,7 +1255,21 @@
 
                                                 <TextBlock Text="공개키 · 전자서명 규격:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                                 <TextBlock Text="{Binding SelectedCertificate.PublicKeySpecText}" FontSize="11.5" FontFamily="Consolas, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,4"/>
-                                                <TextBlock Text="{Binding SelectedCertificate.CryptoPostureLabel}" FontSize="11" FontWeight="Bold" Foreground="{Binding SelectedCertificate.CryptoPostureColorHex, FallbackValue='#F59E0B', TargetNullValue='#F59E0B'}" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                                                <TextBlock Text="{Binding SelectedCertificate.CryptoPostureLabel}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8" TextWrapping="Wrap">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="{DynamicResource AccentAmberBrush}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding SelectedCertificate.SecurityPosture}" Value="Recommended3072">
+                                                                    <Setter Property="Foreground" Value="{DynamicResource AccentGreenBrush}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding SelectedCertificate.SecurityPosture}" Value="LegacyWeak">
+                                                                    <Setter Property="Foreground" Value="{DynamicResource AccentRoseBrush}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
 
                                                 <!-- Policy OID -->
                                                 <Grid Margin="0,0,0,8">
@@ -1265,7 +1279,7 @@
                                                     </Grid.ColumnDefinitions>
                                                     <StackPanel>
                                                         <TextBlock Text="정책 OID 및 용도:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                                        <TextBlock Text="{Binding SelectedCertificate.PolicyOid}" FontSize="11" FontFamily="Consolas" Foreground="#A78BFA" Margin="0,2,0,0"/>
+                                                        <TextBlock Text="{Binding SelectedCertificate.PolicyOid}" FontSize="11" FontFamily="Consolas" Foreground="{DynamicResource AccentTextBrush}" Margin="0,2,0,0"/>
                                                         <TextBlock Text="{Binding SelectedCertificate.PolicyUsage}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                                                     </StackPanel>
                                                     <Button Grid.Column="1" Click="CopyField_Click" Tag="{Binding SelectedCertificate.PolicyOid}" Style="{StaticResource SecondaryButton}" Padding="6,2" VerticalAlignment="Top" ToolTip="정책 OID 복사">
@@ -1276,7 +1290,7 @@
                                                 <!-- Key status -->
                                                 <TextBlock Text="개인키(signPri.key) 상태:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                                 <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                                    <TextBlock Text="🔑 개인키 정상 보유 (사용 가능)" FontSize="11.5" FontWeight="SemiBold" Foreground="#10B981"/>
+                                                    <TextBlock Text="🔑 개인키 정상 보유 (사용 가능)" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource AccentGreenBrush}"/>
                                                 </StackPanel>
                                             </StackPanel>
                                         </Border>
@@ -1288,8 +1302,8 @@
 
                                                 <!-- Standard Location Badge -->
                                                 <Border CornerRadius="4" Padding="6,3" Margin="0,0,0,8" HorizontalAlignment="Left"
-                                                        Background="#1E293B" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                                                    <TextBlock Text="{Binding SelectedCertificate.StandardLocationBadgeText}" FontSize="11" FontWeight="Bold" Foreground="#38BDF8"/>
+                                                        Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                                    <TextBlock Text="{Binding SelectedCertificate.StandardLocationBadgeText}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}"/>
                                                 </Border>
 
                                                 <!-- Full Directory Path with Copy & Open Buttons -->
@@ -1366,15 +1380,15 @@
                             <Button Click="OpenUsbTransfer_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,12,0" Padding="12,8">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="📥" Margin="0,0,6,0" FontSize="13"/>
-                                    <TextBlock Text="USB ➔ PC 넣기" Foreground="#10B981" FontWeight="Bold"/>
+                                    <TextBlock Text="USB ➔ PC 넣기" Foreground="{DynamicResource AccentGreenBrush}" FontWeight="Bold"/>
                                 </StackPanel>
                             </Button>
 
                             <Button Click="SelectAll_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Content="전체 선택"/>
                             <Button Click="DeselectAll_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Content="선택 해제"/>
-                            <Button Command="{Binding DeleteSelectedCommand}" Style="{StaticResource SecondaryButton}" Foreground="#E11D48" Margin="0,0,8,0" Content="선택 삭제"/>
-                            <Button Command="{Binding UndoDeleteCommand}" Style="{StaticResource SecondaryButton}" Foreground="#059669" Margin="0,0,8,0" Content="↩ 삭제 취소" Visibility="{Binding CanUndo, Converter={StaticResource BoolToVis}}"/>
-                            <Button Command="{Binding CleanExpiredCommand}" Style="{StaticResource SecondaryButton}" Foreground="#D97706" Margin="0,0,8,0" Content="🧹 만료 정리"/>
+                            <Button Command="{Binding DeleteSelectedCommand}" Style="{StaticResource SecondaryButton}" Foreground="{DynamicResource AccentRoseBrush}" Margin="0,0,8,0" Content="선택 삭제"/>
+                            <Button Command="{Binding UndoDeleteCommand}" Style="{StaticResource SecondaryButton}" Foreground="{DynamicResource AccentGreenBrush}" Margin="0,0,8,0" Content="↩ 삭제 취소" Visibility="{Binding CanUndo, Converter={StaticResource BoolToVis}}"/>
+                            <Button Command="{Binding CleanExpiredCommand}" Style="{StaticResource SecondaryButton}" Foreground="{DynamicResource AccentAmberBrush}" Margin="0,0,8,0" Content="🧹 만료 정리"/>
                         </StackPanel>
 
                         <!-- Main Backup execution buttons (Supports Disk->Disk, USB->USB, Disk->USB, USB->Disk) -->
@@ -1409,9 +1423,9 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding AppVersion, TargetNullValue='v2.2.0', FallbackValue='v2.2.0'}" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                    <Border Background="#1E293B" CornerRadius="4" Padding="5,1" Margin="0,0,8,0" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding RuntimeInfo}" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8"/>
+                    <TextBlock Text="{Binding AppVersion, TargetNullValue='v2.2.0', FallbackValue='v2.2.0'}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="5,1" Margin="0,0,8,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding RuntimeInfo}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}"/>
                     </Border>
                     <TextBlock Text="|" FontSize="11" Foreground="{DynamicResource BorderBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
@@ -1419,19 +1433,19 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="개발자: AhBiYout  |  " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
-                        <Hyperlink NavigateUri="https://www.cisnet.co.kr" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#38BDF8">
+                        <Hyperlink NavigateUri="https://www.cisnet.co.kr" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource AccentTextBrush}">
                             (주)청운정보시스템 ( cisnet.co.kr )
                         </Hyperlink>
                     </TextBlock>
                     <TextBlock Text="  |  " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
-                        <Hyperlink NavigateUri="https://ahbiyoutvibe.blogspot.com/" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#34D399">
+                        <Hyperlink NavigateUri="https://ahbiyoutvibe.blogspot.com/" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource AccentGreenBrush}">
                             공식 구글 블로그
                         </Hyperlink>
                     </TextBlock>
                     <TextBlock Text="  |  " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
-                        <Hyperlink NavigateUri="https://github.com/AhBiYout-all/K-Certificate-Manager" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#818CF8">
+                        <Hyperlink NavigateUri="https://github.com/AhBiYout-all/K-Certificate-Manager" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource AccentTextBrush}">
                             GitHub 저장소
                         </Hyperlink>
                     </TextBlock>

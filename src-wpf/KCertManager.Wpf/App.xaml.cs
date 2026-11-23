@@ -33,7 +33,7 @@ namespace KCertManager.Wpf
             try
             {
                 LogStartup("Application starting up...");
-                ViewModels.MainViewModel.ApplyTheme("dark");
+                ViewModels.MainViewModel.ApplyTheme(SettingsService.Instance.Settings.Theme ?? "dark");
                 var mainWindow = new Views.MainWindow();
                 MainWindow = mainWindow;
                 mainWindow.Show();

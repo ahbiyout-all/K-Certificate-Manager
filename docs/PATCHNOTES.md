@@ -28,6 +28,28 @@
 - **8대 영역 `v2.2.0` 공식 버전 동기화**:
   - `package.json`, `src/version.ts`, `TrashModal.tsx`, WPF 3종 `.csproj`, `UpdateCheckerService.cs`, XAML/CS UI(`MainWindow`, `AboutDialog`, `UpdateNotificationDialog`), `installer.iss`, `build.ps1/.bat/.cmd`, `.github/workflows/build.yml`, `README.md` 및 `/docs` 문서 전체를 `v2.2.0`으로 동기화.
 
+#### 🛠️ 최신 안정화 · 4차 심층 전수 감사 반영 (2026-11-23)
+- **눈이 편안한 저눈부심 회색·베이지 테마 개편 & 전 화면 대비 교정 (Web & WPF)**:
+  - **회색 테마 (*Misty Mineral Slate*, `#CCD4DF` / `#DFE5EC`)** 및 **베이지 테마 (*Warm Oat Paper*, `#E6DFD1` / `#F1ECE1`)**로 눈부심과 블루라이트 피로를 줄이고 고가독성 잉크·에스프레소 텍스트 대비 확보 (`src/index.css`, `App.tsx`, `MainViewModel.ApplyTheme`).
+  - Web Tailwind CSS v4 `@custom-variant dark` 선언 추가로 OS 다크 모드에서 화이트/회색/베이지 테마 사용 시 `dark:` 클래스가 잘못 적용되던 현상 차단 및 `Sidebar.tsx`·`CertificateList.tsx` 하드코딩 색상 토큰화.
+  - WPF `App.xaml` `AccentAmberBrush` 신설 및 `MainWindow.xaml`, `ExpiredCleanupDialog`, `CertificateDetailDialog`, `RenewalGuidanceDialog`, `DiagnosticsRepairDialog`, `SecurityGuideDialog`, `AboutDialog`, `TrashDialog` 내 하드코딩 밝은/어두운 hex 색상을 `DynamicResource` 테마 브러시로 전환.
+- **인증서 보관함 선택 복사 · 필터 보기 · 단일 행 클릭 3중 격리 (Web & WPF)**:
+  - Web `resolveSelectedBackupCerts` 및 `CertificateList` 필터 전체선택이 항상 **체크된 ID(`selectedIds`) ∩ 현재 표시 목록(`visibleCertificates`)** 교집합만 반환·토글하도록 재구성해 숨은 필터 항목이나 단일 행 상세 클릭(`inspectedCert`)이 의도치 않게 섞여 복사되는 오류 차단.
+  - WPF `NextGuidedStep`, `ExecuteGuidedCopy`, `CertDataGrid_SelectionChanged`, `BackupAllAsync`, `BackupAll_Click`에서도 행 클릭만으로 체크박스(`IsSelected`)가 자동 변경되거나 필터 밖 `_allCertificates`로 fallback되던 동작을 제거하고 현재 `FilteredCertificates` 기준으로 일원화.
+- **시작 테마 복원 및 워크플로우·수명주기 교정 (Web & WPF)**:
+  - WPF `App.xaml.cs`, `MainWindow.xaml.cs` 시작 시 하드코딩 `"dark"` 대신 `SettingsService`에 저장된 사용자 테마 즉시 적용 및 `SettingsDialog.xaml.cs` 레거시 파스텔 별칭(`pastel-*`, `classic`) 매핑 보완.
+  - Web `SettingsModal.tsx` 기본 테마 정합화 및 `App.tsx` `handleSelectWorkflow('pc_to_usb')` 0건 안내 유지·USB 마운트 리스너 `handleRefreshRef` 최신 참조 호출 교정.
+
+#### 🛠️ 5차 심층 전수 감사 · 수명주기 및 라이트/회색/베이지 전 창 대비 완성 (2026-11-23)
+- **WPF 선택 카드 유동 테두리·사이드바·이벤트 수명주기 결함 수정 (`WpfAnimatedBorderHelper.cs`, `MainWindow.xaml.cs`, `UsbTransferViewModel.cs`, `UsbTransferDialog.xaml.cs`, `MainViewModel.cs`)**:
+  - `WpfAnimatedBorderHelper.ApplyBorderGlow`가 `BgCardBrush` 휘도를 판별해 회색/베이지/화이트 테마의 선택 드라이브 카드에 `SelectedRowBgBrush`(`#DBEAFE` 계열)와 부드러운 `0.28` 글로우를 적용함으로써 어두운 텍스트가 짙은 남색 배경에 묻히던 현상을 완전 해결.
+  - `MainWindow.xaml.cs`가 `CurrentTheme` 변경 시 `SidebarTargetDriveBorder`를 즉시 재렌더링하도록 보강하고, `UsbTransferViewModel`에 `IDisposable`·`DetachCertEvents()`를 구현해 `UsbTransferDialog` 종료 시 인증서 `PropertyChanged` 핸들러 누수를 차단.
+- **WPF 6대 `DataGrid` + 8종 다이얼로그·모델 전 창 테마 브러시 통일**:
+  - `PcToUsbTransferDialog`, `UsbTransferDialog`, `TrashDialog`, `SearchLocationsDialog`, `BackupHistoryDialog`, `ActivityLogDialog` DataGrid 선택 스타일을 `SelectedRowBgBrush`/`SelectedRowTextBrush` 기반으로 일원화.
+  - `OperationCompleteDialog`, `DuplicateConflictDialog`, `TargetDrivePickerDialog`, `CertificateDetailDialog`, `MainWindow`, `DiagnosticsRepairDialog`, `RenewalGuidanceDialog` 및 `CertificateItem`·`AppLogItem`·`RenewalInstitutionItem`의 파스텔 hex 텍스트를 `DynamicResource` 브러시 및 `DataTrigger`(`Posture`, `SummaryTone`, `SecurityPosture`)로 전환.
+- **Web 7대 컴포넌트 CSS 토큰 일원화 (`SimpleTransferHero`, `ConnectedDrivesBar`, `Header`, `Sidebar`, `CertificateList`, `CertificateDetailSidebar`, `DiagnosticsRepairModal`)**:
+  - 모든 하드코딩 파스텔 녹색/호박/적색/청색 hex 값을 `var(--wpf-accent-green)`, `var(--wpf-accent-text)`, `var(--wpf-badge-expiring-text)`, `var(--wpf-accent-rose)`, `var(--wpf-selected-row-secondary)`로 이관해 4대 테마 전 구간에서 명도 대비를 일관되게 보장.
+
 ---
 
 ### 🚀 [v2.1.1] - 2026-11-16 (최신 안정화 반영: 2026-11-18)

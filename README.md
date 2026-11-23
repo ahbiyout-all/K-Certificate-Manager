@@ -11,7 +11,7 @@
 
 **대한민국 공무원 행정전자서명(GPKI/EPKI) 및 금융 공동인증서(NPKI) 자동 탐색·USB 일괄 백업 & PC 역방향 복사 통합 보안 관리 솔루션**
 
-[공식 블로그](https://ahbiyoutvibe.blogspot.com/) • [GitHub 저장소](https://github.com/ahbiyout-all/K-Certificate-Manager) • [소속 회사 (청운정보시스템)](https://www.cisnet.co.kr)
+[공식 블로그](https://ahbiyoutvibe.blogspot.com/) • [GitHub 저장소](https://github.com/AhBiYout-all/K-Certificate-Manager) • [소속 회사 (청운정보시스템)](https://www.cisnet.co.kr)
 
 </div>
 
@@ -33,6 +33,10 @@
   - `SecurityGuideModal.tsx`·`koreanCertTrends2026.ts`·`RenewalGuidanceModal.tsx`(Web) 및 `SecurityGuideDialog.xaml`·`RenewalGuidanceDialog.xaml`(WPF)을 통해 행정·교육 Non-ActiveX 및 클라우드 전환, 금융인증서 vs. 민간 간편인증 비교/갱신, 모바일 신분증 8종 및 2026 전자서명 법령 동향을 앱 내 통합 제공
 - **v2.1.1 ~ v2.0.0 핵심 안정화 계승**:
   - `Class1` 기관·특수목적 인증서 개인키 페어링 & 구분 배지, 비표준 경로 정위치 복구 + 안전 휴지통 격리(`SafetyTrash`), 복사 완료 폴더 드라이브 루트 탐색기 호출, 인앱 3-Tier 자동 업데이트·무인 셀프 설치, DPAPI/AES-256 보호 보관함 및 `/dist/v2.2.0/` 버전별 분리 배포 파이프라인 완비
+- **4차 심층 전수 감사 · 저눈부심 테마 & 선택 복사 격리 안정화 (Web & WPF)**:
+  - 눈부심을 억제한 **회색(*Misty Mineral Slate*)** · **베이지(*Warm Oat Paper*)** 저자극 고가독성 테마 적용 및 Tailwind v4 `@custom-variant dark`·WPF `DynamicResource` 브러시 전 창 대비 교정
+  - 보관함 체크박스 선택(`selectedIds`), 필터 표시 목록(`visibleCertificates` / `FilteredCertificates`), 단일 행 상세 클릭(`inspectedCert` / `SelectedCertificate`)을 엄격히 분리해 `선택 ∩ 현재 필터` 교집합만 정밀 복사하도록 개선
+  - WPF 시작 시 저장 테마 복원 및 Web 워크플로우·USB 마운트 최신 핸들러 동기화
 
 ---
 
@@ -65,7 +69,7 @@
 - **충돌 방지 및 덮어쓰기 제어**: 동일 인증서 존재 시 버전/유효기간 비교 후 선택적 갱신
 
 ### 3. 직관적인 사용자 경험 & 보안
-- **8종 테마 지원**: 다크, 화이트, 그레이, 베이지, 파스텔 화이트/그레이/블랙/베이지
+- **4종 테마 지원 (저자극 고가독성 배색 포함)**: 다크, 저눈부심 회색(*Misty Mineral Slate*), 저블루라이트 베이지(*Warm Oat Paper*), 화이트 4대 테마 지원 (레거시 파스텔 별칭 자동 호환)
 - **안전 보관 휴지통**: 실수로 삭제된 인증서의 임시 보관 및 원클릭 복구 기능
 - **작업 감사 로그 (Audit Logs)**: 백업, 복사, 복원 등 모든 파일 I/O 작업 기록 저장 및 내보내기
 
@@ -92,8 +96,10 @@ K-Certificate-Manager/
 │   ├── KCERT_CORE_DLL_SPEC.md    # KCert.Core.dll 기술 명세서
 │   └── BUILD_GUIDE.md            # Windows 자동화 빌드 가이드
 ├── build.bat                     # Windows 원클릭 자동 빌드 스크립트
+├── build.cmd                     # Windows CMD 래퍼 빌드 스크립트
 ├── build.ps1                     # PowerShell 기반 통합 빌드 도구
-├── push_to_github.bat            # GitHub 원클릭 자동 커밋 및 푸시 스크립트
+├── run-web.cmd                   # 로컬 보안 격리 웹 콘솔 실행 스크립트
+├── launch-web.vbs                # 무창(숨김) 웹 콘솔 런처
 ├── installer.iss                 # Inno Setup 윈도우 인스톨러 스크립트
 └── package.json                  # Node.js 패키지 설정
 ```
@@ -137,7 +143,7 @@ build.bat
 ## 📞 문의 및 개발자 정보 (Contact)
 
 - **개발자 (Developer)**: AhBiYout
-- **GitHub 저장소**: [https://github.com/ahbiyout-all/K-Certificate-Manager](https://github.com/ahbiyout-all/K-Certificate-Manager)
+- **GitHub 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
 - **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **소속**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr)
 - **소속 회사**: (주)청운정보시스템 ( cisnet.co.kr )

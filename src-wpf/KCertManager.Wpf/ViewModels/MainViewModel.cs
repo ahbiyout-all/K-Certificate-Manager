@@ -90,8 +90,8 @@ namespace KCertManager.Wpf.ViewModels
                 _ = RefreshDrivesAsync();
                 await RefreshCertificatesAsync();
             });
-            BackupSelectedCommand = new RelayCommand(async () => await BackupSelectedAsync(), () => SelectedCertificatesCount > 0 || SelectedCertificate != null);
-            BackupAllCommand = new RelayCommand(async () => await BackupAllAsync(), () => FilteredCertificates.Any() || _allCertificates.Any());
+            BackupSelectedCommand = new RelayCommand(async () => await BackupSelectedAsync(), () => SelectedCertificatesCount > 0);
+            BackupAllCommand = new RelayCommand(async () => await BackupAllAsync(), () => FilteredCertificates.Any());
             DeleteSelectedCommand = new RelayCommand(DeleteSelected, () => SelectedCertificatesCount > 0 || SelectedCertificate != null);
             CleanExpiredCommand = new RelayCommand(CleanExpired, () => ExpiredCount > 0);
             UndoDeleteCommand = new RelayCommand(UndoDelete, () => CanUndo);
@@ -627,29 +627,24 @@ namespace KCertManager.Wpf.ViewModels
 
                     await DispatchSafeAsync(() =>
                     {
-                        foreach (var c in pcCerts)
-                        {
-                            c.IsSelected = true;
-                        }
-                        foreach (var c in FilteredCertificates)
-                        {
-                            c.IsSelected = (c.Status != ExpiryStatus.Expired) && IsLocalPcCert(c);
-                        }
-
-                        if (pcCerts.Any())
-                        {
-                            SelectedCertificate = pcCerts.First();
-                        }
-
-                        OnPropertyChanged(nameof(SelectedCertificatesCount));
-                        (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
-
                         var targets = pcCerts.Any() ? pcCerts : FilteredCertificates.Where(c => c.Status != ExpiryStatus.Expired).ToList();
                         var dlg = new Views.PcToUsbTransferDialog(this, targets, AvailableTargetDrives)
                         {
                             Owner = Application.Current?.MainWindow
                         };
                         dlg.ShowDialog();
+
+                        // PcToUsbTransferDialog 내부에서 전체 선택(IsSelected=true) 및 IndexNumber 변경이
+                        // 메인 보관함 목록에 남아 후속 '선택 복사' 시 전체가 복사되는 현상 방지
+                        foreach (var c in _allCertificates)
+                        {
+                            c.IsSelected = false;
+                        }
+                        RestoreFilteredIndices();
+                        OnPropertyChanged(nameof(SelectedCertificatesCount));
+                        (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                        (DeleteSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
+
                         _ = RefreshDrivesAsync();
                         _ = RefreshCertificatesAsync();
                     });
@@ -687,25 +682,19 @@ namespace KCertManager.Wpf.ViewModels
 
             if (GuidedWorkflowStep == 1)
             {
-                var selected = FilteredCertificates.Where(x => x.IsSelected).ToList();
+                var selected = FilteredCertificates.Where(x => x != null && x.IsSelected).ToList();
                 if (!selected.Any())
                 {
-                    if (SelectedCertificate != null)
+                    if (SelectedCertificate != null && FilteredCertificates.Contains(SelectedCertificate))
                     {
-                        SelectedCertificate.IsSelected = true;
                         selected.Add(SelectedCertificate);
-                    }
-                    else if (FilteredCertificates.Any())
-                    {
-                        var pick = FilteredCertificates.FirstOrDefault(c => !c.IsRemovableMedia) ?? FilteredCertificates[0];
-                        pick.IsSelected = true;
-                        SelectedCertificate = pick;
-                        selected.Add(pick);
                     }
                     else
                     {
                         UserFriendlyMessageHelper.ShowWarning(
-                            "복사할 인증서가 목록에 없습니다. 먼저 PC에 저장된 인증서를 확인해 주세요.",
+                            FilteredCertificates.Any()
+                                ? "복사할 인증서의 체크박스를 선택하거나 목록에서 행을 클릭해 주세요."
+                                : "현재 표시된 목록에 복사할 인증서가 없습니다.",
                             "인증서 선택 필요");
                         return;
                     }
@@ -730,27 +719,16 @@ namespace KCertManager.Wpf.ViewModels
 
         public void ExecuteGuidedCopy()
         {
-            var selected = FilteredCertificates.Where(x => x.IsSelected).ToList();
-            if (!selected.Any())
+            var selected = FilteredCertificates.Where(x => x != null && x.IsSelected).ToList();
+            if (!selected.Any() && SelectedCertificate != null && FilteredCertificates.Contains(SelectedCertificate))
             {
-                if (SelectedCertificate != null)
-                {
-                    SelectedCertificate.IsSelected = true;
-                    selected.Add(SelectedCertificate);
-                }
-                else if (FilteredCertificates.Any())
-                {
-                    var pick = FilteredCertificates.FirstOrDefault(c => !c.IsRemovableMedia) ?? FilteredCertificates[0];
-                    pick.IsSelected = true;
-                    SelectedCertificate = pick;
-                    selected.Add(pick);
-                }
+                selected.Add(SelectedCertificate);
             }
 
             if (!selected.Any())
             {
                 UserFriendlyMessageHelper.ShowWarning(
-                    "복사할 인증서가 선택되지 않았습니다. 목록에서 복사할 인증서를 먼저 선택해 주세요.",
+                    "복사할 인증서가 선택되지 않았습니다. 목록에서 복사할 인증서의 체크박스를 먼저 선택해 주세요.",
                     "선택 오류 안내");
                 return;
             }
@@ -1030,6 +1008,8 @@ namespace KCertManager.Wpf.ViewModels
             set => IsThemeDark = value;
         }
 
+        public static bool IsDarkThemeActive { get; private set; } = true;
+
         public static void ApplyTheme(string themeName)
         {
             try
@@ -1037,15 +1017,17 @@ namespace KCertManager.Wpf.ViewModels
                 var app = Application.Current;
                 if (app == null) return;
 
+                var normalizedTheme = (themeName ?? "dark").Trim().ToLowerInvariant();
+                IsDarkThemeActive = normalizedTheme == "dark" || normalizedTheme == "pastel-black";
                 var res = app.Resources;
                 System.Windows.Media.Color bgDark, bgCard, bgCardHover, textPrimary, textSecondary, borderColor, accentText, mutedText;
-                System.Windows.Media.Color accentBlue, accentBlueHover, accentGreen, accentRose;
+                System.Windows.Media.Color accentBlue, accentBlueHover, accentGreen, accentAmber, accentRose;
                 System.Windows.Media.Color selectedRowBg, selectedRowText, inactiveSelectedRowBg, inactiveSelectedRowText;
                 System.Windows.Media.Color copiedRowBg, copiedRowText;
                 System.Windows.Media.Color scrollBarTrack, scrollBarThumb, scrollBarThumbHover;
                 System.Windows.Media.Color toolTipBg, toolTipText, toolTipBorder;
 
-                if (themeName == "dark" || themeName == "pastel-black")
+                if (normalizedTheme == "dark" || normalizedTheme == "pastel-black")
                 {
                     bgDark = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#0F1219");
                     bgCard = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1A1F2C");
@@ -1059,6 +1041,7 @@ namespace KCertManager.Wpf.ViewModels
                     accentBlue = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2563EB");
                     accentBlueHover = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1D4ED8");
                     accentGreen = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#10B981");
+                    accentAmber = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FBBF24");
                     accentRose = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F43F5E");
 
                     selectedRowBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E3A8A");
@@ -1076,7 +1059,7 @@ namespace KCertManager.Wpf.ViewModels
                     toolTipText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F8FAFC");
                     toolTipBorder = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#3B82F6");
                 }
-                else if (themeName == "gray" || themeName == "pastel-gray")
+                else if (normalizedTheme == "gray" || normalizedTheme == "pastel-gray")
                 {
                     // Misty Mineral Slate: zero pure-white glare with deep ink slate text (~11.2:1)
                     bgDark = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#CCD4DF");
@@ -1091,6 +1074,7 @@ namespace KCertManager.Wpf.ViewModels
                     accentBlue = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#245687");
                     accentBlueHover = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1B446D");
                     accentGreen = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#16654B");
+                    accentAmber = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#8A530B");
                     accentRose = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#B92B47");
 
                     selectedRowBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#CBDCEE");
@@ -1108,7 +1092,7 @@ namespace KCertManager.Wpf.ViewModels
                     toolTipText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#EEF2F6");
                     toolTipBorder = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#495667");
                 }
-                else if (themeName == "beige" || themeName == "pastel-beige")
+                else if (normalizedTheme == "beige" || normalizedTheme == "pastel-beige")
                 {
                     // Warm Oat Paper: low blue-light glare-free matte paper with espresso charcoal text (~11.6:1)
                     bgDark = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E6DFD1");
@@ -1123,6 +1107,7 @@ namespace KCertManager.Wpf.ViewModels
                     accentBlue = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2C5A85");
                     accentBlueHover = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#21476B");
                     accentGreen = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E6B4F");
+                    accentAmber = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#8A520A");
                     accentRose = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#B4324B");
 
                     selectedRowBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#D6E2ED");
@@ -1140,7 +1125,7 @@ namespace KCertManager.Wpf.ViewModels
                     toolTipText = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F5F1E8");
                     toolTipBorder = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#B88228");
                 }
-                else // white (pastel-white)
+                else // white (pastel-white, classic)
                 {
                     bgDark = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F8FAFC");
                     bgCard = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF");
@@ -1154,6 +1139,7 @@ namespace KCertManager.Wpf.ViewModels
                     accentBlue = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2563EB");
                     accentBlueHover = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1D4ED8");
                     accentGreen = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#059669");
+                    accentAmber = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#B45309");
                     accentRose = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E11D48");
 
                     selectedRowBg = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#DBEAFE");
@@ -1181,6 +1167,7 @@ namespace KCertManager.Wpf.ViewModels
                 res["AccentBlue"] = accentBlue;
                 res["AccentBlueHover"] = accentBlueHover;
                 res["AccentGreen"] = accentGreen;
+                res["AccentAmber"] = accentAmber;
                 res["AccentRose"] = accentRose;
                 res["SelectedRowBg"] = selectedRowBg;
                 res["SelectedRowText"] = selectedRowText;
@@ -1206,6 +1193,7 @@ namespace KCertManager.Wpf.ViewModels
                 res["AccentBlueBrush"] = new System.Windows.Media.SolidColorBrush(accentBlue);
                 res["AccentBlueHoverBrush"] = new System.Windows.Media.SolidColorBrush(accentBlueHover);
                 res["AccentGreenBrush"] = new System.Windows.Media.SolidColorBrush(accentGreen);
+                res["AccentAmberBrush"] = new System.Windows.Media.SolidColorBrush(accentAmber);
                 res["AccentRoseBrush"] = new System.Windows.Media.SolidColorBrush(accentRose);
                 res["SelectedRowBgBrush"] = new System.Windows.Media.SolidColorBrush(selectedRowBg);
                 res["SelectedRowTextBrush"] = new System.Windows.Media.SolidColorBrush(selectedRowText);
@@ -1381,7 +1369,7 @@ namespace KCertManager.Wpf.ViewModels
         public int ComputerCount => _allCertificates?.Count(x => x != null && !x.IsRemovableMedia) ?? 0;
         public int UsbCount => _allCertificates?.Count(x => x != null && x.IsRemovableMedia) ?? 0;
         public int CustomPathCount => _allCertificates?.Count(x => x != null && x.IsCustomPath) ?? 0;
-        public int SelectedCertificatesCount => _allCertificates?.Count(x => x != null && x.IsSelected) ?? 0;
+        public int SelectedCertificatesCount => _filteredCertificates?.Count(x => x != null && x.IsSelected) ?? 0;
         public int TrashCount => _trashItems?.Count ?? 0;
         public int LogCount => ActivityLogService.Instance?.Logs?.Count ?? 0;
 
@@ -2027,27 +2015,28 @@ namespace KCertManager.Wpf.ViewModels
             }
             SelectedTargetDrive = drive;
 
-            if (SelectedCertificatesCount > 0 || SelectedCertificate != null)
+            var selected = FilteredCertificates.Where(x => x != null && x.IsSelected).ToList();
+
+            if (!selected.Any())
             {
-                await BackupSelectedAsync();
+                MessageBox.Show(
+                    "복사 또는 백업할 인증서의 체크박스를 1개 이상 선택해 주세요.",
+                    "선택된 인증서 없음",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
             }
-            else
-            {
-                await BackupAllAsync();
-            }
+
+            await BackupSelectedAsync();
         }
 
         private async Task BackupSelectedAsync()
         {
-            var selected = _allCertificates.Where(x => x.IsSelected).ToList();
-            if (!selected.Any() && SelectedCertificate != null)
-            {
-                selected.Add(SelectedCertificate);
-            }
+            var selected = FilteredCertificates.Where(x => x != null && x.IsSelected).ToList();
 
             if (!selected.Any())
             {
-                MessageBox.Show("복사 또는 백업할 인증서를 1개 이상 선택(체크)해 주세요.", "선택된 인증서 없음", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("복사 또는 백업할 인증서의 체크박스를 1개 이상 선택해 주세요.", "선택된 인증서 없음", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -2563,15 +2552,11 @@ namespace KCertManager.Wpf.ViewModels
 
         private async Task BackupAllAsync()
         {
-            var list = _filteredCertificates.ToList();
-            if (!list.Any())
-            {
-                list = _allCertificates.ToList();
-            }
+            var list = _filteredCertificates.Where(x => x != null).ToList();
 
             if (!list.Any())
             {
-                MessageBox.Show("복사할 인증서가 목록에 없습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("현재 표시된 목록에 복사할 인증서가 없습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -2601,8 +2586,8 @@ namespace KCertManager.Wpf.ViewModels
         /// </summary>
         private void DeleteSelected()
         {
-            var toDelete = _allCertificates.Where(x => x.IsSelected).ToList();
-            if (!toDelete.Any() && SelectedCertificate != null)
+            var toDelete = FilteredCertificates.Where(x => x != null && x.IsSelected).ToList();
+            if (!toDelete.Any() && SelectedCertificate != null && FilteredCertificates.Contains(SelectedCertificate))
             {
                 toDelete.Add(SelectedCertificate);
             }

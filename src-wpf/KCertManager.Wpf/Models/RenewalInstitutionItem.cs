@@ -38,14 +38,26 @@ namespace KCertManager.Wpf.Models
             }
         }
 
+        public string SummaryTone
+        {
+            get
+            {
+                if (ExpiredCertCount > 0) return "expired";
+                if (ExpiringCertCount > 0) return "expiring";
+                if (ActiveCertCount > 0) return "active";
+                return "none";
+            }
+        }
+
         public string CertSummaryColor
         {
             get
             {
-                if (ExpiredCertCount > 0) return "#EF4444";
-                if (ExpiringCertCount > 0) return "#F59E0B";
-                if (ActiveCertCount > 0) return "#10B981";
-                return "#94A3B8";
+                bool isDark = KCertManager.Wpf.ViewModels.MainViewModel.IsDarkThemeActive;
+                if (ExpiredCertCount > 0) return isDark ? "#F43F5E" : "#B92B47";
+                if (ExpiringCertCount > 0) return isDark ? "#FBBF24" : "#8A530B";
+                if (ActiveCertCount > 0) return isDark ? "#10B981" : "#16654B";
+                return isDark ? "#94A3B8" : "#495667";
             }
         }
     }

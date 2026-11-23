@@ -12,9 +12,11 @@
 2. **2026 Korea Cert Trends Guide & RSA 3072-bit Security Posture (`certParser.ts`, `KoreanCertPolicyOids.cs`, `SecurityGuideModal.tsx`, `SecurityGuideDialog.xaml`, `DiagnosticsRepairModal.tsx`, `DiagnosticsRepairDialog.xaml`)**:
    - 오프라인 X.509 ASN.1 파서로 공개키 비트 길이(1024/2048/3072/4096-bit, ECDSA)와 서명 알고리즘을 분석해 `3072-bit 권장` / `2048-bit 전환 대상` / `1024-bit·SHA-1 취약` 3단계 진단 및 `보안강도 점검 (3072-bit)` 탭 제공.
    - 2027.02.15 5대 공동인증기관 RSA 3072-bit 전환, GPKI·EPKI 비액티브엑스(HTML5)·모바일 공무원증 병행, 금융·간편인증 비교, 2026.08.28 전자정부법 시행령 모바일 신분증 8종 동향 수록 (`SecurityGuideModal` / `SecurityGuideDialog`).
-3. **Comprehensive Audit & Accuracy Fixes (Work Orders 191–193)**:
+3. **Comprehensive Audit & Accuracy Fixes (Work Orders 191–195)**:
    - 개인 성명(`김지원`, `이정원` 등) `(기관용)` 오분류 교정 (`KCertParser.cs`, `certParser.ts`), `CertIntegrityDoctor` 동적 키 파일명 & GPKI/EPKI `cn=` 표준 경로 정밀화, `RenewalGuidanceDialog`/`renewalStore` 발급기관(Issuer) 우선 매칭으로 NPKI 오매칭 차단.
    - WPF `DispatchSafeAsync` 스레드 안전성·`OpenTargetDrivePickerForCertificatesAsync`·`SafeGetFullPath`·`SearchLocationsDialog` Fast-Pass 유지 및 Web 비동기 클립보드·새로고침 시퀀스 가드·`targetDrive` 널 안전성·기관 콜센터 번호 정합화.
+   - **저눈부심 회색(*Misty Mineral Slate*) · 베이지(*Warm Oat Paper*) 테마 & 3중 선택 격리(Work Order 194)**: Tailwind v4 `@custom-variant dark` 교정 및 WPF `DynamicResource` 브러시 전 창 대비 통일, `selectedIds ∩ visibleCertificates` (`FilteredCertificates`) 교집합 기반 정밀 선택 복사 및 WPF 시작 테마 영속화 적용.
+   - **5차 수명주기 · 전 창 테마 대비 완성(Work Order 195)**: `WpfAnimatedBorderHelper` 카드 휘도 적응형 선택 배경(`SelectedRowBgBrush`), `MainWindow` `CurrentTheme` 사이드바 테두리 실시간 동기화, `UsbTransferViewModel` `IDisposable` 핸들러 해제, WPF 6대 `DataGrid`·8종 다이얼로그/모델(`DataTrigger` 포함) 및 Web 7대 컴포넌트 CSS 토큰 대비 일원화 완료.
 4. **Class1 Institutional Certificate Pairing, Badges & Sidebar Filter (`CertLocationScanner.cs`, `Sidebar.tsx`, `CertificateList.tsx`, `MainWindow.xaml`)**:
    - `C:\GPKI\Certificate\class1`, EPKI, USB `class1` 경로에서 개인키(`.key`/`.pri`) 쌍을 보유한 실사용 기관·특수목적 인증서만 선별 표시하고 `CLASS1 · 공무원(GPKI)` / `CLASS1 · 교육(EPKI)` / `CLASS1 · 기관` 배지 및 `'CLASS1'` 필터 제공.
 5. **In-App Auto-Download & Silent Self-Update (`UpdateCheckerService.cs`, `updateChecker.ts`)**: 업데이트 창에서 확인 클릭 시 GitHub 웹페이지로 이동하지 않고 설치 패키지를 직접 다운로드·검증(PE `MZ` / SHA-256) 후 무인 셀프 설치(`/SILENT`) 및 자동 재실행까지 원스톱 처리.

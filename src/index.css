@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, [data-theme="pastel-black"], [data-theme="pastel-black"] *));
 
 /* ==========================================================================
    WPF-MATCHED DESIGN TOKEN SYSTEM (Synced with KCertManager.Wpf/App.xaml & MainViewModel.ApplyTheme)
@@ -828,5 +829,29 @@ button:active:not(:disabled) {
 ):not(.wpf-native) {
   background-color: var(--wpf-badge-corp-bg) !important;
   border-color: var(--wpf-badge-corp-border) !important;
+}
+
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) :is(
+  .bg-teal-50,
+  [class*="bg-teal-50/"],
+  .bg-teal-100,
+  [class*="bg-teal-100/"],
+  .bg-cyan-50,
+  [class*="bg-cyan-50/"],
+  .bg-sky-50,
+  [class*="bg-sky-50/"]
+):not(.wpf-native) {
+  background-color: var(--wpf-badge-epki-bg) !important;
+  border-color: var(--wpf-badge-epki-border) !important;
+}
+
+:is([data-theme="gray"], [data-theme="pastel-gray"], [data-theme="beige"], [data-theme="pastel-beige"]) :is(
+  .bg-orange-50,
+  [class*="bg-orange-50/"],
+  .bg-orange-100,
+  [class*="bg-orange-100/"]
+):not(.wpf-native) {
+  background-color: var(--wpf-badge-expiring-bg) !important;
+  border-color: var(--wpf-badge-expiring-border) !important;
 }
 

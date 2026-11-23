@@ -48,7 +48,7 @@
 | [`KCERT_CRYPTO_DLL_SPECIFICATION.md`](./KCERT_CRYPTO_DLL_SPECIFICATION.md) | **KCert.Crypto.dll 순수 창작 암호화 & 전자서명 엔진 기술 명세서**: KISA SEED-128 (RFC 4269), KISA ARIA (RFC 5794), PKCS#8 signPri.key 복호화, VID 영지식 본인확인, RSA-SHA256 전자서명 시뮬레이션 동작 원리 및 기존 DLL 결함 교정 상세서 |
 | [`KCERT_CORE_DLL_DESIGN_SPECIFICATION.md`](./KCERT_CORE_DLL_DESIGN_SPECIFICATION.md) | **KCert.Core.dll 주요 설계 사양서**: 5대 핵심 영역(기능 명세, 동작 원리, 데이터 흐름, 에러 처리 전략, .NET 8 WPF 환경과의 연동 방식)을 총망라한 엔지니어링 종합 설계서 |
 | [`KCERT_CORE_DLL_SPEC.md`](./KCERT_CORE_DLL_SPEC.md) | **KCert.Core.dll 기술 명세서**: 순수 창작 코어 라이브러리 동작 원리, OID 역해석, 화이트리스트 안전 전송, WMI 가드 및 C#/C++/Rust/Python 타 언어 연동 명세 |
-| [`WORK_LOG.md`](./WORK_LOG.md) | **공식 작업 일지**: 개발 요구사항, 차수별 구현 내역(작업 차수 193 포함), 보안 감사 및 검증 이력 |
+| [`WORK_LOG.md`](./WORK_LOG.md) | **공식 작업 일지**: 개발 요구사항, 차수별 구현 내역(작업 차수 195 포함), 보안 감사 및 검증 이력 |
 
 ---
 
@@ -75,7 +75,7 @@
    - 일괄 복사 시 대상 USB/물리 디스크를 직관적으로 선택하는 전용 팝업창(`TargetDrivePickerModal`) 탑재 및 C: 드라이브 오복사 원천 방지
    - 이미 위치한 동일 디스크/USB로의 중복 자가 복사 원천 차단 및 파일 충돌 해결 옵션(건너뛰기, 덮어쓰기, 이름 변경 보존) 제공
 8. **패치노트 및 package.json 기반 자동 동적 버전 갱신 파이프라인**
-   - `build.bat`, `push_to_github.bat`, `push_to_github.ps1`, GitHub Actions 전체에서 버전을 자동으로 감지하여 커밋 메시지, Git 태그, 창 제목, 인스톨러 빌드 옵션 100% 동기화
+   - `build.bat`, `build.cmd`, `build.ps1`, GitHub Actions 전체에서 버전을 자동으로 감지하여 커밋 메시지, Git 태그, 창 제목, 인스톨러 빌드 옵션 100% 동기화
 9. **초보자 친화적 [간편 모드] vs 전문가용 [상세 모드] 듀얼 UX & 다크 테마 시인성 보장**
    - 일반 사용자를 위해 복잡한 하드웨어 정보를 1줄 슬림 원클릭 배너로 축소하고 인증서 목록(DataGrid)을 시원하게 노출
    - 시작 시 브러시 누락으로 글자가 검은색으로 표시되던 현상을 3중 사전 주입으로 영구 해결하여 첫 화면부터 선명한 고대비 가시성 보장
@@ -145,7 +145,8 @@
 32. **2026 국내 인증서 동향 가이드, RSA 3072-bit 보안강도 점검 & 7대 인증 체계 비교 (`v2.2.0`, Web & WPF 동시 반영)**
     - Web(`certParser` / `certDiagnostics`)과 C# WPF(`KCert.Core`) 오프라인 X.509 ASN.1 파서에서 공개키 알고리즘·키 비트 길이(1024/2048/3072/4096-bit, ECDSA)·서명 알고리즘을 분석해 `3072-bit 권장` / `2048-bit 전환 대상` / `1024-bit·SHA-1 취약` 3단계 보안강도를 진단합니다.
     - 상세 사이드바·상세 모달·진단 및 복구 모달(`보안강도 점검 (3072-bit)` 탭)·보안 수칙/동향 가이드(`SecurityGuideModal` · `SecurityGuideDialog`)·기관별 갱신 안내를 Web과 WPF에 동시 반영했습니다.
-33. **WPF 시작 무응답 해소 3단계 비차단 스캔 & 심층 전수 감사(작업 차수 189~193, `v2.2.0`)**
+33. **WPF 시작 무응답 해소 3단계 비차단 스캔 & 심층 전수 감사(작업 차수 189~195, `v2.2.0`)**
     - **3단계 비차단 시작 스캔 파이프라인**: 앱 시작 시 `0단계 Local Fast-Pass` ➔ `1단계 Drive Fast-Pass` ➔ `2단계 Deep-Pass` 분리 및 OS `DriveType` 기반 네트워크/가상/광학 드라이브 WMI I/O 차단·바운디드 드라이브 준비 검사(`IsDriveReadyBounded`)로 시작 직후 `응답없음` 현상을 원천 해소했습니다.
     - **전수 감사 결함 수정**: 개인 성명(`김지원`, `이정원` 등)의 `(기관용)` 오분류 교정, `CertIntegrityDoctor` 동적 키 파일명 및 `GPKI`/`EPKI` `cn=` 표준 경로 정밀화, `RenewalGuidanceDialog`·`renewalStore` 발급기관(Issuer) 우선 매칭으로 `NPKI` 인증서 오분류 차단, Web 비동기 클립보드·새로고침 시퀀스 가드·`targetDrive` 널 안전성 및 콜센터 번호 정합성을 완성했습니다.
+    - **저눈부심 회색·베이지 테마, 전역 대비 & 3중 선택 복사 격리(작업 차수 194~195)**: 회색(*Misty Mineral Slate*) · 베이지(*Warm Oat Paper*) 저눈부심 배색, Tailwind v4 `@custom-variant dark`·WPF `DynamicResource` 브러시 및 6대 `DataGrid`·`WpfAnimatedBorderHelper` 휘도 적응형 카드·`DataTrigger` 전 창 대비 통일, `selectedIds ∩ visibleCertificates` 교집합 정밀 복사, WPF `UsbTransferViewModel` `IDisposable` 및 `CurrentTheme` 테두리 실시간 동기화를 적용했습니다.
 

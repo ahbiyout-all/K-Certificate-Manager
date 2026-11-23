@@ -17,6 +17,7 @@
         <Color x:Key="AccentBlue">#2563EB</Color>
         <Color x:Key="AccentBlueHover">#1D4ED8</Color>
         <Color x:Key="AccentGreen">#10B981</Color>
+        <Color x:Key="AccentAmber">#FBBF24</Color>
         <Color x:Key="AccentRose">#F43F5E</Color>
         <Color x:Key="TextPrimary">#F8FAFC</Color>
         <Color x:Key="TextSecondary">#CBD5E1</Color>
@@ -42,6 +43,7 @@
         <SolidColorBrush x:Key="AccentBlueBrush" Color="{StaticResource AccentBlue}"/>
         <SolidColorBrush x:Key="AccentBlueHoverBrush" Color="{StaticResource AccentBlueHover}"/>
         <SolidColorBrush x:Key="AccentGreenBrush" Color="{StaticResource AccentGreen}"/>
+        <SolidColorBrush x:Key="AccentAmberBrush" Color="{StaticResource AccentAmber}"/>
         <SolidColorBrush x:Key="AccentRoseBrush" Color="{StaticResource AccentRose}"/>
         <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}"/>
         <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}"/>

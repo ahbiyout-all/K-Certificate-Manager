@@ -357,21 +357,19 @@ export const CertificateList: React.FC<CertificateListProps> = ({
     return list;
   }, [filteredCerts, sortBy, sortOrder]);
 
+  const selectedVisibleCount = useMemo(
+    () => sortedFilteredCerts.filter(c => selectedIds.includes(c.id)).length,
+    [sortedFilteredCerts, selectedIds]
+  );
+
   const allFilteredSelected =
-    sortedFilteredCerts.length > 0 && sortedFilteredCerts.every(c => selectedIds.includes(c.id));
+    sortedFilteredCerts.length > 0 && selectedVisibleCount === sortedFilteredCerts.length;
 
   const handleToggleSelectAllFiltered = () => {
     if (allFilteredSelected) {
-      const filteredSet = new Set(sortedFilteredCerts.map(c => c.id));
-      const remainingSelected = selectedIds.filter(id => !filteredSet.has(id));
-      if (onSelectFilteredIds && remainingSelected.length > 0) {
-        onSelectFilteredIds(remainingSelected);
-      } else {
-        onClearSelection();
-      }
+      onClearSelection();
     } else if (onSelectFilteredIds) {
-      const merged = Array.from(new Set([...selectedIds, ...sortedFilteredCerts.map(c => c.id)]));
-      onSelectFilteredIds(merged);
+      onSelectFilteredIds(sortedFilteredCerts.map(c => c.id));
     } else {
       onSelectAll();
     }
@@ -684,7 +682,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                 color: 'var(--wpf-accent-text)',
               }}
             >
-              선택: {selectedIds.length} / {sortedFilteredCerts.length}건
+              선택: {selectedVisibleCount} / {sortedFilteredCerts.length}건
             </span>
 
             {viewMode === 'grid' && (
@@ -944,13 +942,29 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                           )}
                           <span aria-hidden="true">·</span>
                           {cert.files?.hasKey ? (
-                            <span className="inline-flex items-center gap-1 font-medium text-[#10B981]">
+                            <span
+                              className="inline-flex items-center gap-1 font-medium"
+                              style={{
+                                color: isInspected
+                                  ? 'var(--wpf-selected-row-secondary)'
+                                  : isRecentlyCopied
+                                  ? 'var(--wpf-copied-row-secondary)'
+                                  : 'var(--wpf-accent-green)',
+                              }}
+                            >
                               <KeyRound className="w-3 h-3 shrink-0" />
                               <span>개인키 보유</span>
                             </span>
                           ) : (
                             <span
-                              className="inline-flex items-center gap-1 font-medium text-[#F59E0B]"
+                              className="inline-flex items-center gap-1 font-medium"
+                              style={{
+                                color: isInspected
+                                  ? 'var(--wpf-selected-row-secondary)'
+                                  : isRecentlyCopied
+                                  ? 'var(--wpf-copied-row-secondary)'
+                                  : 'var(--wpf-badge-expiring-text)',
+                              }}
                               title="개인키(.key) 파일이 누락되어 전자서명이 불가합니다."
                             >
                               <KeyRound className="w-3 h-3 shrink-0" />
@@ -962,7 +976,13 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                               <span aria-hidden="true">·</span>
                               <span
                                 className="inline-flex items-center gap-0.5 font-semibold"
-                                style={{ color: isInspected ? '#FDE68A' : 'var(--wpf-badge-expiring-text)' }}
+                                style={{
+                                  color: isInspected
+                                    ? 'var(--wpf-selected-row-secondary)'
+                                    : isRecentlyCopied
+                                    ? 'var(--wpf-copied-row-secondary)'
+                                    : 'var(--wpf-badge-expiring-text)',
+                                }}
                                 title={isRareGpki ? '실무 미사용 GPKI 예외 경로' : '일반 인증서 창 미인식 비표준 위치'}
                               >
                                 <AlertTriangle className="w-3 h-3 shrink-0" />
@@ -1017,7 +1037,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                             title="경로 복사"
                           >
                             {copiedPathId === cert.id ? (
-                              <Check className="w-3.5 h-3.5 text-[#10B981]" />
+                              <Check className="w-3.5 h-3.5" style={{ color: 'var(--wpf-accent-green)' }} />
                             ) : (
                               <Copy className="w-3.5 h-3.5" style={{ color: isInspected ? cardText : 'var(--wpf-accent-text)' }} />
                             )}
@@ -1055,7 +1075,8 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                       <button
                         type="button"
                         onClick={() => onRequestDeleteSingle(cert)}
-                        className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-[#F43F5E] inline-flex items-center justify-center cursor-pointer shrink-0"
+                        className="wpf-btn-secondary wpf-native px-2.5 py-1.5 inline-flex items-center justify-center cursor-pointer shrink-0"
+                        style={{ color: 'var(--wpf-accent-rose)' }}
                         title="휴지통으로 안전 삭제"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1452,7 +1473,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                             title="경로 복사"
                           >
                             {copiedPathId === cert.id ? (
-                              <Check className="w-3 h-3 text-[#10B981]" />
+                              <Check className="w-3 h-3" style={{ color: 'var(--wpf-accent-green)' }} />
                             ) : (
                               <Copy className="w-3 h-3" style={{ color: 'var(--wpf-accent-text)' }} />
                             )}
@@ -1511,13 +1532,17 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                         className={`${cellPadding} text-center whitespace-nowrap`}
                       >
                         {cert.files?.hasKey ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#10B981]">
+                          <span
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold"
+                            style={{ color: 'var(--wpf-accent-green)' }}
+                          >
                             <KeyRound className="w-3 h-3" />
                             <span>보유</span>
                           </span>
                         ) : (
                           <span
-                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#F59E0B]"
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold"
+                            style={{ color: 'var(--wpf-badge-expiring-text)' }}
                             title="개인키(.key) 파일이 누락되어 전자서명이 불가합니다."
                           >
                             <KeyRound className="w-3 h-3" />
@@ -1556,7 +1581,8 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                           <button
                             type="button"
                             onClick={() => onRequestDeleteSingle(cert)}
-                            className="wpf-btn-secondary wpf-native p-1 text-[#F43F5E] cursor-pointer"
+                            className="wpf-btn-secondary wpf-native p-1 cursor-pointer"
+                            style={{ color: 'var(--wpf-accent-rose)' }}
                             title="휴지통으로 안전 삭제"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1587,9 +1613,10 @@ export const CertificateList: React.FC<CertificateListProps> = ({
               type="button"
               onClick={() => onOpenUsbToPc()}
               className="wpf-btn-secondary wpf-native px-3 py-2 text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              style={{ color: 'var(--wpf-accent-green)' }}
             >
-              <ArrowDownLeft className="w-3.5 h-3.5 text-[#10B981]" />
-              <span className="text-[#10B981]">USB ➔ PC 넣기</span>
+              <ArrowDownLeft className="w-3.5 h-3.5" />
+              <span>USB ➔ PC 넣기</span>
             </button>
           )}
 
@@ -1619,7 +1646,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
             type="button"
             onClick={() => onOpenCleanupModal('SELECTED')}
             className="wpf-btn-secondary wpf-native px-3 py-2 text-xs font-semibold cursor-pointer whitespace-nowrap"
-            style={{ color: '#E11D48' }}
+            style={{ color: 'var(--wpf-accent-rose)' }}
           >
             선택 항목 일괄 삭제
           </button>
@@ -1629,7 +1656,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
               type="button"
               onClick={onUndoDelete}
               className="wpf-btn-secondary wpf-native px-3 py-2 text-xs font-semibold flex items-center gap-1 cursor-pointer whitespace-nowrap"
-              style={{ color: '#10B981' }}
+              style={{ color: 'var(--wpf-accent-green)' }}
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>삭제 취소</span>
@@ -1640,7 +1667,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
             type="button"
             onClick={() => onOpenCleanupModal('EXPIRED')}
             className="wpf-btn-secondary wpf-native px-3 py-2 text-xs font-semibold cursor-pointer whitespace-nowrap"
-            style={{ color: '#D97706' }}
+            style={{ color: 'var(--wpf-badge-expiring-text)' }}
           >
             🧹 만료 정리
           </button>

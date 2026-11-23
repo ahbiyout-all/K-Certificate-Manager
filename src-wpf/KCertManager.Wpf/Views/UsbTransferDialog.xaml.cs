@@ -17,7 +17,11 @@ namespace KCertManager.Wpf.Views
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             DataContext = _viewModel;
             Loaded += (s, e) => UpdateDriveCardBorder();
-            Closed += (s, e) => _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+            Closed += (s, e) =>
+            {
+                _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+                _viewModel.Dispose();
+            };
         }
 
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)

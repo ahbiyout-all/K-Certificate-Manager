@@ -131,8 +131,8 @@ export const SimpleTransferHero: React.FC<SimpleTransferHeroProps> = ({
           className="wpf-btn-secondary wpf-native px-3.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           title="USB 인증서를 내 컴퓨터로 복사"
         >
-          <Download className="w-3.5 h-3.5 text-[#10B981]" />
-          <span className="font-semibold text-[#10B981]">USB ➔ PC 넣기</span>
+          <Download className="w-3.5 h-3.5" style={{ color: 'var(--wpf-accent-green)' }} />
+          <span className="font-semibold" style={{ color: 'var(--wpf-accent-green)' }}>USB ➔ PC 넣기</span>
         </button>
       </div>
     </div>

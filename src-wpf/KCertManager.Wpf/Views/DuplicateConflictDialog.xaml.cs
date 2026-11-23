@@ -50,6 +50,11 @@ namespace KCertManager.Wpf.Views
             var textPri = (Application.Current?.TryFindResource("TextPrimaryBrush") as Brush) ?? Brushes.White;
             var textSec = (Application.Current?.TryFindResource("TextSecondaryBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(148, 163, 184));
 
+            var cardSurface = (Application.Current?.TryFindResource("BgCardBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(30, 41, 59));
+            var accentTextBr = (Application.Current?.TryFindResource("AccentTextBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(147, 197, 253));
+            var accentAmberBr = (Application.Current?.TryFindResource("AccentAmberBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(251, 191, 36));
+            var accentBlueBr = (Application.Current?.TryFindResource("AccentBlueBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(59, 130, 246));
+
             for (int i = 0; i < _conflicts.Count; i++)
             {
                 var item = _conflicts[i];
@@ -72,8 +77,8 @@ namespace KCertManager.Wpf.Views
                 {
                     Width = 22,
                     Height = 22,
-                    Background = new SolidColorBrush(Color.FromRgb(30, 41, 59)),
-                    BorderBrush = new SolidColorBrush(Color.FromRgb(51, 65, 85)),
+                    Background = cardSurface,
+                    BorderBrush = borderBr,
                     BorderThickness = new Thickness(1),
                     CornerRadius = new CornerRadius(11),
                     Margin = new Thickness(0, 0, 8, 0),
@@ -84,7 +89,7 @@ namespace KCertManager.Wpf.Views
                     Text = (i + 1).ToString(),
                     FontSize = 10.5,
                     FontWeight = FontWeights.Bold,
-                    Foreground = new SolidColorBrush(Color.FromRgb(148, 163, 184)),
+                    Foreground = textSec,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center
                 };
@@ -112,8 +117,8 @@ namespace KCertManager.Wpf.Views
 
                 var issuerBadge = new Border
                 {
-                    Background = new SolidColorBrush(Color.FromArgb(40, 59, 130, 246)),
-                    BorderBrush = new SolidColorBrush(Color.FromRgb(59, 130, 246)),
+                    Background = cardSurface,
+                    BorderBrush = accentBlueBr,
                     BorderThickness = new Thickness(1),
                     CornerRadius = new CornerRadius(4),
                     Padding = new Thickness(6, 1, 6, 1),
@@ -123,7 +128,8 @@ namespace KCertManager.Wpf.Views
                 {
                     Text = item.SourceCert.IssuerName,
                     FontSize = 10.5,
-                    Foreground = new SolidColorBrush(Color.FromRgb(147, 197, 253))
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = accentTextBr
                 };
                 headerRow.Children.Add(issuerBadge);
                 sp.Children.Add(headerRow);
@@ -134,7 +140,7 @@ namespace KCertManager.Wpf.Views
                     Text = $"중복 위치: {item.TargetDirectoryPath}",
                     FontSize = 11,
                     FontFamily = new FontFamily("Consolas, Segoe UI"),
-                    Foreground = new SolidColorBrush(Color.FromRgb(251, 191, 36)),
+                    Foreground = accentAmberBr,
                     TextTrimming = TextTrimming.CharacterEllipsis,
                     Margin = new Thickness(0, 0, 0, 2)
                 };

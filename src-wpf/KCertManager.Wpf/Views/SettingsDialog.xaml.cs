@@ -26,15 +26,20 @@ namespace KCertManager.Wpf.Views
                 switch (_vm.CurrentTheme?.ToLowerInvariant())
                 {
                     case "gray":
+                    case "pastel-gray":
                         RbThemeGray.IsChecked = true;
                         break;
                     case "white":
+                    case "pastel-white":
+                    case "classic":
                         RbThemeWhite.IsChecked = true;
                         break;
                     case "beige":
+                    case "pastel-beige":
                         RbThemeBeige.IsChecked = true;
                         break;
                     case "dark":
+                    case "pastel-black":
                     default:
                         RbThemeDark.IsChecked = true;
                         break;

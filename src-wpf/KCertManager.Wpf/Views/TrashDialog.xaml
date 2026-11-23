@@ -147,11 +147,6 @@
                       RowHeight="48"
                       FrozenColumnCount="1">
                 <DataGrid.Resources>
-                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#2563EB"/>
-                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#FFFFFF"/>
-                    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#1D4ED8"/>
-                    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#FFFFFF"/>
-
                     <Style TargetType="DataGridColumnHeader">
                         <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
                         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
@@ -174,14 +169,20 @@
                                 </ControlTemplate>
                             </Setter.Value>
                         </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
+                            </Trigger>
+                        </Style.Triggers>
                     </Style>
                     <Style TargetType="DataGridRow">
                         <Setter Property="Background" Value="Transparent"/>
                         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                         <Style.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="#2563EB"/>
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Background" Value="{DynamicResource SelectedRowBgBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Background" Value="{DynamicResource BgCardHoverBrush}"/>
@@ -319,7 +320,7 @@
 
                                         <Border Grid.Column="1" Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="10,6" Margin="4,0,0,0">
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBlock Text="⚠️ 이전 삭제 사유: " FontSize="11" FontWeight="Bold" Foreground="#F59E0B"/>
+                                                <TextBlock Text="⚠️ 이전 삭제 사유: " FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentAmberBrush}"/>
                                                 <TextBlock Text="{Binding DeleteReason}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
                                             </StackPanel>
                                         </Border>
@@ -384,7 +385,7 @@
                                                 <TextBlock Text="📂 복원 위치: " FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                                 <TextBlock Text="{Binding OriginalDirectoryPath}" FontSize="11" FontFamily="Consolas, Courier New, monospace" Foreground="{DynamicResource TextPrimaryBrush}" ToolTip="{Binding OriginalDirectoryPath}" TextWrapping="Wrap"/>
                                             </StackPanel>
-                                            <TextBlock Text="사용 가능한 위치로 복원되었으며, 내 PC 금고에도 암호화 백업이 안전하게 유지됩니다." FontSize="9.5" Foreground="#64748B" Margin="0,3,0,0"/>
+                                            <TextBlock Text="사용 가능한 위치로 복원되었으며, 내 PC 금고에도 암호화 백업이 안전하게 유지됩니다." FontSize="9.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0"/>
                                         </StackPanel>
                                     </Border>
                                 </Grid>

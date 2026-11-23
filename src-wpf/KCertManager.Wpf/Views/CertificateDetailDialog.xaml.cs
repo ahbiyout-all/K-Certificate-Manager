@@ -67,7 +67,14 @@ namespace KCertManager.Wpf.Views
             TxtSerial.Text = _cert.SerialNumber;
             TxtAlgo.Text = _cert.PublicKeySpecText;
             TxtCryptoPosture.Text = $"{_cert.CryptoPostureLabel} — {_cert.CryptoPostureDetailText}";
-            TxtCryptoPosture.Foreground = TryCreateBrush(_cert.CryptoPostureColorHex, System.Windows.Media.Color.FromRgb(245, 158, 11));
+            string postureBrushKey = _cert.SecurityPosture switch
+            {
+                CryptoSecurityPosture.Recommended3072 => "AccentGreenBrush",
+                CryptoSecurityPosture.LegacyWeak => "AccentRoseBrush",
+                _ => "AccentAmberBrush"
+            };
+            TxtCryptoPosture.Foreground = (Application.Current?.TryFindResource(postureBrushKey) as System.Windows.Media.Brush)
+                ?? TryCreateBrush(_cert.CryptoPostureColorHex, System.Windows.Media.Color.FromRgb(245, 158, 11));
             TxtPolicy.Text = $"{_cert.PolicyUsage} (OID: {_cert.PolicyOid})";
 
             TxtNotBefore.Text = _cert.NotBefore.ToString("yyyy-MM-dd HH:mm:ss");

@@ -67,7 +67,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="🔍" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="🔍" FontSize="11" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <TextBox x:Name="TxtSearchKeyword" TextChanged="TxtSearchKeyword_TextChanged"
                                  Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TextPrimaryBrush}" CaretBrush="{DynamicResource TextPrimaryBrush}" FontSize="12" VerticalAlignment="Center"/>
                     </Grid>
@@ -97,14 +97,31 @@
 
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="4" Padding="6,2" Margin="10,0,0,0" BorderBrush="#475569" BorderThickness="1">
+                                        <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="4" Padding="6,2" Margin="10,0,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                             <TextBlock Text="{Binding CategoryLabel}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold"/>
                                         </Border>
                                     </StackPanel>
 
                                     <!-- Matched Certificates Count Pill -->
                                     <Border Grid.Column="1" Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="8,4" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                                        <TextBlock Text="{Binding CertSummaryText}" FontSize="12" FontWeight="Bold" Foreground="{Binding CertSummaryColor}"/>
+                                        <TextBlock Text="{Binding CertSummaryText}" FontSize="12" FontWeight="Bold">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding SummaryTone}" Value="expired">
+                                                            <Setter Property="Foreground" Value="{DynamicResource AccentRoseBrush}"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding SummaryTone}" Value="expiring">
+                                                            <Setter Property="Foreground" Value="{DynamicResource AccentAmberBrush}"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding SummaryTone}" Value="active">
+                                                            <Setter Property="Foreground" Value="{DynamicResource AccentGreenBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
                                     </Border>
                                 </Grid>
 
@@ -112,12 +129,12 @@
                                 <StackPanel Grid.Row="1" Margin="0,0,0,12">
                                     <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,4"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                        <TextBlock Text="📌 갱신 위치: " FontSize="11" Foreground="#64748B" FontWeight="Bold"/>
+                                        <TextBlock Text="📌 갱신 위치: " FontSize="11" Foreground="{DynamicResource MutedTextBrush}" FontWeight="Bold"/>
                                         <TextBlock Text="{Binding MenuGuide}" FontSize="11" Foreground="{DynamicResource AccentTextBrush}"/>
-                                        <TextBlock Text="  |  📞 고객센터: " FontSize="11" Foreground="#64748B" FontWeight="Bold" Margin="10,0,0,0"/>
-                                        <TextBlock Text="{Binding CallCenter}" FontSize="11" Foreground="#F59E0B" FontWeight="SemiBold"/>
+                                        <TextBlock Text="  |  📞 고객센터: " FontSize="11" Foreground="{DynamicResource MutedTextBrush}" FontWeight="Bold" Margin="10,0,0,0"/>
+                                        <TextBlock Text="{Binding CallCenter}" FontSize="11" Foreground="{DynamicResource AccentAmberBrush}" FontWeight="SemiBold"/>
                                     </StackPanel>
-                                    <TextBlock Text="{Binding Notice}" FontSize="11" Foreground="#FDA4AF" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                    <TextBlock Text="{Binding Notice}" FontSize="11" Foreground="{DynamicResource AccentRoseBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                 </StackPanel>
 
                                 <!-- Action Buttons Row -->
@@ -130,7 +147,7 @@
 
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock Text="🔗 " FontSize="12"/>
-                                            <TextBlock Text="{Binding PortalUrl}" FontSize="12" Foreground="#38BDF8" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding PortalUrl}" FontSize="12" Foreground="{DynamicResource AccentTextBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                         </StackPanel>
 
                                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">

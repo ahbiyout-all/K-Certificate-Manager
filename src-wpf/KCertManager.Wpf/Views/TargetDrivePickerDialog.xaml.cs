@@ -84,10 +84,12 @@ namespace KCertManager.Wpf.Views
 
             if (_drives.Count == 0)
             {
+                var mutedBr = (Application.Current?.TryFindResource("MutedTextBrush") as Brush)
+                    ?? new SolidColorBrush(Color.FromRgb(148, 163, 184));
                 var emptyBlock = new TextBlock
                 {
                     Text = "사용 가능한 물리 드라이브가 감지되지 않았습니다.",
-                    Foreground = new SolidColorBrush(Color.FromRgb(148, 163, 184)),
+                    Foreground = mutedBr,
                     FontSize = 12,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     Margin = new Thickness(0, 20, 0, 0)
@@ -195,18 +197,19 @@ namespace KCertManager.Wpf.Views
                 };
                 spNameRow.Children.Add(txtName);
 
+                var cardSurface = (Application.Current?.TryFindResource("BgCardBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(30, 41, 59));
+                var accentGreenBr = (Application.Current?.TryFindResource("AccentGreenBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(52, 211, 153));
+                var accentTextBr = (Application.Current?.TryFindResource("AccentTextBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(147, 197, 253));
+                var accentRoseBr = (Application.Current?.TryFindResource("AccentRoseBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(248, 113, 113));
+
                 // Kind Badge
                 var borderBadge = new Border
                 {
                     CornerRadius = new CornerRadius(4),
                     Padding = new Thickness(6, 1.5, 6, 1.5),
                     Margin = new Thickness(0, 0, 6, 0),
-                    Background = drive.IsRemovable 
-                        ? new SolidColorBrush(Color.FromArgb(50, 16, 185, 129)) 
-                        : new SolidColorBrush(Color.FromArgb(40, 59, 130, 246)),
-                    BorderBrush = drive.IsRemovable
-                        ? new SolidColorBrush(Color.FromRgb(16, 185, 129))
-                        : new SolidColorBrush(Color.FromRgb(59, 130, 246)),
+                    Background = cardSurface,
+                    BorderBrush = drive.IsRemovable ? accentGreenBr : accentTextBr,
                     BorderThickness = new Thickness(1)
                 };
                 borderBadge.Child = new TextBlock
@@ -214,9 +217,7 @@ namespace KCertManager.Wpf.Views
                     Text = drive.IsRemovable ? "추천 USB 메모리" : "로컬 디스크",
                     FontSize = 10.5,
                     FontWeight = FontWeights.ExtraBold,
-                    Foreground = drive.IsRemovable
-                        ? new SolidColorBrush(Color.FromRgb(52, 211, 153))
-                        : new SolidColorBrush(Color.FromRgb(147, 197, 253))
+                    Foreground = drive.IsRemovable ? accentGreenBr : accentTextBr
                 };
                 spNameRow.Children.Add(borderBadge);
 
@@ -227,8 +228,8 @@ namespace KCertManager.Wpf.Views
                     {
                         CornerRadius = new CornerRadius(4),
                         Padding = new Thickness(6, 1.5, 6, 1.5),
-                        Background = new SolidColorBrush(Color.FromArgb(60, 239, 68, 68)),
-                        BorderBrush = new SolidColorBrush(Color.FromRgb(239, 68, 68)),
+                        Background = new SolidColorBrush(Color.FromRgb(136, 19, 55)),
+                        BorderBrush = new SolidColorBrush(Color.FromRgb(225, 29, 72)),
                         BorderThickness = new Thickness(1)
                     };
                     selfCopyBadge.Child = new TextBlock
@@ -236,7 +237,7 @@ namespace KCertManager.Wpf.Views
                         Text = "🚫 자가 복사 금지",
                         FontSize = 10.5,
                         FontWeight = FontWeights.Bold,
-                        Foreground = new SolidColorBrush(Color.FromRgb(252, 165, 165))
+                        Foreground = Brushes.White
                     };
                     spNameRow.Children.Add(selfCopyBadge);
                 }
@@ -250,9 +251,7 @@ namespace KCertManager.Wpf.Views
                         ? $"선택한 인증서가 이미 본 드라이브에 보관되어 있습니다. ({drive.FormattedFreeSpace})"
                         : $"사용 가능 공간: {drive.FormattedFreeSpace} · {drive.FileSystem} 포맷",
                     FontSize = 11,
-                    Foreground = isSelfCopy
-                        ? new SolidColorBrush(Color.FromRgb(248, 113, 113))
-                        : textSecondary
+                    Foreground = isSelfCopy ? accentRoseBr : textSecondary
                 };
                 spInfo.Children.Add(txtSpace);
 

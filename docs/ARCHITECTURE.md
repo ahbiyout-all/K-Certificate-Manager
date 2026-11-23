@@ -132,7 +132,7 @@
 1. **1차 기준 (기계 표준 규격)**: `package.json`의 `"version"` 필드에서 Node.js/PowerShell 동적 추출.
 2. **2차 기준 (패치노트 직결)**: 누락 또는 비Node 환경 시 `docs/PATCHNOTES.md` 상단 최신 릴리스 헤더(`### 🚀 [vX.X.X]`) 정규식 파싱.
 3. **3차 기준**: 최종 안전 기본값 폴백.
-4. **스크립트 통합**: `build.bat`, `push_to_github.bat`, `push_to_github.ps1`, `.github/workflows/build.yml` 전 영역에서 단일 소스 원칙(Single Source of Truth)을 유지합니다.
+4. **스크립트 통합**: `build.bat`, `build.cmd`, `build.ps1`, `.github/workflows/build.yml` 전 영역에서 단일 소스 원칙(Single Source of Truth)을 유지합니다.
 
 ---
 
@@ -186,23 +186,27 @@
 
 ---
 
-## 13. WPF-Web 다크 테마 통합, 반응형 CSS Grid `auto-fill` & 쉬운 표현 UI 아키텍처 (`v2.1.0`)
+## 13. WPF-Web 4대 테마 통합(저눈부심 회색·베이지 포함), 선택 상태 3중 격리 & 쉬운 표현 UI 아키텍처 (`v2.1.0` ~ `v2.2.0`)
 
-1. **다크 테마 Visual Parity & 토큰 단위 대비 오버라이드 (`src/index.css`, `App.tsx`)**:
-   - Web 콘솔 기본 테마를 WPF 다크 팔레트(`#0F1219` 캔버스 / `#1A1F2C` 카드)로 통일.
-   - `[data-theme="dark"]` 및 `[data-theme="pastel-black"]`에서 `[class~="..."]`와 `[class*=".../"]` 토큰 매칭으로 모달의 밝은 배경·그라데이션·파스텔 배지·진한 텍스트 클래스를 자동 반전하여 버튼 원색은 보존하면서 고대비 가독성 확보.
-2. **반응형 CSS Grid `auto-fill` 인증서 목록 (`CertificateList.tsx`)**:
+1. **4대 테마 Visual Parity · 저눈부심 회색/베이지 & Tailwind `@custom-variant dark` 격리 (`src/index.css`, `MainViewModel.ApplyTheme`, WPF 전역 XAML)**:
+   - Web·WPF 모두 **다크(`#0F1219`)**, **회색(*Misty Mineral Slate*, `#CCD4DF`/`#DFE5EC`)**, **베이지(*Warm Oat Paper*, `#E6DFD1`/`#F1ECE1`)**, **화이트(`#F8FAFC`/`#FFFFFF`)** 4대 테마(및 레거시 `pastel-*` 별칭)를 동적 CSS 변수(`--wpf-accent-*`, `--wpf-selected-row-secondary` 등)와 `DynamicResource` 브러시(`AccentAmberBrush` 포함)로 일치화했습니다.
+   - `src/index.css`에 `@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, [data-theme="pastel-black"], [data-theme="pastel-black"] *));`를 명시하여 OS 다크 모드 설정이 Web 회색/베이지/화이트 테마의 Tailwind `dark:` 유틸리티를 오염시키지 않도록 차단했습니다.
+   - WPF `WpfAnimatedBorderHelper.ApplyBorderGlow`는 `BgCardBrush`의 상대 휘도(Luminance)를 측정해 다크 테마는 `#142341` + `0.65` 글로우를, 비다크 테마는 `SelectedRowBgBrush` + `0.28` 글로우를 동적 적용하며, `MainWindow.xaml.cs`는 `CurrentTheme` 변경 시 `SidebarTargetDriveBorder`를 즉시 갱신합니다. 또한 6대 대화상자 `DataGrid` 선택 스타일과 보안등급·기관요약 색상을 `DynamicResource` 및 `DataTrigger`로 통합했습니다.
+2. **선택 복사 · 필터 보기 · 단일 행 상세 클릭 3중 격리 (`App.tsx`, `CertificateList.tsx`, `MainViewModel.cs`, `MainWindow.xaml.cs`)**:
+   - 체크박스 선택(`selectedIds` / `IsSelected`), 현재 필터링된 보기(`visibleCertificates` / `FilteredCertificates`), 단일 행 상세 클릭(`inspectedCert` / `SelectedCertificate`)을 독립 상태로 분리합니다.
+   - `resolveSelectedBackupCerts` 및 WPF 일괄·가이드 복사는 항상 `selectedIds ∩ visibleCertificates`(또는 `FilteredCertificates`) 교집합만 산출하여 필터 밖 숨김 항목이나 단일 클릭 항목이 의도치 않게 복사되는 현상을 원천 차단합니다.
+3. **반응형 CSS Grid `auto-fill` 인증서 목록 (`CertificateList.tsx`)**:
    - `grid-template-columns: repeat(auto-fill, minmax(300px, 1fr))` 반응형 카드 그리드를 기본 제공하고 `표 보기`와의 전환을 지원해 다양한 뷰포트에서 카드 자동 리플로우 구현.
-3. **쉬운 일상 표현 우선 + 접이식 보조 설명 (`더보기` / WPF `Expander`)**:
+4. **쉬운 일상 표현 우선 + 접이식 보조 설명 (`더보기` / WPF `Expander`)**:
    - Web 26개 컴포넌트와 WPF 전역 XAML·뷰모델 문구를 `개인키`, `원본 위치/저장 위치`, `찾는 위치`, `파일 손상 검사(SHA-256)` 기준으로 통일하고, 부가 경로/FAQ는 기본 접힘 영역으로 격리.
 
 ---
 
-## 14. 수명주기 안전성, Dispatcher 가드 & 스토리지 JSON 스키마 하드닝 (`v2.1.1` Pass 5)
+## 14. 수명주기 안전성, Dispatcher 가드 & 스토리지 JSON 스키마 하드닝 (`v2.1.1` ~ `v2.2.0` Pass 5)
 
 1. **WPF UI 스레드 종료 가드 및 이벤트 수명주기 해제 (`DispatchSafe` / `OnClosed` / `IDisposable`)**:
    - `MainViewModel.DispatchSafe` 및 `MainWindow.DispatchUi`가 `Dispatcher.HasShutdownStarted`/`HasShutdownFinished`를 선검사하여 앱 종료 직전 백그라운드 콜백으로 인한 `TaskCanceledException`·무효 디스패치를 차단합니다.
-   - `MainWindow`, `UsbTransferDialog`, `PcToUsbTransferViewModel`, `UpdateNotificationDialog`는 창 종료 시 `HwndSource.RemoveHook`, WMI/PropertyChanged 핸들러 구독 해제 및 `CancellationTokenSource` 정리를 수행하며, 비동기 UI 핸들러에 예외 방어(`try/catch`)와 `Owner` 바인딩을 강제합니다.
+   - `MainWindow`, `UsbTransferViewModel`/`UsbTransferDialog` (`_trackedCerts` + `DetachCertEvents()`), `PcToUsbTransferViewModel`, `UpdateNotificationDialog`는 창 종료 및 재스캔 시 `HwndSource.RemoveHook`, WMI/`PropertyChanged` 핸들러 구독 해제 및 `CancellationTokenSource` 정리를 수행하며, 비동기 UI 핸들러에 예외 방어(`try/catch`)와 `Owner` 바인딩을 강제합니다.
 2. **React Web 리스너·타이머 누수 차단 및 엄격한 JSON/스토리지 검증**:
    - `Header`, `SettingsModal`, `AppActivityLogModal`, `BackupModal`, `UsbToPcModal`, `StartupWorkflowModal`, `App`, `CertificateList` 전반에 걸쳐 언마운트 시 `clearTimeout` 및 윈도우 `mousemove`/`mouseup` 리스너 정리를 보장합니다.
    - `protectedVaultStorage.ts`, `renewalStore.ts`, `activityLogger.ts`, `backupService.ts`, `CertificateList.tsx`(`colWidths`)는 `localStorage` 및 JSON 가져오기 파싱 시 `Array.isArray`·필드 타입·허용 숫자 범위(`Number.isFinite`)·`__proto__` 키 차단을 수행합니다.

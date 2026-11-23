@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { 
   INITIAL_CERTIFICATES, 
   INITIAL_SEARCH_PATHS, 
@@ -159,7 +159,7 @@ export default function App() {
   };
   const [searchPaths, setSearchPaths] = useState<SearchPath[]>(INITIAL_SEARCH_PATHS);
   const [availableDrives, setAvailableDrives] = useState<DiskDrive[]>(INITIAL_DRIVES);
-  const [selectedIds, setSelectedIds] = useState<string[]>(() => certificates.map(c => c.id));
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [explicitBackupCerts, setExplicitBackupCerts] = useState<CertificateItem[] | null>(null);
   const [selectedDriveId, setSelectedDriveId] = useState<string>('drive-e');
   const [activeNavTab, setActiveNavTab] = useState<'copy' | 'history' | 'paths' | 'security'>('copy');
@@ -225,16 +225,14 @@ export default function App() {
     if (type === 'pc_to_usb') {
       // 시작 가이드 pc-> usb 복사 시작 시 기본 C: 인증서 중 유효한 인증서만 수집 (만료 항목 제외)
       const pcCerts = certificates.filter(c => isPcCertificate(c) && !isCertificateExpired(c));
-      const pcCertIds = pcCerts.map(c => c.id);
-      if (pcCertIds.length > 0) {
-        setSelectedIds(pcCertIds);
+      if (pcCerts.length > 0) {
         setExplicitBackupCerts(pcCerts);
-        showToast(`💻 내 컴퓨터 인증서 ${pcCertIds.length}건을 선택했습니다.`);
+        showToast(`💻 내 컴퓨터 인증서 ${pcCerts.length}건을 복사 대상으로 준비했습니다.`);
+        // USB ➔ PC 가져오기와 동일한 창(모달) 형식으로 PC ➔ USB 백업 마법사 창 직접 실행
+        handleOpenGeneralBackupModal(undefined, pcCerts);
       } else {
-        showToast('💻 내 컴퓨터 ➔ USB 복사 창을 열었습니다.');
+        showToast('내 컴퓨터에 복사 가능한 유효 인증서가 없습니다. 목록에서 인증서를 선택해 주세요.', undefined, undefined, { type: 'delete' });
       }
-      // USB ➔ PC 가져오기와 동일한 창(모달) 형식으로 PC ➔ USB 백업 마법사 창 직접 실행
-      handleOpenGeneralBackupModal(undefined, pcCerts.length > 0 ? pcCerts : undefined);
     } else if (type === 'usb_to_pc') {
       showToast('💾 USB ➔ 내 컴퓨터 복사 창을 열었습니다.');
       setIsUsbToPcModalOpen(true);
@@ -428,7 +426,7 @@ export default function App() {
         showToast(`💾 [USB 연결] ${event.drive.letter} (${event.drive.name}) 인식 완료 (${certCountText})`);
         
         // Auto-refresh scan for certificates on newly mounted drive
-        handleRefresh(`⚡ ${event.drive.letter} 드라이브 감지 및 인증서 자동 스캔을 완료했습니다.`);
+        handleRefreshRef.current(`⚡ ${event.drive.letter} 드라이브 감지 및 인증서 자동 스캔을 완료했습니다.`);
 
         const newLog = logActivity({
           category: 'SCAN',
@@ -630,8 +628,6 @@ export default function App() {
       return [...filteredNew, ...prev];
     });
 
-    setSelectedIds(prev => [...new Set([...prev, ...validNewCerts.filter(Boolean).map(c => c.id)])]);
-
     // Also remove from trash if imported
     setTrashItems(prev => {
       const scannedIds = new Set(validNewCerts.map(c => c.id));
@@ -746,7 +742,19 @@ export default function App() {
   };
   handleRefreshRef.current = handleRefresh;
 
-  // Selection handlers
+  // Filtered view state (필터·검색이 적용된 현재 화면 목록, 선택 상태 selectedIds와 분리 관리)
+  const hasActiveFilter =
+    sidebarCategoryFilter !== 'ALL' ||
+    sidebarSourceFilter !== 'ALL' ||
+    gridSearchQuery.trim() !== '';
+
+  const visibleCertificates = useMemo(
+    () => filterCertificatesByCriteria(certificates, sidebarCategoryFilter, sidebarSourceFilter, gridSearchQuery),
+    [certificates, sidebarCategoryFilter, sidebarSourceFilter, gridSearchQuery]
+  );
+  const displayedCertCount = visibleCertificates.length;
+
+  // Selection handlers (pure ID selection state)
   const handleToggleSelect = (id: string) => {
     setSelectedIds(prev =>
       prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
@@ -754,11 +762,12 @@ export default function App() {
   };
 
   const handleSelectAll = () => {
-    setSelectedIds(certificates.filter(Boolean).map(c => c.id));
+    setSelectedIds(visibleCertificates.filter(Boolean).map(c => c.id));
   };
 
   const handleClearSelection = () => {
     setSelectedIds([]);
+    setExplicitBackupCerts(null);
   };
 
   const handleSelectCategory = (cat: 'ALL' | 'GOV' | 'BANK' | 'CORP') => {
@@ -766,31 +775,63 @@ export default function App() {
       handleSelectAll();
     } else if (cat === 'GOV') {
       setSelectedIds(
-        certificates.filter(c => c && (c.category === 'GPKI_GOV' || c.category === 'EPKI_EDU')).map(c => c.id)
+        visibleCertificates.filter(c => c && (c.category === 'GPKI_GOV' || c.category === 'EPKI_EDU')).map(c => c.id)
       );
     } else if (cat === 'BANK') {
       setSelectedIds(
-        certificates.filter(c => c && c.category === 'NPKI_BANK').map(c => c.id)
+        visibleCertificates.filter(c => c && c.category === 'NPKI_BANK').map(c => c.id)
       );
     } else if (cat === 'CORP') {
       setSelectedIds(
-        certificates.filter(c => c && c.category === 'NPKI_CORP').map(c => c.id)
+        visibleCertificates.filter(c => c && c.category === 'NPKI_CORP').map(c => c.id)
       );
     }
   };
 
+  // 현재 필터링된 목록(visibleCertificates)과 선택된 ID(selectedIds)의 정확한 교집합만 반환
+  const resolveSelectedBackupCerts = useCallback((): CertificateItem[] => {
+    if (selectedIds.length === 0 || visibleCertificates.length === 0) {
+      return [];
+    }
+
+    const visibleIdSet = new Set(
+      visibleCertificates
+        .map(cert => cert?.id)
+        .filter((id): id is string => Boolean(id))
+    );
+    const activeSelectedIdSet = new Set(selectedIds.filter(id => visibleIdSet.has(id)));
+    if (activeSelectedIdSet.size === 0) {
+      return [];
+    }
+
+    return visibleCertificates.filter(
+      (cert): cert is CertificateItem => Boolean(cert?.id) && activeSelectedIdSet.has(cert.id)
+    );
+  }, [visibleCertificates, selectedIds]);
+
+  const selectedVisibleCertificates = useMemo(
+    () => resolveSelectedBackupCerts(),
+    [resolveSelectedBackupCerts]
+  );
+
   const handleOpenGeneralBackupModal = (driveId?: string, certsOverride?: CertificateItem[]) => {
-    if (certsOverride && certsOverride.length > 0) {
-      setExplicitBackupCerts(certsOverride);
-      setSelectedIds(certsOverride.map(c => c.id));
-    } else {
-      const selected = certificates.filter(c => selectedIds.includes(c.id));
-      if (selected.length > 0) {
-        setExplicitBackupCerts(selected);
-      } else {
-        setExplicitBackupCerts(certificates);
-        setSelectedIds(certificates.map(c => c.id));
+    if (Array.isArray(certsOverride)) {
+      if (certsOverride.length === 0) {
+        showToast('복사할 인증서가 없습니다.', undefined, undefined, { type: 'delete' });
+        return;
       }
+      setExplicitBackupCerts(certsOverride);
+    } else {
+      const targets = resolveSelectedBackupCerts();
+      if (targets.length === 0) {
+        const message =
+          selectedIds.length > 0 && hasActiveFilter
+            ? '현재 필터·검색 조건에 표시된 인증서 중 체크된 항목이 없습니다. 필터를 초기화하거나 현재 목록에서 체크박스를 선택해 주세요.'
+            : '복사할 인증서의 체크박스를 1개 이상 선택해 주세요.';
+        showToast(message, undefined, undefined, { type: 'delete' });
+        return;
+      }
+      setExplicitBackupCerts(targets);
     }
     if (driveId) {
       setSelectedDriveId(driveId);
@@ -807,8 +848,7 @@ export default function App() {
   };
 
   const handleQuickBackupSingle = (cert: CertificateItem) => {
-    setSelectedIds([cert.id]);
-    setExplicitBackupCerts([cert]);
+    setInspectedCert(cert);
     handleOpenGeneralBackupModal(undefined, [cert]);
   };
 
@@ -829,7 +869,7 @@ export default function App() {
     if (targets && targets.length > 0) {
       listToGuide = targets;
     } else {
-      const selected = certificates.filter(c => selectedIds.includes(c.id));
+      const selected = resolveSelectedBackupCerts();
       if (selected.length > 0) {
         listToGuide = selected;
       } else {
@@ -1494,7 +1534,7 @@ export default function App() {
       ? certificates.filter(c => record.certIds!.includes(c.id))
       : certificates.filter(c => record.certNames.includes(c.name));
     const copiedIds = copiedCertObjects.map(c => c.id);
-    triggerCopiedHighlight(copiedIds.length > 0 ? copiedIds : selectedIds);
+    triggerCopiedHighlight(copiedIds);
 
     const targetDiskLetter = extractDriveLetterFromPathOrLabel(record.targetDisk) || extractDriveLetterFromPathOrLabel(record.targetPath);
 
@@ -1615,9 +1655,6 @@ export default function App() {
       return nextList;
     });
 
-    // Automatically select newly imported certificates outside pure state updater
-    setSelectedIds(prevSelected => [...new Set([...prevSelected, ...newlyAddedIds])]);
-
     // Also remove from trash if imported (strictly by exact certificate ID)
     setTrashItems(prev => {
       const importedIds = new Set(importedCerts.map(c => c.id));
@@ -1706,11 +1743,6 @@ export default function App() {
     usb: certificates.filter(c => isUsbCertificate(c)).length,
   }), [certificates, nonStandardCount]);
 
-  const displayedCertCount = useMemo(
-    () => filterCertificatesByCriteria(certificates, sidebarCategoryFilter, sidebarSourceFilter, gridSearchQuery).length,
-    [certificates, sidebarCategoryFilter, sidebarSourceFilter, gridSearchQuery]
-  );
-
   const splitterCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -1748,8 +1780,8 @@ export default function App() {
     if (explicitBackupCerts !== null) {
       return explicitBackupCerts;
     }
-    return certificates.filter(c => selectedIds.includes(c.id));
-  }, [certificates, selectedIds, explicitBackupCerts]);
+    return selectedVisibleCertificates;
+  }, [explicitBackupCerts, selectedVisibleCertificates]);
 
   const resolvedInspectedCert = useMemo(() => {
     if (inspectedCert && certificates.some(c => c.id === inspectedCert.id)) {
@@ -1910,7 +1942,7 @@ export default function App() {
             availableDrives={availableDrives}
             selectedDriveId={selectedDriveId}
             onSelectDriveId={setSelectedDriveId}
-            onOpenTargetDrivePicker={() => setIsTargetDrivePickerOpen(true)}
+            onOpenTargetDrivePicker={() => handleOpenGeneralBackupModal()}
             onOpenRenewalGuidance={() => handleOpenRenewalGuidance()}
           />
         </div>
@@ -1940,7 +1972,7 @@ export default function App() {
                 onSelectDriveId={setSelectedDriveId}
                 onOpenTargetDrivePicker={() => {
                   setIsMobileSidebarOpen(false);
-                  setIsTargetDrivePickerOpen(true);
+                  handleOpenGeneralBackupModal();
                 }}
                 onOpenRenewalGuidance={() => handleOpenRenewalGuidance()}
                 onCloseMobile={() => setIsMobileSidebarOpen(false)}
@@ -2098,9 +2130,9 @@ export default function App() {
               selectedDriveId={selectedDriveId}
               appViewMode={appViewMode}
               onToggleAppViewMode={handleToggleAppViewMode}
-              onOpenTargetDrivePicker={() => setIsTargetDrivePickerOpen(true)}
+              onOpenTargetDrivePicker={() => handleOpenGeneralBackupModal()}
               onStartBackup={() => handleOpenGeneralBackupModal(selectedDriveId)}
-              onBackupAll={() => handleOpenGeneralBackupModal(selectedDriveId, certificates)}
+              onBackupAll={() => handleOpenGeneralBackupModal(selectedDriveId, visibleCertificates)}
               onOpenUsbToPcModal={() => setIsUsbToPcModalOpen(true)}
               onSelectAll={handleSelectAll}
             />
@@ -2111,13 +2143,7 @@ export default function App() {
               selectedDriveId={selectedDriveId}
               onSelectDriveId={setSelectedDriveId}
               onBackupToDrive={(driveId) => {
-                let targets = certificates.filter(c => selectedIds.includes(c.id));
-                if (targets.length === 0) {
-                  targets = certificates;
-                  setSelectedIds(certificates.map(c => c.id));
-                }
-                setExplicitBackupCerts(targets);
-                handleOpenGeneralBackupModal(driveId, targets);
+                handleOpenGeneralBackupModal(driveId);
               }}
               onOpenUsbToPc={(driveLetter) => {
                 if (driveLetter) setTargetUsbLetterForModal(driveLetter);
@@ -2153,18 +2179,14 @@ export default function App() {
                 onSelectFilteredIds={(ids) => setSelectedIds(ids)}
                 onClearSelection={handleClearSelection}
                 onOpenBackupModal={() => {
-                  let targets = certificates.filter(c => selectedIds.includes(c.id));
-                  if (targets.length === 0) {
-                    targets = certificates;
-                    setSelectedIds(certificates.map(c => c.id));
-                  }
-                  setExplicitBackupCerts(targets);
-                  handleOpenGeneralBackupModal(undefined, targets);
+                  handleOpenGeneralBackupModal();
                 }}
                 onBackupAll={() => {
-                  setSelectedIds(certificates.map(c => c.id));
-                  setExplicitBackupCerts(certificates);
-                  handleOpenGeneralBackupModal(undefined, certificates);
+                  if (visibleCertificates.length === 0) {
+                    showToast('현재 표시된 목록에 복사할 인증서가 없습니다.', undefined, undefined, { type: 'delete' });
+                    return;
+                  }
+                  handleOpenGeneralBackupModal(undefined, visibleCertificates);
                 }}
                 onOpenDetailModal={(cert) => {
                   setInspectedCert(cert);
@@ -2342,7 +2364,7 @@ export default function App() {
         certificates={certificates}
         mode={cleanupMode}
         singleCert={targetSingleCertForDelete}
-        selectedIds={selectedIds}
+        selectedIds={selectedVisibleCertificates.map(c => c.id)}
         onDeleteCertificates={handleDeleteCertificates}
       />
 
@@ -2469,7 +2491,7 @@ export default function App() {
 
       {/* Guided Step-by-Step Workflow Motion Overlay */}
       {(() => {
-        const guidedSelectedCerts = certificates.filter(c => selectedIds.includes(c.id));
+        const guidedSelectedCerts = selectedVisibleCertificates;
         const guidedTargetDrive =
           (selectedDriveId ? availableDrives.find(d => d.id === selectedDriveId) : undefined) ||
           availableDrives.find(d => d.type === 'removable' || d.busType === 'USB') ||
@@ -2515,7 +2537,7 @@ export default function App() {
           <GuidedWorkflowOverlay
             workflowType={activeWorkflow}
             onCloseWorkflow={() => setActiveWorkflow(null)}
-            selectedCertCount={selectedIds.length}
+            selectedCertCount={selectedVisibleCertificates.length}
             availableUsbCount={availableDrives.filter(d => d.type === 'removable' || d.busType === 'USB').length}
             onOpenBackupModal={() => handleOpenGeneralBackupModal()}
             onOpenUsbToPcModal={() => setIsUsbToPcModalOpen(true)}

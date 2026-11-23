@@ -129,7 +129,7 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
               title="인증서의 전체 상세 텍스트를 클립보드에 복사합니다."
             >
               {copiedKey === 'all' ? (
-                <Check className="w-3 h-3 text-[#10B981]" />
+                <Check className="w-3 h-3" style={{ color: 'var(--wpf-accent-green)' }} />
               ) : (
                 <Copy className="w-3 h-3" />
               )}
@@ -346,7 +346,7 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
                       onClick={() => handleCopyText('dn', cert.subjectDn, '소유자 DN')}
                       className="wpf-btn-secondary wpf-native px-1.5 py-0.5 text-[10.5px] flex items-center gap-1 shrink-0 cursor-pointer"
                     >
-                      {copiedKey === 'dn' ? <Check className="w-3 h-3 text-[#10B981]" /> : <Copy className="w-3 h-3" />}
+                      {copiedKey === 'dn' ? <Check className="w-3 h-3" style={{ color: 'var(--wpf-accent-green)' }} /> : <Copy className="w-3 h-3" />}
                       <span>복사</span>
                     </button>
                   </div>
@@ -368,7 +368,7 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
                       onClick={() => handleCopyText('serial', cert.serialNumber, '일련번호')}
                       className="wpf-btn-secondary wpf-native px-1.5 py-0.5 text-[10.5px] flex items-center gap-1 shrink-0 cursor-pointer"
                     >
-                      {copiedKey === 'serial' ? <Check className="w-3 h-3 text-[#10B981]" /> : <Copy className="w-3 h-3" />}
+                      {copiedKey === 'serial' ? <Check className="w-3 h-3" style={{ color: 'var(--wpf-accent-green)' }} /> : <Copy className="w-3 h-3" />}
                       <span>복사</span>
                     </button>
                   </div>
@@ -400,7 +400,7 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
                       <div className="text-[11px]" style={{ color: 'var(--wpf-text-secondary)' }}>
                         만료 일자:
                       </div>
-                      <div className="text-[11.5px] font-mono font-bold text-[#F43F5E] tabular-nums mt-0.5">
+                      <div className="text-[11.5px] font-mono font-bold tabular-nums mt-0.5" style={{ color: 'var(--wpf-accent-rose)' }}>
                         {cert.validTo}
                       </div>
                     </div>
@@ -429,7 +429,14 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
                     </div>
                     <div
                       className="text-[11px] font-bold mt-1"
-                      style={{ color: cryptoMeta.colorHex }}
+                      style={{
+                        color:
+                          cryptoMeta.posture === 'recommended_3072'
+                            ? 'var(--wpf-accent-green)'
+                            : cryptoMeta.posture === 'legacy_weak'
+                            ? 'var(--wpf-accent-rose)'
+                            : 'var(--wpf-badge-expiring-text)',
+                      }}
                     >
                       {cryptoMeta.badgeText}
                     </div>
@@ -470,7 +477,7 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
                       onClick={() => handleCopyText('policy', cert.policy, '정책 용도')}
                       className="wpf-btn-secondary wpf-native px-1.5 py-0.5 text-[10.5px] flex items-center gap-1 shrink-0 cursor-pointer"
                     >
-                      {copiedKey === 'policy' ? <Check className="w-3 h-3 text-[#10B981]" /> : <Copy className="w-3 h-3" />}
+                      {copiedKey === 'policy' ? <Check className="w-3 h-3" style={{ color: 'var(--wpf-accent-green)' }} /> : <Copy className="w-3 h-3" />}
                       <span>복사</span>
                     </button>
                   </div>
@@ -480,9 +487,12 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
                       개인키(signPri.key) 상태:
                     </div>
                     <div
-                      className={`text-[11.5px] font-semibold flex items-center gap-1 mt-0.5 ${
-                        cert.files?.hasKey ? 'text-[#10B981]' : 'text-[#F59E0B]'
-                      }`}
+                      className="text-[11.5px] font-semibold flex items-center gap-1 mt-0.5"
+                      style={{
+                        color: cert.files?.hasKey
+                          ? 'var(--wpf-accent-green)'
+                          : 'var(--wpf-badge-expiring-text)',
+                      }}
                     >
                       <KeyRound className="w-3.5 h-3.5 shrink-0" />
                       <span>
@@ -537,7 +547,7 @@ export const CertificateDetailSidebar: React.FC<CertificateDetailSidebarProps> =
                       onClick={() => handleCopyText('path', cert.sourceLocation, '저장 폴더 경로')}
                       className="wpf-btn-secondary wpf-native px-2.5 py-1 text-[11px] flex items-center gap-1 cursor-pointer"
                     >
-                      {copiedKey === 'path' ? <Check className="w-3 h-3 text-[#10B981]" /> : <Copy className="w-3 h-3" />}
+                      {copiedKey === 'path' ? <Check className="w-3 h-3" style={{ color: 'var(--wpf-accent-green)' }} /> : <Copy className="w-3 h-3" />}
                       <span>경로 복사</span>
                     </button>
                   </div>

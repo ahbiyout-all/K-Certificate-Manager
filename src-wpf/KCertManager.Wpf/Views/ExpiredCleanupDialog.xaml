@@ -36,7 +36,7 @@
         <!-- Medium Selector Cards -->
         <Border Grid.Row="1" Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="14" Margin="0,0,0,14" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
             <StackPanel>
-                <TextBlock Text="1단계: 정리할 저장 위치 선택" FontSize="12" FontWeight="Bold" Foreground="#93C5FD" Margin="0,0,0,10"/>
+                <TextBlock Text="1단계: 정리할 저장 위치 선택" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,0,10"/>
                 
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
@@ -48,36 +48,36 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Desktop (PC) Option -->
-                    <Border x:Name="BorderDesktop" Grid.Column="0" CornerRadius="8" Padding="12" BorderThickness="2" BorderBrush="#2563EB" Background="#1E3A8A" MouseLeftButtonUp="SelectDesktop_Click" Cursor="Hand">
+                    <Border x:Name="BorderDesktop" Grid.Column="0" CornerRadius="8" Padding="12" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" Background="{DynamicResource BgDarkBrush}" MouseLeftButtonUp="SelectDesktop_Click" Cursor="Hand">
                         <StackPanel>
-                            <RadioButton x:Name="RadioDesktop" Content="💻 내 컴퓨터(PC)만" GroupName="MediumFilter" FontWeight="Bold" Foreground="White" FontSize="13" Checked="RadioMedium_Checked"/>
-                            <TextBlock x:Name="TxtDesktopCount" Text="0건 대상" FontSize="11" Foreground="#93C5FD" FontWeight="SemiBold" Margin="20,4,0,2"/>
-                            <TextBlock Text="PC 저장소만 정리 (USB 보호)" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="20,0,0,0" TextWrapping="Wrap"/>
+                            <RadioButton x:Name="RadioDesktop" Content="💻 내 컴퓨터(PC)만" GroupName="MediumFilter" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" Checked="RadioMedium_Checked"/>
+                            <TextBlock x:Name="TxtDesktopCount" Text="0건 대상" FontSize="11" Foreground="{DynamicResource AccentTextBrush}" FontWeight="SemiBold" Margin="20,4,0,2"/>
+                            <TextBlock x:Name="TxtDesktopSub" Text="PC 저장소만 정리 (USB 보호)" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="20,0,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
 
                     <!-- USB Option -->
                     <Border x:Name="BorderUsb" Grid.Column="2" CornerRadius="8" Padding="12" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" Background="{DynamicResource BgDarkBrush}" MouseLeftButtonUp="SelectUsb_Click" Cursor="Hand">
                         <StackPanel>
-                            <RadioButton x:Name="RadioUsb" Content="💾 USB 메모리만" GroupName="MediumFilter" FontWeight="Bold" Foreground="White" FontSize="13" Checked="RadioMedium_Checked"/>
-                            <TextBlock x:Name="TxtUsbCount" Text="0건 대상" FontSize="11" Foreground="#34D399" FontWeight="SemiBold" Margin="20,4,0,2"/>
-                            <TextBlock Text="USB 메모리만 정리 (PC 보호)" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="20,0,0,0" TextWrapping="Wrap"/>
+                            <RadioButton x:Name="RadioUsb" Content="💾 USB 메모리만" GroupName="MediumFilter" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" Checked="RadioMedium_Checked"/>
+                            <TextBlock x:Name="TxtUsbCount" Text="0건 대상" FontSize="11" Foreground="{DynamicResource AccentGreenBrush}" FontWeight="SemiBold" Margin="20,4,0,2"/>
+                            <TextBlock x:Name="TxtUsbSub" Text="USB 메모리만 정리 (PC 보호)" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="20,0,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
 
                     <!-- All Option -->
                     <Border x:Name="BorderAll" Grid.Column="4" CornerRadius="8" Padding="12" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" Background="{DynamicResource BgDarkBrush}" MouseLeftButtonUp="SelectAll_Click" Cursor="Hand">
                         <StackPanel>
-                            <RadioButton x:Name="RadioAll" Content="🌐 PC · USB 모두" GroupName="MediumFilter" FontWeight="Bold" Foreground="White" FontSize="13" Checked="RadioMedium_Checked"/>
-                            <TextBlock x:Name="TxtAllCount" Text="0건 대상" FontSize="11" Foreground="#F87171" FontWeight="SemiBold" Margin="20,4,0,2"/>
-                            <TextBlock Text="PC와 USB 모두 정리 (주의)" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="20,0,0,0" TextWrapping="Wrap"/>
+                            <RadioButton x:Name="RadioAll" Content="🌐 PC · USB 모두" GroupName="MediumFilter" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" Checked="RadioMedium_Checked"/>
+                            <TextBlock x:Name="TxtAllCount" Text="0건 대상" FontSize="11" Foreground="{DynamicResource AccentRoseBrush}" FontWeight="SemiBold" Margin="20,4,0,2"/>
+                            <TextBlock x:Name="TxtAllSub" Text="PC와 USB 모두 정리 (주의)" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="20,0,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
                 </Grid>
 
                 <!-- Safety Alert Callout -->
-                <Border x:Name="BorderAlert" Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="10,8" BorderBrush="#2563EB" BorderThickness="1">
-                    <TextBlock x:Name="TxtSafetyNotice" Text="🛡️ 내 컴퓨터(PC)의 만료 인증서만 정리합니다. USB 인증서는 유지됩니다." FontSize="11" Foreground="#93C5FD" TextWrapping="Wrap"/>
+                <Border x:Name="BorderAlert" Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="10,8" BorderBrush="{DynamicResource AccentBlueBrush}" BorderThickness="1">
+                    <TextBlock x:Name="TxtSafetyNotice" Text="🛡️ 내 컴퓨터(PC)의 만료 인증서만 정리합니다. USB 인증서는 유지됩니다." FontSize="11" Foreground="{DynamicResource AccentTextBrush}" TextWrapping="Wrap"/>
                 </Border>
             </StackPanel>
         </Border>
@@ -119,8 +119,8 @@
                         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                         <Style.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="#2563EB"/>
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Background" Value="{DynamicResource SelectedRowBgBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Background" Value="{DynamicResource BgCardHoverBrush}"/>

@@ -308,7 +308,8 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
                         e.stopPropagation();
                         onOpenUsbToPc(letterClean);
                       }}
-                      className="wpf-btn-secondary wpf-native px-2.5 py-1 text-[11px] font-semibold text-[#10B981] flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                      className="wpf-btn-secondary wpf-native px-2.5 py-1 text-[11px] font-semibold flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                      style={{ color: 'var(--wpf-accent-green)' }}
                       title={`${drive.letter} 인증서를 컴퓨터로 가져오기`}
                     >
                       <ArrowDownLeft className="w-3 h-3" />
@@ -363,7 +364,7 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
                     >
                       <span>VSN: {drive.volumeSerialNumber}</span>
                       {copiedVsnId === drive.id ? (
-                        <Check className="w-2.5 h-2.5 text-[#10B981]" />
+                        <Check className="w-2.5 h-2.5" style={{ color: 'var(--wpf-accent-green)' }} />
                       ) : (
                         <Copy className="w-2.5 h-2.5" />
                       )}

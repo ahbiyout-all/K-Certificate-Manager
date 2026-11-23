@@ -113,7 +113,7 @@
                                 <TextBlock Text="복사할 인증서를 체크하세요:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,14,0"/>
                                 <CheckBox IsChecked="{Binding IsSmartDeduplicated, Mode=TwoWay}" VerticalAlignment="Center" Cursor="Hand" Margin="0,0,10,0">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="⚡ 같은 인증서 묶어보기 (표준 경로 우선)" FontSize="11" FontWeight="SemiBold" Foreground="#38BDF8"/>
+                                        <TextBlock Text="⚡ 같은 인증서 묶어보기 (표준 경로 우선)" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextBrush}"/>
                                     </StackPanel>
                                 </CheckBox>
                             </StackPanel>
@@ -136,12 +136,6 @@
                               ScrollViewer.VerticalScrollBarVisibility="Auto"
                               ScrollViewer.CanContentScroll="False">
                         <DataGrid.Resources>
-                            <!-- Highlight colors -->
-                            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#2563EB"/>
-                            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#FFFFFF"/>
-                            <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#1D4ED8"/>
-                            <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#FFFFFF"/>
-
                             <!-- DataGrid Column Header Style with Horizontal & Vertical Dividers and Resizing Grippers -->
                             <Style TargetType="DataGridColumnHeader">
                                 <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
@@ -157,8 +151,8 @@
                                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                                 <Style.Triggers>
                                     <Trigger Property="IsSelected" Value="True">
-                                        <Setter Property="Background" Value="#1E3A8A"/>
-                                        <Setter Property="Foreground" Value="White"/>
+                                        <Setter Property="Background" Value="{DynamicResource SelectedRowBgBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
                                     </Trigger>
                                     <Trigger Property="IsMouseOver" Value="True">
                                         <Setter Property="Background" Value="{DynamicResource BgCardHoverBrush}"/>
@@ -167,6 +161,7 @@
                             </Style>
                             <!-- DataGrid Cell Style with Horizontal & Vertical Dividers -->
                             <Style TargetType="DataGridCell">
+                                <Setter Property="Background" Value="Transparent"/>
                                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                                 <Setter Property="BorderThickness" Value="0,0,1,1"/>
                                 <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
@@ -182,8 +177,8 @@
                                 </Setter>
                                 <Style.Triggers>
                                     <Trigger Property="IsSelected" Value="True">
-                                        <Setter Property="Background" Value="#1E3A8A"/>
-                                        <Setter Property="Foreground" Value="White"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
                                     </Trigger>
                                 </Style.Triggers>
                             </Style>

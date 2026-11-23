@@ -76,7 +76,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="일련번호 (Serial No)" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
-                            <TextBox Grid.Column="1" x:Name="TxtSerial" Text="00:1A:2B:3C:4D:5E" IsReadOnly="True" Background="{DynamicResource BgDarkBrush}" Foreground="#FCD34D" BorderBrush="{DynamicResource BorderBrush}" Padding="6,4" FontSize="12" FontFamily="Consolas"/>
+                            <TextBox Grid.Column="1" x:Name="TxtSerial" Text="00:1A:2B:3C:4D:5E" IsReadOnly="True" Background="{DynamicResource BgDarkBrush}" Foreground="{DynamicResource AccentTextBrush}" BorderBrush="{DynamicResource BorderBrush}" Padding="6,4" FontSize="12" FontFamily="Consolas"/>
                         </Grid>
 
                         <Grid Margin="0,0,0,8">
@@ -94,7 +94,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="보안강도 진단 (2027.02)" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
-                            <TextBlock Grid.Column="1" x:Name="TxtCryptoPosture" Text="ⓘ 현행 2048-bit (2027.02 전환 예정)" Foreground="#F59E0B" FontWeight="Bold" FontSize="12" TextWrapping="Wrap"/>
+                            <TextBlock Grid.Column="1" x:Name="TxtCryptoPosture" Text="ⓘ 현행 2048-bit (2027.02 전환 예정)" Foreground="{DynamicResource AccentAmberBrush}" FontWeight="Bold" FontSize="12" TextWrapping="Wrap"/>
                         </Grid>
 
                         <Grid>
@@ -136,7 +136,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="남은 유효 기간" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
-                            <TextBlock Grid.Column="1" x:Name="TxtRemainingDays" Text="245일 남음 (정상 유효)" Foreground="#34D399" FontWeight="Bold" FontSize="12"/>
+                            <TextBlock Grid.Column="1" x:Name="TxtRemainingDays" Text="245일 남음 (정상 유효)" Foreground="{DynamicResource AccentGreenBrush}" FontWeight="Bold" FontSize="12"/>
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -161,7 +161,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="공개 인증서 (signCert.der)" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
-                            <TextBlock Grid.Column="1" x:Name="TxtDerInfo" Text="2,140 Bytes (존재함)" Foreground="#34D399" FontSize="12"/>
+                            <TextBlock Grid.Column="1" x:Name="TxtDerInfo" Text="2,140 Bytes (존재함)" Foreground="{DynamicResource AccentGreenBrush}" FontSize="12"/>
                         </Grid>
 
                         <Grid Margin="0,0,0,6">
@@ -170,7 +170,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="개인키 (signPri.key)" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
-                            <TextBlock Grid.Column="1" x:Name="TxtKeyInfo" Text="1,248 Bytes (암호화 보관됨)" Foreground="#34D399" FontSize="12"/>
+                            <TextBlock Grid.Column="1" x:Name="TxtKeyInfo" Text="1,248 Bytes (암호화 보관됨)" Foreground="{DynamicResource AccentGreenBrush}" FontSize="12"/>
                         </Grid>
 
                         <Grid Margin="0,0,0,6">
@@ -179,7 +179,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="키 암호화 (PKCS#8)" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
-                            <TextBlock Grid.Column="1" x:Name="TxtKeyAlgo" Text="KISA SEED-CBC (128-bit) | PBKDF2" Foreground="#60A5FA" FontWeight="SemiBold" FontSize="12"/>
+                            <TextBlock Grid.Column="1" x:Name="TxtKeyAlgo" Text="KISA SEED-CBC (128-bit) | PBKDF2" Foreground="{DynamicResource AccentTextBrush}" FontWeight="SemiBold" FontSize="12"/>
                         </Grid>
 
                         <Grid Margin="0,0,0,6">
@@ -188,7 +188,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="SHA-256 지문" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
-                            <TextBox Grid.Column="1" x:Name="TxtSha256" Text="A1B2C3D4..." IsReadOnly="True" Background="{DynamicResource BgDarkBrush}" Foreground="#93C5FD" BorderBrush="{DynamicResource BorderBrush}" Padding="6,4" FontSize="11" FontFamily="Consolas"/>
+                            <TextBox Grid.Column="1" x:Name="TxtSha256" Text="A1B2C3D4..." IsReadOnly="True" Background="{DynamicResource BgDarkBrush}" Foreground="{DynamicResource AccentTextBrush}" BorderBrush="{DynamicResource BorderBrush}" Padding="6,4" FontSize="11" FontFamily="Consolas"/>
                         </Grid>
 
                         <Grid>
@@ -197,7 +197,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="파일 손상 검사" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
-                            <TextBlock Grid.Column="1" x:Name="TxtIntegrity" Text="인증서·개인키 파일 정상 일치" Foreground="#34D399" FontWeight="SemiBold" FontSize="12"/>
+                            <TextBlock Grid.Column="1" x:Name="TxtIntegrity" Text="인증서·개인키 파일 정상 일치" Foreground="{DynamicResource AccentGreenBrush}" FontWeight="SemiBold" FontSize="12"/>
                         </Grid>
                     </StackPanel>
                 </Border>

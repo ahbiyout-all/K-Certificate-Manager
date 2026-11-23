@@ -70,25 +70,61 @@ namespace KCertManager.Wpf.Views
             {
                 CurrentTarget = target;
 
-                if (BorderDesktop != null)
+                var isDark = IsCurrentThemeDark();
+                Brush ResolveBrush(string key, Brush fallback) =>
+                    (Application.Current?.TryFindResource(key) as Brush) ?? fallback;
+
+                var activeBorder = ResolveBrush("AccentBlueBrush", ActiveBorderBrush);
+                var activeBg = ResolveBrush("SelectedRowBgBrush", ActiveBgBrush);
+                var activePrimaryFg = ResolveBrush("SelectedRowTextBrush", Brushes.White);
+                var activeSubFg = isDark
+                    ? ResolveBrush("InactiveSelectedRowTextBrush", new SolidColorBrush(Color.FromRgb(0xE2, 0xE8, 0xF0)))
+                    : ResolveBrush("TextSecondaryBrush", new SolidColorBrush(Color.FromRgb(0x33, 0x41, 0x55)));
+
+                var inactiveBorder = ResolveBrush("BorderBrush", InactiveBorderBrush);
+                var inactiveBg = ResolveBrush("BgDarkBrush", InactiveBgBrush);
+                var inactivePrimaryFg = ResolveBrush("TextPrimaryBrush", Brushes.White);
+                var inactiveSubFg = ResolveBrush("TextSecondaryBrush", new SolidColorBrush(Color.FromRgb(0xCB, 0xD5, 0xE1)));
+
+                void ApplyCardStyle(Border? border, RadioButton? radio, TextBlock? subText, bool isActive)
                 {
-                    BorderDesktop.BorderBrush = target == MediumTarget.Desktop ? ActiveBorderBrush : InactiveBorderBrush;
-                    BorderDesktop.Background = target == MediumTarget.Desktop ? ActiveBgBrush : InactiveBgBrush;
-                    BorderDesktop.BorderThickness = target == MediumTarget.Desktop ? new Thickness(2) : new Thickness(1);
+                    if (border != null)
+                    {
+                        border.BorderBrush = isActive ? activeBorder : inactiveBorder;
+                        border.Background = isActive ? activeBg : inactiveBg;
+                        border.BorderThickness = isActive ? new Thickness(2) : new Thickness(1);
+                    }
+                    if (radio != null)
+                    {
+                        radio.Foreground = isActive ? activePrimaryFg : inactivePrimaryFg;
+                    }
+                    if (subText != null)
+                    {
+                        subText.Foreground = isActive ? activeSubFg : inactiveSubFg;
+                    }
                 }
 
-                if (BorderUsb != null)
-                {
-                    BorderUsb.BorderBrush = target == MediumTarget.Usb ? ActiveBorderBrush : InactiveBorderBrush;
-                    BorderUsb.Background = target == MediumTarget.Usb ? ActiveBgBrush : InactiveBgBrush;
-                    BorderUsb.BorderThickness = target == MediumTarget.Usb ? new Thickness(2) : new Thickness(1);
-                }
+                ApplyCardStyle(BorderDesktop, RadioDesktop, TxtDesktopSub, target == MediumTarget.Desktop);
+                ApplyCardStyle(BorderUsb, RadioUsb, TxtUsbSub, target == MediumTarget.Usb);
+                ApplyCardStyle(BorderAll, RadioAll, TxtAllSub, target == MediumTarget.All);
 
-                if (BorderAll != null)
+                if (TxtDesktopCount != null)
                 {
-                    BorderAll.BorderBrush = target == MediumTarget.All ? ActiveBorderBrush : InactiveBorderBrush;
-                    BorderAll.Background = target == MediumTarget.All ? ActiveBgBrush : InactiveBgBrush;
-                    BorderAll.BorderThickness = target == MediumTarget.All ? new Thickness(2) : new Thickness(1);
+                    TxtDesktopCount.Foreground = (isDark && target == MediumTarget.Desktop)
+                        ? DesktopAlertText
+                        : ResolveBrush("AccentTextBrush", DesktopAlertText);
+                }
+                if (TxtUsbCount != null)
+                {
+                    TxtUsbCount.Foreground = (isDark && target == MediumTarget.Usb)
+                        ? UsbAlertText
+                        : ResolveBrush("AccentGreenBrush", UsbAlertText);
+                }
+                if (TxtAllCount != null)
+                {
+                    TxtAllCount.Foreground = (isDark && target == MediumTarget.All)
+                        ? new SolidColorBrush(Color.FromRgb(0xFD, 0xA4, 0xAF))
+                        : ResolveBrush("AccentRoseBrush", new SolidColorBrush(Color.FromRgb(0xF8, 0x71, 0x71)));
                 }
 
                 if (RadioDesktop != null) RadioDesktop.IsChecked = target == MediumTarget.Desktop;
@@ -96,31 +132,30 @@ namespace KCertManager.Wpf.Views
                 if (RadioAll != null) RadioAll.IsChecked = target == MediumTarget.All;
 
                 // Target List & Notices
-                var isDark = IsCurrentThemeDark();
                 List<CertificateItem> currentList;
                 if (target == MediumTarget.Desktop)
                 {
                     currentList = _desktopExpired;
                     SelectedMediumName = "내 컴퓨터(PC)";
                     if (TxtSafetyNotice != null) TxtSafetyNotice.Text = "🛡️ 내 컴퓨터(PC)의 만료 인증서만 정리합니다. USB 인증서는 유지됩니다.";
-                    if (BorderAlert != null) BorderAlert.BorderBrush = DesktopAlertBorder;
-                    if (TxtSafetyNotice != null) TxtSafetyNotice.Foreground = (Application.Current?.TryFindResource("AccentTextBrush") as Brush) ?? DesktopAlertText;
+                    if (BorderAlert != null) BorderAlert.BorderBrush = ResolveBrush("AccentBlueBrush", DesktopAlertBorder);
+                    if (TxtSafetyNotice != null) TxtSafetyNotice.Foreground = ResolveBrush("AccentTextBrush", DesktopAlertText);
                 }
                 else if (target == MediumTarget.Usb)
                 {
                     currentList = _usbExpired;
                     SelectedMediumName = "USB 메모리";
                     if (TxtSafetyNotice != null) TxtSafetyNotice.Text = "🛡️ USB 메모리의 만료 인증서만 정리합니다. PC 인증서는 유지됩니다.";
-                    if (BorderAlert != null) BorderAlert.BorderBrush = UsbAlertBorder;
-                    if (TxtSafetyNotice != null) TxtSafetyNotice.Foreground = isDark ? UsbAlertText : new SolidColorBrush(Color.FromRgb(0x04, 0x78, 0x57));
+                    if (BorderAlert != null) BorderAlert.BorderBrush = ResolveBrush("AccentGreenBrush", UsbAlertBorder);
+                    if (TxtSafetyNotice != null) TxtSafetyNotice.Foreground = ResolveBrush("AccentGreenBrush", UsbAlertText);
                 }
                 else
                 {
                     currentList = _allExpired;
                     SelectedMediumName = "PC · USB 모두";
                     if (TxtSafetyNotice != null) TxtSafetyNotice.Text = "⚠️ PC와 USB의 만료 인증서를 모두 정리합니다. 한쪽만 정리하려면 위 카드를 선택하세요.";
-                    if (BorderAlert != null) BorderAlert.BorderBrush = AllAlertBorder;
-                    if (TxtSafetyNotice != null) TxtSafetyNotice.Foreground = isDark ? AllAlertText : new SolidColorBrush(Color.FromRgb(0xB4, 0x53, 0x09));
+                    if (BorderAlert != null) BorderAlert.BorderBrush = ResolveBrush("AccentAmberBrush", AllAlertBorder);
+                    if (TxtSafetyNotice != null) TxtSafetyNotice.Foreground = ResolveBrush("AccentAmberBrush", AllAlertText);
                 }
 
                 for (int i = 0; i < currentList.Count; i++)

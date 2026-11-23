@@ -102,12 +102,19 @@ namespace KCertManager.Wpf.Models
             _ => "만료일까지 정상 사용 가능하며, 2027.02.15 이후 갱신 시 RSA 3072-bit로 전환됩니다."
         };
 
-        public string CryptoPostureColorHex => SecurityPosture switch
+        public string CryptoPostureColorHex
         {
-            CryptoSecurityPosture.Recommended3072 => "#10B981",
-            CryptoSecurityPosture.LegacyWeak => "#F43F5E",
-            _ => "#F59E0B"
-        };
+            get
+            {
+                bool isDark = ViewModels.MainViewModel.IsDarkThemeActive;
+                return SecurityPosture switch
+                {
+                    CryptoSecurityPosture.Recommended3072 => isDark ? "#10B981" : "#16654B",
+                    CryptoSecurityPosture.LegacyWeak => isDark ? "#F43F5E" : "#B92B47",
+                    _ => isDark ? "#FBBF24" : "#8A530B"
+                };
+            }
+        }
 
         public string PolicyUsage { get; set; } = "일반 공동인증서";
         public string PolicyOid { get; set; } = string.Empty;

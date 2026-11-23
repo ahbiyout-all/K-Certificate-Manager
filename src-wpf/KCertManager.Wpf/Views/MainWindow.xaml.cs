@@ -43,7 +43,7 @@ namespace KCertManager.Wpf.Views
 
         public MainWindow()
         {
-            MainViewModel.ApplyTheme("dark");
+            MainViewModel.ApplyTheme(SettingsService.Instance.Settings.Theme ?? "dark");
             InitializeComponent();
             SafeLoadAssets();
             Loaded += MainWindow_Loaded;
@@ -217,7 +217,8 @@ namespace KCertManager.Wpf.Views
                                     UpdateDetailSidebarColumn(ViewModel.IsCertificateDetailSidebarVisible);
                             });
                         }
-                        else if (args.PropertyName == nameof(MainViewModel.SelectedTargetDrive))
+                        else if (args.PropertyName == nameof(MainViewModel.SelectedTargetDrive) ||
+                                 args.PropertyName == nameof(MainViewModel.CurrentTheme))
                         {
                             DispatchUi(UpdateSidebarTargetDriveBorder);
                         }
@@ -280,13 +281,6 @@ namespace KCertManager.Wpf.Views
             if (CertDataGrid.SelectedItem is CertificateItem cert && ViewModel != null)
             {
                 ViewModel.SelectedCertificate = cert;
-                if (ViewModel.IsGuidedWorkflowActive && ViewModel.GuidedWorkflowStep == 1)
-                {
-                    foreach (var c in ViewModel.FilteredCertificates)
-                    {
-                        c.IsSelected = (c == cert);
-                    }
-                }
             }
         }
 
@@ -469,7 +463,12 @@ namespace KCertManager.Wpf.Views
 
         private void DeselectAll_Click(object sender, RoutedEventArgs e)
         {
-            ViewModel?.SelectAllCommand.Execute(false);
+            if (ViewModel != null)
+            {
+                ViewModel.SelectAllCommand.Execute(false);
+                ViewModel.SelectedCertificate = null;
+                CertDataGrid.SelectedItem = null;
+            }
         }
 
         private async void OpenUsbTransfer_Click(object sender, RoutedEventArgs e)
@@ -848,40 +847,19 @@ namespace KCertManager.Wpf.Views
         {
             if (ViewModel == null) return;
 
-            var selected = ViewModel.FilteredCertificates.Where(x => x.IsSelected).ToList();
-            if (!selected.Any() && ViewModel.SelectedCertificate != null)
-            {
-                selected.Add(ViewModel.SelectedCertificate);
-            }
+            var selected = ViewModel.FilteredCertificates.Where(x => x != null && x.IsSelected).ToList();
 
             if (!selected.Any())
             {
-                if (ViewModel.FilteredCertificates.Count > 0)
-                {
-                    var ask = MessageBox.Show(
-                        this,
-                        "체크박스로 선택된 인증서가 없습니다.\n\n" +
-                        $"현재 목록에 표시된 전체 인증서({ViewModel.FilteredCertificates.Count}건)를 대상으로 복사 목적지 디스크를 지정하시겠습니까?\n\n" +
-                        "• [예(Y)]: 전체 인증서 복사 디스크 선택창 열기\n" +
-                        "• [아니오(N)]: 취소 (원하는 인증서만 체크박스 선택 후 다시 클릭)",
-                        "인증서 선택 안내",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Question);
-
-                    if (ask == MessageBoxResult.Yes)
-                    {
-                        selected = ViewModel.FilteredCertificates.ToList();
-                    }
-                    else
-                    {
-                        return;
-                    }
-                }
-                else
-                {
-                    MessageBox.Show(this, "복사 또는 백업할 인증서가 목록에 없습니다.", "선택된 인증서 없음", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
+                MessageBox.Show(
+                    this,
+                    ViewModel.FilteredCertificates.Count > 0
+                        ? "복사 또는 백업할 인증서의 체크박스를 1개 이상 선택해 주세요.\n\n전체 인증서를 복사하려면 오른쪽 [전체 일괄 복사 / 백업] 버튼을 사용해 주세요."
+                        : "복사 또는 백업할 인증서가 목록에 없습니다.",
+                    "선택된 인증서 없음",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
             }
 
             _ = OpenTargetDrivePickerForCertificatesAsync(selected);
@@ -891,15 +869,11 @@ namespace KCertManager.Wpf.Views
         {
             if (ViewModel == null) return;
 
-            var all = ViewModel.FilteredCertificates.ToList();
-            if (!all.Any())
-            {
-                all = ViewModel.AllCertificates.ToList();
-            }
+            var all = ViewModel.FilteredCertificates.Where(x => x != null).ToList();
 
             if (!all.Any())
             {
-                MessageBox.Show(this, "복사할 인증서가 목록에 없습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, "현재 표시된 목록에 복사할 인증서가 없습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 

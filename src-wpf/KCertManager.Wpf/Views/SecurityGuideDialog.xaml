@@ -37,8 +37,8 @@
         <TabControl Grid.Row="1" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
             <TabControl.Resources>
                 <Style TargetType="TabItem">
-                    <Setter Property="Background" Value="#0F172A"/>
-                    <Setter Property="Foreground" Value="#94A3B8"/>
+                    <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}"/>
                     <Setter Property="FontWeight" Value="SemiBold"/>
                     <Setter Property="Padding" Value="16,8"/>
                     <Setter Property="Template">
@@ -114,28 +114,28 @@
                     <StackPanel>
                         <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <StackPanel>
-                                <TextBlock Text="1. 인증서 읽기 엔진 (KCert.Core.Parser · X.509)" FontWeight="Bold" Foreground="#34D399" FontSize="13"/>
+                                <TextBlock Text="1. 인증서 읽기 엔진 (KCert.Core.Parser · X.509)" FontWeight="Bold" Foreground="{DynamicResource AccentGreenBrush}" FontSize="13"/>
                                 <TextBlock Text="소유자, 발급기관, 용도, 만료일 정보를 외부 프로그램 없이 안전하게 읽어옵니다." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
 
                         <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <StackPanel>
-                                <TextBlock Text="2. 폴더 자동 탐색 엔진 (KCert.Core.Discovery)" FontWeight="Bold" Foreground="#34D399" FontSize="13"/>
+                                <TextBlock Text="2. 폴더 자동 탐색 엔진 (KCert.Core.Discovery)" FontWeight="Bold" Foreground="{DynamicResource AccentGreenBrush}" FontSize="13"/>
                                 <TextBlock Text="PC와 USB의 NPKI · GPKI · EPKI 표준 폴더를 빠르게 찾습니다." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
 
                         <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <StackPanel>
-                                <TextBlock Text="3. 암호화 금고 및 휴지통 (KCert.Core.Vault · AES-256)" FontWeight="Bold" Foreground="#34D399" FontSize="13"/>
+                                <TextBlock Text="3. 암호화 금고 및 휴지통 (KCert.Core.Vault · AES-256)" FontWeight="Bold" Foreground="{DynamicResource AccentGreenBrush}" FontSize="13"/>
                                 <TextBlock Text="백업 파일 암호화(AES-256)와 실수 삭제 복원 휴지통을 제공합니다." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
 
                         <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <StackPanel>
-                                <TextBlock Text="4. USB 실시간 감지 및 오프라인 보호 (HardwareGuard)" FontWeight="Bold" Foreground="#34D399" FontSize="13"/>
+                                <TextBlock Text="4. USB 실시간 감지 및 오프라인 보호 (HardwareGuard)" FontWeight="Bold" Foreground="{DynamicResource AccentGreenBrush}" FontSize="13"/>
                                 <TextBlock Text="USB 연결·해제를 바로 감지하며 외부 서버 전송 없이 내 PC에서만 동작합니다." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
@@ -152,7 +152,7 @@
                             <StackPanel>
                                 <TextBlock Text="• 2025.09 국가 로드맵: 범국가 양자내성암호(PQC) 전환 추진계획 확정 (1단계 RSA 3072-bit ➔ 2단계 PQC)" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" Margin="0,0,0,4"/>
                                 <TextBlock Text="• 2026.04.27 KISA 공지: 「공동인증서 보안강도 상향(RSA 3072-bit) 인증서 배포 안내」 발표" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" Margin="0,0,0,4"/>
-                                <TextBlock Text="• 2027.02.15 전환 시행: 5대 공동인증기관(금결원·코스콤·KICA·CrossCert·TradeSign) 신규 발급 RSA 3072-bit 전환" FontSize="12" Foreground="#34D399" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                                <TextBlock Text="• 2027.02.15 전환 시행: 5대 공동인증기관(금결원·코스콤·KICA·CrossCert·TradeSign) 신규 발급 RSA 3072-bit 전환" FontSize="12" Foreground="{DynamicResource AccentGreenBrush}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,4"/>
                                 <TextBlock Text="  ※ 기존 RSA 2048-bit 인증서는 만료일까지 정상 사용 가능하며, 1024-bit 또는 SHA-1 구형 규격은 즉시 교체를 권장합니다." FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
@@ -241,7 +241,7 @@
                         <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="10" Margin="0,0,0,6" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <Grid>
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="165"/><ColumnDefinition Width="100"/><ColumnDefinition Width="210"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="금융인증서 (YesKey)" FontWeight="Bold" FontSize="11.5" Foreground="#34D399"/>
+                                <TextBlock Grid.Column="0" Text="금융인증서 (YesKey)" FontWeight="Bold" FontSize="11.5" Foreground="{DynamicResource AccentGreenBrush}"/>
                                 <TextBlock Grid.Column="1" Text="3년 (자동연장)" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                 <TextBlock Grid.Column="2" Text="금융결제원 클라우드 (파일 없음)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                                 <TextBlock Grid.Column="3" Text="USB 복사 없이 6자리 PIN·생체인증으로 은행·홈택스·정부24 사용" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
@@ -251,7 +251,7 @@
                         <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="10" Margin="0,0,0,6" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <Grid>
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="165"/><ColumnDefinition Width="100"/><ColumnDefinition Width="210"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="민간 간편인증" FontWeight="Bold" FontSize="11.5" Foreground="#34D399"/>
+                                <TextBlock Grid.Column="0" Text="민간 간편인증" FontWeight="Bold" FontSize="11.5" Foreground="{DynamicResource AccentGreenBrush}"/>
                                 <TextBlock Grid.Column="1" Text="1~3년" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                 <TextBlock Grid.Column="2" Text="스마트폰 앱 (네이버·카카오·토스·PASS 등)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                                 <TextBlock Grid.Column="3" Text="KISA 인정 전자서명사업자 기반 민간·공공 간편 로그인·서명" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
@@ -261,7 +261,7 @@
                         <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="10" Margin="0,0,0,4" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <Grid>
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="165"/><ColumnDefinition Width="100"/><ColumnDefinition Width="210"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="모바일 신분증 8종" FontWeight="Bold" FontSize="11.5" Foreground="#34D399"/>
+                                <TextBlock Grid.Column="0" Text="모바일 신분증 8종" FontWeight="Bold" FontSize="11.5" Foreground="{DynamicResource AccentGreenBrush}"/>
                                 <TextBlock Grid.Column="1" Text="최대 3년 이내" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                 <TextBlock Grid.Column="2" Text="본인 스마트폰 (1인 1단말기)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                                 <TextBlock Grid.Column="3" Text="2026.08.28 시행령 시행 · 실물 효력 + 전자서명 통합 탑재" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>

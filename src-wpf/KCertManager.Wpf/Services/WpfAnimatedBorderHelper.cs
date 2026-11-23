@@ -108,15 +108,32 @@ namespace KCertManager.Wpf.Services
             border.BorderBrush = animBrush;
             border.BorderThickness = new Thickness(isSelected ? 2.8 : 1.8);
 
+            bool isDarkTheme = true;
+            if (Application.Current?.TryFindResource("BgCardBrush") is SolidColorBrush cardBrush)
+            {
+                var c = cardBrush.Color;
+                double lum = 0.2126 * c.R + 0.7152 * c.G + 0.0722 * c.B;
+                isDarkTheme = lum < 128.0;
+            }
+
             if (isSelected)
             {
-                border.Background = new SolidColorBrush(Color.FromRgb(20, 35, 65));
+                if (isDarkTheme)
+                {
+                    border.Background = new SolidColorBrush(Color.FromRgb(20, 35, 65));
+                }
+                else
+                {
+                    border.Background = (Application.Current?.TryFindResource("SelectedRowBgBrush") as Brush)
+                        ?? new SolidColorBrush(Color.FromRgb(219, 234, 254));
+                }
+
                 border.Effect = new DropShadowEffect
                 {
                     Color = isRemovableUsb ? Color.FromRgb(16, 185, 129) : Color.FromRgb(37, 99, 235),
-                    BlurRadius = 14,
+                    BlurRadius = isDarkTheme ? 14 : 10,
                     ShadowDepth = 0,
-                    Opacity = 0.65
+                    Opacity = isDarkTheme ? 0.65 : 0.28
                 };
             }
             else

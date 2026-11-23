@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -15,10 +16,12 @@ using KCertManager.Wpf.Views;
 
 namespace KCertManager.Wpf.ViewModels
 {
-    public class UsbTransferViewModel : ViewModelBase
+    public class UsbTransferViewModel : ViewModelBase, IDisposable
     {
         private readonly CertificateScannerService _scannerService = new();
         private readonly CertificateBackupService _backupService = new();
+        private readonly List<CertificateItem> _trackedCerts = new();
+        private bool _disposed;
 
         private ObservableCollection<DriveItem> _availableDrives = new();
         private DriveItem? _selectedSourceDrive;
@@ -149,6 +152,7 @@ namespace KCertManager.Wpf.ViewModels
                 {
                     SelectedSourceDrive = null;
                     StatusMessage = "연결된 USB가 없습니다. USB를 꽂은 뒤 [🔄 새로고침]을 눌러주세요.";
+                    DetachCertEvents();
                     FoundUsbCertificates.Clear();
                     (ScanDriveCommand as RelayCommand)?.RaiseCanExecuteChanged();
                     (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
@@ -228,6 +232,7 @@ namespace KCertManager.Wpf.ViewModels
 
             IsBusy = true;
             StatusMessage = $"{driveRoot} 드라이브 내 인증서(NPKI, GPKI, EPKI) 검색 중...";
+            DetachCertEvents();
             FoundUsbCertificates.Clear();
 
             try
@@ -275,21 +280,17 @@ namespace KCertManager.Wpf.ViewModels
                             c.IndexNumber = i + 1;
                             c.IsRemovableMedia = true;
                             c.IsSelected = true;
-                            c.PropertyChanged += (s, e) =>
-                            {
-                                if (e.PropertyName == nameof(CertificateItem.IsSelected))
-                                {
-                                    Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                                    {
-                                        (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
-                                    }));
-                                }
-                            };
                         }
 
                         Action applyResults = () =>
                         {
-                            if (scanGen != _scanGeneration) return;
+                            if (_disposed || scanGen != _scanGeneration) return;
+                            DetachCertEvents();
+                            foreach (var c in validCerts)
+                            {
+                                c.PropertyChanged += CertItem_PropertyChanged;
+                                _trackedCerts.Add(c);
+                            }
                             FoundUsbCertificates = new ObservableCollection<CertificateItem>(validCerts);
                             if (FoundUsbCertificates.Count == 0)
                             {
@@ -586,6 +587,38 @@ namespace KCertManager.Wpf.ViewModels
                     "가져오기 결과 안내",
                     $"• PC 저장 폴더({selectedDriveShort})에 쓰기 권한이 있는지 확인하세요.\n• 필요하면 관리자 권한으로 프로그램을 다시 실행하세요.{reasonDetail}");
             }
+        }
+
+        private void CertItem_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (_disposed) return;
+            if (e.PropertyName == nameof(CertificateItem.IsSelected))
+            {
+                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                {
+                    if (!_disposed)
+                    {
+                        (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                    }
+                }));
+            }
+        }
+
+        private void DetachCertEvents()
+        {
+            foreach (var c in _trackedCerts)
+            {
+                c.PropertyChanged -= CertItem_PropertyChanged;
+            }
+            _trackedCerts.Clear();
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            System.Threading.Interlocked.Increment(ref _scanGeneration);
+            DetachCertEvents();
         }
     }
 }

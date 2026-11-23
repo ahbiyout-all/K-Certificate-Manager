@@ -310,7 +310,7 @@ export const Header: React.FC<HeaderProps> = ({
                 {soundSettings.enabled && soundSettings.volume > 0 ? (
                   <Volume1 className="w-3.5 h-3.5" style={{ color: 'var(--wpf-accent-text)' }} />
                 ) : (
-                  <VolumeX className="w-3.5 h-3.5 text-[#F43F5E]" />
+                  <VolumeX className="w-3.5 h-3.5" style={{ color: 'var(--wpf-accent-rose)' }} />
                 )}
               </button>
               <span className="text-[11px] hidden xl:inline whitespace-nowrap" style={{ color: 'var(--wpf-text-secondary)' }}>
@@ -387,8 +387,8 @@ export const Header: React.FC<HeaderProps> = ({
               className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
               title="삭제·복원 인증서 보관함"
             >
-              <Trash2 className="w-3.5 h-3.5 text-[#F43F5E]" />
-              <span className="font-semibold tabular-nums" style={{ color: '#F43F5E' }}>
+              <Trash2 className="w-3.5 h-3.5" style={{ color: 'var(--wpf-accent-rose)' }} />
+              <span className="font-semibold tabular-nums" style={{ color: 'var(--wpf-accent-rose)' }}>
                 휴지통 ({trashCount})
               </span>
             </button>
@@ -468,7 +468,7 @@ export const Header: React.FC<HeaderProps> = ({
                 className="wpf-btn-secondary wpf-native px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
                 title="인증서 보안 수칙 · 2026 동향·비교"
               >
-                <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
+                <ShieldCheck className="w-3.5 h-3.5" style={{ color: 'var(--wpf-accent-green)' }} />
                 <span>보안 수칙·동향</span>
               </button>
 
@@ -482,7 +482,12 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--wpf-badge-expiring-text)' }} />
                   <span>{isCheckingUpdates ? '확인 중...' : '업데이트 확인'}</span>
-                  {hasUpdateBadge && <span className="w-2 h-2 rounded-full bg-[#F43F5E]" />}
+                  {hasUpdateBadge && (
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: 'var(--wpf-accent-rose)' }}
+                    />
+                  )}
                 </button>
               )}
 
