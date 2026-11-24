@@ -176,10 +176,16 @@ export const Header: React.FC<HeaderProps> = ({
         backgroundColor: 'var(--wpf-bg-card)',
         borderBottom: '1px solid var(--wpf-border)',
         color: 'var(--wpf-text-primary)',
-      }}
+        WebkitAppRegion: 'drag',
+        appRegion: 'drag',
+      } as any}
     >
-      {/* Left: Brand Logo & Title (Matches WPF Grid.Column="0") */}
-      <div className="flex items-center gap-2.5 shrink-0">
+      {/* Left: Brand Logo & Title (Draggable Window Area) */}
+      <div 
+        className="flex items-center gap-2.5 shrink-0 cursor-grab active:cursor-grabbing group"
+        style={{ WebkitAppRegion: 'drag', appRegion: 'drag' } as any}
+        title="마우스로 드래그하여 앱 창 이동"
+      >
         {onToggleMobileMenu && (
           <button
             type="button"
@@ -189,12 +195,28 @@ export const Header: React.FC<HeaderProps> = ({
               backgroundColor: 'var(--wpf-bg-dark)',
               border: '1px solid var(--wpf-border)',
               color: 'var(--wpf-text-primary)',
-            }}
+              WebkitAppRegion: 'no-drag',
+              appRegion: 'no-drag',
+            } as any}
             aria-label="카테고리 메뉴 열기"
           >
             <Menu className="w-4 h-4" />
           </button>
         )}
+
+        {/* Drag Grip Indicator Dots */}
+        <div className="flex items-center gap-0.5 opacity-40 group-hover:opacity-90 transition-opacity px-0.5" title="창 이동 핸들">
+          <div className="flex flex-col gap-0.5">
+            <span className="w-1 h-1 rounded-full" style={{ backgroundColor: 'var(--wpf-text-secondary)' }} />
+            <span className="w-1 h-1 rounded-full" style={{ backgroundColor: 'var(--wpf-text-secondary)' }} />
+            <span className="w-1 h-1 rounded-full" style={{ backgroundColor: 'var(--wpf-text-secondary)' }} />
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="w-1 h-1 rounded-full" style={{ backgroundColor: 'var(--wpf-text-secondary)' }} />
+            <span className="w-1 h-1 rounded-full" style={{ backgroundColor: 'var(--wpf-text-secondary)' }} />
+            <span className="w-1 h-1 rounded-full" style={{ backgroundColor: 'var(--wpf-text-secondary)' }} />
+          </div>
+        </div>
 
         <div className="w-9 h-9 rounded-[8px] overflow-hidden shrink-0 flex items-center justify-center">
           <img
@@ -212,7 +234,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         <h1
-          className="text-[15px] font-bold tracking-tight whitespace-nowrap"
+          className="text-[15px] font-bold tracking-tight whitespace-nowrap select-none"
           style={{ color: 'var(--wpf-text-primary)' }}
         >
           K-인증서 매니저
@@ -225,6 +247,7 @@ export const Header: React.FC<HeaderProps> = ({
         onWheel={handleHeaderWheel}
         className="flex-1 flex items-center justify-end overflow-x-auto min-w-0 ml-3 py-1 scrollbar-none"
         title="휠로 메뉴를 좌우 스크롤"
+        style={{ WebkitAppRegion: 'no-drag', appRegion: 'no-drag' } as any}
       >
         <div className="flex items-center gap-1.5 shrink-0">
           {/* Theme Switcher Dropdown Box */}

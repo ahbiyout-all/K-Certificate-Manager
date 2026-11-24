@@ -56,6 +56,11 @@
 - **WPF 상세 창 C# 컴파일 에러 수정 (`CertificateDetailDialog.xaml.cs`)**:
   - `CryptoSecurityPosture` 열거형 참조 누락으로 발생한 CS0103 빌드 에러를 해결하기 위해 누락된 `using KCert.Core.Parser;` 네임스페이스 지시문을 추가하여 `dotnet build` 파이프라인 정합성 확보.
 
+#### 🛠️ UI 및 사용자 경험(UX) 고도화 · 인터페이스 폴리시 (2026-11-24)
+- **인증서 목록 및 검색 UX 고도화 (`CertificateList.tsx`, `src/index.css`)**:
+  - 상단 툴바와 검색 바 영역의 반응형 간격 및 포커스 링을 세련되게 다듬고, 키워드 검색 시 즉시 초기화(`X`) 버튼 및 필터 초기화 가시성 강화.
+  - 다크, 회색(*Misty Mineral Slate*), 베이지(*Warm Oat Paper*), 화이트 4대 테마 전반에서 카드 호버, 선택 행, 배지 텍스트의 명도 대비와 부드러운 전환 효과 보강.
+
 ---
 
 ### 🚀 [v2.1.1] - 2026-11-16 (최신 안정화 반영: 2026-11-18)
