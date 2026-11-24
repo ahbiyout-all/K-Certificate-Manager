@@ -61,6 +61,12 @@
   - 상단 툴바와 검색 바 영역의 반응형 간격 및 포커스 링을 세련되게 다듬고, 키워드 검색 시 즉시 초기화(`X`) 버튼 및 필터 초기화 가시성 강화.
   - 다크, 회색(*Misty Mineral Slate*), 베이지(*Warm Oat Paper*), 화이트 4대 테마 전반에서 카드 호버, 선택 행, 배지 텍스트의 명도 대비와 부드러운 전환 효과 보강.
 
+#### 🛠️ 상단 헤더 네이티브 창 드래그 기능 구현 및 최종 심층 감사 (2026-11-24)
+- **상단 헤더 네이티브 창 드래그 구현 (`Header.tsx`)**:
+  - 상단 헤더 컨테이너 `<header>`에 `-webkit-app-region: drag;` 및 `app-region: drag;`를 적용하여 데스크톱 웹 환경(Electron 등)에서 네이티브 창과 동일한 마우스 드래그 이동 편의성을 제공하고, 우측 액션 버튼 및 메뉴 컨테이너에는 `-webkit-app-region: no-drag;`를 적용하여 클릭 및 상호작용 장애를 원천 차단.
+- **선택 복사 정합성 최종 재확인 (`App.tsx`, `CertificateList.tsx`, `MainViewModel.cs`)**:
+  - `resolveSelectedBackupCerts`와 `visibleCertificates` 간 교집합 계산 및 WPF `FilteredCertificates.Where(x => x.IsSelected)` 일원화 상태 최종 감사 완료.
+
 ---
 
 ### 🚀 [v2.1.1] - 2026-11-16 (최신 안정화 반영: 2026-11-18)

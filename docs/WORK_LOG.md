@@ -17,6 +17,21 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 198] v2.2.0 7차 자아성찰(Self-Reflection & Deep Audit) · 상단 헤더 네이티브 창 드래그 구현 및 문서 최신화
+- **작업 일시**: 2026-11-24 01:48 KST
+- **요청 사항**:
+  - `자아성찰(Self-Reflection & Deep Audit) 과 오류 수정 그리고 문서들 업데이트`
+- **코드 감사 및 결함 수정 내역**:
+  1. **상단 헤더 네이티브 창 드래그 영역 구현 (`Header.tsx`)**:
+     - 상단 헤더 컨테이너 `<header>`에 `-webkit-app-region: drag;` 및 `app-region: drag;`를 적용하여 데스크톱 웹 환경(Electron 등)에서 네이티브 창과 동일한 마우스 드래그 이동 편의성 제공.
+     - 우측 스크롤 가능한 메뉴 및 액션 버튼 컨테이너에는 `-webkit-app-region: no-drag;`를 적용해 버튼 클릭 및 상호작용 장애 원천 차단.
+  2. **선택 복사 정합성 및 3중 격리 최종 재확인 (`App.tsx`, `CertificateList.tsx`, `MainViewModel.cs`)**:
+     - `resolveSelectedBackupCerts`와 `visibleCertificates` 간 교집합 계산 및 WPF `FilteredCertificates.Where(x => x.IsSelected)` 일원화 상태 최종 감사 완료.
+- **문서 현행화 내역**:
+  - `docs/WORK_LOG.md`, `docs/PATCHNOTES.md`, `docs/README.md`, `docs/ARCHITECTURE.md`, `docs/GITHUB_DOCS.md`에 작업 차수 198 반영 완료.
+- **검증 결과**:
+  - Web SPA `compile_applet` + `lint_applet` 동시 통과 및 WPF 구문·리소스 정적 검증 완료.
+
 ### 📝 [작업 차수 197] v2.2.0 UI 및 사용자 경험(UX) 고도화 · 인터페이스 폴리시 및 문서 최신화
 - **작업 일시**: 2026-11-24 01:35 KST
 - **요청 사항**:
