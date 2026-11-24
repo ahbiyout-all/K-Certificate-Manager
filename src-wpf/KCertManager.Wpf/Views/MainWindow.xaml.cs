@@ -851,15 +851,26 @@ namespace KCertManager.Wpf.Views
 
             if (!selected.Any())
             {
-                MessageBox.Show(
-                    this,
-                    ViewModel.FilteredCertificates.Count > 0
-                        ? "복사 또는 백업할 인증서의 체크박스를 1개 이상 선택해 주세요.\n\n전체 인증서를 복사하려면 오른쪽 [전체 일괄 복사 / 백업] 버튼을 사용해 주세요."
-                        : "복사 또는 백업할 인증서가 목록에 없습니다.",
-                    "선택된 인증서 없음",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-                return;
+                if (CertDataGrid.SelectedItem is CertificateItem focusedCert)
+                {
+                    selected = new List<CertificateItem> { focusedCert };
+                }
+                else if (ViewModel.SelectedCertificate != null)
+                {
+                    selected = new List<CertificateItem> { ViewModel.SelectedCertificate };
+                }
+                else
+                {
+                    MessageBox.Show(
+                        this,
+                        ViewModel.FilteredCertificates.Count > 0
+                            ? "복사 또는 백업할 인증서의 체크박스를 1개 이상 선택해 주세요.\n\n(또는 목록에서 인증서를 클릭하여 선택한 후 [선택 복사]를 누르세요)"
+                            : "복사 또는 백업할 인증서가 목록에 없습니다.",
+                        "선택된 인증서 없음",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
             }
 
             _ = OpenTargetDrivePickerForCertificatesAsync(selected);

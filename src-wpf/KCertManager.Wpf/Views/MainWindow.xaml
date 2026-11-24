@@ -48,8 +48,22 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Brand Title (Draggable Area) -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Brand Title & Drag Grip (Draggable Area) -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" ToolTip="마우스로 드래그하여 앱 창 이동">
+                    <!-- Drag Grip Indicator Dots -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0" Opacity="0.5">
+                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,2,0">
+                            <Ellipse Width="2.5" Height="2.5" Fill="{DynamicResource TextSecondaryBrush}" Margin="0,1"/>
+                            <Ellipse Width="2.5" Height="2.5" Fill="{DynamicResource TextSecondaryBrush}" Margin="0,1"/>
+                            <Ellipse Width="2.5" Height="2.5" Fill="{DynamicResource TextSecondaryBrush}" Margin="0,1"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                            <Ellipse Width="2.5" Height="2.5" Fill="{DynamicResource TextSecondaryBrush}" Margin="0,1"/>
+                            <Ellipse Width="2.5" Height="2.5" Fill="{DynamicResource TextSecondaryBrush}" Margin="0,1"/>
+                            <Ellipse Width="2.5" Height="2.5" Fill="{DynamicResource TextSecondaryBrush}" Margin="0,1"/>
+                        </StackPanel>
+                    </StackPanel>
+
                     <Border CornerRadius="8" Width="36" Height="36" Margin="0,0,10,0" ClipToBounds="True" Background="Transparent">
                         <Grid>
                             <Image x:Name="AppLogoImage"
