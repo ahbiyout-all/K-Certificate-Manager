@@ -822,14 +822,19 @@ export default function App() {
       }
       setExplicitBackupCerts(certsOverride);
     } else {
-      const targets = resolveSelectedBackupCerts();
+      let targets = resolveSelectedBackupCerts();
       if (targets.length === 0) {
-        const message =
-          selectedIds.length > 0 && hasActiveFilter
-            ? '현재 필터·검색 조건에 표시된 인증서 중 체크된 항목이 없습니다. 필터를 초기화하거나 현재 목록에서 체크박스를 선택해 주세요.'
-            : '복사할 인증서의 체크박스를 1개 이상 선택해 주세요.';
-        showToast(message, undefined, undefined, { type: 'delete' });
-        return;
+        if (resolvedInspectedCert) {
+          targets = [resolvedInspectedCert];
+          showToast(`체크된 항목이 없어 현재 상세 조회 중인 [${resolvedInspectedCert.name}] 인증서를 선택 복사합니다.`);
+        } else {
+          const message =
+            selectedIds.length > 0 && hasActiveFilter
+              ? '현재 필터·검색 조건에 표시된 인증서 중 체크된 항목이 없습니다. 필터를 초기화하거나 현재 목록에서 체크박스를 선택해 주세요.'
+              : '복사할 인증서의 체크박스를 1개 이상 선택해 주세요.';
+          showToast(message, undefined, undefined, { type: 'delete' });
+          return;
+        }
       }
       setExplicitBackupCerts(targets);
     }

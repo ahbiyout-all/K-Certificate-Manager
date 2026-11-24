@@ -2036,8 +2036,15 @@ namespace KCertManager.Wpf.ViewModels
 
             if (!selected.Any())
             {
-                MessageBox.Show("복사 또는 백업할 인증서의 체크박스를 1개 이상 선택해 주세요.", "선택된 인증서 없음", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
+                if (SelectedCertificate != null)
+                {
+                    selected = new List<CertificateItem> { SelectedCertificate };
+                }
+                else
+                {
+                    MessageBox.Show("복사 또는 백업할 인증서의 체크박스를 1개 이상 선택하거나 목록에서 항목을 선택해 주세요.", "선택된 인증서 없음", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
             }
 
             await RefreshDrivesAsync();
