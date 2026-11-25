@@ -99,6 +99,7 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
@@ -110,7 +111,7 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="복사할 인증서를 체크하세요:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                                <TextBlock Text="복사할 인증서를 체크하거나 행을 클릭하세요:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,14,0"/>
                                 <CheckBox IsChecked="{Binding IsSmartDeduplicated, Mode=TwoWay}" VerticalAlignment="Center" Cursor="Hand" Margin="0,0,10,0">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <TextBlock Text="⚡ 같은 인증서 묶어보기 (표준 경로 우선)" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextBrush}"/>
@@ -124,8 +125,17 @@
                         </Grid>
                     </Border>
 
+                    <!-- Selected Preview Summary Bar -->
+                    <Border Grid.Row="1" Background="{DynamicResource BgCardBrush}" Padding="10,5" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="📋 복사 대상 미리보기:" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding SelectedSummaryText}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Main DataGrid with horizontal and vertical grid divider lines and resizable columns -->
-                    <DataGrid Grid.Row="1" ItemsSource="{Binding FoundPcCertificates}" SelectedItem="{Binding SelectedCertificate, Mode=TwoWay}" SelectionMode="Single" AutoGenerateColumns="False" CanUserAddRows="False"
+                    <DataGrid x:Name="CertDataGrid" Grid.Row="2" ItemsSource="{Binding FoundPcCertificates}" SelectedItem="{Binding SelectedCertificate, Mode=TwoWay}" SelectionMode="Single" AutoGenerateColumns="False" CanUserAddRows="False"
+                              PreviewMouseLeftButtonUp="CertDataGrid_PreviewMouseLeftButtonUp"
                               CanUserResizeColumns="True"
                               Background="Transparent" RowBackground="{DynamicResource BgCardBrush}" AlternatingRowBackground="{DynamicResource BgDarkBrush}"
                               Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" GridLinesVisibility="All"

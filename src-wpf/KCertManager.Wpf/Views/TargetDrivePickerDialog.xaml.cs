@@ -36,6 +36,7 @@ namespace KCertManager.Wpf.Views
             }
 
             TxtSelectedCountBadge.Text = $"인증서 {_certsToCopy.Count}건 선택됨";
+            RenderCertPreviewList();
 
             try
             {
@@ -54,6 +55,111 @@ namespace KCertManager.Wpf.Views
             }
 
             RenderDriveCards();
+        }
+
+        private void RenderCertPreviewList()
+        {
+            PanelCertPreviewList.Children.Clear();
+            TxtPreviewHeader.Text = $"📋 복사 대상 인증서 미리보기 (총 {_certsToCopy.Count}건)";
+
+            var rowBg = (Application.Current?.TryFindResource("BgDarkBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(15, 23, 42));
+            var borderBr = (Application.Current?.TryFindResource("BorderBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(51, 65, 85));
+            var textPrimary = (Application.Current?.TryFindResource("TextPrimaryBrush") as Brush) ?? Brushes.White;
+            var textSecondary = (Application.Current?.TryFindResource("TextSecondaryBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(148, 163, 184));
+            var accentBr = (Application.Current?.TryFindResource("AccentTextBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(147, 197, 253));
+
+            if (_certsToCopy.Count == 0)
+            {
+                PanelCertPreviewList.Children.Add(new TextBlock
+                {
+                    Text = "선택된 인증서가 없습니다.",
+                    FontSize = 11.5,
+                    Foreground = textSecondary,
+                    Margin = new Thickness(4, 2, 0, 2)
+                });
+                return;
+            }
+
+            for (int i = 0; i < _certsToCopy.Count; i++)
+            {
+                var cert = _certsToCopy[i];
+                var rowBorder = new Border
+                {
+                    Background = rowBg,
+                    BorderBrush = borderBr,
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(5),
+                    Padding = new Thickness(8, 5, 8, 5),
+                    Margin = new Thickness(0, 0, 0, 4)
+                };
+
+                var rowGrid = new Grid();
+                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                var idxText = new TextBlock
+                {
+                    Text = $"{i + 1}.",
+                    FontSize = 11,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = textSecondary,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(0, 0, 6, 0)
+                };
+                Grid.SetColumn(idxText, 0);
+                rowGrid.Children.Add(idxText);
+
+                var catBadge = new Border
+                {
+                    Background = new SolidColorBrush(Color.FromRgb(30, 58, 138)),
+                    BorderBrush = new SolidColorBrush(Color.FromRgb(59, 130, 246)),
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(3),
+                    Padding = new Thickness(5, 1, 5, 1),
+                    Margin = new Thickness(0, 0, 8, 0),
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                catBadge.Child = new TextBlock
+                {
+                    Text = cert.Category.ToString(),
+                    FontSize = 10,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = accentBr
+                };
+                Grid.SetColumn(catBadge, 1);
+                rowGrid.Children.Add(catBadge);
+
+                string cn = string.IsNullOrWhiteSpace(cert.CommonName) ? "공동인증서" : cert.CommonName;
+                string driveHint = string.IsNullOrWhiteSpace(cert.DriveLetter) ? "" : $" [{cert.DriveLetter}]";
+                var nameText = new TextBlock
+                {
+                    Text = $"{cn}{driveHint}",
+                    FontSize = 11.5,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = textPrimary,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(0, 0, 10, 0),
+                    ToolTip = cert.DirectoryPath
+                };
+                Grid.SetColumn(nameText, 2);
+                rowGrid.Children.Add(nameText);
+
+                var expiryText = new TextBlock
+                {
+                    Text = $"만료 {cert.NotAfter:yyyy-MM-dd}",
+                    FontSize = 10.5,
+                    Foreground = textSecondary,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                Grid.SetColumn(expiryText, 3);
+                rowGrid.Children.Add(expiryText);
+
+                rowBorder.Child = rowGrid;
+                PanelCertPreviewList.Children.Add(rowBorder);
+            }
         }
 
         private void BtnRefreshDrives_Click(object sender, RoutedEventArgs e)

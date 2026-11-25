@@ -525,6 +525,12 @@ export const CertificateList: React.FC<CertificateListProps> = ({
 
   const hasActiveFilter = categoryFilter !== 'ALL' || sourceFilter !== 'ALL' || searchQuery.trim().length > 0;
   const [isExpiryBannerDismissed, setIsExpiryBannerDismissed] = useState(false);
+  const [hoveredCertId, setHoveredCertId] = useState<string | null>(null);
+
+  const handleRowClick = (cert: CertificateItem) => {
+    onToggleSelect(cert.id);
+    onInspectCert?.(cert);
+  };
 
   const expiryAlert = useMemo(() => evaluateExpiryAlerts(certificates), [certificates]);
 
@@ -821,34 +827,37 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                 const isInstitutional = isInstitutionalOrClass1(cert);
                 const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);
 
+                const isHovered = hoveredCertId === cert.id;
                 const cardBg = isRecentlyCopied
                   ? 'var(--wpf-copied-row)'
-                  : isInspected
+                  : isSelected
                   ? 'var(--wpf-selected-row)'
+                  : isHovered
+                  ? 'var(--wpf-bg-hover)'
                   : 'var(--wpf-bg-dark)';
 
-                const cardText = isInspected
+                const cardText = isSelected
                   ? 'var(--wpf-selected-row-text)'
                   : isRecentlyCopied
                   ? 'var(--wpf-copied-row-text)'
                   : 'var(--wpf-text-primary)';
 
-                const cardSecondary = isInspected
+                const cardSecondary = isSelected
                   ? 'var(--wpf-selected-row-secondary)'
                   : isRecentlyCopied
                   ? 'var(--wpf-copied-row-secondary)'
                   : 'var(--wpf-text-secondary)';
 
-                const cardBorder = isInspected
-                  ? '#3B82F6'
-                  : isSelected
+                const cardBorder = isSelected
                   ? 'var(--wpf-accent-blue)'
+                  : isInspected
+                  ? '#3B82F6'
                   : 'var(--wpf-border)';
 
                 return (
                   <article
                     key={cert.id}
-                    onClick={() => onInspectCert?.(cert)}
+                    onClick={() => handleRowClick(cert)}
                     onDoubleClick={() => onOpenDetailModal(cert)}
                     className={`wpf-native rounded-[8px] p-4 flex flex-col justify-between gap-3 cursor-pointer transition-colors ${
                       isRecentlyCopied ? 'animate-copied-row' : ''
@@ -858,28 +867,18 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                       color: cardText,
                       border: `1px solid ${cardBorder}`,
                     }}
-                    onMouseEnter={(e) => {
-                      if (!isInspected && !isRecentlyCopied) {
-                        e.currentTarget.style.backgroundColor = 'var(--wpf-bg-hover)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isInspected && !isRecentlyCopied) {
-                        e.currentTarget.style.backgroundColor = cardBg;
-                      }
-                    }}
+                    onMouseEnter={() => setHoveredCertId(cert.id)}
+                    onMouseLeave={() => setHoveredCertId(prev => (prev === cert.id ? null : prev))}
                   >
                     {/* Card Top Strip: Checkbox + Index + Drive Tag + Status */}
                     <div className="flex flex-col gap-2.5 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <div
-                          className="flex items-center gap-2 min-w-0"
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                        <div className="flex items-center gap-2 min-w-0">
                           <input
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => onToggleSelect(cert.id)}
+                            onClick={(e) => e.stopPropagation()}
                             aria-label={`${cert.name} 선택`}
                             className="wpf-native w-4 h-4 accent-[#2563EB] cursor-pointer shrink-0"
                           />
@@ -945,7 +944,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                             <span
                               className="inline-flex items-center gap-1 font-medium"
                               style={{
-                                color: isInspected
+                                color: isSelected
                                   ? 'var(--wpf-selected-row-secondary)'
                                   : isRecentlyCopied
                                   ? 'var(--wpf-copied-row-secondary)'
@@ -959,7 +958,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                             <span
                               className="inline-flex items-center gap-1 font-medium"
                               style={{
-                                color: isInspected
+                                color: isSelected
                                   ? 'var(--wpf-selected-row-secondary)'
                                   : isRecentlyCopied
                                   ? 'var(--wpf-copied-row-secondary)'
@@ -977,7 +976,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                               <span
                                 className="inline-flex items-center gap-0.5 font-semibold"
                                 style={{
-                                  color: isInspected
+                                  color: isSelected
                                     ? 'var(--wpf-selected-row-secondary)'
                                     : isRecentlyCopied
                                     ? 'var(--wpf-copied-row-secondary)'
@@ -1039,7 +1038,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                             {copiedPathId === cert.id ? (
                               <Check className="w-3.5 h-3.5" style={{ color: 'var(--wpf-accent-green)' }} />
                             ) : (
-                              <Copy className="w-3.5 h-3.5" style={{ color: isInspected ? cardText : 'var(--wpf-accent-text)' }} />
+                              <Copy className="w-3.5 h-3.5" style={{ color: isSelected ? cardText : 'var(--wpf-accent-text)' }} />
                             )}
                           </button>
                         </div>
@@ -1297,15 +1296,18 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                   const isInstitutional = isInstitutionalOrClass1(cert);
                   const issuerInfo = getAccurateIssuerInfo(cert.issuer, cert.caSignatureName, cert.subjectDn);
 
+                  const isHovered = hoveredCertId === cert.id;
                   const rowBg = isRecentlyCopied
                     ? 'var(--wpf-copied-row)'
-                    : isInspected
+                    : isSelected
                     ? 'var(--wpf-selected-row)'
+                    : isHovered
+                    ? 'var(--wpf-bg-hover)'
                     : index % 2 === 1
                     ? 'var(--wpf-bg-dark)'
                     : 'var(--wpf-bg-card)';
 
-                  const rowTextColor = isInspected
+                  const rowTextColor = isSelected
                     ? 'var(--wpf-selected-row-text)'
                     : isRecentlyCopied
                     ? 'var(--wpf-copied-row-text)'
@@ -1314,7 +1316,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                   return (
                     <tr
                       key={cert.id}
-                      onClick={() => onInspectCert?.(cert)}
+                      onClick={() => handleRowClick(cert)}
                       onDoubleClick={() => onOpenDetailModal(cert)}
                       className={`cursor-pointer transition-colors h-[48px] ${
                         isRecentlyCopied ? 'animate-copied-row' : ''
@@ -1324,16 +1326,8 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                         color: rowTextColor,
                         borderBottom: '1px solid var(--wpf-border)',
                       }}
-                      onMouseEnter={(e) => {
-                        if (!isInspected && !isRecentlyCopied) {
-                          e.currentTarget.style.backgroundColor = 'var(--wpf-bg-hover)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isInspected && !isRecentlyCopied) {
-                          e.currentTarget.style.backgroundColor = rowBg;
-                        }
-                      }}
+                      onMouseEnter={() => setHoveredCertId(cert.id)}
+                      onMouseLeave={() => setHoveredCertId(prev => (prev === cert.id ? null : prev))}
                     >
                       {/* 1. 번호 */}
                       <td
@@ -1341,7 +1335,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                           width: `${colWidths.index}px`,
                           backgroundColor: rowBg,
                           borderRight: '1px solid var(--wpf-border)',
-                          color: isInspected ? rowTextColor : 'var(--wpf-text-secondary)',
+                          color: isSelected ? rowTextColor : 'var(--wpf-text-secondary)',
                         }}
                         className={`${cellPadding} text-center font-mono font-bold text-[11px] tabular-nums sticky left-0 z-10`}
                       >
@@ -1355,12 +1349,13 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                           borderRight: '1px solid var(--wpf-border)',
                         }}
                         className={`${cellPadding} text-center`}
-                        onClick={(e) => e.stopPropagation()}
                       >
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => onToggleSelect(cert.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={`${cert.name} 선택`}
                           className="wpf-native w-3.5 h-3.5 accent-[#2563EB] cursor-pointer"
                         />
                       </td>
@@ -1458,7 +1453,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                         <div className="flex items-center justify-between gap-1.5 mt-0.5 min-w-0 group/path">
                           <span
                             className="text-[10.5px] font-mono truncate"
-                            style={{ color: isInspected ? 'var(--wpf-selected-row-secondary)' : isRecentlyCopied ? 'var(--wpf-copied-row-secondary)' : 'var(--wpf-text-secondary)' }}
+                            style={{ color: isSelected ? 'var(--wpf-selected-row-secondary)' : isRecentlyCopied ? 'var(--wpf-copied-row-secondary)' : 'var(--wpf-text-secondary)' }}
                             title={cert.sourceLocation}
                           >
                             {cert.sourceLocation}
@@ -1494,7 +1489,7 @@ export const CertificateList: React.FC<CertificateListProps> = ({
                         </div>
                         <div
                           className="text-[10px] truncate"
-                          style={{ color: isInspected ? 'var(--wpf-selected-row-secondary)' : isRecentlyCopied ? 'var(--wpf-copied-row-secondary)' : 'var(--wpf-text-secondary)' }}
+                          style={{ color: isSelected ? 'var(--wpf-selected-row-secondary)' : isRecentlyCopied ? 'var(--wpf-copied-row-secondary)' : 'var(--wpf-text-secondary)' }}
                           title={cert.caSignatureName || issuerInfo.centerName}
                         >
                           {cert.caSignatureName || issuerInfo.centerName}

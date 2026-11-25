@@ -61,8 +61,7 @@ namespace KCertManager.Wpf.ViewModels
                 async () => await TransferToUsbAsync(),
                 () => SelectedTargetDrive != null &&
                       !IsBusy &&
-                      (FoundPcCertificates.Any(x => x.IsSelected) ||
-                       (SelectedCertificate != null && FoundPcCertificates.Contains(SelectedCertificate))));
+                      FoundPcCertificates.Any(x => x.IsSelected));
             SelectAllCommand = new RelayCommand(() =>
             {
                 foreach (var c in FoundPcCertificates) c.IsSelected = true;
@@ -166,6 +165,25 @@ namespace KCertManager.Wpf.ViewModels
         {
             get => _confirmButtonText;
             set => SetProperty(ref _confirmButtonText, value);
+        }
+
+        public string SelectedSummaryText
+        {
+            get
+            {
+                var checkedItems = FoundPcCertificates?.Where(x => x.IsSelected).ToList() ?? new List<CertificateItem>();
+                if (checkedItems.Count == 0)
+                {
+                    return "체크된 인증서 없음 (행 클릭 또는 체크박스로 선택)";
+                }
+
+                var names = checkedItems
+                    .Select(x => string.IsNullOrWhiteSpace(x.CommonName) ? "공동인증서" : x.CommonName)
+                    .Take(3)
+                    .ToList();
+                string nameList = string.Join(", ", names) + (checkedItems.Count > 3 ? $" 외 {checkedItems.Count - 3}건" : string.Empty);
+                return $"총 {checkedItems.Count}건 선택됨 · {nameList}";
+            }
         }
 
         public ICommand RefreshDrivesCommand { get; }
@@ -280,7 +298,9 @@ namespace KCertManager.Wpf.ViewModels
 
             if (initialCertificates != null && initialCertificates.Any())
             {
-                list.AddRange(initialCertificates.Where(c => c.Status != ExpiryStatus.Expired));
+                list.AddRange(initialCertificates
+                    .Where(c => c != null && c.Status != ExpiryStatus.Expired)
+                    .Select(c => c.CreateIsolatedCopy()));
             }
             else
             {
@@ -421,12 +441,11 @@ namespace KCertManager.Wpf.ViewModels
                 }
             }
 
-            bool autoSelectSingle = resultList.Count == 1;
             for (int i = 0; i < resultList.Count; i++)
             {
                 var c = resultList[i];
                 c.IndexNumber = i + 1;
-                c.IsSelected = autoSelectSingle;
+                c.IsSelected = false;
             }
 
             FoundPcCertificates = new ObservableCollection<CertificateItem>(resultList);
@@ -441,9 +460,8 @@ namespace KCertManager.Wpf.ViewModels
 
         private void UpdateStatusMessage()
         {
+            OnPropertyChanged(nameof(SelectedSummaryText));
             int selectedCount = FoundPcCertificates?.Count(x => x.IsSelected) ?? 0;
-            bool hasSingleFocused = selectedCount == 0 && SelectedCertificate != null && FoundPcCertificates != null && FoundPcCertificates.Contains(SelectedCertificate);
-            int effectiveCount = selectedCount > 0 ? selectedCount : (hasSingleFocused ? 1 : 0);
 
             if (SelectedTargetDrive == null)
             {
@@ -454,40 +472,39 @@ namespace KCertManager.Wpf.ViewModels
 
             if (SelectedTargetDrive.IsRemovable)
             {
-                ConfirmButtonText = effectiveCount > 0
-                    ? $"선택한 인증서({effectiveCount}건) USB({SelectedTargetDrive.Name.TrimEnd('\\')})로 복사 시작"
+                ConfirmButtonText = selectedCount > 0
+                    ? $"선택한 인증서({selectedCount}건) USB({SelectedTargetDrive.Name.TrimEnd('\\')})로 복사 시작"
                     : $"선택한 인증서 USB({SelectedTargetDrive.Name.TrimEnd('\\')})로 복사 시작";
             }
             else
             {
-                ConfirmButtonText = effectiveCount > 0
-                    ? $"선택한 인증서({effectiveCount}건) 디스크({SelectedTargetDrive.Name.TrimEnd('\\')})로 복사 시작"
+                ConfirmButtonText = selectedCount > 0
+                    ? $"선택한 인증서({selectedCount}건) 디스크({SelectedTargetDrive.Name.TrimEnd('\\')})로 복사 시작"
                     : $"선택한 인증서 디스크({SelectedTargetDrive.Name.TrimEnd('\\')})로 복사 시작";
             }
 
-            if (effectiveCount == 0)
+            if (selectedCount == 0)
             {
-                StatusMessage = "복사할 인증서를 체크하거나 목록에서 선택하세요.";
-            }
-            else if (hasSingleFocused && SelectedCertificate != null)
-            {
-                string targetType = SelectedTargetDrive.IsRemovable ? "USB 메모리" : "로컬 디스크";
-                StatusMessage = $"선택된 인증서 1건 ({SelectedCertificate.CommonName}) · 저장할 위치: {targetType}({SelectedTargetDrive.Name})";
+                StatusMessage = "복사할 인증서를 체크하거나 목록 행을 클릭해 선택하세요.";
             }
             else
             {
                 string targetType = SelectedTargetDrive.IsRemovable ? "USB 메모리" : "로컬 디스크";
-                StatusMessage = $"{selectedCount}건 선택됨 · 저장할 위치: {targetType}({SelectedTargetDrive.Name})";
+                if (selectedCount == 1)
+                {
+                    var single = FoundPcCertificates!.First(x => x.IsSelected);
+                    StatusMessage = $"1건 선택됨 ({single.CommonName}) · 저장할 위치: {targetType}({SelectedTargetDrive.Name})";
+                }
+                else
+                {
+                    StatusMessage = $"{selectedCount}건 선택됨 · 저장할 위치: {targetType}({SelectedTargetDrive.Name})";
+                }
             }
         }
 
         public async Task TransferToUsbAsync()
         {
             var selected = FoundPcCertificates.Where(x => x.IsSelected).ToList();
-            if (!selected.Any() && SelectedCertificate != null && FoundPcCertificates.Contains(SelectedCertificate))
-            {
-                selected = new List<CertificateItem> { SelectedCertificate };
-            }
             if (!selected.Any() || SelectedTargetDrive == null) return;
 
             string targetDriveName = SelectedTargetDrive.Name;

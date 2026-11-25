@@ -102,6 +102,7 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
@@ -112,7 +113,7 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="가져올 인증서를 체크하거나 목록에서 선택하세요:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="가져올 인증서를 체크하거나 행을 클릭하세요:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Button Command="{Binding SelectAllCommand}" Style="{StaticResource SecondaryButton}" Content="전체 선택" Padding="8,2" Margin="0,0,6,0" FontSize="11"/>
                                 <Button Command="{Binding ClearSelectionCommand}" Style="{StaticResource SecondaryButton}" Content="선택 해제" Padding="8,2" FontSize="11"/>
@@ -120,7 +121,16 @@
                         </Grid>
                     </Border>
 
-                    <DataGrid Grid.Row="1" ItemsSource="{Binding FoundUsbCertificates}" SelectedItem="{Binding SelectedCertificate, Mode=TwoWay}" SelectionMode="Single" AutoGenerateColumns="False" CanUserAddRows="False"
+                    <!-- Selected Preview Summary Bar -->
+                    <Border Grid.Row="1" Background="{DynamicResource BgCardBrush}" Padding="10,5" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="📋 가져오기 대상 미리보기:" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding SelectedSummaryText}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <DataGrid x:Name="CertDataGrid" Grid.Row="2" ItemsSource="{Binding FoundUsbCertificates}" SelectedItem="{Binding SelectedCertificate, Mode=TwoWay}" SelectionMode="Single" AutoGenerateColumns="False" CanUserAddRows="False"
+                              PreviewMouseLeftButtonUp="CertDataGrid_PreviewMouseLeftButtonUp"
                               CanUserResizeColumns="True"
                               Background="Transparent" RowBackground="{DynamicResource BgCardBrush}" AlternatingRowBackground="{DynamicResource BgDarkBrush}"
                               Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" GridLinesVisibility="All"

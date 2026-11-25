@@ -90,7 +90,7 @@ namespace KCertManager.Wpf.ViewModels
                 _ = RefreshDrivesAsync();
                 await RefreshCertificatesAsync();
             });
-            BackupSelectedCommand = new RelayCommand(async () => await BackupSelectedAsync(), () => SelectedCertificatesCount > 0 || SelectedCertificate != null);
+            BackupSelectedCommand = new RelayCommand(async () => await BackupSelectedAsync(), () => SelectedCertificatesCount > 0);
             BackupAllCommand = new RelayCommand(async () => await BackupAllAsync(), () => FilteredCertificates.Any());
             DeleteSelectedCommand = new RelayCommand(DeleteSelected, () => SelectedCertificatesCount > 0 || SelectedCertificate != null);
             CleanExpiredCommand = new RelayCommand(CleanExpired, () => ExpiredCount > 0);
@@ -685,19 +685,12 @@ namespace KCertManager.Wpf.ViewModels
                 var selected = FilteredCertificates.Where(x => x != null && x.IsSelected).ToList();
                 if (!selected.Any())
                 {
-                    if (SelectedCertificate != null && FilteredCertificates.Contains(SelectedCertificate))
-                    {
-                        selected.Add(SelectedCertificate);
-                    }
-                    else
-                    {
-                        UserFriendlyMessageHelper.ShowWarning(
-                            FilteredCertificates.Any()
-                                ? "복사할 인증서의 체크박스를 선택하거나 목록에서 행을 클릭해 주세요."
-                                : "현재 표시된 목록에 복사할 인증서가 없습니다.",
-                            "인증서 선택 필요");
-                        return;
-                    }
+                    UserFriendlyMessageHelper.ShowWarning(
+                        FilteredCertificates.Any()
+                            ? "복사할 인증서 행을 클릭하거나 체크박스를 1개 이상 선택해 주세요."
+                            : "현재 표시된 목록에 복사할 인증서가 없습니다.",
+                        "인증서 선택 필요");
+                    return;
                 }
 
                 GuidedWorkflowStep = 2;
@@ -720,15 +713,11 @@ namespace KCertManager.Wpf.ViewModels
         public void ExecuteGuidedCopy()
         {
             var selected = FilteredCertificates.Where(x => x != null && x.IsSelected).ToList();
-            if (!selected.Any() && SelectedCertificate != null && FilteredCertificates.Contains(SelectedCertificate))
-            {
-                selected.Add(SelectedCertificate);
-            }
 
             if (!selected.Any())
             {
                 UserFriendlyMessageHelper.ShowWarning(
-                    "복사할 인증서가 선택되지 않았습니다. 목록에서 복사할 인증서의 체크박스를 먼저 선택해 주세요.",
+                    "복사할 인증서가 선택되지 않았습니다. 목록에서 복사할 인증서 행을 클릭하거나 체크박스를 먼저 선택해 주세요.",
                     "선택 오류 안내");
                 return;
             }
@@ -1927,6 +1916,14 @@ namespace KCertManager.Wpf.ViewModels
             }
 
             FilteredCertificates = new ObservableCollection<CertificateItem>(query);
+            var visibleSet = new HashSet<CertificateItem>(FilteredCertificates);
+            foreach (var c in _allCertificates)
+            {
+                if (c != null && !visibleSet.Contains(c) && c.IsSelected)
+                {
+                    c.IsSelected = false;
+                }
+            }
             for (int i = 0; i < FilteredCertificates.Count; i++)
             {
                 FilteredCertificates[i].IndexNumber = i + 1;
@@ -2017,15 +2014,11 @@ namespace KCertManager.Wpf.ViewModels
             SelectedTargetDrive = drive;
 
             var selected = FilteredCertificates.Where(x => x != null && x.IsSelected).ToList();
-            if (!selected.Any() && SelectedCertificate != null && FilteredCertificates.Contains(SelectedCertificate))
-            {
-                selected = new List<CertificateItem> { SelectedCertificate };
-            }
 
             if (!selected.Any())
             {
                 MessageBox.Show(
-                    "복사 또는 백업할 인증서의 체크박스를 1개 이상 선택하거나 목록에서 항목을 선택해 주세요.",
+                    "복사 또는 백업할 인증서 행을 클릭하거나 체크박스를 1개 이상 선택해 주세요.",
                     "선택된 인증서 없음",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -2058,15 +2051,12 @@ namespace KCertManager.Wpf.ViewModels
 
             if (!selected.Any())
             {
-                if (SelectedCertificate != null && FilteredCertificates.Contains(SelectedCertificate))
-                {
-                    selected = new List<CertificateItem> { SelectedCertificate };
-                }
-                else
-                {
-                    MessageBox.Show("복사 또는 백업할 인증서의 체크박스를 1개 이상 선택하거나 목록에서 항목을 선택해 주세요.", "선택된 인증서 없음", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
+                MessageBox.Show(
+                    "복사 또는 백업할 인증서 행을 클릭하거나 체크박스를 1개 이상 선택해 주세요.",
+                    "선택된 인증서 없음",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
             }
 
             await RefreshDrivesAsync();

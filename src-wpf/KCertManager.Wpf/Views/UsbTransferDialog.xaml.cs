@@ -1,6 +1,10 @@
 using System;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using KCertManager.Wpf.Models;
 using KCertManager.Wpf.Services;
 using KCertManager.Wpf.ViewModels;
 
@@ -55,6 +59,41 @@ namespace KCertManager.Wpf.Views
         {
             DialogResult = true;
             Close();
+        }
+
+        private void CertDataGrid_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                DependencyObject? dep = e.OriginalSource as DependencyObject;
+                while (dep != null)
+                {
+                    if (dep is CheckBox ||
+                        dep is System.Windows.Controls.Primitives.ButtonBase ||
+                        dep is System.Windows.Controls.Primitives.ScrollBar ||
+                        dep is System.Windows.Controls.Primitives.Thumb ||
+                        dep is System.Windows.Controls.Primitives.DataGridColumnHeader ||
+                        dep is ContextMenu ||
+                        dep is System.Windows.Controls.Primitives.TextBoxBase)
+                    {
+                        return;
+                    }
+
+                    if (dep is DataGridRow row)
+                    {
+                        if (row.Item is CertificateItem item)
+                        {
+                            item.IsSelected = !item.IsSelected;
+                        }
+                        return;
+                    }
+
+                    dep = (dep is Visual || dep is System.Windows.Media.Media3D.Visual3D)
+                        ? VisualTreeHelper.GetParent(dep)
+                        : LogicalTreeHelper.GetParent(dep);
+                }
+            }
+            catch { }
         }
     }
 }

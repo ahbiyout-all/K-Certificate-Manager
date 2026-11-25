@@ -681,6 +681,41 @@ namespace KCertManager.Wpf.Views
             }
         }
 
+        private void CertDataGrid_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                DependencyObject? dep = e.OriginalSource as DependencyObject;
+                while (dep != null)
+                {
+                    if (dep is CheckBox ||
+                        dep is System.Windows.Controls.Primitives.ButtonBase ||
+                        dep is System.Windows.Controls.Primitives.ScrollBar ||
+                        dep is System.Windows.Controls.Primitives.Thumb ||
+                        dep is System.Windows.Controls.Primitives.DataGridColumnHeader ||
+                        dep is ContextMenu ||
+                        dep is System.Windows.Controls.Primitives.TextBoxBase)
+                    {
+                        return;
+                    }
+
+                    if (dep is DataGridRow row)
+                    {
+                        if (row.Item is CertificateItem item)
+                        {
+                            item.IsSelected = !item.IsSelected;
+                        }
+                        return;
+                    }
+
+                    dep = (dep is Visual || dep is System.Windows.Media.Media3D.Visual3D)
+                        ? VisualTreeHelper.GetParent(dep)
+                        : LogicalTreeHelper.GetParent(dep);
+                }
+            }
+            catch { }
+        }
+
         private void CertDataGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             try
@@ -689,7 +724,9 @@ namespace KCertManager.Wpf.Views
                 {
                     while (dep != null && !(dep is DataGridRow))
                     {
-                        dep = System.Windows.Media.VisualTreeHelper.GetParent(dep);
+                        dep = (dep is Visual || dep is System.Windows.Media.Media3D.Visual3D)
+                            ? VisualTreeHelper.GetParent(dep)
+                            : LogicalTreeHelper.GetParent(dep);
                     }
                     if (dep is DataGridRow row && row.Item is CertificateItem item)
                     {
@@ -858,28 +895,15 @@ namespace KCertManager.Wpf.Views
 
             if (!selected.Any())
             {
-                if (CertDataGrid.SelectedItem is CertificateItem focusedCert &&
-                    ViewModel.FilteredCertificates.Contains(focusedCert))
-                {
-                    selected = new List<CertificateItem> { focusedCert };
-                }
-                else if (ViewModel.SelectedCertificate != null &&
-                         ViewModel.FilteredCertificates.Contains(ViewModel.SelectedCertificate))
-                {
-                    selected = new List<CertificateItem> { ViewModel.SelectedCertificate };
-                }
-                else
-                {
-                    MessageBox.Show(
-                        this,
-                        ViewModel.FilteredCertificates.Count > 0
-                            ? "복사 또는 백업할 인증서의 체크박스를 1개 이상 선택해 주세요.\n\n(또는 목록에서 인증서를 클릭하여 선택한 후 [선택 복사]를 누르세요)"
-                            : "복사 또는 백업할 인증서가 목록에 없습니다.",
-                        "선택된 인증서 없음",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                    return;
-                }
+                MessageBox.Show(
+                    this,
+                    ViewModel.FilteredCertificates.Count > 0
+                        ? "복사 또는 백업할 인증서 행을 클릭하거나 체크박스를 1개 이상 선택해 주세요.\n\n전체 인증서를 복사하려면 오른쪽 [전체 일괄 복사 / 백업] 버튼을 사용해 주세요."
+                        : "복사 또는 백업할 인증서가 목록에 없습니다.",
+                    "선택된 인증서 없음",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
             }
 
             _ = OpenTargetDrivePickerForCertificatesAsync(selected);

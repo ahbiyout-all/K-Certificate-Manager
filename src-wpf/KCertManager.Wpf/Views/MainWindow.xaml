@@ -846,6 +846,7 @@
                                       MinRowHeight="46"
                                       RowHeight="48"
                                       MouseDoubleClick="CertDataGrid_MouseDoubleClick"
+                                      PreviewMouseLeftButtonUp="CertDataGrid_PreviewMouseLeftButtonUp"
                                       PreviewMouseRightButtonDown="CertDataGrid_PreviewMouseRightButtonDown"
                                       Sorting="CertDataGrid_Sorting">
                             <DataGrid.ContextMenu>

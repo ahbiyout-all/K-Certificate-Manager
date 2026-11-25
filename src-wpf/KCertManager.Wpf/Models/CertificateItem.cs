@@ -548,5 +548,19 @@ namespace KCertManager.Wpf.Models
                 return "일반 인증서 프로그램(은행/정부)이 인식하지 못하는 비표준 위치입니다. [정 위치 복사]가 필요합니다.";
             }
         }
+
+        /// <summary>
+        /// 전송 창 등에서 원본 보관함의 체크 상태(IsSelected)와 이벤트 구독이 섞이지 않도록 독립된 복제본을 생성합니다.
+        /// </summary>
+        public CertificateItem CreateIsolatedCopy()
+        {
+            var copy = (CertificateItem)MemberwiseClone();
+            copy.PropertyChanged = null;
+            copy._isSelected = false;
+            copy._indexNumber = 0;
+            copy._duplicateLocationsCount = 1;
+            copy._duplicateLocationsDetails = string.Empty;
+            return copy;
+        }
     }
 }

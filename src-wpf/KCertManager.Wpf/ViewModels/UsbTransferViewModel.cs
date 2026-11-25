@@ -51,9 +51,7 @@ namespace KCertManager.Wpf.ViewModels
             ScanDriveCommand = new RelayCommand(async () => await ScanDriveAsync(), () => SelectedSourceDrive != null && SelectedSourceDrive.IsRemovable);
             TransferToPcCommand = new RelayCommand(
                 async () => await TransferToPcAsync(),
-                () => !IsBusy &&
-                      (FoundUsbCertificates.Any(x => x.IsSelected) ||
-                       (SelectedCertificate != null && FoundUsbCertificates.Contains(SelectedCertificate))));
+                () => !IsBusy && FoundUsbCertificates.Any(x => x.IsSelected));
             SelectAllCommand = new RelayCommand(() =>
             {
                 foreach (var c in FoundUsbCertificates) c.IsSelected = true;
@@ -167,6 +165,25 @@ namespace KCertManager.Wpf.ViewModels
             set => SetProperty(ref _statusMessage, value);
         }
 
+        public string SelectedSummaryText
+        {
+            get
+            {
+                var checkedItems = FoundUsbCertificates?.Where(x => x.IsSelected).ToList() ?? new List<CertificateItem>();
+                if (checkedItems.Count == 0)
+                {
+                    return "체크된 인증서 없음 (행 클릭 또는 체크박스로 선택)";
+                }
+
+                var names = checkedItems
+                    .Select(x => string.IsNullOrWhiteSpace(x.CommonName) ? "공동인증서" : x.CommonName)
+                    .Take(3)
+                    .ToList();
+                string nameList = string.Join(", ", names) + (checkedItems.Count > 3 ? $" 외 {checkedItems.Count - 3}건" : string.Empty);
+                return $"총 {checkedItems.Count}건 선택됨 · {nameList}";
+            }
+        }
+
         public ICommand RefreshDrivesCommand { get; }
         public ICommand ScanDriveCommand { get; }
         public ICommand TransferToPcCommand { get; }
@@ -193,6 +210,7 @@ namespace KCertManager.Wpf.ViewModels
                     StatusMessage = "연결된 USB가 없습니다. USB를 꽂은 뒤 [🔄 새로고침]을 눌러주세요.";
                     DetachCertEvents();
                     FoundUsbCertificates.Clear();
+                    OnPropertyChanged(nameof(SelectedSummaryText));
                     (ScanDriveCommand as RelayCommand)?.RaiseCanExecuteChanged();
                     (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
                     return;
@@ -313,13 +331,12 @@ namespace KCertManager.Wpf.ViewModels
                             return true;
                         }).ToList();
 
-                        bool autoSelectSingle = validCerts.Count == 1;
                         for (int i = 0; i < validCerts.Count; i++)
                         {
                             var c = validCerts[i];
                             c.IndexNumber = i + 1;
                             c.IsRemovableMedia = true;
-                            c.IsSelected = autoSelectSingle;
+                            c.IsSelected = false;
                         }
 
                         Action applyResults = () =>
@@ -333,17 +350,14 @@ namespace KCertManager.Wpf.ViewModels
                             }
                             FoundUsbCertificates = new ObservableCollection<CertificateItem>(validCerts);
                             SelectedCertificate = null;
+                            OnPropertyChanged(nameof(SelectedSummaryText));
                             if (FoundUsbCertificates.Count == 0)
                             {
                                 StatusMessage = $"{driveRoot}에서 인증서(NPKI·GPKI·EPKI)를 찾지 못했습니다.";
                             }
-                            else if (FoundUsbCertificates.Count == 1)
-                            {
-                                StatusMessage = $"{driveRoot}에서 인증서 1건을 찾았습니다. [가져오기 시작]을 눌러주세요.";
-                            }
                             else
                             {
-                                StatusMessage = $"{driveRoot}에서 인증서 {FoundUsbCertificates.Count}건을 찾았습니다. 가져올 항목을 체크하거나 선택해 주세요.";
+                                StatusMessage = $"{driveRoot}에서 인증서 {FoundUsbCertificates.Count}건을 찾았습니다. 가져올 인증서를 체크하거나 행을 클릭해 선택하세요.";
                             }
                             (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
                         };
@@ -432,30 +446,31 @@ namespace KCertManager.Wpf.ViewModels
 
         private void UpdateSelectionStatus()
         {
+            OnPropertyChanged(nameof(SelectedSummaryText));
             if (IsBusy || FoundUsbCertificates == null || FoundUsbCertificates.Count == 0) return;
 
             int checkedCount = FoundUsbCertificates.Count(x => x.IsSelected);
             if (checkedCount > 0)
             {
-                StatusMessage = $"총 {FoundUsbCertificates.Count}건 중 {checkedCount}건 선택됨 — [내 PC로 가져오기 시작]을 눌러주세요.";
-            }
-            else if (SelectedCertificate != null && FoundUsbCertificates.Contains(SelectedCertificate))
-            {
-                StatusMessage = $"선택된 인증서 1건 ({SelectedCertificate.CommonName}) — [내 PC로 가져오기 시작]을 눌러주세요.";
+                if (checkedCount == 1)
+                {
+                    var single = FoundUsbCertificates.First(x => x.IsSelected);
+                    StatusMessage = $"총 {FoundUsbCertificates.Count}건 중 1건 선택됨 ({single.CommonName}) — [내 PC로 가져오기 시작]을 눌러주세요.";
+                }
+                else
+                {
+                    StatusMessage = $"총 {FoundUsbCertificates.Count}건 중 {checkedCount}건 선택됨 — [내 PC로 가져오기 시작]을 눌러주세요.";
+                }
             }
             else
             {
-                StatusMessage = $"총 {FoundUsbCertificates.Count}건 검색됨 — 가져올 인증서를 체크하거나 클릭해 선택하세요.";
+                StatusMessage = $"총 {FoundUsbCertificates.Count}건 검색됨 — 가져올 인증서를 체크하거나 행을 클릭해 선택하세요.";
             }
         }
 
         public async Task TransferToPcAsync()
         {
             var selected = FoundUsbCertificates.Where(x => x.IsSelected).ToList();
-            if (!selected.Any() && SelectedCertificate != null && FoundUsbCertificates.Contains(SelectedCertificate))
-            {
-                selected = new List<CertificateItem> { SelectedCertificate };
-            }
             if (!selected.Any()) return;
 
             string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\') + "\\";
