@@ -17,6 +17,25 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 199] v2.2.0 8차 자아성찰(Self-Reflection & Deep Audit) · 다중 디스크 선택 복사 건수 정합화 · 선택 복사 엄격 격리 및 문서 최신화
+- **작업 일시**: 2026-11-25 03:40 KST
+- **요청 사항**:
+  - `저장 디스크가 여러개인 경우 각각 디스크에 복사하는 선택 복사시 복사된 숫자가 오류가남.`
+  - `선택 복사 시 '전체 목록'이 아닌, resolveSelectedBackupCerts로 필터링된 정확한 selectedVisibleCertificates 배열만 타겟으로 전달되도록 복사 실행 핸들러를 수정하세요.`
+  - `자아성찰(Self-Reflection & Deep Audit) 과 오류 수정 그리고 문서들 업데이트`
+- **코드 감사 및 결함 수정 내역**:
+  1. **다중 디스크 선택 복사 건수 정합화 및 대상 경로 중복 제거 (Web & WPF)**:
+     - Web (`src/utils/backupService.ts`, `src/components/BackupModal.tsx`, `src/App.tsx`): `copyCertificatesToDisk`와 `writeCertificatesToDirectoryHandle`가 실제 기록된 인증서 ID 집합(`copiedCertIds`) 및 중복 제거된 대상 표준 경로 기준 건수(`count`)를 반환하도록 통일하고, `BackupModal`의 로그(`seenLogTargetPaths`), 오류 건수(`actualCopyable.length`), 중복 검사(`isSameDriveSelfCopy` 제외) 및 `App.tsx`의 `handleBackupSuccess` 드라이브별 보관 건수·신규 인증서 등록을 정확히 일치화.
+     - WPF (`DriveItem.cs`, `TargetDrivePickerDialog.xaml.cs`, `MainViewModel.cs`, `PcToUsbTransferViewModel.cs`, `UsbTransferViewModel.cs`): 여러 물리 디스크에서 다중 선택 복사 시 자가 복사(`ResolveEffectiveDestinationRoot`) 및 동일 대상 경로 중복을 사전 제거해 실제 복사 성공 건수·진행률·완료 안내와 `UpdateDriveCertificateCounts` 드라이브 배지 수치를 1:1 정합화하고, 드라이브 새로고침(`BtnRefreshDrives_Click`, `RefreshDrives`) 시 기존 보관 건수 배지가 `0`으로 초기화되지 않도록 보존.
+  2. **선택 복사 엄격 격리 및 비동기 예외 전파 보강 (`App.tsx`, `TargetDrivePickerModal.tsx`, `MainWindow.xaml.cs`)**:
+     - `App.tsx` `handleOpenGeneralBackupModal`에서 선택된 인증서가 없을 때 상세 보기 행(`inspectedCert` / `certificates[0]`)으로 암묵 대체하던 fallback을 제거하고 `resolveSelectedBackupCerts`로 필터링된 `selectedVisibleCertificates`만 전달하도록 격리.
+     - `TargetDrivePickerModal.tsx`에서 자가 복사 대상(`isSameDriveSelfCopy`)을 중복 충돌 배지 검사 대상에서 제외.
+     - `MainWindow.xaml.cs` `OpenTargetDrivePickerForCertificatesAsync`에서 `_ = ViewModel.ExecuteBackupWithConflictOptionAsync(...)` discard 호출을 `await`로 수정해 비동기 예외가 `try/catch`를 우회하던 문제 해결.
+- **문서 현행화 내역**:
+  - `README.md`, `docs/WORK_LOG.md`, `docs/PATCHNOTES.md`, `docs/README.md`, `docs/ARCHITECTURE.md`, `docs/GITHUB_DOCS.md`에 작업 차수 199 반영 완료.
+- **검증 결과**:
+  - Web SPA `compile_applet` + `lint_applet` 동시 통과 및 WPF 구문·XAML·네임스페이스(`using`) 정적 검증 통과.
+
 ### 📝 [작업 차수 198] v2.2.0 7차 자아성찰(Self-Reflection & Deep Audit) · 상단 헤더 네이티브 창 드래그 구현 및 문서 최신화
 - **작업 일시**: 2026-11-24 01:48 KST
 - **요청 사항**:

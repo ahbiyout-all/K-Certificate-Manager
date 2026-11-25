@@ -61,6 +61,7 @@ import { SuccessCelebration } from './SuccessCelebration';
 import { isSameDriveSelfCopy } from '../utils/driveFilter';
 import { getDriveBadgeStyle } from '../utils/driveBadgeUtils';
 import { extractDriveLetterChar } from '../utils/driveColors';
+import { extractDriveLetterFromPathOrLabel } from '../utils/certDiagnostics';
 
 interface BackupModalProps {
   isOpen: boolean;
@@ -297,7 +298,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   // Check duplicate status whenever drive or selection changes
   useEffect(() => {
     if (isOpen && targetDrive) {
-      const dup = detectDuplicateCertificates(effectiveSelectedCerts, existingCertificates, targetDrive);
+      const copyableCandidates = effectiveSelectedCerts.filter(c => !isSameDriveSelfCopy(c, targetDrive));
+      const dup = detectDuplicateCertificates(copyableCandidates, existingCertificates, targetDrive);
       setDuplicateResult(dup);
       const initialDecisions: Record<string, 'overwrite' | 'skip' | 'archive_old'> = {};
       dup.conflicts.forEach(c => {
@@ -437,7 +439,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     }
 
     // 2. Pre-flight Duplicate Certificate Folder Check on Target Drive
-    const dupCheck = detectDuplicateCertificates(effectiveSelectedCerts, existingCertificates, targetDrive);
+    const copyableCandidates = effectiveSelectedCerts.filter(c => !isSameDriveSelfCopy(c, targetDrive));
+    const dupCheck = detectDuplicateCertificates(copyableCandidates, existingCertificates, targetDrive);
     setDuplicateResult(dupCheck);
 
     if (dupCheck.hasDuplicates && !overrideDuplicateConfirmed) {
@@ -514,18 +517,25 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
           const backupDateTag = new Date().toISOString().slice(0, 10).replace(/-/g, '');
           const copyLogs: string[] = [];
+          const seenLogTargetPaths = new Set<string>();
           effectiveSelectedCerts.forEach(cert => {
             const stdPath = getStandardDirectoryPath(cert);
+            const normTargetPath = stdPath.replace(/\//g, '\\').toLowerCase();
             if (isSameDriveSelfCopy(cert, targetDrive)) {
               copyLogs.push(`[자가 복사 제외] ⏭️ ${cert.name} (${cert.category}) -> 대상 드라이브(${targetDrive.letter})와 동일하여 복사 제외`);
             } else if (skippedCertIds.includes(cert.id)) {
               copyLogs.push(`[중복 건너뜀] ⏭️ ${cert.name} (${cert.category}) -> 이미 존재하여 복사 건너뜀`);
-            } else if (archivedCertIds.includes(cert.id)) {
-              copyLogs.push(`[기존 백업 보존] 📦 ${cert.name} -> 기존 폴더를 ${targetDrive.letter}\\${stdPath}_backup_${backupDateTag} 로 보존 후 새 파일 복사`);
-            } else if (overwrittenCertIds.includes(cert.id)) {
-              copyLogs.push(`[덮어쓰기 갱신] 🔄 ${cert.name} (${cert.category}) -> ${targetDrive.letter}\\${stdPath} 기존 인증서 최신 교체`);
+            } else if (seenLogTargetPaths.has(normTargetPath)) {
+              copyLogs.push(`[동일 대상 경로 중복 생략] ⏭️ ${cert.name} (${cert.category}) -> 동일 경로(${targetDrive.letter}\\${stdPath}) 중복 항목 생략`);
             } else {
-              copyLogs.push(`[신규 복사] 📁 ${cert.name} (${cert.category}) -> ${targetDrive.letter}\\${stdPath}`);
+              seenLogTargetPaths.add(normTargetPath);
+              if (archivedCertIds.includes(cert.id)) {
+                copyLogs.push(`[기존 백업 보존] 📦 ${cert.name} -> 기존 폴더를 ${targetDrive.letter}\\${stdPath}_backup_${backupDateTag} 로 보존 후 새 파일 복사`);
+              } else if (overwrittenCertIds.includes(cert.id)) {
+                copyLogs.push(`[덮어쓰기 갱신] 🔄 ${cert.name} (${cert.category}) -> ${targetDrive.letter}\\${stdPath} 기존 인증서 최신 교체`);
+              } else {
+                copyLogs.push(`[신규 복사] 📁 ${cert.name} (${cert.category}) -> ${targetDrive.letter}\\${stdPath}`);
+              }
             }
           });
           setLogs(prev => [...prev, ...copyLogs]);
@@ -615,10 +625,21 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         playCompletionSound();
         setShowCelebration(true);
 
-        // Record history excluding skipped and same-drive self-copy items to match backupService result
-        const copiedCerts = effectiveSelectedCerts.filter(
-          c => !skippedIds(c.id, skippedCertIds) && !isSameDriveSelfCopy(c, targetDrive)
-        );
+        // Record history excluding skipped, self-copy, and duplicate target path items to match backupService result
+        const copiedIdSet = retryResult.data.copiedCertIds ? new Set(retryResult.data.copiedCertIds) : null;
+        const copiedCerts: CertificateItem[] = [];
+        const seenCopiedTargetPaths = new Set<string>();
+        for (const c of effectiveSelectedCerts) {
+          if (copiedIdSet) {
+            if (!copiedIdSet.has(c.id)) continue;
+          } else {
+            if (skippedIds(c.id, skippedCertIds) || isSameDriveSelfCopy(c, targetDrive)) continue;
+            const normTarget = getStandardDirectoryPath(c).replace(/\//g, '\\').toLowerCase();
+            if (seenCopiedTargetPaths.has(normTarget)) continue;
+            seenCopiedTargetPaths.add(normTarget);
+          }
+          copiedCerts.push(c);
+        }
         const firstCopiedSubPath =
           copiedCerts.length > 0
             ? getStandardDirectoryPath(copiedCerts[0]).replace(/\//g, '\\')
@@ -663,8 +684,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           driveLetter: targetDrive?.letter,
           driveName: targetDrive?.name,
           direction: 'PC_TO_USB',
-          failedCount: effectiveSelectedCerts.length - skippedCertIds.length,
-          certNames: effectiveSelectedCerts.map(c => c.name),
+          failedCount: actualCopyable.length,
+          certNames: actualCopyable.map(c => c.name),
         });
       }
     } catch (err: any) {
@@ -681,8 +702,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         driveLetter: targetDrive?.letter,
         driveName: targetDrive?.name,
         direction: 'PC_TO_USB',
-        failedCount: effectiveSelectedCerts.length - skippedCertIds.length,
-        certNames: effectiveSelectedCerts.map(c => c.name),
+        failedCount: actualCopyable.length,
+        certNames: actualCopyable.map(c => c.name),
       });
     } finally {
       setIsProcessing(false);
@@ -1410,9 +1431,17 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   {availableDrives.map(drive => {
                     const isSelected = drive.id === selectedDriveId;
                     const isDriveLocked = simulatedLockedDriveIds.includes(drive.id) || drive.isWritable === false;
-                    const driveCertCount = existingCertificates.filter(
-                      c => (c.sourceDrive || '').includes(drive.letter) || (c.sourceLocation || '').startsWith(drive.letter)
-                    ).length;
+                    const driveLetterNorm = extractDriveLetterFromPathOrLabel(drive.letter);
+                    const driveCertCount = existingCertificates.filter(c => {
+                      const locDrive = extractDriveLetterFromPathOrLabel(c.sourceLocation);
+                      const srcDrive = extractDriveLetterFromPathOrLabel(c.sourceDrive);
+                      if (locDrive && driveLetterNorm) return locDrive === driveLetterNorm;
+                      if (srcDrive && driveLetterNorm) return srcDrive === driveLetterNorm;
+                      return (
+                        (c.sourceDrive || '').toUpperCase().includes(drive.letter.toUpperCase()) ||
+                        (c.sourceLocation || '').toUpperCase().startsWith(drive.letter.toUpperCase())
+                      );
+                    }).length;
                     const driveBadge = getDriveBadgeStyle(drive);
 
                     // Calculate duplicates for this drive based on checked certificates

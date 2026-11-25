@@ -162,8 +162,9 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
               const isSelected = drive.id === selectedId;
               const isRemovable = drive.type === 'removable' || drive.busType === 'USB';
               const isDriveSelfCopy = selectedCerts.length > 0 && selectedCerts.every(c => isSameDriveSelfCopy(c, drive));
+              const nonSelfCopyCerts = selectedCerts.filter(c => !isSameDriveSelfCopy(c, drive));
               const dupCheck = !isDriveSelfCopy && existingCertificates.length > 0
-                ? detectDuplicateCertificates(selectedCerts, existingCertificates, drive)
+                ? detectDuplicateCertificates(nonSelfCopyCerts, existingCertificates, drive)
                 : { hasDuplicates: false, conflicts: [] };
 
               const style = getDriveBadgeStyle(drive);

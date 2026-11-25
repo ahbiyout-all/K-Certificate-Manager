@@ -145,6 +145,8 @@ export interface BackupResult {
   totalCertificates: number;
   totalFiles: number;
   checksum: string;
+  copiedCertIds?: string[];
+  skippedCount?: number;
 }
 
 export interface DiskWriteCheckResult {
@@ -369,8 +371,16 @@ export async function copyCertificatesToDisk(
   const skippedIds = new Set(options.skippedCertIds || []);
   const archivedIds = new Set(options.archivedCertIds || []);
 
-  // 자기 자신 드라이브로의 자가 복사(Self-Copy) 차단
-  const activeCerts = certificates.filter(c => !skippedIds.has(c.id) && !isSameDriveSelfCopy(c, targetDrive));
+  // 자기 자신 드라이브로의 자가 복사(Self-Copy) 차단 및 동일 대상 경로 중복 방지
+  const candidateCerts = certificates.filter(c => !skippedIds.has(c.id) && !isSameDriveSelfCopy(c, targetDrive));
+  const seenTargetPaths = new Set<string>();
+  const activeCerts: CertificateItem[] = [];
+  for (const cert of candidateCerts) {
+    const normPath = getStandardDirectoryPath(cert).replace(/\//g, '\\').toLowerCase();
+    if (seenTargetPaths.has(normPath)) continue;
+    seenTargetPaths.add(normPath);
+    activeCerts.push(cert);
+  }
 
   for (const cert of activeCerts) {
     const basePath = getStandardDirectoryPath(cert);
@@ -407,7 +417,7 @@ export async function copyCertificatesToDisk(
   const skippedCount = certificates.length - activeCerts.length;
   let summaryMsg = `${activeCerts.length}개의 인증서가 ${targetDrive.letter} 이동식 디스크 규격으로 안전하게 복사되었습니다.`;
   if (skippedCount > 0) {
-    summaryMsg += ` (중복 ${skippedCount}개 건너뜀)`;
+    summaryMsg += ` (중복·자가복사 ${skippedCount}개 건너뜀)`;
   }
   if (archivedIds.size > 0) {
     summaryMsg += ` (기존 ${archivedIds.size}개 백업 보존)`;
@@ -419,6 +429,8 @@ export async function copyCertificatesToDisk(
     totalCertificates: activeCerts.length,
     totalFiles,
     checksum: (manifestItems[0]?.sha256Fingerprint || '').slice(0, 16) || 'SECURE_OK',
+    copiedCertIds: activeCerts.map(c => c.id),
+    skippedCount,
   };
 }
 
@@ -433,9 +445,17 @@ export async function writeCertificatesToDirectoryHandle(
   try {
     let count = 0;
     const skippedIds = new Set(options?.skippedCertIds || []);
-    const activeCerts = certificates.filter(
+    const candidateCerts = certificates.filter(
       c => !skippedIds.has(c.id) && (!options?.targetDrive || !isSameDriveSelfCopy(c, options.targetDrive))
     );
+    const seenTargetPaths = new Set<string>();
+    const activeCerts: CertificateItem[] = [];
+    for (const cert of candidateCerts) {
+      const normPath = getStandardDirectoryPath(cert).replace(/\//g, '\\').toLowerCase();
+      if (seenTargetPaths.has(normPath)) continue;
+      seenTargetPaths.add(normPath);
+      activeCerts.push(cert);
+    }
 
     for (const cert of activeCerts) {
       const fullPath = getStandardDirectoryPath(cert);

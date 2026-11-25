@@ -69,6 +69,7 @@ import {
   setActiveDrives 
 } from './utils/usbToPcService';
 import { isPcCertificate, isUsbCertificate, isSameDriveSelfCopy } from './utils/driveFilter';
+import { getStandardDirectoryPath } from './utils/backupService';
 import { isNonStandardCertPath, isClass1Certificate } from './utils/certPathUtils';
 import { isCertificateExpired } from './utils/certParser';
 import { getStoredActivityLogs, logActivity, clearAllActivityLogs, formatCurrentTimestamp } from './utils/activityLogger';
@@ -822,21 +823,15 @@ export default function App() {
       }
       setExplicitBackupCerts(certsOverride);
     } else {
-      let targets = resolveSelectedBackupCerts();
-      if (targets.length === 0) {
-        if (resolvedInspectedCert) {
-          targets = [resolvedInspectedCert];
-          showToast(`체크된 항목이 없어 현재 상세 조회 중인 [${resolvedInspectedCert.name}] 인증서를 선택 복사합니다.`);
-        } else {
-          const message =
-            selectedIds.length > 0 && hasActiveFilter
-              ? '현재 필터·검색 조건에 표시된 인증서 중 체크된 항목이 없습니다. 필터를 초기화하거나 현재 목록에서 체크박스를 선택해 주세요.'
-              : '복사할 인증서의 체크박스를 1개 이상 선택해 주세요.';
-          showToast(message, undefined, undefined, { type: 'delete' });
-          return;
-        }
+      if (selectedVisibleCertificates.length === 0) {
+        const message =
+          selectedIds.length > 0 && hasActiveFilter
+            ? '현재 필터·검색 조건에 표시된 인증서 중 체크된 항목이 없습니다. 필터를 초기화하거나 현재 목록에서 체크박스를 선택해 주세요.'
+            : '복사할 인증서의 체크박스를 1개 이상 선택해 주세요.';
+        showToast(message, undefined, undefined, { type: 'delete' });
+        return;
       }
-      setExplicitBackupCerts(targets);
+      setExplicitBackupCerts(null);
     }
     if (driveId) {
       setSelectedDriveId(driveId);
@@ -1534,31 +1529,14 @@ export default function App() {
   const handleBackupSuccess = (record: BackupHistoryItem) => {
     setBackupHistory(prev => [record, ...prev]);
 
-    // Find copied certificates by exact certIds first (fallback to certNames if absent)
+    // Find copied certificates from latest ref by exact certIds first (fallback to certNames if absent)
+    const liveCerts = certificatesRef.current;
     const copiedCertObjects = record.certIds && record.certIds.length > 0
-      ? certificates.filter(c => record.certIds!.includes(c.id))
-      : certificates.filter(c => record.certNames.includes(c.name));
+      ? liveCerts.filter(c => record.certIds!.includes(c.id))
+      : liveCerts.filter(c => record.certNames.includes(c.name));
     const copiedIds = copiedCertObjects.map(c => c.id);
-    triggerCopiedHighlight(copiedIds);
 
     const targetDiskLetter = extractDriveLetterFromPathOrLabel(record.targetDisk) || extractDriveLetterFromPathOrLabel(record.targetPath);
-
-    // 대상 드라이브 보관 상태 즉시 업데이트
-    setAvailableDrives(prevDrives => prevDrives.map(drive => {
-      const driveLetterNorm = extractDriveLetterFromPathOrLabel(drive.letter);
-      const isMatch = driveLetterNorm && targetDiskLetter
-        ? driveLetterNorm === targetDiskLetter
-        : Boolean(drive.letter) && record.targetDisk.includes(drive.letter);
-      if (isMatch) {
-        return {
-          ...drive,
-          isEmpty: false,
-          isRecommended: false,
-          description: `인증서 ${record.certificatesCount}건 안전 복사 보관 중 (${record.certNames.slice(0, 2).join(', ')}${record.certNames.length > 2 ? ' 외' : ''})`
-        };
-      }
-      return drive;
-    }));
 
     const matchedTargetDrive = availableDrives.find(
       d => {
@@ -1578,6 +1556,87 @@ export default function App() {
       : targetDiskLetter !== 'C:' &&
         targetDiskLetter !== 'D:' &&
         !record.targetDisk.includes('로컬 디스크');
+
+    const cleanTargetLetter =
+      targetDiskLetter ||
+      (matchedTargetDrive ? extractDriveLetterFromPathOrLabel(matchedTargetDrive.letter) : null) ||
+      'E:';
+    const targetDriveLabel = matchedTargetDrive
+      ? `${cleanTargetLetter} (${matchedTargetDrive.name})`
+      : record.targetDisk;
+
+    // Build destination CertificateItem entries so every disk's stored count stays synchronized
+    const createdOrUpdatedDestIds: string[] = [];
+    const nextList = [...liveCerts];
+    const isSystemC = cleanTargetLetter.toUpperCase() === 'C:';
+
+    for (const srcCert of copiedCertObjects) {
+      const relSubPath = getStandardDirectoryPath(srcCert).replace(/\//g, '\\');
+      const isGpki = srcCert.category === 'GPKI_GOV';
+      const srcUserMatch = (srcCert.sourceLocation || '').match(/\\Users\\([^\\]+)\\/i);
+      const winUser = srcUserMatch && srcUserMatch[1] && srcUserMatch[1] !== '...' ? srcUserMatch[1] : 'Admin';
+      const destLocation =
+        isSystemC && !isGpki
+          ? `C:\\Users\\${winUser}\\AppData\\LocalLow\\${relSubPath}`
+          : `${cleanTargetLetter.toUpperCase()}\\${relSubPath}`;
+      const normDestLoc = destLocation.replace(/\//g, '\\').replace(/\\+$/, '').toUpperCase();
+
+      const existingIdx = nextList.findIndex(
+        c => (c.sourceLocation || '').replace(/\//g, '\\').replace(/\\+$/, '').toUpperCase() === normDestLoc
+      );
+      const destId =
+        existingIdx >= 0
+          ? nextList[existingIdx].id
+          : `copied-${cleanTargetLetter.replace(':', '')}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${srcCert.id}`;
+
+      const destCert: CertificateItem = {
+        ...srcCert,
+        id: destId,
+        sourceLocation: destLocation,
+        sourceDrive: targetDriveLabel,
+        isRemovableMedia: isUsbTargetDrive,
+        isCustomPath: false,
+      };
+
+      if (existingIdx >= 0) {
+        nextList[existingIdx] = destCert;
+      } else {
+        nextList.push(destCert);
+      }
+      createdOrUpdatedDestIds.push(destId);
+    }
+
+    updateCertificates(nextList);
+    triggerCopiedHighlight([...copiedIds, ...createdOrUpdatedDestIds]);
+
+    const certsOnTargetDrive = nextList.filter(c => {
+      const locDrive = extractDriveLetterFromPathOrLabel(c.sourceLocation);
+      const srcDrive = extractDriveLetterFromPathOrLabel(c.sourceDrive);
+      if (locDrive) return locDrive === cleanTargetLetter.toUpperCase();
+      if (srcDrive) return srcDrive === cleanTargetLetter.toUpperCase();
+      return false;
+    });
+
+    // 대상 드라이브 보관 상태 즉시 업데이트 (누적 건수 반영)
+    setAvailableDrives(prevDrives => prevDrives.map(drive => {
+      const driveLetterNorm = extractDriveLetterFromPathOrLabel(drive.letter);
+      const isMatch = driveLetterNorm && targetDiskLetter
+        ? driveLetterNorm === targetDiskLetter
+        : Boolean(drive.letter) && record.targetDisk.includes(drive.letter);
+      if (isMatch) {
+        const cumulativeCount = certsOnTargetDrive.length > 0 ? certsOnTargetDrive.length : record.certificatesCount;
+        const previewNames = certsOnTargetDrive.length > 0
+          ? certsOnTargetDrive.slice(0, 2).map(c => c.name)
+          : record.certNames.slice(0, 2);
+        return {
+          ...drive,
+          isEmpty: false,
+          isRecommended: false,
+          description: `인증서 ${cumulativeCount}건 안전 복사 보관 중 (${previewNames.join(', ')}${cumulativeCount > 2 ? ' 외' : ''})`
+        };
+      }
+      return drive;
+    }));
 
     const newLog = logActivity({
       category: 'BACKUP',

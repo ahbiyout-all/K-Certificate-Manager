@@ -15,16 +15,18 @@ namespace KCertManager.Wpf.Views
     public partial class TargetDrivePickerDialog : Window
     {
         private readonly List<CertificateItem> _certsToCopy;
+        private readonly string? _preferredDriveName;
         private List<DriveItem> _drives = new();
         private Border? _selectedCardBorder = null;
 
         public DriveItem? SelectedDrive { get; private set; }
         public string ConflictOption { get; private set; } = "overwrite";
 
-        public TargetDrivePickerDialog(IList<CertificateItem> certs, IList<DriveItem>? initialDrives = null)
+        public TargetDrivePickerDialog(IList<CertificateItem> certs, IList<DriveItem>? initialDrives = null, string? preferredDriveName = null)
         {
             InitializeComponent();
             _certsToCopy = certs != null ? certs.ToList() : new List<CertificateItem>();
+            _preferredDriveName = preferredDriveName;
 
             if (Owner == null && Application.Current?.MainWindow != null && Application.Current.MainWindow != this)
             {
@@ -166,8 +168,23 @@ namespace KCertManager.Wpf.Views
         {
             try
             {
+                var prevCounts = _drives
+                    .Where(d => d != null && !string.IsNullOrWhiteSpace(d.Name))
+                    .GroupBy(d => d.Name.Trim().TrimEnd('\\', '/'), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.Max(x => x.CertificateCount), StringComparer.OrdinalIgnoreCase);
+
                 UsbStorageGuard.InvalidateUsbCache();
-                _drives = UsbDriveWatcher.GetAvailableDrives().Where(d => !d.IsCdRom).ToList();
+                var refreshed = UsbDriveWatcher.GetAvailableDrives().Where(d => !d.IsCdRom).ToList();
+                foreach (var d in refreshed)
+                {
+                    var key = (d.Name ?? string.Empty).Trim().TrimEnd('\\', '/');
+                    if (d.CertificateCount == 0 && prevCounts.TryGetValue(key, out int prevCount))
+                    {
+                        d.CertificateCount = prevCount;
+                    }
+                }
+
+                _drives = refreshed;
                 RenderDriveCards();
             }
             catch (Exception ex)
@@ -204,8 +221,12 @@ namespace KCertManager.Wpf.Views
                 return;
             }
 
-            // Prefer Removable USB drive by default, otherwise first non-self-copy drive
+            // Prefer caller-specified drive if valid (non-self-copy), otherwise Removable USB drive, otherwise first valid drive
             DriveItem? defaultPick = null;
+            Border? defaultPickBorder = null;
+            string? cleanPreferred = string.IsNullOrWhiteSpace(_preferredDriveName)
+                ? null
+                : _preferredDriveName.Trim().TrimEnd('\\', '/');
 
             foreach (var drive in _drives)
             {
@@ -350,12 +371,13 @@ namespace KCertManager.Wpf.Views
 
                 spInfo.Children.Add(spNameRow);
 
-                // Space Info
+                // Space Info & Stored Cert Count
+                string certCountLabel = drive.CertificateCount > 0 ? $" · 보관 {drive.CertificateCount}건" : " · 빈 저장소";
                 var txtSpace = new TextBlock
                 {
-                    Text = isSelfCopy 
-                        ? $"선택한 인증서가 이미 본 드라이브에 보관되어 있습니다. ({drive.FormattedFreeSpace})"
-                        : $"사용 가능 공간: {drive.FormattedFreeSpace} · {drive.FileSystem} 포맷",
+                    Text = isSelfCopy
+                        ? $"선택한 인증서가 이미 본 드라이브에 보관되어 있습니다. ({drive.FormattedFreeSpace}{certCountLabel})"
+                        : $"사용 가능 공간: {drive.FormattedFreeSpace} · {drive.FileSystem} 포맷{certCountLabel}",
                     FontSize = 11,
                     Foreground = isSelfCopy ? accentRoseBr : textSecondary
                 };
@@ -411,18 +433,32 @@ namespace KCertManager.Wpf.Views
 
                 PanelDriveList.Children.Add(cardBorder);
 
-                // Select preferred default
-                if (!isSelfCopy && defaultPick == null)
+                // Track preferred or default pick
+                if (!isSelfCopy)
                 {
-                    if (drive.IsRemovable && drive.IsReady)
+                    string cleanDriveName = (drive.Name ?? string.Empty).Trim().TrimEnd('\\', '/');
+                    bool matchesPreferred = !string.IsNullOrEmpty(cleanPreferred) &&
+                                            string.Equals(cleanDriveName, cleanPreferred, StringComparison.OrdinalIgnoreCase);
+
+                    if (matchesPreferred)
                     {
                         defaultPick = drive;
-                        SelectCard(cardBorder, drive);
+                        defaultPickBorder = cardBorder;
+                    }
+                    else if (defaultPick == null && drive.IsRemovable && drive.IsReady)
+                    {
+                        defaultPick = drive;
+                        defaultPickBorder = cardBorder;
                     }
                 }
             }
 
-            // If no removable was auto-picked, pick the first valid drive
+            if (defaultPick != null && defaultPickBorder != null)
+            {
+                SelectCard(defaultPickBorder, defaultPick);
+            }
+
+            // If no removable or preferred drive was auto-picked, pick the first valid drive
             if (SelectedDrive == null)
             {
                 foreach (Border border in PanelDriveList.Children.OfType<Border>())

@@ -37,6 +37,9 @@
   - 눈부심을 억제한 **회색(*Misty Mineral Slate*)** · **베이지(*Warm Oat Paper*)** 저자극 고가독성 테마 적용 및 Tailwind v4 `@custom-variant dark`·WPF `DynamicResource` 브러시 전 창 대비 교정
   - 보관함 체크박스 선택(`selectedIds`), 필터 표시 목록(`visibleCertificates` / `FilteredCertificates`), 단일 행 상세 클릭(`inspectedCert` / `SelectedCertificate`)을 엄격히 분리해 `선택 ∩ 현재 필터` 교집합만 정밀 복사하도록 개선
   - WPF 시작 시 저장 테마 복원 및 Web 워크플로우·USB 마운트 최신 핸들러 동기화
+- **7~8차 심층 전수 감사 · 다중 디스크 선택 복사 건수 정합화 & 엄격 격리 (Web & WPF)**:
+  - 여러 디스크에 분산된 인증서 선택 복사 시 자가 복사(`isSameDriveSelfCopy`) 및 동일 대상 경로 중복을 제외한 실제 복사 ID(`copiedCertIds`) 기준으로 완료 건수·로그·드라이브 보관 배지 수치를 Web/WPF 양쪽에서 1:1 정합화하고, 새로고침 시 드라이브 배지 유실을 방지
+  - `resolveSelectedBackupCerts` 필터 결과(`selectedVisibleCertificates`)만 복사 실행 핸들러로 전달(단일 상세 행 fallback 제거), `Header.tsx` 상단 창 드래그 지원 및 `MainWindow.xaml.cs` 비동기 `await` 예외 전파 보강 완료
 
 ---
 

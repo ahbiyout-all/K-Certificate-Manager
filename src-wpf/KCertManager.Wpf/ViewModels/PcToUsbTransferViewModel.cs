@@ -205,6 +205,32 @@ namespace KCertManager.Wpf.ViewModels
                 var scanned = UsbDriveWatcher.GetAvailableDrives().Where(d => !d.IsCdRom).ToList();
                 if (scanned.Any())
                 {
+                    var countByName = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                    if (AvailableDrives != null)
+                    {
+                        foreach (var d in AvailableDrives.Where(x => x != null && !string.IsNullOrWhiteSpace(x.Name)))
+                        {
+                            var key = d.Name.Trim().TrimEnd('\\', '/');
+                            countByName[key] = countByName.TryGetValue(key, out int cur) ? Math.Max(cur, d.CertificateCount) : d.CertificateCount;
+                        }
+                    }
+                    if (fallbackDrives != null)
+                    {
+                        foreach (var d in fallbackDrives.Where(x => x != null && !string.IsNullOrWhiteSpace(x.Name)))
+                        {
+                            var key = d.Name.Trim().TrimEnd('\\', '/');
+                            countByName[key] = countByName.TryGetValue(key, out int cur) ? Math.Max(cur, d.CertificateCount) : d.CertificateCount;
+                        }
+                    }
+
+                    foreach (var sd in scanned)
+                    {
+                        var key = (sd.Name ?? string.Empty).Trim().TrimEnd('\\', '/');
+                        if (sd.CertificateCount == 0 && countByName.TryGetValue(key, out int prevCount))
+                        {
+                            sd.CertificateCount = prevCount;
+                        }
+                    }
                     drives.AddRange(scanned);
                 }
                 else if (fallbackDrives != null && fallbackDrives.Any())
@@ -250,6 +276,7 @@ namespace KCertManager.Wpf.ViewModels
                     if (match != null)
                     {
                         SelectedTargetDrive = match;
+                        UpdateStatusMessage();
                         return;
                     }
                 }
@@ -557,6 +584,7 @@ namespace KCertManager.Wpf.ViewModels
             var errorList = new List<string>();
             var successfulDestinations = new List<string>();
             var copiedTargets = new List<CertificateItem>();
+            var processedDestDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             await Task.Run(() =>
             {
@@ -591,9 +619,16 @@ namespace KCertManager.Wpf.ViewModels
                         string destDir = Path.Combine(destinationRoot, relativePath);
 
                         // 자가 복사 금지 검증: 원본 경로와 대상 경로가 완전히 동일한 경우 생략
-                        string fullSourceDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar);
-                        string fullTargetDir = Path.GetFullPath(destDir).TrimEnd(Path.DirectorySeparatorChar);
+                        string fullSourceDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                        string fullTargetDir = Path.GetFullPath(destDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
                         if (fullSourceDir.Equals(fullTargetDir, StringComparison.OrdinalIgnoreCase))
+                        {
+                            skipped++;
+                            continue;
+                        }
+
+                        // 다중 원본 디스크에서 같은 대상 경로로 매핑되는 중복 항목은 이중 복사/건수 부풀림 방지
+                        if (processedDestDirs.Contains(fullTargetDir))
                         {
                             skipped++;
                             continue;
@@ -603,6 +638,7 @@ namespace KCertManager.Wpf.ViewModels
                         {
                             if (ConflictOption == "skip")
                             {
+                                processedDestDirs.Add(fullTargetDir);
                                 skipped++;
                                 continue;
                             }
@@ -634,6 +670,11 @@ namespace KCertManager.Wpf.ViewModels
                             success++;
                             copiedTargets.Add(cert);
                             cert.IsRecentlyCopied = true;
+                            processedDestDirs.Add(fullTargetDir);
+                            if (!string.IsNullOrWhiteSpace(transferResult.DestinationDirectory))
+                            {
+                                processedDestDirs.Add(Path.GetFullPath(transferResult.DestinationDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                            }
                             successfulDestinations.Add(transferResult.DestinationDirectory);
                         }
                         else

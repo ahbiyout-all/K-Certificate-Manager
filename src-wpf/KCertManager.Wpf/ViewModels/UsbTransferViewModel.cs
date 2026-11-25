@@ -524,9 +524,11 @@ namespace KCertManager.Wpf.ViewModels
 
             int success = 0;
             int selfCopySkipped = 0;
+            int skippedDuplicates = 0;
             var copiedTargets = new List<CertificateItem>();
             var successfulDestinations = new List<string>();
             var destinationCategories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var processedDestDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var failedReasons = new List<string>();
 
             await Task.Run(() =>
@@ -546,12 +548,18 @@ namespace KCertManager.Wpf.ViewModels
                         string targetRoot = ResolveTargetRootForCategory(cat, cert.DirectoryPath, targetDrive, effectiveUsername, sysRoot, userProfile);
                         string relativePath = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
                         string destDir = Path.Combine(targetRoot, relativePath);
-                        string fullSourceDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar);
-                        string fullTargetDir = Path.GetFullPath(destDir).TrimEnd(Path.DirectorySeparatorChar);
+                        string fullSourceDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                        string fullTargetDir = Path.GetFullPath(destDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
                         if (fullSourceDir.Equals(fullTargetDir, StringComparison.OrdinalIgnoreCase))
                         {
                             selfCopySkipped++;
+                            continue;
+                        }
+
+                        if (processedDestDirs.Contains(fullTargetDir))
+                        {
+                            skippedDuplicates++;
                             continue;
                         }
 
@@ -561,6 +569,11 @@ namespace KCertManager.Wpf.ViewModels
                             success++;
                             copiedTargets.Add(cert);
                             destinationCategories.Add(cat);
+                            processedDestDirs.Add(fullTargetDir);
+                            if (!string.IsNullOrWhiteSpace(transferResult.DestinationDirectory))
+                            {
+                                processedDestDirs.Add(Path.GetFullPath(transferResult.DestinationDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                            }
                             successfulDestinations.Add(transferResult.DestinationDirectory);
                         }
                         else
@@ -578,9 +591,10 @@ namespace KCertManager.Wpf.ViewModels
                 }
             });
 
+            int totalSkipped = selfCopySkipped + skippedDuplicates;
             IsBusy = false;
             StatusMessage = $"PC({selectedDriveShort}) 가져오기 완료: {selected.Count}개 중 {success}개 성공" +
-                            (selfCopySkipped > 0 ? $", {selfCopySkipped}개 동일 위치 건너뜀" : string.Empty) +
+                            (totalSkipped > 0 ? $", {totalSkipped}개 동일 위치·중복 건너뜀" : string.Empty) +
                             " (자동 새로고침 반영)";
             if (success > 0)
             {
@@ -588,7 +602,7 @@ namespace KCertManager.Wpf.ViewModels
                 TransferCompleted?.Invoke();
             }
 
-            if (success + selfCopySkipped == selected.Count && success > 0)
+            if (success + totalSkipped == selected.Count && success > 0)
             {
                 var summaryTargets = copiedTargets.Any() ? copiedTargets : selected;
                 var completeItems = summaryTargets.Select(c => new OperationCompleteItem
@@ -646,7 +660,9 @@ namespace KCertManager.Wpf.ViewModels
                     ? $"표준 폴더({gpkiDisplayPath})"
                     : (isAnyEpki ? $"표준 폴더({epkiDisplayPath})" : $"표준 폴더({npkiDisplayPath})");
 
-                string subtitle = $"내 컴퓨터({selectedDriveShort})의 {destCategoryName} {destLocationText}에 인증서 {success}개를 가져왔습니다.";
+                string subtitle = totalSkipped > 0
+                    ? $"내 컴퓨터({selectedDriveShort})의 {destCategoryName} {destLocationText}에 인증서 {success}개를 가져왔습니다. (중복·자가복사 {totalSkipped}개 건너뜀)"
+                    : $"내 컴퓨터({selectedDriveShort})의 {destCategoryName} {destLocationText}에 인증서 {success}개를 가져왔습니다.";
 
                 string guideTip = isAnyGpki
                     ? $"• 표준 폴더({gpkiDisplayPath})에 저장되었습니다.\n• 정부24·온-나라 등 행정 사이트에서 바로 로그인할 수 있습니다."
@@ -663,22 +679,22 @@ namespace KCertManager.Wpf.ViewModels
                     completeItems,
                     guideTip);
             }
-            else if (selfCopySkipped == selected.Count)
+            else if (totalSkipped == selected.Count)
             {
                 UserFriendlyMessageHelper.ShowInfo(
-                    $"선택한 인증서 {selfCopySkipped}개는 이미 대상 폴더({selectedDriveShort})와 동일한 위치에 있어 복사를 건너뛰었습니다.",
+                    $"선택한 인증서 {totalSkipped}개는 이미 대상 폴더({selectedDriveShort})와 동일한 위치에 있거나 중복되어 복사를 건너뛰었습니다.",
                     "동일 위치 건너뜀 안내");
             }
             else
             {
-                int failedCount = Math.Max(0, selected.Count - success - selfCopySkipped);
+                int failedCount = Math.Max(0, selected.Count - success - totalSkipped);
                 string reasonDetail = failedReasons.Any()
                     ? "\n\n[상세 오류 원인]\n• " + string.Join("\n• ", failedReasons.Take(5)) +
                       (failedReasons.Count > 5 ? $"\n• 외 {failedReasons.Count - 5}건" : string.Empty)
                     : string.Empty;
                 UserFriendlyMessageHelper.ShowWarning(
                     $"인증서 {selected.Count}개 중 {success}개 성공, {failedCount}개 실패했습니다." +
-                    (selfCopySkipped > 0 ? $" (동일 위치 {selfCopySkipped}개 건너뜀)" : string.Empty),
+                    (totalSkipped > 0 ? $" (동일 위치·중복 {totalSkipped}개 건너뜀)" : string.Empty),
                     "가져오기 결과 안내",
                     $"• PC 저장 폴더({selectedDriveShort})에 쓰기 권한이 있는지 확인하세요.\n• 필요하면 관리자 권한으로 프로그램을 다시 실행하세요.{reasonDetail}");
             }

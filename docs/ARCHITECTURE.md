@@ -192,9 +192,10 @@
    - Web·WPF 모두 **다크(`#0F1219`)**, **회색(*Misty Mineral Slate*, `#CCD4DF`/`#DFE5EC`)**, **베이지(*Warm Oat Paper*, `#E6DFD1`/`#F1ECE1`)**, **화이트(`#F8FAFC`/`#FFFFFF`)** 4대 테마(및 레거시 `pastel-*` 별칭)를 동적 CSS 변수(`--wpf-accent-*`, `--wpf-selected-row-secondary` 등)와 `DynamicResource` 브러시(`AccentAmberBrush` 포함)로 일치화했습니다.
    - `src/index.css`에 `@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, [data-theme="pastel-black"], [data-theme="pastel-black"] *));`를 명시하여 OS 다크 모드 설정이 Web 회색/베이지/화이트 테마의 Tailwind `dark:` 유틸리티를 오염시키지 않도록 차단했습니다.
    - WPF `WpfAnimatedBorderHelper.ApplyBorderGlow`는 `BgCardBrush`의 상대 휘도(Luminance)를 측정해 다크 테마는 `#142341` + `0.65` 글로우를, 비다크 테마는 `SelectedRowBgBrush` + `0.28` 글로우를 동적 적용하며, `MainWindow.xaml.cs`는 `CurrentTheme` 변경 시 `SidebarTargetDriveBorder`를 즉시 갱신합니다. 또한 6대 대화상자 `DataGrid` 선택 스타일과 보안등급·기관요약 색상을 `DynamicResource` 및 `DataTrigger`로 통합했습니다.
-2. **선택 복사 · 필터 보기 · 단일 행 상세 클릭 3중 격리 (`App.tsx`, `CertificateList.tsx`, `MainViewModel.cs`, `MainWindow.xaml.cs`)**:
+2. **선택 복사 · 필터 보기 · 단일 행 상세 클릭 3중 격리 & 다중 디스크 건수 정합화 (`App.tsx`, `CertificateList.tsx`, `BackupModal.tsx`, `backupService.ts`, `MainViewModel.cs`, `MainWindow.xaml.cs`)**:
    - 체크박스 선택(`selectedIds` / `IsSelected`), 현재 필터링된 보기(`visibleCertificates` / `FilteredCertificates`), 단일 행 상세 클릭(`inspectedCert` / `SelectedCertificate`)을 독립 상태로 분리합니다.
-   - `resolveSelectedBackupCerts` 및 WPF 일괄·가이드 복사는 항상 `selectedIds ∩ visibleCertificates`(또는 `FilteredCertificates`) 교집합만 산출하여 필터 밖 숨김 항목이나 단일 클릭 항목이 의도치 않게 복사되는 현상을 원천 차단합니다.
+   - `resolveSelectedBackupCerts`, `handleOpenGeneralBackupModal` 및 WPF 일괄·가이드 복사는 항상 `selectedIds ∩ visibleCertificates`(또는 `FilteredCertificates`) 교집합만 산출하고 단일 행 상세 클릭 fallback 없이 전달해 필터 밖 숨김 항목이나 단일 클릭 항목이 의도치 않게 복사되는 현상을 원천 차단합니다.
+   - 여러 물리 디스크에서 다중 선택 복사 시 자가 복사(`isSameDriveSelfCopy` / `ResolveEffectiveDestinationRoot`)와 동일 대상 표준 경로 중복을 제거한 실제 복사 ID(`copiedCertIds`) 기준으로 완료 건수, 중복 검사, 이력 및 드라이브별 보관 배지(`UpdateDriveCertificateCounts`)를 일치시키며 새로고침 시 기존 드라이브 배지 수치를 보존합니다.
 3. **반응형 CSS Grid `auto-fill` 인증서 목록 (`CertificateList.tsx`)**:
    - `grid-template-columns: repeat(auto-fill, minmax(300px, 1fr))` 반응형 카드 그리드를 기본 제공하고 `표 보기`와의 전환을 지원해 다양한 뷰포트에서 카드 자동 리플로우 구현.
 4. **쉬운 일상 표현 우선 + 접이식 보조 설명 (`더보기` / WPF `Expander`)**:

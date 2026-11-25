@@ -38,6 +38,8 @@ namespace KCertManager.Wpf.Models
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(IsEmptyUsb));
                     OnPropertyChanged(nameof(StatusBadgeText));
+                    OnPropertyChanged(nameof(CapacityCertText));
+                    OnPropertyChanged(nameof(BackupButtonText));
                     OnPropertyChanged(nameof(DisplayName));
                 }
             }

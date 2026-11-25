@@ -61,11 +61,19 @@
   - 상단 툴바와 검색 바 영역의 반응형 간격 및 포커스 링을 세련되게 다듬고, 키워드 검색 시 즉시 초기화(`X`) 버튼 및 필터 초기화 가시성 강화.
   - 다크, 회색(*Misty Mineral Slate*), 베이지(*Warm Oat Paper*), 화이트 4대 테마 전반에서 카드 호버, 선택 행, 배지 텍스트의 명도 대비와 부드러운 전환 효과 보강.
 
-#### 🛠️ 상단 헤더 네이티브 창 드래그 기능 구현 및 최종 심층 감사 (2026-11-24)
+#### 🛠️ 상단 헤더 네이티브 창 드래그 기능 구현 및 7차 심층 감사 (2026-11-24)
 - **상단 헤더 네이티브 창 드래그 구현 (`Header.tsx`)**:
   - 상단 헤더 컨테이너 `<header>`에 `-webkit-app-region: drag;` 및 `app-region: drag;`를 적용하여 데스크톱 웹 환경(Electron 등)에서 네이티브 창과 동일한 마우스 드래그 이동 편의성을 제공하고, 우측 액션 버튼 및 메뉴 컨테이너에는 `-webkit-app-region: no-drag;`를 적용하여 클릭 및 상호작용 장애를 원천 차단.
 - **선택 복사 정합성 최종 재확인 (`App.tsx`, `CertificateList.tsx`, `MainViewModel.cs`)**:
   - `resolveSelectedBackupCerts`와 `visibleCertificates` 간 교집합 계산 및 WPF `FilteredCertificates.Where(x => x.IsSelected)` 일원화 상태 최종 감사 완료.
+
+#### 🛠️ 8차 심층 전수 감사 · 다중 디스크 선택 복사 건수 정합화 및 안정화 (2026-11-25)
+- **다중 디스크 선택 복사 건수 오차 및 대상 경로 중복 해소 (Web & WPF)**:
+  - 서로 다른 디스크(`C:`, `D:`, `USB`)에 분산된 인증서를 선택해 복사할 때 `backupService.ts`(`copyCertificatesToDisk`, `writeCertificatesToDirectoryHandle`)가 `copiedCertIds` 및 중복 제거된 대상 표준 경로 기준 실제 복사 건수를 반환하도록 일원화하고, `BackupModal.tsx` 중복 로그(`seenLogTargetPaths`)·실패 카운트(`actualCopyable.length`)·자가 복사(`isSameDriveSelfCopy`) 필터와 `App.tsx` `handleBackupSuccess` 드라이브별 반영 건수를 정확히 동기화.
+  - WPF `MainViewModel.cs`, `PcToUsbTransferViewModel.cs`, `UsbTransferViewModel.cs`, `TargetDrivePickerDialog.xaml.cs`에서 자가 복사·동일 대상 경로 중복 제외 기준 실제 복사 성공 건수·진행률·완료 안내와 `UpdateDriveCertificateCounts` 보관 배지 수치를 일치시키고, 드라이브 새로고침 시 기존 보관 건수 배지가 유지되도록 교정.
+- **선택 복사 엄격 격리 & 비동기 예외/상태 가드 (`App.tsx`, `TargetDrivePickerModal.tsx`, `MainWindow.xaml.cs`)**:
+  - `handleOpenGeneralBackupModal`에서 선택 항목이 `0건`일 때 상세 보기(`inspectedCert`)로 대체 복사되던 fallback을 제거해 `resolveSelectedBackupCerts`로 걸러진 `selectedVisibleCertificates`만 전달.
+  - `TargetDrivePickerModal.tsx` 자가 복사 항목의 중복 충돌 오표시 제거 및 `MainWindow.xaml.cs` `OpenTargetDrivePickerForCertificatesAsync` 비동기 `await` 보강.
 
 ---
 

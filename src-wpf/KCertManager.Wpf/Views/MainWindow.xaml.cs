@@ -873,7 +873,7 @@ namespace KCertManager.Wpf.Views
                 if (dialog.ShowDialog() == true && dialog.SelectedDrive != null)
                 {
                     ViewModel.SelectedTargetDrive = dialog.SelectedDrive;
-                    _ = ViewModel.ExecuteBackupWithConflictOptionAsync(targets.ToList(), dialog.SelectedDrive, dialog.ConflictOption);
+                    await ViewModel.ExecuteBackupWithConflictOptionAsync(targets.ToList(), dialog.SelectedDrive, dialog.ConflictOption);
                 }
             }
             catch (Exception ex)
