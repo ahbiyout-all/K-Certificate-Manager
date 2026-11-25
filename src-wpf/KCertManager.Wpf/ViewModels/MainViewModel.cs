@@ -90,7 +90,7 @@ namespace KCertManager.Wpf.ViewModels
                 _ = RefreshDrivesAsync();
                 await RefreshCertificatesAsync();
             });
-            BackupSelectedCommand = new RelayCommand(async () => await BackupSelectedAsync(), () => SelectedCertificatesCount > 0);
+            BackupSelectedCommand = new RelayCommand(async () => await BackupSelectedAsync(), () => SelectedCertificatesCount > 0 || SelectedCertificate != null);
             BackupAllCommand = new RelayCommand(async () => await BackupAllAsync(), () => FilteredCertificates.Any());
             DeleteSelectedCommand = new RelayCommand(DeleteSelected, () => SelectedCertificatesCount > 0 || SelectedCertificate != null);
             CleanExpiredCommand = new RelayCommand(CleanExpired, () => ExpiredCount > 0);
@@ -1292,6 +1292,7 @@ namespace KCertManager.Wpf.ViewModels
             {
                 if (SetProperty(ref _selectedCertificate, value))
                 {
+                    (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
                     (DeleteSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
                 }
             }
@@ -2016,18 +2017,39 @@ namespace KCertManager.Wpf.ViewModels
             SelectedTargetDrive = drive;
 
             var selected = FilteredCertificates.Where(x => x != null && x.IsSelected).ToList();
+            if (!selected.Any() && SelectedCertificate != null && FilteredCertificates.Contains(SelectedCertificate))
+            {
+                selected = new List<CertificateItem> { SelectedCertificate };
+            }
 
             if (!selected.Any())
             {
                 MessageBox.Show(
-                    "복사 또는 백업할 인증서의 체크박스를 1개 이상 선택해 주세요.",
+                    "복사 또는 백업할 인증서의 체크박스를 1개 이상 선택하거나 목록에서 항목을 선택해 주세요.",
                     "선택된 인증서 없음",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
                 return;
             }
 
-            await BackupSelectedAsync();
+            await RefreshDrivesAsync();
+
+            Views.TargetDrivePickerDialog? dialog = null;
+            bool? res = null;
+            await DispatchSafeAsync(() =>
+            {
+                dialog = new Views.TargetDrivePickerDialog(selected, AvailableTargetDrives)
+                {
+                    Owner = Application.Current?.MainWindow
+                };
+                res = dialog.ShowDialog();
+            });
+
+            if (dialog != null && res == true && dialog.SelectedDrive != null)
+            {
+                SelectedTargetDrive = dialog.SelectedDrive;
+                await ExecuteBackupWithConflictOptionAsync(selected, dialog.SelectedDrive, dialog.ConflictOption);
+            }
         }
 
         private async Task BackupSelectedAsync()
@@ -2036,7 +2058,7 @@ namespace KCertManager.Wpf.ViewModels
 
             if (!selected.Any())
             {
-                if (SelectedCertificate != null)
+                if (SelectedCertificate != null && FilteredCertificates.Contains(SelectedCertificate))
                 {
                     selected = new List<CertificateItem> { SelectedCertificate };
                 }

@@ -99,16 +99,37 @@
             <!-- 1. DataGrid when USB is connected -->
             <Border Visibility="{Binding HasUsbDrives, Converter={StaticResource BoolToVis}}"
                     Background="{DynamicResource BgCardBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                <DataGrid ItemsSource="{Binding FoundUsbCertificates}" AutoGenerateColumns="False" CanUserAddRows="False"
-                          CanUserResizeColumns="True"
-                          Background="Transparent" RowBackground="{DynamicResource BgCardBrush}" AlternatingRowBackground="{DynamicResource BgDarkBrush}"
-                          Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" GridLinesVisibility="All"
-                          HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
-                          VerticalGridLinesBrush="{DynamicResource BorderBrush}"
-                          FrozenColumnCount="1"
-                          ScrollViewer.HorizontalScrollBarVisibility="Visible"
-                          ScrollViewer.VerticalScrollBarVisibility="Auto"
-                          ScrollViewer.CanContentScroll="False">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Top Table Action Bar -->
+                    <Border Grid.Row="0" Background="{DynamicResource BgDarkBrush}" CornerRadius="8,8,0,0" Padding="10,6" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="가져올 인증서를 체크하거나 목록에서 선택하세요:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Button Command="{Binding SelectAllCommand}" Style="{StaticResource SecondaryButton}" Content="전체 선택" Padding="8,2" Margin="0,0,6,0" FontSize="11"/>
+                                <Button Command="{Binding ClearSelectionCommand}" Style="{StaticResource SecondaryButton}" Content="선택 해제" Padding="8,2" FontSize="11"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding FoundUsbCertificates}" SelectedItem="{Binding SelectedCertificate, Mode=TwoWay}" SelectionMode="Single" AutoGenerateColumns="False" CanUserAddRows="False"
+                              CanUserResizeColumns="True"
+                              Background="Transparent" RowBackground="{DynamicResource BgCardBrush}" AlternatingRowBackground="{DynamicResource BgDarkBrush}"
+                              Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" GridLinesVisibility="All"
+                              HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
+                              VerticalGridLinesBrush="{DynamicResource BorderBrush}"
+                              FrozenColumnCount="1"
+                              ScrollViewer.HorizontalScrollBarVisibility="Visible"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto"
+                              ScrollViewer.CanContentScroll="False">
                     <DataGrid.Resources>
                         <!-- DataGrid Column Header Style (High Contrast & Visible with Horizontal & Vertical Dividers and Resizing Grippers) -->
                         <Style TargetType="DataGridColumnHeader">
@@ -208,6 +229,7 @@
                         <DataGridTextColumn Header="만료일" Binding="{Binding NotAfter, StringFormat='{}{0:yyyy-MM-dd}'}" Width="120" MinWidth="70" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </DataGrid.Columns>
                 </DataGrid>
+                </Grid>
             </Border>
 
             <!-- 2. Empty State when NO USB is connected -->

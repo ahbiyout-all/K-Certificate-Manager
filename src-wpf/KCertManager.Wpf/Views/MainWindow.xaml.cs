@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -338,7 +339,7 @@ namespace KCertManager.Wpf.Views
 
         private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            // Ignore clicks originating from interactive controls (Buttons, RadioButtons, ScrollBar, Thumb, Sliders, ComboBox) inside the header
+            // Ignore clicks originating from interactive controls inside the header
             if (e.OriginalSource is DependencyObject sourceObj)
             {
                 var current = sourceObj;
@@ -349,7 +350,9 @@ namespace KCertManager.Wpf.Views
                         current is System.Windows.Controls.Primitives.Thumb ||
                         current is System.Windows.Controls.Primitives.RangeBase ||
                         current is System.Windows.Controls.ComboBox ||
-                        current is System.Windows.Controls.ScrollViewer)
+                        current is System.Windows.Controls.ComboBoxItem ||
+                        current is System.Windows.Controls.Primitives.TextBoxBase ||
+                        current is System.Windows.Controls.PasswordBox)
                     {
                         return;
                     }
@@ -800,7 +803,11 @@ namespace KCertManager.Wpf.Views
         {
             if (CertDataGrid.SelectedItem is CertificateItem item)
             {
-                _ = OpenTargetDrivePickerForCertificatesAsync(new System.Collections.Generic.List<CertificateItem> { item });
+                _ = OpenTargetDrivePickerForCertificatesAsync(new List<CertificateItem> { item });
+            }
+            else if (ViewModel?.SelectedCertificate != null)
+            {
+                _ = OpenTargetDrivePickerForCertificatesAsync(new List<CertificateItem> { ViewModel.SelectedCertificate });
             }
             else
             {
@@ -851,11 +858,13 @@ namespace KCertManager.Wpf.Views
 
             if (!selected.Any())
             {
-                if (CertDataGrid.SelectedItem is CertificateItem focusedCert)
+                if (CertDataGrid.SelectedItem is CertificateItem focusedCert &&
+                    ViewModel.FilteredCertificates.Contains(focusedCert))
                 {
                     selected = new List<CertificateItem> { focusedCert };
                 }
-                else if (ViewModel.SelectedCertificate != null)
+                else if (ViewModel.SelectedCertificate != null &&
+                         ViewModel.FilteredCertificates.Contains(ViewModel.SelectedCertificate))
                 {
                     selected = new List<CertificateItem> { ViewModel.SelectedCertificate };
                 }

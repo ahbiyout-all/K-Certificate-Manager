@@ -28,6 +28,7 @@ namespace KCertManager.Wpf.ViewModels
         private ObservableCollection<DriveItem> _availableTargetDrives = new();
         private DriveItem? _selectedTargetDrive;
         private ObservableCollection<CertificateItem> _foundUsbCertificates = new();
+        private CertificateItem? _selectedCertificate;
         private string _targetUsername = Environment.UserName;
         private string _targetCategory = "NPKI";
         private bool _isBusy;
@@ -48,7 +49,24 @@ namespace KCertManager.Wpf.ViewModels
         {
             RefreshDrivesCommand = new RelayCommand(() => RefreshDrives());
             ScanDriveCommand = new RelayCommand(async () => await ScanDriveAsync(), () => SelectedSourceDrive != null && SelectedSourceDrive.IsRemovable);
-            TransferToPcCommand = new RelayCommand(async () => await TransferToPcAsync(), () => FoundUsbCertificates.Any(x => x.IsSelected));
+            TransferToPcCommand = new RelayCommand(
+                async () => await TransferToPcAsync(),
+                () => !IsBusy &&
+                      (FoundUsbCertificates.Any(x => x.IsSelected) ||
+                       (SelectedCertificate != null && FoundUsbCertificates.Contains(SelectedCertificate))));
+            SelectAllCommand = new RelayCommand(() =>
+            {
+                foreach (var c in FoundUsbCertificates) c.IsSelected = true;
+                UpdateSelectionStatus();
+                (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            });
+            ClearSelectionCommand = new RelayCommand(() =>
+            {
+                foreach (var c in FoundUsbCertificates) c.IsSelected = false;
+                SelectedCertificate = null;
+                UpdateSelectionStatus();
+                (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            });
 
             RefreshDrives(initialDriveLetter);
             RefreshTargetDrives();
@@ -106,6 +124,19 @@ namespace KCertManager.Wpf.ViewModels
             set => SetProperty(ref _foundUsbCertificates, value);
         }
 
+        public CertificateItem? SelectedCertificate
+        {
+            get => _selectedCertificate;
+            set
+            {
+                if (SetProperty(ref _selectedCertificate, value))
+                {
+                    UpdateSelectionStatus();
+                    (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                }
+            }
+        }
+
         public string TargetUsername
         {
             get => _targetUsername;
@@ -121,7 +152,13 @@ namespace KCertManager.Wpf.ViewModels
         public bool IsBusy
         {
             get => _isBusy;
-            set => SetProperty(ref _isBusy, value);
+            set
+            {
+                if (SetProperty(ref _isBusy, value))
+                {
+                    (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                }
+            }
         }
 
         public string StatusMessage
@@ -133,6 +170,8 @@ namespace KCertManager.Wpf.ViewModels
         public ICommand RefreshDrivesCommand { get; }
         public ICommand ScanDriveCommand { get; }
         public ICommand TransferToPcCommand { get; }
+        public ICommand SelectAllCommand { get; }
+        public ICommand ClearSelectionCommand { get; }
 
         public void RefreshDrives(string? preferredDriveLetter = null)
         {
@@ -274,12 +313,13 @@ namespace KCertManager.Wpf.ViewModels
                             return true;
                         }).ToList();
 
+                        bool autoSelectSingle = validCerts.Count == 1;
                         for (int i = 0; i < validCerts.Count; i++)
                         {
                             var c = validCerts[i];
                             c.IndexNumber = i + 1;
                             c.IsRemovableMedia = true;
-                            c.IsSelected = true;
+                            c.IsSelected = autoSelectSingle;
                         }
 
                         Action applyResults = () =>
@@ -292,13 +332,18 @@ namespace KCertManager.Wpf.ViewModels
                                 _trackedCerts.Add(c);
                             }
                             FoundUsbCertificates = new ObservableCollection<CertificateItem>(validCerts);
+                            SelectedCertificate = null;
                             if (FoundUsbCertificates.Count == 0)
                             {
                                 StatusMessage = $"{driveRoot}에서 인증서(NPKI·GPKI·EPKI)를 찾지 못했습니다.";
                             }
+                            else if (FoundUsbCertificates.Count == 1)
+                            {
+                                StatusMessage = $"{driveRoot}에서 인증서 1건을 찾았습니다. [가져오기 시작]을 눌러주세요.";
+                            }
                             else
                             {
-                                StatusMessage = $"{driveRoot}에서 인증서 {FoundUsbCertificates.Count}건을 찾았습니다. [가져오기 시작]을 눌러주세요.";
+                                StatusMessage = $"{driveRoot}에서 인증서 {FoundUsbCertificates.Count}건을 찾았습니다. 가져올 항목을 체크하거나 선택해 주세요.";
                             }
                             (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
                         };
@@ -385,9 +430,32 @@ namespace KCertManager.Wpf.ViewModels
             return Path.Combine(cleanDrive, "Users", effectiveUser, "AppData", "LocalLow");
         }
 
+        private void UpdateSelectionStatus()
+        {
+            if (IsBusy || FoundUsbCertificates == null || FoundUsbCertificates.Count == 0) return;
+
+            int checkedCount = FoundUsbCertificates.Count(x => x.IsSelected);
+            if (checkedCount > 0)
+            {
+                StatusMessage = $"총 {FoundUsbCertificates.Count}건 중 {checkedCount}건 선택됨 — [내 PC로 가져오기 시작]을 눌러주세요.";
+            }
+            else if (SelectedCertificate != null && FoundUsbCertificates.Contains(SelectedCertificate))
+            {
+                StatusMessage = $"선택된 인증서 1건 ({SelectedCertificate.CommonName}) — [내 PC로 가져오기 시작]을 눌러주세요.";
+            }
+            else
+            {
+                StatusMessage = $"총 {FoundUsbCertificates.Count}건 검색됨 — 가져올 인증서를 체크하거나 클릭해 선택하세요.";
+            }
+        }
+
         public async Task TransferToPcAsync()
         {
             var selected = FoundUsbCertificates.Where(x => x.IsSelected).ToList();
+            if (!selected.Any() && SelectedCertificate != null && FoundUsbCertificates.Contains(SelectedCertificate))
+            {
+                selected = new List<CertificateItem> { SelectedCertificate };
+            }
             if (!selected.Any()) return;
 
             string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\') + "\\";
@@ -598,6 +666,7 @@ namespace KCertManager.Wpf.ViewModels
                 {
                     if (!_disposed)
                     {
+                        UpdateSelectionStatus();
                         (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
                     }
                 }));

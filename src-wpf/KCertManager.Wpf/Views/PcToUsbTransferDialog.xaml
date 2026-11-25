@@ -125,7 +125,7 @@
                     </Border>
 
                     <!-- Main DataGrid with horizontal and vertical grid divider lines and resizable columns -->
-                    <DataGrid Grid.Row="1" ItemsSource="{Binding FoundPcCertificates}" AutoGenerateColumns="False" CanUserAddRows="False"
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding FoundPcCertificates}" SelectedItem="{Binding SelectedCertificate, Mode=TwoWay}" SelectionMode="Single" AutoGenerateColumns="False" CanUserAddRows="False"
                               CanUserResizeColumns="True"
                               Background="Transparent" RowBackground="{DynamicResource BgCardBrush}" AlternatingRowBackground="{DynamicResource BgDarkBrush}"
                               Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" GridLinesVisibility="All"

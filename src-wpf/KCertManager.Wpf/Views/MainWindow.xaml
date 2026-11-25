@@ -41,7 +41,7 @@
                 BorderThickness="0,0,0,1"
                 Padding="16,0,10,0"
                 MouseLeftButtonDown="Header_MouseLeftButtonDown">
-            <Grid VerticalAlignment="Stretch">
+            <Grid VerticalAlignment="Stretch" Background="Transparent">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
@@ -49,7 +49,7 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Brand Title & Drag Grip (Draggable Area) -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" ToolTip="마우스로 드래그하여 앱 창 이동">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Stretch" Background="Transparent" Cursor="SizeAll" ToolTip="마우스로 드래그하여 앱 창 이동">
                     <!-- Drag Grip Indicator Dots -->
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0" Opacity="0.5">
                         <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,2,0">
@@ -64,7 +64,7 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <Border CornerRadius="8" Width="36" Height="36" Margin="0,0,10,0" ClipToBounds="True" Background="Transparent">
+                    <Border CornerRadius="8" Width="36" Height="36" Margin="0,0,10,0" ClipToBounds="True" Background="Transparent" VerticalAlignment="Center">
                         <Grid>
                             <Image x:Name="AppLogoImage"
                                    Source="/Assets/app-logo.png"
@@ -82,6 +82,7 @@
                 <!-- Header Action Tools & Theme Selector (Dedicated Column 1 with Horizontal ScrollBar) -->
                 <ScrollViewer x:Name="HeaderScrollViewer"
                               Grid.Column="1"
+                              Background="Transparent"
                               HorizontalScrollBarVisibility="Visible"
                               VerticalScrollBarVisibility="Disabled"
                               Focusable="False"
@@ -89,7 +90,7 @@
                               VerticalAlignment="Stretch"
                               PreviewMouseWheel="HeaderScrollViewer_PreviewMouseWheel"
                               Margin="10,0,4,0"
-                              ToolTip="휠 또는 아래 스크롤바로 상단 도구를 이동하세요.">
+                              ToolTip="휠 또는 아래 스크롤바로 상단 도구를 이동하세요 (빈 공간 드래그 시 창 이동).">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,4,0,2">
                         <!-- Theme Switcher Dropdown (ComboBox) -->
                         <Border Background="{DynamicResource BgDarkBrush}" CornerRadius="6" Padding="4,2" Margin="0,0,10,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
