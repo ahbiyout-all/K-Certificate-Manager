@@ -35,6 +35,7 @@ namespace KCertManager.Wpf.ViewModels
         private bool _hasUsbDrives;
         private int _scanGeneration;
         private string _statusMessage = "USB 드라이브를 선택하세요.";
+        private string _confirmButtonText = "선택한 인증서 내 PC로 가져오기 시작";
 
         public event Action? TransferCompleted;
 
@@ -165,6 +166,12 @@ namespace KCertManager.Wpf.ViewModels
             set => SetProperty(ref _statusMessage, value);
         }
 
+        public string ConfirmButtonText
+        {
+            get => _confirmButtonText;
+            set => SetProperty(ref _confirmButtonText, value);
+        }
+
         public string SelectedSummaryText
         {
             get
@@ -211,6 +218,7 @@ namespace KCertManager.Wpf.ViewModels
                     DetachCertEvents();
                     FoundUsbCertificates.Clear();
                     OnPropertyChanged(nameof(SelectedSummaryText));
+                    ConfirmButtonText = "선택한 인증서 내 PC로 가져오기 시작";
                     (ScanDriveCommand as RelayCommand)?.RaiseCanExecuteChanged();
                     (TransferToPcCommand as RelayCommand)?.RaiseCanExecuteChanged();
                     return;
@@ -350,7 +358,7 @@ namespace KCertManager.Wpf.ViewModels
                             }
                             FoundUsbCertificates = new ObservableCollection<CertificateItem>(validCerts);
                             SelectedCertificate = null;
-                            OnPropertyChanged(nameof(SelectedSummaryText));
+                            UpdateSelectionStatus();
                             if (FoundUsbCertificates.Count == 0)
                             {
                                 StatusMessage = $"{driveRoot}에서 인증서(NPKI·GPKI·EPKI)를 찾지 못했습니다.";
@@ -447,9 +455,13 @@ namespace KCertManager.Wpf.ViewModels
         private void UpdateSelectionStatus()
         {
             OnPropertyChanged(nameof(SelectedSummaryText));
+            int checkedCount = FoundUsbCertificates?.Count(x => x.IsSelected) ?? 0;
+            ConfirmButtonText = checkedCount > 0
+                ? $"선택한 인증서({checkedCount}건) 내 PC로 가져오기 시작"
+                : "선택한 인증서 내 PC로 가져오기 시작";
+
             if (IsBusy || FoundUsbCertificates == null || FoundUsbCertificates.Count == 0) return;
 
-            int checkedCount = FoundUsbCertificates.Count(x => x.IsSelected);
             if (checkedCount > 0)
             {
                 if (checkedCount == 1)

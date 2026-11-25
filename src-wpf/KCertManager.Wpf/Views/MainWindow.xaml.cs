@@ -681,36 +681,95 @@ namespace KCertManager.Wpf.Views
             }
         }
 
+        private CertificateItem? _pressedRowItem;
+
+        private static bool IsInteractiveRowElement(DependencyObject? dep)
+        {
+            while (dep != null)
+            {
+                if (dep is CheckBox ||
+                    dep is System.Windows.Controls.Primitives.ButtonBase ||
+                    dep is System.Windows.Controls.Primitives.ScrollBar ||
+                    dep is System.Windows.Controls.Primitives.Thumb ||
+                    dep is System.Windows.Controls.Primitives.DataGridColumnHeader ||
+                    dep is ContextMenu ||
+                    dep is System.Windows.Controls.Primitives.TextBoxBase)
+                {
+                    return true;
+                }
+
+                if (dep is DataGridRow)
+                {
+                    return false;
+                }
+
+                dep = (dep is Visual || dep is System.Windows.Media.Media3D.Visual3D)
+                    ? VisualTreeHelper.GetParent(dep)
+                    : LogicalTreeHelper.GetParent(dep);
+            }
+            return false;
+        }
+
+        private static DataGridRow? FindParentDataGridRow(DependencyObject? dep)
+        {
+            while (dep != null)
+            {
+                if (dep is DataGridRow row)
+                {
+                    return row;
+                }
+
+                dep = (dep is Visual || dep is System.Windows.Media.Media3D.Visual3D)
+                    ? VisualTreeHelper.GetParent(dep)
+                    : LogicalTreeHelper.GetParent(dep);
+            }
+            return null;
+        }
+
+        private void CertDataGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _pressedRowItem = null;
+            try
+            {
+                if (e.ClickCount >= 2)
+                {
+                    return;
+                }
+
+                DependencyObject? dep = e.OriginalSource as DependencyObject;
+                if (IsInteractiveRowElement(dep))
+                {
+                    return;
+                }
+
+                var row = FindParentDataGridRow(dep);
+                if (row?.Item is CertificateItem item)
+                {
+                    _pressedRowItem = item;
+                }
+            }
+            catch { }
+        }
+
         private void CertDataGrid_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
+            var pressed = _pressedRowItem;
+            _pressedRowItem = null;
+
+            if (pressed == null) return;
+
             try
             {
                 DependencyObject? dep = e.OriginalSource as DependencyObject;
-                while (dep != null)
+                if (IsInteractiveRowElement(dep))
                 {
-                    if (dep is CheckBox ||
-                        dep is System.Windows.Controls.Primitives.ButtonBase ||
-                        dep is System.Windows.Controls.Primitives.ScrollBar ||
-                        dep is System.Windows.Controls.Primitives.Thumb ||
-                        dep is System.Windows.Controls.Primitives.DataGridColumnHeader ||
-                        dep is ContextMenu ||
-                        dep is System.Windows.Controls.Primitives.TextBoxBase)
-                    {
-                        return;
-                    }
+                    return;
+                }
 
-                    if (dep is DataGridRow row)
-                    {
-                        if (row.Item is CertificateItem item)
-                        {
-                            item.IsSelected = !item.IsSelected;
-                        }
-                        return;
-                    }
-
-                    dep = (dep is Visual || dep is System.Windows.Media.Media3D.Visual3D)
-                        ? VisualTreeHelper.GetParent(dep)
-                        : LogicalTreeHelper.GetParent(dep);
+                var row = FindParentDataGridRow(dep);
+                if (row?.Item is CertificateItem item && ReferenceEquals(item, pressed))
+                {
+                    item.IsSelected = !item.IsSelected;
                 }
             }
             catch { }

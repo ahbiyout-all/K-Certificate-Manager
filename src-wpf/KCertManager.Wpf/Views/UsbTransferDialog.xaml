@@ -130,6 +130,8 @@
                     </Border>
 
                     <DataGrid x:Name="CertDataGrid" Grid.Row="2" ItemsSource="{Binding FoundUsbCertificates}" SelectedItem="{Binding SelectedCertificate, Mode=TwoWay}" SelectionMode="Single" AutoGenerateColumns="False" CanUserAddRows="False"
+                              IsReadOnly="True"
+                              PreviewMouseLeftButtonDown="CertDataGrid_PreviewMouseLeftButtonDown"
                               PreviewMouseLeftButtonUp="CertDataGrid_PreviewMouseLeftButtonUp"
                               CanUserResizeColumns="True"
                               Background="Transparent" RowBackground="{DynamicResource BgCardBrush}" AlternatingRowBackground="{DynamicResource BgDarkBrush}"
@@ -155,13 +157,17 @@
                             <Setter Property="Background" Value="Transparent"/>
                             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                             <Style.Triggers>
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource SelectedRowBgBrush}"/>
-                                    <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
-                                </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter Property="Background" Value="{DynamicResource BgCardHoverBrush}"/>
                                 </Trigger>
+                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource SelectedRowBgBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsRecentlyCopied}" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource CopiedRowBgBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource CopiedRowTextBrush}"/>
+                                </DataTrigger>
                             </Style.Triggers>
                         </Style>
                         <!-- DataGrid Cell Style with Horizontal & Vertical Dividers -->
@@ -181,16 +187,23 @@
                                 </Setter.Value>
                             </Setter>
                             <Style.Triggers>
-                                <Trigger Property="IsSelected" Value="True">
+                                <DataTrigger Binding="{Binding DataContext.IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True">
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
-                                </Trigger>
+                                </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </DataGrid.Resources>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="번호" Binding="{Binding IndexNumber}" Width="52" MinWidth="35" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                        <DataGridCheckBoxColumn Header="선택" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="52" MinWidth="35"/>
+                        <DataGridTemplateColumn Header="선택" Width="52" MinWidth="35" CanUserSort="False">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center" Cursor="Hand"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTextColumn Header="구분" Binding="{Binding CategoryBadgeText}" Width="120" MinWidth="60" Foreground="{DynamicResource AccentTextBrush}"/>
                         <DataGridTemplateColumn Header="인증서 명칭 (CN) 및 USB 경로" Width="360" MinWidth="220">
                             <DataGridTemplateColumn.CellTemplate>
@@ -267,7 +280,7 @@
 
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <Button Click="Close_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Content="닫기"/>
-                <Button Command="{Binding TransferToPcCommand}" Style="{StaticResource SuccessButton}" Padding="18,8" Content="내 PC로 가져오기 시작"/>
+                <Button Command="{Binding TransferToPcCommand}" Style="{StaticResource SuccessButton}" Padding="18,8" Content="{Binding ConfirmButtonText}"/>
             </StackPanel>
         </Grid>
     </Grid>

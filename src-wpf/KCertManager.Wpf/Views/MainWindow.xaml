@@ -422,7 +422,33 @@
                         <Border Background="{DynamicResource BgCardBrush}" CornerRadius="12" Padding="10,4" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0">
                             <TextBlock Text="{Binding FilteredCertificates.Count, StringFormat='{}표시 중: {0}개'}" FontSize="12" Foreground="{DynamicResource AccentTextBrush}"/>
                         </Border>
-                        <TextBlock Text="(더블클릭: 상세 보기)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <Border CornerRadius="12" Padding="10,4" BorderThickness="1" Margin="0,0,8,0">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="{DynamicResource BgCardBrush}"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasCheckedCertificates}" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource AccentBlueBrush}"/>
+                                            <Setter Property="BorderBrush" Value="{DynamicResource AccentBlueBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock Text="{Binding SelectedCertificatesCount, StringFormat='{}선택됨: {0}건'}" FontSize="12" FontWeight="Bold">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasCheckedCertificates}" Value="True">
+                                                <Setter Property="Foreground" Value="White"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Border>
+                        <TextBlock Text="(행 클릭: 선택 · 더블클릭: 상세)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>
 
                     <!-- Quick Tools -->
@@ -501,10 +527,16 @@
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button Command="{Binding BackupAllCommand}" Style="{StaticResource SuccessButton}" Padding="12,6" Margin="0,0,8,0" ToolTip="모든 인증서를 대상 드라이브에 바로 복사">
+                            <Button Click="BackupSelected_Click" Style="{StaticResource PrimaryButton}" Padding="12,6" Margin="0,0,8,0" ToolTip="체크한 인증서만 대상 드라이브로 복사">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="💾" Margin="0,0,5,0"/>
+                                    <TextBlock Text="{Binding SelectedCertificatesCount, StringFormat='{}선택 복사 ({0}건)'}" FontWeight="Bold"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding BackupAllCommand}" Style="{StaticResource SuccessButton}" Padding="12,6" Margin="0,0,8,0" ToolTip="체크 여부와 관계없이 현재 목록의 전체 인증서를 대상 드라이브에 복사">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="⚡" Margin="0,0,5,0"/>
-                                    <TextBlock Text="원클릭 전체 복사" FontWeight="Bold"/>
+                                    <TextBlock Text="전체 일괄 복사" FontWeight="Bold"/>
                                 </StackPanel>
                             </Button>
                             <Button Click="OpenUsbTransfer_Click" Style="{StaticResource SecondaryButton}" Padding="12,6" ToolTip="USB 인증서를 내 PC로 가져오기">
@@ -845,13 +877,14 @@
                                       HeadersVisibility="Column"
                                       MinRowHeight="46"
                                       RowHeight="48"
-                                      MouseDoubleClick="CertDataGrid_MouseDoubleClick"
-                                      PreviewMouseLeftButtonUp="CertDataGrid_PreviewMouseLeftButtonUp"
-                                      PreviewMouseRightButtonDown="CertDataGrid_PreviewMouseRightButtonDown"
-                                      Sorting="CertDataGrid_Sorting">
+                                       MouseDoubleClick="CertDataGrid_MouseDoubleClick"
+                                       PreviewMouseLeftButtonDown="CertDataGrid_PreviewMouseLeftButtonDown"
+                                       PreviewMouseLeftButtonUp="CertDataGrid_PreviewMouseLeftButtonUp"
+                                       PreviewMouseRightButtonDown="CertDataGrid_PreviewMouseRightButtonDown"
+                                       Sorting="CertDataGrid_Sorting">
                             <DataGrid.ContextMenu>
                                 <ContextMenu Background="{DynamicResource BgCardBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource BorderBrush}">
-                                    <MenuItem Header="💾 복사할 대상 선택..." Click="ContextMenuCopy_Click" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <MenuItem Header="💾 이 인증서 복사..." Click="ContextMenuCopy_Click" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     <Separator Background="{DynamicResource BorderBrush}"/>
                                     <MenuItem Header="🔍 인증서 상세 정보" Click="ContextMenuDetail_Click" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     <MenuItem Header="📋 전체 경로 클립보드 복사" Click="ContextMenuCopyPath_Click" Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -884,10 +917,10 @@
                                         </Setter.Value>
                                     </Setter>
                                     <Style.Triggers>
-                                        <Trigger Property="IsSelected" Value="True">
+                                        <DataTrigger Binding="{Binding DataContext.IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True">
                                             <Setter Property="Background" Value="Transparent"/>
                                             <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
-                                        </Trigger>
+                                        </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                                 <Style TargetType="DataGridRow">
@@ -896,17 +929,17 @@
                                     <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                     <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
                                     <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource BgCardHoverBrush}"/>
+                                        </Trigger>
+                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource SelectedRowBgBrush}"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
+                                        </DataTrigger>
                                         <DataTrigger Binding="{Binding IsRecentlyCopied}" Value="True">
                                             <Setter Property="Background" Value="{DynamicResource CopiedRowBgBrush}"/>
                                             <Setter Property="Foreground" Value="{DynamicResource CopiedRowTextBrush}"/>
                                         </DataTrigger>
-                                        <Trigger Property="IsSelected" Value="True">
-                                            <Setter Property="Background" Value="{DynamicResource SelectedRowBgBrush}"/>
-                                            <Setter Property="Foreground" Value="{DynamicResource SelectedRowTextBrush}"/>
-                                        </Trigger>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="Background" Value="{DynamicResource BgCardHoverBrush}"/>
-                                        </Trigger>
                                     </Style.Triggers>
                                 </Style>
                             </DataGrid.Resources>
@@ -930,8 +963,8 @@
                                 <DataGridTemplateColumn Width="45" CanUserSort="False">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
-                                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center" Cursor="Hand"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
@@ -1410,15 +1443,15 @@
                         <!-- Main Backup execution buttons (Supports Disk->Disk, USB->USB, Disk->USB, USB->Disk) -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                             <Button Click="BackupSelected_Click" Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"
-                                    ToolTip="선택한 인증서를 복사할 드라이브 지정">
+                                    ToolTip="체크한 인증서만 복사할 드라이브 지정">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="💾" Margin="0,0,6,0"/>
-                                    <TextBlock Text="선택 복사 / 백업"/>
+                                    <TextBlock Text="{Binding SelectedCertificatesCount, StringFormat='{}선택 복사 / 백업 ({0}건)'}"/>
                                 </StackPanel>
                             </Button>
 
                             <Button Click="BackupAll_Click" Style="{StaticResource SuccessButton}"
-                                    ToolTip="전체 인증서를 복사할 드라이브 지정">
+                                    ToolTip="체크 여부와 관계없이 현재 목록의 전체 인증서를 복사할 드라이브 지정">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="⚡" Margin="0,0,6,0"/>
                                     <TextBlock Text="전체 일괄 복사 / 백업"/>

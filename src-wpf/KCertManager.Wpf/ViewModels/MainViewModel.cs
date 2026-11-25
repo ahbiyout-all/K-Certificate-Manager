@@ -1360,6 +1360,7 @@ namespace KCertManager.Wpf.ViewModels
         public int UsbCount => _allCertificates?.Count(x => x != null && x.IsRemovableMedia) ?? 0;
         public int CustomPathCount => _allCertificates?.Count(x => x != null && x.IsCustomPath) ?? 0;
         public int SelectedCertificatesCount => _filteredCertificates?.Count(x => x != null && x.IsSelected) ?? 0;
+        public bool HasCheckedCertificates => SelectedCertificatesCount > 0;
         public int TrashCount => _trashItems?.Count ?? 0;
         public int LogCount => ActivityLogService.Instance?.Logs?.Count ?? 0;
 
@@ -1696,6 +1697,7 @@ namespace KCertManager.Wpf.ViewModels
                     DispatchSafe(() =>
                     {
                         OnPropertyChanged(nameof(SelectedCertificatesCount));
+                        OnPropertyChanged(nameof(HasCheckedCertificates));
                         (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
                         (DeleteSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
                     });
@@ -1953,6 +1955,7 @@ namespace KCertManager.Wpf.ViewModels
             OnPropertyChanged(nameof(UsbCount));
             OnPropertyChanged(nameof(CustomPathCount));
             OnPropertyChanged(nameof(SelectedCertificatesCount));
+            OnPropertyChanged(nameof(HasCheckedCertificates));
             OnPropertyChanged(nameof(TrashCount));
             OnPropertyChanged(nameof(LogCount));
             OnPropertyChanged(nameof(HasUsbDrives));
@@ -2775,6 +2778,7 @@ namespace KCertManager.Wpf.ViewModels
                 c.IsSelected = val;
             }
             OnPropertyChanged(nameof(SelectedCertificatesCount));
+            OnPropertyChanged(nameof(HasCheckedCertificates));
             (BackupSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (DeleteSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
