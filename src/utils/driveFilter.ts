@@ -132,6 +132,98 @@ export function filterPhysicalDrivesOnly(drives: DiskDrive[]): DiskDrive[] {
   return drives.filter(d => isPhysicalOrUsbDrive(d));
 }
 
+export type DriveSortMode = 'device_priority' | 'drive_letter';
+
+/**
+ * Returns true if the drive is a removable USB flash drive, fast USB, or external USB SSD.
+ */
+export function isRemovableOrExternalDrive(drive: Partial<DiskDrive> | null | undefined): boolean {
+  if (!drive) return false;
+  return (
+    drive.type === 'removable' ||
+    drive.busType === 'USB' ||
+    drive.deviceKind === 'fast_usb' ||
+    drive.deviceKind === 'usb_flash' ||
+    drive.deviceKind === 'external_ssd'
+  );
+}
+
+function getNormalizedDriveLetterForSort(letter?: string): string {
+  if (!letter) return 'ZZ';
+  const trimmed = letter.trim();
+  const colonMatch = trimmed.match(/(?:^|[^A-Za-z])([A-Za-z]):/);
+  if (colonMatch?.[1]) return colonMatch[1].toUpperCase();
+  const singleMatch = trimmed.match(/^([A-Za-z])$/);
+  if (singleMatch?.[1]) return singleMatch[1].toUpperCase();
+  return 'ZZ';
+}
+
+/**
+ * Assigns a deterministic priority rank based on device kind:
+ * 0: Fast USB (USB 3.0+), 1: Removable USB Flash, 2: External USB SSD,
+ * 3: Other USB device, 4: Internal secondary disk (D:, etc.), 5: System disk (C:)
+ */
+export function getDriveKindPriorityRank(drive: Partial<DiskDrive>): number {
+  const kind = (drive.deviceKind || '').toLowerCase();
+  const name = (drive.name || '').toUpperCase();
+  const desc = (drive.description || '').toUpperCase();
+  const letterChar = getNormalizedDriveLetterForSort(drive.letter);
+
+  if (
+    kind === 'fast_usb' ||
+    (isRemovableOrExternalDrive(drive) &&
+      (name.includes('3.0') || name.includes('3.1') || name.includes('ULTRA') || name.includes('EXTREME')))
+  ) {
+    return 0;
+  }
+
+  if (kind === 'usb_flash' || drive.type === 'removable') {
+    return 1;
+  }
+
+  if (
+    kind === 'external_ssd' ||
+    (drive.busType === 'USB' && (name.includes('SSD') || desc.includes('SSD') || drive.diskMediaType === 'SSD'))
+  ) {
+    return 2;
+  }
+
+  if (drive.busType === 'USB') {
+    return 3;
+  }
+
+  if (letterChar !== 'C') {
+    return 4;
+  }
+
+  return 5;
+}
+
+/**
+ * Sorts drives automatically by device kind priority and/or drive letter.
+ */
+export function sortDrivesByPriority(
+  drives: DiskDrive[],
+  mode: DriveSortMode = 'device_priority'
+): DiskDrive[] {
+  return [...drives].sort((a, b) => {
+    const rankA = getDriveKindPriorityRank(a);
+    const rankB = getDriveKindPriorityRank(b);
+    const letterA = getNormalizedDriveLetterForSort(a.letter);
+    const letterB = getNormalizedDriveLetterForSort(b.letter);
+
+    if (mode === 'drive_letter') {
+      if (letterA !== letterB) return letterA.localeCompare(letterB);
+      if (rankA !== rankB) return rankA - rankB;
+    } else {
+      if (rankA !== rankB) return rankA - rankB;
+      if (letterA !== letterB) return letterA.localeCompare(letterB);
+    }
+
+    return (a.name || '').localeCompare(b.name || '', 'ko');
+  });
+}
+
 /**
  * Checks if a certificate is stored on the exact same drive as the target drive letter
  * (Self-Copy prohibition rule: USB E: ➔ USB E: or Local D: ➔ Local D: is prohibited)

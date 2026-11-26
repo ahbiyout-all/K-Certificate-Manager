@@ -1,7 +1,12 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { HardDrive, Cpu, Check, Copy, ArrowDownLeft, Save, Usb } from 'lucide-react';
 import { DiskDrive, CertificateItem } from '../types';
-import { filterPhysicalDrivesOnly } from '../utils/driveFilter';
+import {
+  filterPhysicalDrivesOnly,
+  isRemovableOrExternalDrive,
+  sortDrivesByPriority,
+  DriveSortMode,
+} from '../utils/driveFilter';
 import { getDriveColorInfo, extractDriveLetterChar } from '../utils/driveColors';
 import { extractDriveLetterFromPathOrLabel } from '../utils/certDiagnostics';
 
@@ -36,6 +41,13 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
     return 'basic';
   });
   const [filterType, setFilterType] = useState<'removable' | 'all'>('removable');
+  const [sortMode, setSortMode] = useState<DriveSortMode>(() => {
+    try {
+      const saved = localStorage.getItem('kcert_drive_sort_mode');
+      if (saved === 'device_priority' || saved === 'drive_letter') return saved;
+    } catch {}
+    return 'device_priority';
+  });
   const [copiedVsnId, setCopiedVsnId] = useState<string | null>(null);
   const copiedVsnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -50,18 +62,26 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
   const physicalOnlyDrives = useMemo(() => filterPhysicalDrivesOnly(availableDrives), [availableDrives]);
 
   const filteredDrives = useMemo(() => {
-    return physicalOnlyDrives.filter(d => {
+    const scoped = physicalOnlyDrives.filter(d => {
       if (filterType === 'removable') {
-        return d.type === 'removable' || d.busType === 'USB';
+        return isRemovableOrExternalDrive(d);
       }
       return true;
     });
-  }, [physicalOnlyDrives, filterType]);
+    return sortDrivesByPriority(scoped, sortMode);
+  }, [physicalOnlyDrives, filterType, sortMode]);
 
   const handleSetViewMode = (mode: 'basic' | 'advanced') => {
     setViewMode(mode);
     try {
       localStorage.setItem('kcert_drive_display_mode', mode);
+    } catch {}
+  };
+
+  const handleSetSortMode = (mode: DriveSortMode) => {
+    setSortMode(mode);
+    try {
+      localStorage.setItem('kcert_drive_sort_mode', mode);
     } catch {}
   };
 
@@ -143,8 +163,42 @@ export const ConnectedDrivesBar: React.FC<ConnectedDrivesBarProps> = ({
           </button>
         </div>
 
-        {/* Right Display Mode Toggle + WMI Diagnostic */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Right Sort + Display Mode Toggle + WMI Diagnostic */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <span className="text-[11px] hidden sm:inline" style={{ color: 'var(--wpf-text-secondary)' }}>
+            정렬:
+          </span>
+          <div
+            className="inline-flex p-0.5 rounded-[6px]"
+            style={{
+              backgroundColor: 'var(--wpf-bg-dark)',
+              border: '1px solid var(--wpf-border)',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => handleSetSortMode('device_priority')}
+              className={`px-2 py-1 rounded-[4px] text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                sortMode === 'device_priority' ? 'bg-[#2563EB] text-white' : ''
+              }`}
+              style={sortMode !== 'device_priority' ? { color: 'var(--wpf-text-secondary)' } : undefined}
+              title="고속 USB · 이동식 USB · 외장 SSD · 내장 디스크 우선순위 및 문자순 정렬"
+            >
+              장치 우선
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetSortMode('drive_letter')}
+              className={`px-2 py-1 rounded-[4px] text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                sortMode === 'drive_letter' ? 'bg-[#2563EB] text-white' : ''
+              }`}
+              style={sortMode !== 'drive_letter' ? { color: 'var(--wpf-text-secondary)' } : undefined}
+              title="드라이브 문자(C:, D:, E:...) 오름차순 정렬"
+            >
+              문자순
+            </button>
+          </div>
+
           <span className="text-[11px] hidden sm:inline" style={{ color: 'var(--wpf-text-secondary)' }}>
             표시 방식:
           </span>
