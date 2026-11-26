@@ -230,23 +230,8 @@ namespace KCertManager.Wpf.Views
 
             foreach (var drive in _drives)
             {
-                // Check self copy: are all selected certs already in the EXACT target destination directory?
-                bool isSelfCopy = _certsToCopy.Count > 0 && _certsToCopy.All(c =>
-                {
-                    if (string.IsNullOrWhiteSpace(c?.DirectoryPath)) return false;
-                    try
-                    {
-                        string targetRoot = ResolveEffectiveDestinationRoot(drive, c);
-                        string safeRel = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(c.DirectoryPath);
-                        string expectedDstDir = Path.GetFullPath(Path.Combine(targetRoot, safeRel)).TrimEnd('\\');
-                        string currentSrcDir = Path.GetFullPath(c.DirectoryPath).TrimEnd('\\');
-                        return string.Equals(currentSrcDir, expectedDstDir, StringComparison.OrdinalIgnoreCase);
-                    }
-                    catch
-                    {
-                        return false;
-                    }
-                });
+                // Check self copy through the Unified Transfer Engine planner
+                bool isSelfCopy = IsDriveAllSelfCopy(drive);
 
                 var cardBackground = (Application.Current?.TryFindResource("BgDarkBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(15, 23, 42));
                 var cardBorderBrush = (Application.Current?.TryFindResource("BorderBrush") as Brush) ?? new SolidColorBrush(Color.FromRgb(51, 65, 85));
@@ -465,24 +450,7 @@ namespace KCertManager.Wpf.Views
                 {
                     if (border.Tag is DriveItem d)
                     {
-                        bool isSelfCopy = _certsToCopy.Count > 0 && _certsToCopy.All(c =>
-                        {
-                            if (string.IsNullOrWhiteSpace(c?.DirectoryPath)) return false;
-                            try
-                            {
-                                string targetRoot = ResolveEffectiveDestinationRoot(d, c);
-                                string safeRel = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(c.DirectoryPath);
-                                string expectedDstDir = Path.GetFullPath(Path.Combine(targetRoot, safeRel)).TrimEnd('\\');
-                                string currentSrcDir = Path.GetFullPath(c.DirectoryPath).TrimEnd('\\');
-                                return string.Equals(currentSrcDir, expectedDstDir, StringComparison.OrdinalIgnoreCase);
-                            }
-                            catch
-                            {
-                                return false;
-                            }
-                        });
-
-                        if (!isSelfCopy)
+                        if (!IsDriveAllSelfCopy(d))
                         {
                             SelectCard(border, d);
                             break;
@@ -498,23 +466,25 @@ namespace KCertManager.Wpf.Views
             }
         }
 
-        private static string ResolveEffectiveDestinationRoot(DriveItem drive, CertificateItem cert)
+        private bool IsDriveAllSelfCopy(DriveItem drive)
         {
-            string cleanTarget = (drive.Name ?? "").TrimEnd('\\').ToUpperInvariant();
-            string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\').ToUpperInvariant();
+            if (_certsToCopy.Count == 0 || drive == null) return false;
+            var backupSvc = new CertificateBackupService();
+            var plan = backupSvc.BuildUnifiedTransferPlan(
+                _certsToCopy,
+                drive,
+                GetCurrentConflictOption(),
+                checkPhysicalDiskForDuplicates: false);
+            return plan.Summary.IsAllSelfCopy;
+        }
 
-            if (string.Equals(cleanTarget, sysRoot, StringComparison.OrdinalIgnoreCase))
-            {
-                if (cert.Category == CertCategory.GPKI)
-                {
-                    return sysRoot + "\\";
-                }
-
-                var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                return Path.Combine(userProfile, "AppData", "LocalLow");
-            }
-
-            return cleanTarget + "\\";
+        private string GetCurrentConflictOption()
+        {
+            return RbOverwrite?.IsChecked == true
+                ? "overwrite"
+                : RbRename?.IsChecked == true
+                    ? "rename"
+                    : "skip";
         }
 
         private void SelectCard(Border cardBorder, DriveItem drive)
@@ -550,8 +520,30 @@ namespace KCertManager.Wpf.Views
             }
 
             BtnConfirm.IsEnabled = true;
-            TxtConfirmBtnText.Text = $"[{drive.Name.TrimEnd('\\')}]로 복사 시작";
-            TxtSelectionStatus.Text = $"선택된 목적지: {drive.DisplayName}";
+            UpdateSelectedDrivePreview();
+        }
+
+        private void ConflictOption_Checked(object sender, RoutedEventArgs e)
+        {
+            if (SelectedDrive != null)
+            {
+                UpdateSelectedDrivePreview();
+            }
+        }
+
+        private void UpdateSelectedDrivePreview()
+        {
+            if (SelectedDrive == null || TxtConfirmBtnText == null || TxtSelectionStatus == null) return;
+
+            var backupSvc = new CertificateBackupService();
+            var previewPlan = backupSvc.BuildUnifiedTransferPlan(
+                _certsToCopy,
+                SelectedDrive,
+                GetCurrentConflictOption(),
+                checkPhysicalDiskForDuplicates: true);
+
+            TxtConfirmBtnText.Text = $"[{SelectedDrive.Name.TrimEnd('\\')}]로 복사 시작 ({previewPlan.Summary.ExecutableCount}건)";
+            TxtSelectionStatus.Text = $"선택: {SelectedDrive.DisplayName} · 계획: {previewPlan.Summary.PreviewSummaryText}";
         }
 
         private void BtnCancel_Click(object sender, RoutedEventArgs e)

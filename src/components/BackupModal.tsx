@@ -39,10 +39,13 @@ import {
 import { CertificateItem, DiskDrive } from '../types';
 import { BRANDING_ASSETS } from '../data/brandingAssets';
 import { CopyErrorAlertModal, CopyErrorContext } from './CopyErrorAlertModal';
-import { 
-  copyCertificatesToDisk, 
-  writeCertificatesToDirectoryHandle, 
-  getStandardDirectoryPath,
+import {
+  buildTransferPlan,
+  executeTransferPlan,
+  TransferPlan,
+} from '../utils/unifiedTransferEngine';
+import {
+  writeCertificatesToDirectoryHandle,
   checkDriveWritePermission,
   detectDuplicateCertificates,
   DuplicateConflictItem,
@@ -51,12 +54,10 @@ import {
   BackupResult
 } from '../utils/backupService';
 import { 
-  executeUsbOperationWithRetry,
-  UsbRetryOptions,
-  UsbRetryResult
+  executeUsbOperationWithRetry
 } from '../utils/usbToPcService';
-import { parseUserFriendlyError, formatUserErrorMessage } from '../utils/userFriendlyError';
-import { playStartSound, playCompletionSound, playErrorSound } from '../utils/audioFeedback';
+import { parseUserFriendlyError } from '../utils/userFriendlyError';
+import { playCompletionSound, playErrorSound } from '../utils/audioFeedback';
 import { SuccessCelebration } from './SuccessCelebration';
 import { isSameDriveSelfCopy } from '../utils/driveFilter';
 import { getDriveBadgeStyle } from '../utils/driveBadgeUtils';
@@ -295,18 +296,57 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, selectedDriveId, simulatedLockedDriveIds]);
 
-  // Check duplicate status whenever drive or selection changes
+  // Unified Transfer Engine: live memoized execution plan (updates whenever target/selection/policy changes)
+  const transferPlan = useMemo<TransferPlan | null>(() => {
+    if (!isOpen || !targetDrive) return null;
+    return buildTransferPlan({
+      sources: effectiveSelectedCerts,
+      targetDrive,
+      existingCertificates,
+      conflictStrategy: duplicateMode,
+      perItemDecisions: customDuplicateDecisions,
+      includeManifest,
+    });
+  }, [isOpen, targetDrive, effectiveSelectedCerts, existingCertificates, duplicateMode, customDuplicateDecisions, includeManifest]);
+
+  // Check duplicate status whenever drive or selection changes (preserving user overrides for remaining conflicts)
   useEffect(() => {
     if (isOpen && targetDrive) {
-      const copyableCandidates = effectiveSelectedCerts.filter(c => !isSameDriveSelfCopy(c, targetDrive));
-      const dup = detectDuplicateCertificates(copyableCandidates, existingCertificates, targetDrive);
-      setDuplicateResult(dup);
-      const initialDecisions: Record<string, 'overwrite' | 'skip' | 'archive_old'> = {};
-      dup.conflicts.forEach(c => {
-        initialDecisions[c.cert.id] = 'overwrite';
+      const basePlan = buildTransferPlan({
+        sources: effectiveSelectedCerts,
+        targetDrive,
+        existingCertificates,
+        conflictStrategy: duplicateMode,
       });
-      setCustomDuplicateDecisions(initialDecisions);
+      const conflicts: DuplicateConflictItem[] = [];
+      const nonConflicting: CertificateItem[] = [];
+      const nextDecisions: Record<string, 'overwrite' | 'skip' | 'archive_old'> = {};
+      for (const planned of basePlan.items) {
+        const cert = planned.source.originalCert;
+        if (!cert) continue;
+        if (planned.conflict) {
+          const preserved = customDuplicateDecisions[cert.id] || duplicateMode;
+          conflicts.push({
+            cert,
+            existingCert: planned.conflict.existingCert,
+            standardPath: planned.relativeSubPath,
+            isSameHash: planned.conflict.isSameHash,
+            isNewer: planned.conflict.isNewer,
+            action: preserved,
+          });
+          nextDecisions[cert.id] = preserved;
+        } else if (planned.isExecutable) {
+          nonConflicting.push(cert);
+        }
+      }
+      setDuplicateResult({
+        hasDuplicates: conflicts.length > 0,
+        conflicts,
+        nonConflicting,
+      });
+      setCustomDuplicateDecisions(nextDecisions);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, selectedDriveId, targetDrive, effectiveSelectedCerts, existingCertificates]);
 
   if (!isOpen) return null;
@@ -438,44 +478,30 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       return;
     }
 
-    // 2. Pre-flight Duplicate Certificate Folder Check on Target Drive
-    const copyableCandidates = effectiveSelectedCerts.filter(c => !isSameDriveSelfCopy(c, targetDrive));
-    const dupCheck = detectDuplicateCertificates(copyableCandidates, existingCertificates, targetDrive);
-    setDuplicateResult(dupCheck);
+    // 2. Pre-flight Duplicate Certificate & Execution Plan Build
+    const decisions = confirmedDecisions || customDuplicateDecisions;
+    const activePlan = buildTransferPlan({
+      sources: effectiveSelectedCerts,
+      targetDrive,
+      existingCertificates,
+      conflictStrategy: duplicateMode,
+      perItemDecisions: decisions,
+      includeManifest,
+    });
 
-    if (dupCheck.hasDuplicates && !overrideDuplicateConfirmed) {
+    if (activePlan.summary.hasDuplicates && !overrideDuplicateConfirmed) {
       // Prompt user with confirmation dialog before starting copy!
       setShowDuplicateModal(true);
       return;
     }
 
-    // User confirmed duplicate resolution mode
-    const decisions = confirmedDecisions || customDuplicateDecisions;
-    const skippedCertIds: string[] = [];
-    const archivedCertIds: string[] = [];
-    const overwrittenCertIds: string[] = [];
+    const actualCopyable = activePlan.executableItems
+      .map(i => i.source.originalCert)
+      .filter((c): c is CertificateItem => Boolean(c));
 
-    effectiveSelectedCerts.forEach(cert => {
-      const decision = decisions[cert.id] || duplicateMode;
-      const isConflict = dupCheck.conflicts.some(c => c.cert.id === cert.id);
-      if (isConflict) {
-        if (decision === 'skip') {
-          skippedCertIds.push(cert.id);
-        } else if (decision === 'archive_old') {
-          archivedCertIds.push(cert.id);
-        } else {
-          overwrittenCertIds.push(cert.id);
-        }
-      }
-    });
-
-    // If all selected certs are skipped or same-drive self-copy
-    const actualCopyable = effectiveSelectedCerts.filter(
-      c => !skippedCertIds.includes(c.id) && !isSameDriveSelfCopy(c, targetDrive)
-    );
-    if (effectiveSelectedCerts.length > 0 && actualCopyable.length === 0) {
+    if (effectiveSelectedCerts.length > 0 && !activePlan.summary.hasExecutableItems) {
       setLogs([
-        skippedCertIds.length === effectiveSelectedCerts.length
+        activePlan.summary.skippedConflictCount === effectiveSelectedCerts.length
           ? '[복사 취소] 모든 중복 인증서가 "건너뛰기(Skip)"로 지정되어 복사할 대상 파일이 없습니다.'
           : '[복사 취소] 복사할 수 있는 대상 인증서가 없습니다 (중복 건너뛰기 또는 동일 드라이브 자가 복사 제외됨).',
       ]);
@@ -489,7 +515,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     setRetryReason(null);
     setRetryDelayMs(0);
     setRetryHistory([]);
-    setLogs(['[사전 점검 완료] 대상 드라이브 쓰기 권한 확인 및 자동 복구 엔진(최대 3회) 가동...']);
+    setLogs([
+      `[사전 실행 계획 확정] ${activePlan.direction} · ${activePlan.summary.previewSummaryText}`,
+      '[사전 점검 완료] 대상 드라이브 쓰기 권한 확인 및 자동 복구 엔진(최대 3회) 가동...',
+    ]);
     // 복사 시작음 제거 요구사항 반영 (playStartSound 제거)
 
     try {
@@ -515,30 +544,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           await new Promise(r => setTimeout(r, 300));
           setProgress(attempt === 1 ? 30 : 45);
 
-          const backupDateTag = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-          const copyLogs: string[] = [];
-          const seenLogTargetPaths = new Set<string>();
-          effectiveSelectedCerts.forEach(cert => {
-            const stdPath = getStandardDirectoryPath(cert);
-            const normTargetPath = stdPath.replace(/\//g, '\\').toLowerCase();
-            if (isSameDriveSelfCopy(cert, targetDrive)) {
-              copyLogs.push(`[자가 복사 제외] ⏭️ ${cert.name} (${cert.category}) -> 대상 드라이브(${targetDrive.letter})와 동일하여 복사 제외`);
-            } else if (skippedCertIds.includes(cert.id)) {
-              copyLogs.push(`[중복 건너뜀] ⏭️ ${cert.name} (${cert.category}) -> 이미 존재하여 복사 건너뜀`);
-            } else if (seenLogTargetPaths.has(normTargetPath)) {
-              copyLogs.push(`[동일 대상 경로 중복 생략] ⏭️ ${cert.name} (${cert.category}) -> 동일 경로(${targetDrive.letter}\\${stdPath}) 중복 항목 생략`);
-            } else {
-              seenLogTargetPaths.add(normTargetPath);
-              if (archivedCertIds.includes(cert.id)) {
-                copyLogs.push(`[기존 백업 보존] 📦 ${cert.name} -> 기존 폴더를 ${targetDrive.letter}\\${stdPath}_backup_${backupDateTag} 로 보존 후 새 파일 복사`);
-              } else if (overwrittenCertIds.includes(cert.id)) {
-                copyLogs.push(`[덮어쓰기 갱신] 🔄 ${cert.name} (${cert.category}) -> ${targetDrive.letter}\\${stdPath} 기존 인증서 최신 교체`);
-              } else {
-                copyLogs.push(`[신규 복사] 📁 ${cert.name} (${cert.category}) -> ${targetDrive.letter}\\${stdPath}`);
-              }
-            }
-          });
-          setLogs(prev => [...prev, ...copyLogs]);
+          let pickedDirHandle: any = undefined;
+          let shouldWriteDirect = false;
 
           // If user chose direct Web File System writing to real USB
           if (writeDirectToDisk && 'showDirectoryPicker' in window) {
@@ -548,10 +555,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               const dirHandle = await window.showDirectoryPicker({
                 mode: 'readwrite',
               });
-              
+
               setLogs(prev => [...prev, `[권한 검증] 선택된 폴더 '${dirHandle.name}'의 실제 디스크 쓰기 권한(I/O Probe) 테스트...`]);
               const handleCheck = await checkDriveWritePermission(targetDrive, { dirHandle });
-              
+
               if (!handleCheck.isWritable) {
                 setDirectWriteError(handleCheck.message);
                 setLogs(prev => [...prev, `[❌ 디스크 쓰기 거부] ${handleCheck.message}`]);
@@ -559,14 +566,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               }
 
               setLogs(prev => [...prev, `[디스크 쓰기] 선택된 폴더: ${dirHandle.name}에 NPKI/GPKI 구조 직접 기록 시작...`]);
-              const res = await writeCertificatesToDirectoryHandle(effectiveSelectedCerts, dirHandle, {
-                skippedCertIds,
-                targetDrive,
-              });
-              if (!res.success) {
-                throw new Error(res.error || '디스크 쓰기 실패');
-              }
-              setLogs(prev => [...prev, `[디스크 쓰기 완료] 총 ${res.count}개 파일이 디스크에 성공적으로 쓰여졌습니다.`]);
+              pickedDirHandle = dirHandle;
+              shouldWriteDirect = true;
             } catch (err: any) {
               if (err?.name === 'AbortError') {
                 setLogs(prev => [...prev, '[안내] 실제 USB 폴더 선택이 취소되어 앱 내 보관함 동기화만 진행합니다.']);
@@ -576,17 +577,25 @@ export const BackupModal: React.FC<BackupModalProps> = ({
             }
           }
 
-          await new Promise(r => setTimeout(r, 400));
-          setProgress(85);
-
-          const result = await copyCertificatesToDisk(effectiveSelectedCerts, targetDrive, {
-            includeManifest,
-            duplicateHandlingMode: duplicateMode,
-            skippedCertIds,
-            archivedCertIds,
+          await new Promise(r => setTimeout(r, 300));
+          const execResult = await executeTransferPlan(activePlan, {
+            writeDirectToDisk: shouldWriteDirect,
+            dirHandle: pickedDirHandle,
+            directoryWriter: writeCertificatesToDirectoryHandle,
+            onProgress: (pct) => setProgress(Math.max(45, pct)),
+            onLog: (line) => setLogs(prev => [...prev, line]),
           });
 
-          return result;
+          return {
+            success: execResult.success,
+            message: execResult.message,
+            totalCertificates: execResult.executedCount,
+            totalFiles: execResult.totalFilesCopied,
+            checksum: execResult.checksum,
+            copiedCertIds: execResult.copiedCertIds,
+            skippedCount: execResult.skippedCount,
+            resultCertificates: execResult.resultCertificates,
+          };
         },
         {
           maxAttempts: 3,
@@ -625,34 +634,15 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         playCompletionSound();
         setShowCelebration(true);
 
-        // Record history excluding skipped, self-copy, and duplicate target path items to match backupService result
-        const copiedIdSet = retryResult.data.copiedCertIds ? new Set(retryResult.data.copiedCertIds) : null;
-        const copiedCerts: CertificateItem[] = [];
-        const seenCopiedTargetPaths = new Set<string>();
-        for (const c of effectiveSelectedCerts) {
-          if (copiedIdSet) {
-            if (!copiedIdSet.has(c.id)) continue;
-          } else {
-            if (skippedIds(c.id, skippedCertIds) || isSameDriveSelfCopy(c, targetDrive)) continue;
-            const normTarget = getStandardDirectoryPath(c).replace(/\//g, '\\').toLowerCase();
-            if (seenCopiedTargetPaths.has(normTarget)) continue;
-            seenCopiedTargetPaths.add(normTarget);
-          }
-          copiedCerts.push(c);
-        }
-        const firstCopiedSubPath =
-          copiedCerts.length > 0
-            ? getStandardDirectoryPath(copiedCerts[0]).replace(/\//g, '\\')
-            : 'NPKI';
-        const resolvedDriveRoot = `${extractDriveLetterChar(targetDrive.letter)}:`;
-        const isSystemC = resolvedDriveRoot.toUpperCase() === 'C:';
-        const isGpkiFirst = copiedCerts[0]?.category === 'GPKI_GOV';
-        const srcUserMatch = (copiedCerts[0]?.sourceLocation || '').match(/\\Users\\([^\\]+)\\/i);
-        const resolvedWinUser = srcUserMatch && srcUserMatch[1] && srcUserMatch[1] !== '...' ? srcUserMatch[1] : 'Admin';
+        // Derive committed certs & exact destination path directly from the executed immutable TransferPlan
+        const copiedIdSet = new Set(retryResult.data.copiedCertIds || []);
+        const copiedCerts: CertificateItem[] = activePlan.executableItems
+          .filter(p => copiedIdSet.size === 0 || copiedIdSet.has(p.source.id))
+          .map(p => p.source.originalCert)
+          .filter((c): c is CertificateItem => Boolean(c));
         const resolvedTargetPath =
-          isSystemC && !isGpkiFirst
-            ? `C:\\Users\\${resolvedWinUser}\\AppData\\LocalLow\\${firstCopiedSubPath}`
-            : `${resolvedDriveRoot}\\${firstCopiedSubPath}`;
+          activePlan.executableItems[0]?.destinationFullPath ||
+          `${extractDriveLetterChar(targetDrive.letter)}:\\NPKI`;
         onBackupSuccess({
           id: `backup-${Date.now()}`,
           timestamp: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
@@ -665,6 +655,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           hashCheckPassed: true,
           checksum: retryResult.data.checksum,
           retryAttemptsUsed: retryResult.attemptsUsed,
+          resultCertificates: retryResult.data.resultCertificates,
         });
       } else {
         playErrorSound();
@@ -711,8 +702,6 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     }
   };
 
-  const skippedIds = (id: string, skippedList: string[]) => skippedList.includes(id);
-
   const handleReset = () => {
     setBackupResult(null);
     setShowCelebration(false);
@@ -748,12 +737,11 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   };
 
   const isCurrentTargetLocked = targetDrive ? (simulatedLockedDriveIds.includes(targetDrive.id) || targetDrive.isWritable === false) : false;
-  const currentDriveDuplicates = targetDrive ? (duplicateResult?.conflicts.length || 0) : 0;
+  const currentDriveDuplicates = transferPlan ? transferPlan.summary.conflictCount : (targetDrive ? (duplicateResult?.conflicts.length || 0) : 0);
 
-  // Self-copy prohibition check (Certificates on same disk/USB cannot copy to themselves)
-  const selfCopyCerts = targetDrive ? effectiveSelectedCerts.filter(c => isSameDriveSelfCopy(c, targetDrive)) : [];
-  const isAllSelfCopy = targetDrive ? (effectiveSelectedCerts.length > 0 && selfCopyCerts.length === effectiveSelectedCerts.length) : false;
-  const selfCopyCount = selfCopyCerts.length;
+  // Self-copy prohibition check (derived directly from unified TransferPlan)
+  const selfCopyCount = transferPlan ? transferPlan.summary.skippedSelfCopyCount : 0;
+  const isAllSelfCopy = transferPlan ? transferPlan.summary.isAllSelfCopy : false;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
@@ -1941,6 +1929,23 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   </div>
                 </div>
 
+                {/* Pre-Flight Unified Execution Plan Preview */}
+                {transferPlan && targetDrive && (
+                  <div className="p-2.5 bg-white rounded-xl border border-slate-200 text-[11px] flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded font-bold shrink-0">
+                        실행 계획 미리보기
+                      </span>
+                      <span className="font-semibold text-slate-800 truncate">
+                        {transferPlan.summary.previewSummaryText}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-slate-500 truncate">
+                      목적지: {transferPlan.targetDisplayRoot}
+                    </span>
+                  </div>
+                )}
+
                 {/* Step 2.2: USB Auto-Retry & Fault-Tolerance Setting */}
                 <div className="pt-2 border-t border-slate-200">
                   <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
@@ -2197,12 +2202,12 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     ) : isCurrentTargetLocked ? (
                       <>
                         <Lock className="w-4 h-4" />
-                        <span>쓰기 금지 해제 후 복사 ({effectiveSelectedCerts.length}건)</span>
+                        <span>쓰기 금지 해제 후 복사 ({transferPlan && transferPlan.summary.executableCount > 0 ? transferPlan.summary.executableCount : effectiveSelectedCerts.length}건)</span>
                       </>
                     ) : currentDriveDuplicates > 0 ? (
                       <>
                         <CopyCheck className="w-4 h-4" />
-                        <span>{targetDrive.letter} 복사 시작 ({effectiveSelectedCerts.length}건 · 중복 확인)</span>
+                        <span>{targetDrive.letter} 복사 시작 ({transferPlan && transferPlan.summary.executableCount > 0 ? transferPlan.summary.executableCount : effectiveSelectedCerts.length}건 · 중복 확인)</span>
                       </>
                     ) : (
                       <>
@@ -2212,7 +2217,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                           {targetDrive.type === 'removable' || targetDrive.deviceKind === 'fast_usb' || targetDrive.deviceKind === 'external_ssd'
                             ? (targetDrive.deviceKindLabel || 'USB')
                             : '내장 디스크'
-                          }]로 복사 시작 ({effectiveSelectedCerts.length}건)
+                          }]로 복사 시작 ({transferPlan && transferPlan.summary.executableCount > 0 ? transferPlan.summary.executableCount : effectiveSelectedCerts.length}건)
                         </span>
                       </>
                     )}

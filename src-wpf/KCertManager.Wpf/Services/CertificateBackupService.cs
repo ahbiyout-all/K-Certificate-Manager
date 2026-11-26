@@ -12,6 +12,85 @@ namespace KCertManager.Wpf.Services
     {
         private readonly SafetyTrashManager _trashManager = new();
 
+        public TransferPlan BuildUnifiedTransferPlan(
+            IEnumerable<CertificateItem> sources,
+            DriveItem targetDrive,
+            string conflictOption = "overwrite",
+            IEnumerable<CertificateItem>? existingCertSnapshots = null,
+            string? targetUsername = null,
+            bool checkPhysicalDiskForDuplicates = true)
+        {
+            if (targetDrive == null) throw new ArgumentNullException(nameof(targetDrive));
+            return BuildUnifiedTransferPlan(
+                sources,
+                targetDrive.Name,
+                targetDrive.IsRemovable,
+                conflictOption,
+                existingCertSnapshots,
+                targetUsername,
+                checkPhysicalDiskForDuplicates);
+        }
+
+        public TransferPlan BuildUnifiedTransferPlan(
+            IEnumerable<CertificateItem> sources,
+            string targetDriveLetter,
+            bool isTargetRemovable,
+            string conflictOption = "overwrite",
+            IEnumerable<CertificateItem>? existingCertSnapshots = null,
+            string? targetUsername = null,
+            bool checkPhysicalDiskForDuplicates = true)
+        {
+            var sourceSpecs = (sources ?? Enumerable.Empty<CertificateItem>())
+                .Where(c => c != null)
+                .Select(c => new TransferSourceSpec
+                {
+                    Id = c.DirectoryPath ?? string.Empty,
+                    CommonName = c.CommonName ?? string.Empty,
+                    Category = c.Category.ToString(),
+                    IssuerName = c.IssuerName ?? string.Empty,
+                    SerialNumber = c.SerialNumber ?? string.Empty,
+                    DirectoryPath = c.DirectoryPath ?? string.Empty,
+                    DriveLetter = c.DriveLetter ?? string.Empty,
+                    IsRemovableSource = c.IsRemovableMedia,
+                    NotAfter = c.NotAfter
+                })
+                .ToList();
+
+            var snapshots = (existingCertSnapshots ?? Enumerable.Empty<CertificateItem>())
+                .Where(c => c != null)
+                .Select(c => new ExistingTargetCertSnapshot
+                {
+                    DirectoryPath = c.DirectoryPath ?? string.Empty,
+                    DriveLetter = c.DriveLetter ?? string.Empty,
+                    Category = c.Category.ToString(),
+                    CommonName = c.CommonName ?? string.Empty,
+                    IssuerName = c.IssuerName ?? string.Empty,
+                    SerialNumber = c.SerialNumber ?? string.Empty
+                })
+                .ToList();
+
+            var endpoint = new TransferTargetEndpoint
+            {
+                TargetDriveRoot = targetDriveLetter ?? string.Empty,
+                TargetDriveLabel = targetDriveLetter ?? string.Empty,
+                IsTargetRemovable = isTargetRemovable,
+                TargetUsername = string.IsNullOrWhiteSpace(targetUsername) ? Environment.UserName : targetUsername
+            };
+
+            var strategy = UnifiedTransferPlanner.ParseConflictStrategy(conflictOption);
+            return UnifiedTransferPlanner.BuildPlan(
+                sourceSpecs,
+                endpoint,
+                strategy,
+                snapshots,
+                checkPhysicalDiskForDuplicates);
+        }
+
+        public TransferBatchExecutionResult ExecuteUnifiedTransferPlan(TransferPlan plan)
+        {
+            return UnifiedTransferExecutor.ExecutePlan(plan);
+        }
+
         public BackupHistoryItem BackupCertificateToDrive(CertificateItem cert, string targetDriveLetter)
         {
             var result = new BackupHistoryItem
@@ -32,55 +111,29 @@ namespace KCertManager.Wpf.Services
                     throw new ArgumentException("대상 드라이브가 지정되지 않았습니다.", nameof(targetDriveLetter));
                 }
 
-                // KCert.Core.Vault의 상대 경로 해석 및 원자적 무결성 전송 엔진 호출
-                string relativePath = CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
-                string destinationRoot = targetDriveLetter;
-                string cleanTarget = targetDriveLetter.TrimEnd('\\', '/').ToUpperInvariant();
-                string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\', '/').ToUpperInvariant();
+                var plan = BuildUnifiedTransferPlan(
+                    new[] { cert },
+                    targetDriveLetter,
+                    isTargetRemovable: false,
+                    conflictOption: "overwrite",
+                    checkPhysicalDiskForDuplicates: false);
 
-                // 대상 드라이브가 윈도우 시스템 드라이브(C:)인 경우
-                // 1) GPKI인 경우: 공무원 행정전자서명 정부 정규 표준 위치는 C:\GPKI\Certificate\{class1|class2} 이므로
-                //    destinationRoot는 C:\ 루트 유지 (권한 제한 등 예외 발생 시에만 LocalLow 폴백)
-                // 2) NPKI/기타인 경우: 윈도우 공인인증서 보관 표준인 AppData\LocalLow 경로로 안전 배치
-                if (string.Equals(cleanTarget, sysRoot, StringComparison.OrdinalIgnoreCase))
+                var batchResult = ExecuteUnifiedTransferPlan(plan);
+                var itemResult = batchResult.ItemResults.FirstOrDefault();
+
+                if (itemResult == null)
                 {
-                    if (cert.Category == CertCategory.GPKI)
-                    {
-                        try
-                        {
-                            string gpkiClass = Regex.IsMatch(relativePath, @"(?:^|[\\/])class1(?:$|[\\/])", RegexOptions.IgnoreCase) ? "class1" : "class2";
-                            var gpkiDir = Path.Combine(sysRoot + "\\", "GPKI", "Certificate", gpkiClass);
-                            if (!Directory.Exists(gpkiDir)) Directory.CreateDirectory(gpkiDir);
-                            destinationRoot = sysRoot + "\\";
-                        }
-                        catch
-                        {
-                            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                            destinationRoot = Path.Combine(userProfile, "AppData", "LocalLow");
-                        }
-                    }
-                    else
-                    {
-                        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                        destinationRoot = Path.Combine(userProfile, "AppData", "LocalLow");
-                    }
+                    result.IsSuccess = false;
+                    result.Message = "통합 전송 엔진 실행 결과를 생성하지 못했습니다.";
+                    return result;
                 }
 
-                var transfer = CertTransferEngine.Transfer(cert.DirectoryPath, destinationRoot, relativePath);
-
-                result.DestinationPath = transfer.DestinationDirectory;
-                result.IsSuccess = transfer.IsSuccess;
-                result.Sha256Hash = transfer.DerSha256;
-                result.Message = transfer.Message;
-                result.TotalBytesCopied = transfer.TotalBytesCopied;
-                if (transfer.CopiedFiles.Count > 0)
-                {
-                    result.FileSizeDetails = string.Join(", ", transfer.CopiedFiles.Select(f => $"{f.FileName} ({f.FileSizeBytes:N0} bytes)"));
-                }
-                else
-                {
-                    result.FileSizeDetails = $"{transfer.TotalBytesCopied:N0} bytes";
-                }
+                result.DestinationPath = itemResult.DestinationDirectory;
+                result.IsSuccess = itemResult.IsSuccess && !itemResult.WasSkipped;
+                result.Sha256Hash = itemResult.DerSha256;
+                result.Message = itemResult.Message;
+                result.TotalBytesCopied = itemResult.TotalBytesCopied;
+                result.FileSizeDetails = itemResult.FileSizeDetails;
             }
             catch (Exception ex)
             {
@@ -105,61 +158,51 @@ namespace KCertManager.Wpf.Services
 
             try
             {
-                if (string.IsNullOrEmpty(username))
-                    username = Environment.UserName;
-
-                string cleanDrive = (string.IsNullOrWhiteSpace(targetDriveLetter) ? "C" : targetDriveLetter.TrimEnd(':', '\\', '/')).ToUpperInvariant() + ":\\";
-                string targetRoot;
-
-                string normSrc = sourceDirectory.Replace('/', '\\').TrimEnd('\\');
-                bool isGpki = string.Equals(targetCategory, "GPKI", StringComparison.OrdinalIgnoreCase) ||
-                              Regex.IsMatch(normSrc, @"(?:^|[\\/])GPKI(?:$|[\\/])", RegexOptions.IgnoreCase);
-
-                string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\').ToUpperInvariant() + "\\";
-                var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                bool isSystemDrive = string.Equals(cleanDrive, sysRoot, StringComparison.OrdinalIgnoreCase);
-
-                if (isGpki)
+                var spec = new TransferSourceSpec
                 {
-                    // GPKI 공무원 행정전자서명의 정부 정규 표준 위치는 {cleanDrive}GPKI\Certificate\{class1|class2}
-                    try
-                    {
-                        string gpkiClass = Regex.IsMatch(normSrc, @"(?:^|[\\/])class1(?:$|[\\/])", RegexOptions.IgnoreCase) ? "class1" : "class2";
-                        var gpkiDir = Path.Combine(cleanDrive, "GPKI", "Certificate", gpkiClass);
-                        if (!Directory.Exists(gpkiDir)) Directory.CreateDirectory(gpkiDir);
-                        targetRoot = cleanDrive;
-                    }
-                    catch
-                    {
-                        targetRoot = Path.Combine(userProfile, "AppData", "LocalLow");
-                    }
-                }
-                else if (!isSystemDrive)
+                    Id = sourceDirectory,
+                    CommonName = Path.GetFileName(sourceDirectory.TrimEnd('\\', '/')),
+                    Category = targetCategory ?? "NPKI",
+                    DirectoryPath = sourceDirectory,
+                    IsRemovableSource = true
+                };
+
+                var endpoint = new TransferTargetEndpoint
                 {
-                    // 비-시스템 드라이브(D:, E: 등)가 선택된 경우 드라이브 루트(예: D:\NPKI, D:\EPKI)에 직접 배치
-                    targetRoot = Directory.Exists(cleanDrive)
-                        ? cleanDrive
-                        : Path.Combine(userProfile, "AppData", "LocalLow");
-                }
-                else
+                    TargetDriveRoot = string.IsNullOrWhiteSpace(targetDriveLetter) ? "C:\\" : targetDriveLetter,
+                    TargetDriveLabel = string.IsNullOrWhiteSpace(targetDriveLetter) ? "C:" : targetDriveLetter,
+                    IsTargetRemovable = false,
+                    TargetUsername = string.IsNullOrWhiteSpace(username) ? Environment.UserName : username
+                };
+
+                var plan = UnifiedTransferPlanner.BuildPlan(
+                    new[] { spec },
+                    endpoint,
+                    TransferConflictStrategy.Overwrite,
+                    checkPhysicalDiskForDuplicates: false);
+
+                var batchResult = UnifiedTransferExecutor.ExecutePlan(plan);
+                var itemResult = batchResult.ItemResults.FirstOrDefault();
+
+                if (itemResult == null)
                 {
-                    // 시스템 드라이브(C:)인 경우 사용자 프로필 AppData\LocalLow 표준 경로 사용
-                    if (!Directory.Exists(cleanDrive) ||
-                        string.IsNullOrWhiteSpace(username) ||
-                        string.Equals(username, Environment.UserName, StringComparison.OrdinalIgnoreCase))
+                    return new CertTransferResult
                     {
-                        targetRoot = Path.Combine(userProfile, "AppData", "LocalLow");
-                    }
-                    else
-                    {
-                        targetRoot = Path.Combine(cleanDrive, "Users", username, "AppData", "LocalLow");
-                    }
+                        IsSuccess = false,
+                        SourceDirectory = sourceDirectory,
+                        Message = "PC 복사 실패: 전송 계획 항목이 비어 있습니다."
+                    };
                 }
 
-                string relativePath = CertTransferEngine.ResolveRelativePath(sourceDirectory);
-                var transfer = CertTransferEngine.Transfer(sourceDirectory, targetRoot, relativePath);
-
-                return transfer;
+                return new CertTransferResult
+                {
+                    IsSuccess = itemResult.IsSuccess && !itemResult.WasSkipped,
+                    SourceDirectory = sourceDirectory,
+                    DestinationDirectory = itemResult.DestinationDirectory,
+                    DerSha256 = itemResult.DerSha256,
+                    TotalBytesCopied = itemResult.TotalBytesCopied,
+                    Message = itemResult.Message
+                };
             }
             catch (Exception ex)
             {

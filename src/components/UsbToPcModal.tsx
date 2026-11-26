@@ -30,12 +30,14 @@ import {
   getAvailableUsbCertificates,
   scanDirectoryHandleForCertificates,
   copyUsbCertificatesToComputer,
-  getLocalPcStandardPath,
-  subscribeUsbDriveChanges,
-  simulateUsbMount
+  subscribeUsbDriveChanges
 } from '../utils/usbToPcService';
-import { formatUserErrorMessage, parseUserFriendlyError } from '../utils/userFriendlyError';
-import { playStartSound, playCompletionSound, playErrorSound } from '../utils/audioFeedback';
+import {
+  buildTransferPlan,
+  TransferPlan
+} from '../utils/unifiedTransferEngine';
+import { parseUserFriendlyError } from '../utils/userFriendlyError';
+import { playCompletionSound, playErrorSound } from '../utils/audioFeedback';
 import { SuccessCelebration } from './SuccessCelebration';
 import { getDriveBadgeStyle } from '../utils/driveBadgeUtils';
 import { CopyErrorAlertModal, CopyErrorContext } from './CopyErrorAlertModal';
@@ -358,9 +360,33 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
       return;
     }
 
+    const activePlan = transferPlan || buildTransferPlan({
+      sources: certsToCopy,
+      targetDrive: {
+        driveLetter: cleanTargetPcDrive,
+        driveName: selectedTargetDriveObj?.name || `${cleanTargetPcDrive} (로컬 디스크)`,
+        isRemovable: false,
+        isSystemDrive: cleanTargetPcDrive === 'C:',
+        targetUsername,
+      },
+      existingCertificates,
+      conflictStrategy: duplicateStrategy,
+      targetUsername,
+      restrictConflictScanToPcOnly: true,
+      selfCopyByExactPathOnly: true,
+    });
+
+    if (activePlan.summary.isAllSelfCopy) {
+      setErrorMessage(`선택한 인증서가 이미 내 컴퓨터(${cleanTargetPcDrive})의 동일한 폴더에 보관 중입니다.`);
+      return;
+    }
+
     setIsProcessing(true);
     setProgress(15);
-    setLogs(['[초기화] USB ➔ 컴퓨터(PC) 역방향 인증서 복사 프로세스 준비 중...']);
+    setLogs([
+      `[사전 실행 계획 확정] ${activePlan.direction} · ${activePlan.summary.previewSummaryText}`,
+      '[초기화] USB ➔ 컴퓨터(PC) 통합 전송 엔진 프로세스 준비 중...',
+    ]);
     setErrorMessage(null);
     // 복사 시작음 제거 요구사항 반영 (playStartSound 제거)
 
@@ -378,11 +404,9 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
       await new Promise(r => setTimeout(r, 500));
       setProgress(70);
 
-      const copyDetails: string[] = [];
-      certsToCopy.forEach(c => {
-        const dest = getLocalPcStandardPath(c, targetUsername, targetPcDrive);
-        copyDetails.push(`[복사 전송] ${c.name} (${c.issuer}) ➔ ${dest}`);
-      });
+      const copyDetails: string[] = activePlan.items.map(item =>
+        `[${item.isExecutable ? '복사 예정' : '제외 예정'}] ${item.source.name} (${item.source.issuer}) ➔ ${item.reason}`
+      );
       setLogs(prev => [...prev, ...copyDetails]);
 
       await new Promise(r => setTimeout(r, 400));
@@ -401,8 +425,10 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
         `[자동 새로고침 완료] 내 컴퓨터(PC) 로컬 인증서 보관함 목록이 자동으로 새로고침되었습니다.`
       ]);
       setImportResult(res);
-      playCompletionSound();
-      setShowCelebration(true);
+      if (res.importedCount + res.updatedCount > 0) {
+        playCompletionSound();
+        setShowCelebration(true);
+      }
 
       // Trigger success callback to add to main certificates list
       const hasClass1Path = (c: UsbDetectedCert) =>
@@ -461,7 +487,29 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
     setSelectedCertIds(initialUsb.map(c => c.id));
   };
 
-  const selectedCerts = detectedCerts.filter(c => selectedCertIds.includes(c.id));
+  const selectedCerts = useMemo(
+    () => detectedCerts.filter(c => selectedCertIds.includes(c.id)),
+    [detectedCerts, selectedCertIds]
+  );
+
+  const transferPlan = useMemo<TransferPlan | null>(() => {
+    if (!isOpen || selectedCerts.length === 0) return null;
+    return buildTransferPlan({
+      sources: selectedCerts,
+      targetDrive: {
+        driveLetter: cleanTargetPcDrive,
+        driveName: selectedTargetDriveObj?.name || `${cleanTargetPcDrive} (로컬 디스크)`,
+        isRemovable: false,
+        isSystemDrive: cleanTargetPcDrive === 'C:',
+        targetUsername,
+      },
+      existingCertificates,
+      conflictStrategy: duplicateStrategy,
+      targetUsername,
+      restrictConflictScanToPcOnly: true,
+      selfCopyByExactPathOnly: true,
+    });
+  }, [isOpen, selectedCerts, cleanTargetPcDrive, selectedTargetDriveObj, targetUsername, existingCertificates, duplicateStrategy]);
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
@@ -1277,22 +1325,34 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                   </div>
                 </div>
 
-                <div className="text-[11px] text-slate-600 font-mono bg-white p-2 rounded-lg border border-slate-200/80 flex items-center justify-between flex-wrap gap-1">
-                  <span>
-                    최종 복사 경로:{' '}
-                    <strong className="text-blue-700">
-                      {cleanTargetPcDrive === 'C:'
-                        ? `${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow\\(NPKI | EPKI) · ${cleanTargetPcDrive}\\GPKI`
-                        : `${cleanTargetPcDrive}\\NPKI · ${cleanTargetPcDrive}\\EPKI · ${cleanTargetPcDrive}\\GPKI`}
-                    </strong>
-                  </span>
-                  <span className="text-[10px] text-slate-600">
-                    선택 처리방침: <strong className="text-indigo-700">{
-                      duplicateStrategy === 'overwrite' ? '스마트 덮어쓰기' :
-                      duplicateStrategy === 'rename' ? '이름 변경 보존 (_복사본)' :
-                      '건너뛰기'
-                    }</strong>
-                  </span>
+                <div className="text-[11px] text-slate-600 font-mono bg-white p-2.5 rounded-lg border border-slate-200/80 space-y-1.5">
+                  <div className="flex items-center justify-between flex-wrap gap-1">
+                    <span>
+                      최종 복사 경로:{' '}
+                      <strong className="text-blue-700">
+                        {cleanTargetPcDrive === 'C:'
+                          ? `${cleanTargetPcDrive}\\Users\\${targetUsername}\\AppData\\LocalLow\\(NPKI | EPKI) · ${cleanTargetPcDrive}\\GPKI`
+                          : `${cleanTargetPcDrive}\\NPKI · ${cleanTargetPcDrive}\\EPKI · ${cleanTargetPcDrive}\\GPKI`}
+                      </strong>
+                    </span>
+                    <span className="text-[10px] text-slate-600">
+                      선택 처리방침: <strong className="text-indigo-700">{
+                        duplicateStrategy === 'overwrite' ? '스마트 덮어쓰기' :
+                        duplicateStrategy === 'rename' ? '이름 변경 보존 (_복사본)' :
+                        '건너뛰기'
+                      }</strong>
+                    </span>
+                  </div>
+                  {transferPlan && (
+                    <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between flex-wrap gap-1.5 font-sans">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800">
+                        <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded text-[10px] font-bold">
+                          실행 계획 미리보기
+                        </span>
+                        <span>{transferPlan.summary.previewSummaryText}</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1411,7 +1471,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                     ) : (
                       <>
                         <ArrowDownLeft className="w-4 h-4" />
-                        <span>'컴퓨터로 인증서 복사' 시작 ({selectedCertIds.length}건)</span>
+                        <span>'컴퓨터로 인증서 복사' 시작 ({transferPlan && transferPlan.summary.executableCount > 0 ? transferPlan.summary.executableCount : selectedCertIds.length}건)</span>
                       </>
                     )}
                   </button>

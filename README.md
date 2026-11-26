@@ -40,6 +40,10 @@
 - **7~8차 심층 전수 감사 · 다중 디스크 선택 복사 건수 정합화 & 엄격 격리 (Web & WPF)**:
   - 여러 디스크에 분산된 인증서 선택 복사 시 자가 복사(`isSameDriveSelfCopy`) 및 동일 대상 경로 중복을 제외한 실제 복사 ID(`copiedCertIds`) 기준으로 완료 건수·로그·드라이브 보관 배지 수치를 Web/WPF 양쪽에서 1:1 정합화하고, 새로고침 시 드라이브 배지 유실을 방지
   - `resolveSelectedBackupCerts` 필터 결과(`selectedVisibleCertificates`)만 복사 실행 핸들러로 전달(단일 상세 행 fallback 제거), `Header.tsx` 상단 창 드래그 지원 및 `MainWindow.xaml.cs` 비동기 `await` 예외 전파 보강 완료
+- **PC↔USB 양방향 통합 단일 전송 엔진 전면 재설계 & 5회 심층 전수 감사 (Web & WPF)**:
+  - PC➔USB, USB➔PC, 디스크➔디스크, USB➔USB 복사를 단일 **2단계 사전 실행 계획(`TransferPlan`) ➔ 원자적 일괄 실행(`TransferExecutor`)** 아키텍처로 통합(`unifiedTransferEngine.ts`, `UnifiedTransferEngine.cs`)
+  - 복사 실행 전 자가 복사(`SKIP_SELF_COPY`), 다중 디스크 동일 대상 경로 병합(`SKIP_BATCH_DUPLICATE`), 기존 중복 충돌 정책(`overwrite` / `archive_old`·`rename` / `skip`)을 먼저 확정·미리보기로 표시해 예측 건수와 실제 복사 결과를 100% 일치화
+  - 5회 반복 심층 감사를 통해 개별 항목 건너뛰기/덮어쓰기 경합, 직접 폴더 `_backup_YYYYMMDD` 아카이빙, WPF `WasSkipped`·부분 실패 처리·`try/catch/finally` 상태 복구까지 전 구간 교정 완료
 
 ---
 

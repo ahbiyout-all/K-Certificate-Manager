@@ -48,7 +48,7 @@
 | [`KCERT_CRYPTO_DLL_SPECIFICATION.md`](./KCERT_CRYPTO_DLL_SPECIFICATION.md) | **KCert.Crypto.dll 순수 창작 암호화 & 전자서명 엔진 기술 명세서**: KISA SEED-128 (RFC 4269), KISA ARIA (RFC 5794), PKCS#8 signPri.key 복호화, VID 영지식 본인확인, RSA-SHA256 전자서명 시뮬레이션 동작 원리 및 기존 DLL 결함 교정 상세서 |
 | [`KCERT_CORE_DLL_DESIGN_SPECIFICATION.md`](./KCERT_CORE_DLL_DESIGN_SPECIFICATION.md) | **KCert.Core.dll 주요 설계 사양서**: 5대 핵심 영역(기능 명세, 동작 원리, 데이터 흐름, 에러 처리 전략, .NET 8 WPF 환경과의 연동 방식)을 총망라한 엔지니어링 종합 설계서 |
 | [`KCERT_CORE_DLL_SPEC.md`](./KCERT_CORE_DLL_SPEC.md) | **KCert.Core.dll 기술 명세서**: 순수 창작 코어 라이브러리 동작 원리, OID 역해석, 화이트리스트 안전 전송, WMI 가드 및 C#/C++/Rust/Python 타 언어 연동 명세 |
-| [`WORK_LOG.md`](./WORK_LOG.md) | **공식 작업 일지**: 개발 요구사항, 차수별 구현 내역(작업 차수 199 포함), 보안 감사 및 검증 이력 |
+| [`WORK_LOG.md`](./WORK_LOG.md) | **공식 작업 일지**: 개발 요구사항, 차수별 구현 내역(작업 차수 201 포함), 보안 감사 및 검증 이력 |
 
 ---
 
@@ -152,4 +152,8 @@
 34. **다중 디스크 선택 복사 건수 정합화 · 선택 격리 & 7~8차 심층 전수 감사(작업 차수 196~199, `v2.2.0`)**
     - **다중 디스크 선택 복사 건수 일치화**: 여러 물리 디스크에서 선택한 인증서를 복사할 때 자가 복사 및 동일 대상 경로 중복을 제외한 실제 복사 ID(`copiedCertIds`) 기준으로 완료 건수, 로그, 드라이브 보관 배지 수치를 Web/WPF 양쪽에서 1:1 정합화하고 새로고침 시 드라이브 배지 유실을 방지했습니다.
     - **선택 복사 엄격 격리 & 네이티브 드래그 헤더**: `resolveSelectedBackupCerts` 필터 결과(`selectedVisibleCertificates`)만 복사 대상에 전달해 상세 보기 단일 행 fallback을 원천 차단했고, `Header.tsx` 상단 드래그 이동(`app-region: drag/no-drag`) 및 `MainWindow.xaml.cs` `await` 예외 전파 보강을 완료했습니다.
+35. **PC↔USB 양방향 통합 단일 전송 엔진 전면 재작성(작업 차수 200, `v2.2.0`, Web & WPF 동시 적용)**
+    - **2단계 사전 실행 계획(`TransferPlan`) ➔ 원자적 일괄 실행(`TransferExecutor`) 아키텍처**: `unifiedTransferEngine.ts`(Web) 및 `UnifiedTransferEngine.cs`(WPF)를 신설해 PC➔USB, USB➔PC, 디스크➔디스크, USB➔USB 모든 전송 방향을 단일 엔진으로 통합했습니다.
+    - **실행 계획 미리보기 & 100% 건수 정합성**: 자가 복사 차단(`SKIP_SELF_COPY`), 다중 디스크 동일 대상 경로 자동 병합(`SKIP_BATCH_DUPLICATE`), 중복 충돌 전략을 복사 전 미리보기로 산출·표시하고, 실행기는 확정된 `ExecutableItems`만 처리해 예측 건수와 실제 복사 건수가 항상 일치합니다.
+
 

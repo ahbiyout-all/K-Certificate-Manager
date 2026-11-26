@@ -75,6 +75,19 @@
   - `handleOpenGeneralBackupModal`에서 선택 항목이 `0건`일 때 상세 보기(`inspectedCert`)로 대체 복사되던 fallback을 제거해 `resolveSelectedBackupCerts`로 걸러진 `selectedVisibleCertificates`만 전달.
   - `TargetDrivePickerModal.tsx` 자가 복사 항목의 중복 충돌 오표시 제거 및 `MainWindow.xaml.cs` `OpenTargetDrivePickerForCertificatesAsync` 비동기 `await` 보강.
 
+#### 🚀 PC↔USB 양방향 통합 단일 전송 엔진(Unified Bidirectional Transfer Engine) 전면 재작성 (2026-11-26)
+- **Web & WPF 단일 2단계(Plan ➔ Execute) 양방향 전송 아키텍처 구축 (`unifiedTransferEngine.ts`, `UnifiedTransferEngine.cs`)**:
+  - `PC_TO_USB`, `USB_TO_PC`, `DISK_TO_DISK`, `USB_TO_USB` 방향을 하나의 `TransferPlan` 파이프라인으로 통합해 경로 해석·자가 복사(`SKIP_SELF_COPY`)·다중 디스크 동일 대상 병합(`SKIP_BATCH_DUPLICATE`)·중복 충돌 전략(`overwrite`, `archive_old`/`rename`, `skip`)을 실행 전 불변 계획으로 사전 확정합니다.
+  - 기존 모달 및 다이얼로그(`BackupModal`, `UsbToPcModal`, `MainViewModel`, `PcToUsbTransferViewModel`, `UsbTransferViewModel`, `TargetDrivePickerDialog`)의 화면 구조는 유지한 채 내부 엔진만 전면 교체하고, 실행 전 **"실행 계획 미리보기"** 요약과 실제 복사 건수가 100% 일치하도록 일원화했습니다.
+
+#### 🛡️ 5회 반복 심층 자아성찰 · 통합 전송 엔진 엣지케이스 & 수명주기 교정 (2026-11-26)
+- **Web 계획·핸들 아카이빙·UI 피드백 정교화 (`unifiedTransferEngine.ts`, `backupService.ts`, `BackupModal.tsx`, `UsbToPcModal.tsx`, `App.tsx`)**:
+  - `buildTransferPlan`에서 개별 `skip` 항목이 후속 `overwrite`/`archive_old` 동일 목적지 항목을 차단하지 않도록 목적지 키 등록 순서를 교정하고, `sourceLocation` 드라이브 문자 우선 판별 및 `writeCertificatesToDirectoryHandle` `_backup_YYYYMMDD` 기존 파일 아카이빙을 보완했습니다.
+  - `BackupModal` 사용자별 중복 결정(`customDuplicateDecisions`) 보존, `UsbToPcModal` 0건 건너뜀 시 축하 모션 차단 및 `App.tsx` `resultCertificates` 직접 동기화를 반영했습니다.
+- **WPF 비동기 예외·부분 실패·`WasSkipped` 정합화 (`UnifiedTransferEngine.cs`, `CertificateBackupService.cs`, `CertificateDetailDialog.xaml.cs`, `TargetDrivePickerDialog.xaml.cs`, `PcToUsbTransferViewModel.cs`, `UsbTransferViewModel.cs`, `MainViewModel.cs`)**:
+  - 단일 복사 Wrapper(`BackupCertificateToDrive`, `CopyCertificateToLocalPc`)가 `WasSkipped`를 성공으로 오보고하지 않도록 교정하고, `CertificateDetailDialog` 비동기 `await` 적용 및 `TargetDrivePickerDialog` `IsDriveAllSelfCopy` 단일화를 적용했습니다.
+  - `PcToUsbTransferViewModel`과 `UsbTransferViewModel` 실행부에 `try/catch/finally { IsBusy = false; }` 안전 가드를 추가하고, 부분 실패 시 거짓 완료 창 대신 실패 상세 안내를 표출하도록 수정했습니다.
+
 ---
 
 ### 🚀 [v2.1.1] - 2026-11-16 (최신 안정화 반영: 2026-11-18)

@@ -136,6 +136,7 @@ export interface BackupHistoryItem {
   hashCheckPassed: boolean;
   checksum?: string;
   retryAttemptsUsed?: number;
+  resultCertificates?: CertificateItem[];
 }
 
 export interface TrashItem {

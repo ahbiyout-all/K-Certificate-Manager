@@ -418,44 +418,18 @@ namespace KCertManager.Wpf.ViewModels
             string sysRoot,
             string userProfile)
         {
-            string cleanDrive = (string.IsNullOrWhiteSpace(targetDriveLetter)
-                ? "C"
-                : targetDriveLetter.TrimEnd(':', '\\', '/')).ToUpperInvariant() + ":\\";
-
-            bool isSystemDrive = string.Equals(cleanDrive, sysRoot, StringComparison.OrdinalIgnoreCase);
-
-            bool isGpki = string.Equals(category, "GPKI", StringComparison.OrdinalIgnoreCase) ||
-                          (!string.IsNullOrWhiteSpace(sourceDirectory) &&
-                           Regex.IsMatch(sourceDirectory, @"(?:^|[\\/])GPKI(?:$|[\\/])", RegexOptions.IgnoreCase));
-
-            if (!isSystemDrive)
-            {
-                if (Directory.Exists(cleanDrive))
-                {
-                    return cleanDrive;
-                }
-                return isGpki ? sysRoot : Path.Combine(userProfile, "AppData", "LocalLow");
-            }
-
-            if (isGpki)
-            {
-                return Directory.Exists(cleanDrive) ? cleanDrive : sysRoot;
-            }
-
-            string effectiveUser = string.IsNullOrWhiteSpace(username) ? Environment.UserName : username;
-            if (!Directory.Exists(cleanDrive) ||
-                string.Equals(effectiveUser, Environment.UserName, StringComparison.OrdinalIgnoreCase))
-            {
-                return Path.Combine(userProfile, "AppData", "LocalLow");
-            }
-
-            return Path.Combine(cleanDrive, "Users", effectiveUser, "AppData", "LocalLow");
+            return UnifiedTransferPlanner.ResolveDestinationRoot(
+                targetDriveLetter,
+                category,
+                sourceDirectory,
+                username);
         }
 
         private void UpdateSelectionStatus()
         {
             OnPropertyChanged(nameof(SelectedSummaryText));
-            int checkedCount = FoundUsbCertificates?.Count(x => x.IsSelected) ?? 0;
+            var selected = FoundUsbCertificates?.Where(x => x.IsSelected).ToList() ?? new List<CertificateItem>();
+            int checkedCount = selected.Count;
             ConfirmButtonText = checkedCount > 0
                 ? $"선택한 인증서({checkedCount}건) 내 PC로 가져오기 시작"
                 : "선택한 인증서 내 PC로 가져오기 시작";
@@ -464,14 +438,24 @@ namespace KCertManager.Wpf.ViewModels
 
             if (checkedCount > 0)
             {
+                string targetDrive = SelectedTargetDrive?.Name?.TrimEnd('\\') ?? "C:";
+                string effectiveUsername = string.IsNullOrWhiteSpace(TargetUsername) ? Environment.UserName : TargetUsername;
+                var previewPlan = _backupService.BuildUnifiedTransferPlan(
+                    selected,
+                    targetDrive,
+                    isTargetRemovable: false,
+                    conflictOption: "overwrite",
+                    targetUsername: effectiveUsername,
+                    checkPhysicalDiskForDuplicates: false);
+
                 if (checkedCount == 1)
                 {
-                    var single = FoundUsbCertificates.First(x => x.IsSelected);
-                    StatusMessage = $"총 {FoundUsbCertificates.Count}건 중 1건 선택됨 ({single.CommonName}) — [내 PC로 가져오기 시작]을 눌러주세요.";
+                    var single = selected[0];
+                    StatusMessage = $"총 {FoundUsbCertificates.Count}건 중 1건 선택됨 ({single.CommonName}) · 계획: {previewPlan.Summary.PreviewSummaryText}";
                 }
                 else
                 {
-                    StatusMessage = $"총 {FoundUsbCertificates.Count}건 중 {checkedCount}건 선택됨 — [내 PC로 가져오기 시작]을 눌러주세요.";
+                    StatusMessage = $"총 {FoundUsbCertificates.Count}건 중 {checkedCount}건 선택됨 · 계획: {previewPlan.Summary.PreviewSummaryText}";
                 }
             }
             else
@@ -492,23 +476,18 @@ namespace KCertManager.Wpf.ViewModels
             string selectedDriveShort = (string.IsNullOrWhiteSpace(targetDrive)
                 ? sysLetterFallback.TrimEnd(':')
                 : targetDrive.TrimEnd(':', '\\', '/')).ToUpperInvariant() + ":";
-            string selectedDriveRoot = selectedDriveShort + "\\";
             string effectiveUsername = string.IsNullOrWhiteSpace(TargetUsername) ? Environment.UserName : TargetUsername;
 
-            // 0. 자가 복사(동일 위치 복사) 사전 전체 검증
-            bool isAllSelfCopy = selected.All(cert =>
-            {
-                if (string.IsNullOrWhiteSpace(cert.DirectoryPath)) return false;
-                string cat = cert.Category.ToString();
-                string targetRoot = ResolveTargetRootForCategory(cat, cert.DirectoryPath, targetDrive, effectiveUsername, sysRoot, userProfile);
-                string relativePath = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
-                string destDir = Path.Combine(targetRoot, relativePath);
-                string fullSourceDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar);
-                string fullTargetDir = Path.GetFullPath(destDir).TrimEnd(Path.DirectorySeparatorChar);
-                return fullSourceDir.Equals(fullTargetDir, StringComparison.OrdinalIgnoreCase);
-            });
+            var plan = _backupService.BuildUnifiedTransferPlan(
+                selected,
+                selectedDriveShort,
+                isTargetRemovable: false,
+                conflictOption: "overwrite",
+                targetUsername: effectiveUsername,
+                checkPhysicalDiskForDuplicates: false);
 
-            if (isAllSelfCopy)
+            // 0. 자가 복사(동일 위치 복사) 사전 전체 검증
+            if (plan.Summary.IsAllSelfCopy)
             {
                 try { System.Media.SystemSounds.Hand.Play(); } catch { }
                 MessageBox.Show(
@@ -520,78 +499,40 @@ namespace KCertManager.Wpf.ViewModels
             }
 
             IsBusy = true;
-            StatusMessage = $"PC 보관함({selectedDriveShort})으로 {selected.Count}개 인증서 가져오는 중...";
+            StatusMessage = $"PC 보관함({selectedDriveShort}) 사전 계획 실행 중 ({plan.Summary.PreviewSummaryText})...";
 
-            int success = 0;
-            int selfCopySkipped = 0;
-            int skippedDuplicates = 0;
-            var copiedTargets = new List<CertificateItem>();
-            var successfulDestinations = new List<string>();
-            var destinationCategories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var processedDestDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var failedReasons = new List<string>();
-
-            await Task.Run(() =>
+            try
             {
-                foreach (var cert in selected)
+                TransferBatchExecutionResult? batchResult = null;
+                await Task.Run(() =>
                 {
-                    try
+                    batchResult = _backupService.ExecuteUnifiedTransferPlan(plan);
+                });
+
+            int success = batchResult?.SuccessCount ?? 0;
+            int totalSkipped = batchResult?.SkippedCount ?? 0;
+            var copiedTargets = new List<CertificateItem>();
+            var successfulDestinations = batchResult?.SuccessfulDestinations ?? new List<string>();
+            var destinationCategories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var failedReasons = batchResult?.FailedMessages ?? new List<string>();
+
+            if (batchResult != null)
+            {
+                var selectedByPath = selected
+                    .Where(c => !string.IsNullOrWhiteSpace(c.DirectoryPath))
+                    .GroupBy(c => c.DirectoryPath!, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+                foreach (var itemRes in batchResult.ItemResults.Where(r => r.IsSuccess && !r.WasSkipped))
+                {
+                    destinationCategories.Add(itemRes.PlanItem.Source.Category);
+                    if (selectedByPath.TryGetValue(itemRes.PlanItem.Source.DirectoryPath, out var cert))
                     {
-                        if (cert == null || string.IsNullOrWhiteSpace(cert.DirectoryPath))
-                        {
-                            failedReasons.Add("인증서 원본 경로가 비어 있습니다.");
-                            continue;
-                        }
-
-                        var cat = cert.Category.ToString();
-
-                        string targetRoot = ResolveTargetRootForCategory(cat, cert.DirectoryPath, targetDrive, effectiveUsername, sysRoot, userProfile);
-                        string relativePath = KCert.Core.Vault.CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
-                        string destDir = Path.Combine(targetRoot, relativePath);
-                        string fullSourceDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                        string fullTargetDir = Path.GetFullPath(destDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-
-                        if (fullSourceDir.Equals(fullTargetDir, StringComparison.OrdinalIgnoreCase))
-                        {
-                            selfCopySkipped++;
-                            continue;
-                        }
-
-                        if (processedDestDirs.Contains(fullTargetDir))
-                        {
-                            skippedDuplicates++;
-                            continue;
-                        }
-
-                        var transferResult = _backupService.CopyCertificateToLocalPc(cert.DirectoryPath, cat, effectiveUsername, targetDrive);
-                        if (transferResult.IsSuccess)
-                        {
-                            success++;
-                            copiedTargets.Add(cert);
-                            destinationCategories.Add(cat);
-                            processedDestDirs.Add(fullTargetDir);
-                            if (!string.IsNullOrWhiteSpace(transferResult.DestinationDirectory))
-                            {
-                                processedDestDirs.Add(Path.GetFullPath(transferResult.DestinationDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-                            }
-                            successfulDestinations.Add(transferResult.DestinationDirectory);
-                        }
-                        else
-                        {
-                            string label = !string.IsNullOrWhiteSpace(cert.CommonName) ? cert.CommonName : Path.GetFileName(cert.DirectoryPath);
-                            failedReasons.Add($"{label}: {transferResult.Message}");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        string label = !string.IsNullOrWhiteSpace(cert?.CommonName) ? cert!.CommonName : "인증서";
-                        failedReasons.Add($"{label}: {ex.Message}");
-                        System.Diagnostics.Debug.WriteLine($"[CopyCert Error] {ex.Message}");
+                        copiedTargets.Add(cert);
                     }
                 }
-            });
+            }
 
-            int totalSkipped = selfCopySkipped + skippedDuplicates;
             IsBusy = false;
             StatusMessage = $"PC({selectedDriveShort}) 가져오기 완료: {selected.Count}개 중 {success}개 성공" +
                             (totalSkipped > 0 ? $", {totalSkipped}개 동일 위치·중복 건너뜀" : string.Empty) +
@@ -697,6 +638,17 @@ namespace KCertManager.Wpf.ViewModels
                     (totalSkipped > 0 ? $" (동일 위치·중복 {totalSkipped}개 건너뜀)" : string.Empty),
                     "가져오기 결과 안내",
                     $"• PC 저장 폴더({selectedDriveShort})에 쓰기 권한이 있는지 확인하세요.\n• 필요하면 관리자 권한으로 프로그램을 다시 실행하세요.{reasonDetail}");
+            }
+            }
+            catch (Exception ex)
+            {
+                SoundService.PlayErrorSound();
+                StatusMessage = $"PC 가져오기 중 오류: {ex.Message}";
+                UserFriendlyMessageHelper.ShowError(ex, "인증서 PC 가져오기");
+            }
+            finally
+            {
+                IsBusy = false;
             }
         }
 

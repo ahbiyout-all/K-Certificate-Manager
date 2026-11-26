@@ -258,7 +258,7 @@ namespace KCertManager.Wpf.Views
             }
         }
 
-        private void BtnCopyCertificate_Click(object sender, RoutedEventArgs e)
+        private async void BtnCopyCertificate_Click(object sender, RoutedEventArgs e)
         {
             if (_cert == null) return;
             try
@@ -278,9 +278,9 @@ namespace KCertManager.Wpf.Views
                     {
                         var selectedDrive = dialog.SelectedDrive;
                         var conflictOption = dialog.ConflictOption;
-                        mainWin.ViewModel.SelectedTargetDrive = selectedDrive;
                         Close();
-                        _ = mainWin.ViewModel.ExecuteBackupWithConflictOptionAsync(
+                        mainWin.ViewModel.SelectedTargetDrive = selectedDrive;
+                        await mainWin.ViewModel.ExecuteBackupWithConflictOptionAsync(
                             new List<CertificateItem> { _cert },
                             selectedDrive,
                             conflictOption);

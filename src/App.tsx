@@ -1570,40 +1570,68 @@ export default function App() {
     const nextList = [...liveCerts];
     const isSystemC = cleanTargetLetter.toUpperCase() === 'C:';
 
-    for (const srcCert of copiedCertObjects) {
-      const relSubPath = getStandardDirectoryPath(srcCert).replace(/\//g, '\\');
-      const isGpki = srcCert.category === 'GPKI_GOV';
-      const srcUserMatch = (srcCert.sourceLocation || '').match(/\\Users\\([^\\]+)\\/i);
-      const winUser = srcUserMatch && srcUserMatch[1] && srcUserMatch[1] !== '...' ? srcUserMatch[1] : 'Admin';
-      const destLocation =
-        isSystemC && !isGpki
-          ? `C:\\Users\\${winUser}\\AppData\\LocalLow\\${relSubPath}`
-          : `${cleanTargetLetter.toUpperCase()}\\${relSubPath}`;
-      const normDestLoc = destLocation.replace(/\//g, '\\').replace(/\\+$/, '').toUpperCase();
-
-      const existingIdx = nextList.findIndex(
-        c => (c.sourceLocation || '').replace(/\//g, '\\').replace(/\\+$/, '').toUpperCase() === normDestLoc
-      );
-      const destId =
-        existingIdx >= 0
-          ? nextList[existingIdx].id
-          : `copied-${cleanTargetLetter.replace(':', '')}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${srcCert.id}`;
-
-      const destCert: CertificateItem = {
-        ...srcCert,
-        id: destId,
-        sourceLocation: destLocation,
-        sourceDrive: targetDriveLabel,
-        isRemovableMedia: isUsbTargetDrive,
-        isCustomPath: false,
-      };
-
-      if (existingIdx >= 0) {
-        nextList[existingIdx] = destCert;
-      } else {
-        nextList.push(destCert);
+    if (record.resultCertificates && record.resultCertificates.length > 0) {
+      for (const engineCert of record.resultCertificates) {
+        const normDestLoc = (engineCert.sourceLocation || '').replace(/\//g, '\\').replace(/\\+$/, '').toUpperCase();
+        const existingIdx = normDestLoc
+          ? nextList.findIndex(
+              c => (c.sourceLocation || '').replace(/\//g, '\\').replace(/\\+$/, '').toUpperCase() === normDestLoc
+            )
+          : -1;
+        const destId =
+          existingIdx >= 0
+            ? nextList[existingIdx].id
+            : `copied-${cleanTargetLetter.replace(':', '')}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${engineCert.id}`;
+        const syncedCert: CertificateItem = {
+          ...engineCert,
+          id: destId,
+          sourceDrive: targetDriveLabel,
+          isRemovableMedia: isUsbTargetDrive,
+          isCustomPath: false,
+        };
+        if (existingIdx >= 0) {
+          nextList[existingIdx] = syncedCert;
+        } else {
+          nextList.push(syncedCert);
+        }
+        createdOrUpdatedDestIds.push(destId);
       }
-      createdOrUpdatedDestIds.push(destId);
+    } else {
+      for (const srcCert of copiedCertObjects) {
+        const relSubPath = getStandardDirectoryPath(srcCert).replace(/\//g, '\\');
+        const isGpki = srcCert.category === 'GPKI_GOV';
+        const srcUserMatch = (srcCert.sourceLocation || '').match(/\\Users\\([^\\]+)\\/i);
+        const winUser = srcUserMatch && srcUserMatch[1] && srcUserMatch[1] !== '...' ? srcUserMatch[1] : 'Admin';
+        const destLocation =
+          isSystemC && !isGpki
+            ? `C:\\Users\\${winUser}\\AppData\\LocalLow\\${relSubPath}`
+            : `${cleanTargetLetter.toUpperCase()}\\${relSubPath}`;
+        const normDestLoc = destLocation.replace(/\//g, '\\').replace(/\\+$/, '').toUpperCase();
+
+        const existingIdx = nextList.findIndex(
+          c => (c.sourceLocation || '').replace(/\//g, '\\').replace(/\\+$/, '').toUpperCase() === normDestLoc
+        );
+        const destId =
+          existingIdx >= 0
+            ? nextList[existingIdx].id
+            : `copied-${cleanTargetLetter.replace(':', '')}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${srcCert.id}`;
+
+        const destCert: CertificateItem = {
+          ...srcCert,
+          id: destId,
+          sourceLocation: destLocation,
+          sourceDrive: targetDriveLabel,
+          isRemovableMedia: isUsbTargetDrive,
+          isCustomPath: false,
+        };
+
+        if (existingIdx >= 0) {
+          nextList[existingIdx] = destCert;
+        } else {
+          nextList.push(destCert);
+        }
+        createdOrUpdatedDestIds.push(destId);
+      }
     }
 
     updateCertificates(nextList);

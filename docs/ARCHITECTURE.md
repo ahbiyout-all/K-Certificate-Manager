@@ -94,7 +94,8 @@
    - 비표준/중첩 디렉터리 정밀 진단 및 표준 계층 경로 자동 복구(Auto-Repair) 엔진 (`CertIntegrityDoctor.cs` — 동적 개인키 파일명 보고, GPKI/EPKI `cn=` 단일 RDN 경로 정규화 및 다중 인증서 분리 `SubjectDn` 보존, `specificDerPath` 정밀 진단 및 동일 경로 자기덮어쓰기 `IOException` 방지 가드 포함).
    - 시스템 전역 드라이브(C/D/E/USB) 중복 인증서 클러스터링 및 잉여 복사본 분석 엔진 (`KCertAntiDuplicationEngine.cs` — PC 표준 경로를 USB 사본보다 우선 보존하는 `ScorePrimary` 및 `DerSha256` 누락 시 일련번호·발급기관·CN 폴백 그룹핑 적용).
    - 만료 위험 5단계 평가 및 인증기관별 공식 갱신 포털 자동 라우팅 엔진 (`CertExpirationAlarmEngine.cs` — `RenewalGuidanceDialog`/`renewalStore` 발급기관(Issuer) 및 카테고리 우선 매칭 적용).
-4. **`KCert.Core.Vault` (보안 금고 & 원자적 트랜잭션 서브시스템)**:
+4. **`KCert.Core.Vault` (보안 금고 & 양방향 통합 전송 엔진 서브시스템)**:
+   - **PC↔USB 양방향 통합 단일 전송 엔진 (`UnifiedTransferEngine.cs` & Web `unifiedTransferEngine.ts`)**: `UnifiedTransferPlanner.BuildPlan` ➔ `UnifiedTransferExecutor.ExecutePlan` 2단계 불변 계획/실행 파이프라인으로 PC➔USB·USB➔PC·디스크간 복사를 단일 규격으로 처리. 사전 자가 복사 차단(`SkipSelfCopy`), 다중 디스크 동일 대상 병합(`SkipBatchDuplicate`), `_backup_` 아카이브 보존 및 사전 실행 계획 미리보기를 제공
    - 원본-대상 해시 검증 및 실패 시 자동 롤백을 지원하는 원자적 전송기 (`CertTransferEngine.cs` — `class1` 계층 보존 및 말단 `\GPKI`/`\EPKI` 판별)
    - AES-256-GCM + PBKDF2(10만 회) 기반 독자 보안 금고 패키징/복원 엔진 (`CertVaultPacker.cs`, `.kcertpack`)
    - 국제 표준 PKCS#12 (.pfx / .p12) 상호 변환 및 추출 엔진 (`CertBundleSecurityEngine.cs`)

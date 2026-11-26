@@ -112,9 +112,9 @@
             <StackPanel>
                 <TextBlock Text="같은 인증서가 이미 있는 경우:" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
                 <WrapPanel Orientation="Horizontal">
-                    <RadioButton x:Name="RbOverwrite" Content="⚡ 덮어쓰기 (최신 파일 갱신)" IsChecked="True" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" Margin="0,0,20,4" Cursor="Hand"/>
-                    <RadioButton x:Name="RbRename" Content="📁 기존 파일 따로 보관" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" Margin="0,0,20,4" Cursor="Hand"/>
-                    <RadioButton x:Name="RbSkip" Content="⏭️ 건너뛰기" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" Margin="0,0,0,4" Cursor="Hand"/>
+                    <RadioButton x:Name="RbOverwrite" Content="⚡ 덮어쓰기 (최신 파일 갱신)" IsChecked="True" Checked="ConflictOption_Checked" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" Margin="0,0,20,4" Cursor="Hand"/>
+                    <RadioButton x:Name="RbRename" Content="📁 기존 파일 따로 보관" Checked="ConflictOption_Checked" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" Margin="0,0,20,4" Cursor="Hand"/>
+                    <RadioButton x:Name="RbSkip" Content="⏭️ 건너뛰기" Checked="ConflictOption_Checked" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" Margin="0,0,0,4" Cursor="Hand"/>
                 </WrapPanel>
             </StackPanel>
         </Border>

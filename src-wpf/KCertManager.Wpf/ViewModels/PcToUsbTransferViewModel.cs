@@ -488,7 +488,8 @@ namespace KCertManager.Wpf.ViewModels
         private void UpdateStatusMessage()
         {
             OnPropertyChanged(nameof(SelectedSummaryText));
-            int selectedCount = FoundPcCertificates?.Count(x => x.IsSelected) ?? 0;
+            var selected = FoundPcCertificates?.Where(x => x.IsSelected).ToList() ?? new List<CertificateItem>();
+            int selectedCount = selected.Count;
 
             if (SelectedTargetDrive == null)
             {
@@ -497,17 +498,18 @@ namespace KCertManager.Wpf.ViewModels
                 return;
             }
 
+            string targetDriveShort = SelectedTargetDrive.Name.TrimEnd('\\');
             if (SelectedTargetDrive.IsRemovable)
             {
                 ConfirmButtonText = selectedCount > 0
-                    ? $"선택한 인증서({selectedCount}건) USB({SelectedTargetDrive.Name.TrimEnd('\\')})로 복사 시작"
-                    : $"선택한 인증서 USB({SelectedTargetDrive.Name.TrimEnd('\\')})로 복사 시작";
+                    ? $"선택한 인증서({selectedCount}건) USB({targetDriveShort})로 복사 시작"
+                    : $"선택한 인증서 USB({targetDriveShort})로 복사 시작";
             }
             else
             {
                 ConfirmButtonText = selectedCount > 0
-                    ? $"선택한 인증서({selectedCount}건) 디스크({SelectedTargetDrive.Name.TrimEnd('\\')})로 복사 시작"
-                    : $"선택한 인증서 디스크({SelectedTargetDrive.Name.TrimEnd('\\')})로 복사 시작";
+                    ? $"선택한 인증서({selectedCount}건) 디스크({targetDriveShort})로 복사 시작"
+                    : $"선택한 인증서 디스크({targetDriveShort})로 복사 시작";
             }
 
             if (selectedCount == 0)
@@ -516,15 +518,20 @@ namespace KCertManager.Wpf.ViewModels
             }
             else
             {
+                var previewPlan = _backupService.BuildUnifiedTransferPlan(
+                    selected,
+                    SelectedTargetDrive,
+                    ConflictOption,
+                    checkPhysicalDiskForDuplicates: true);
                 string targetType = SelectedTargetDrive.IsRemovable ? "USB 메모리" : "로컬 디스크";
                 if (selectedCount == 1)
                 {
-                    var single = FoundPcCertificates!.First(x => x.IsSelected);
-                    StatusMessage = $"1건 선택됨 ({single.CommonName}) · 저장할 위치: {targetType}({SelectedTargetDrive.Name})";
+                    var single = selected[0];
+                    StatusMessage = $"1건 선택됨 ({single.CommonName}) · {targetType}({SelectedTargetDrive.Name}) · 계획: {previewPlan.Summary.PreviewSummaryText}";
                 }
                 else
                 {
-                    StatusMessage = $"{selectedCount}건 선택됨 · 저장할 위치: {targetType}({SelectedTargetDrive.Name})";
+                    StatusMessage = $"{selectedCount}건 선택됨 · {targetType}({SelectedTargetDrive.Name}) · 계획: {previewPlan.Summary.PreviewSummaryText}";
                 }
             }
         }
@@ -537,34 +544,15 @@ namespace KCertManager.Wpf.ViewModels
             string targetDriveName = SelectedTargetDrive.Name;
             string targetDriveRoot = targetDriveName.TrimEnd('\\', '/') + "\\";
             bool isTargetUsb = SelectedTargetDrive.IsRemovable;
-            string sysRoot = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:").TrimEnd('\\').ToUpperInvariant();
-            string cleanTarget = targetDriveName.TrimEnd('\\', '/').ToUpperInvariant();
+
+            var plan = _backupService.BuildUnifiedTransferPlan(
+                selected,
+                SelectedTargetDrive,
+                ConflictOption,
+                checkPhysicalDiskForDuplicates: true);
 
             // 0. 자가 복사(동일 위치 복사) 사전 전체 검증
-            bool isAllSelfCopy = selected.All(cert =>
-            {
-                if (string.IsNullOrWhiteSpace(cert.DirectoryPath)) return false;
-                string relativePath = CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
-                string destinationRoot = targetDriveRoot;
-                if (string.Equals(cleanTarget, sysRoot, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (cert.Category == CertCategory.GPKI)
-                    {
-                        destinationRoot = sysRoot + "\\";
-                    }
-                    else
-                    {
-                        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                        destinationRoot = Path.Combine(userProfile, "AppData", "LocalLow");
-                    }
-                }
-                string destDir = Path.Combine(destinationRoot, relativePath);
-                string fullSourceDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar);
-                string fullTargetDir = Path.GetFullPath(destDir).TrimEnd(Path.DirectorySeparatorChar);
-                return fullSourceDir.Equals(fullTargetDir, StringComparison.OrdinalIgnoreCase);
-            });
-
-            if (isAllSelfCopy)
+            if (plan.Summary.IsAllSelfCopy)
             {
                 try { System.Media.SystemSounds.Hand.Play(); } catch { }
                 MessageBox.Show(
@@ -576,177 +564,115 @@ namespace KCertManager.Wpf.ViewModels
             }
 
             IsBusy = true;
-            StatusMessage = $"{targetDriveName} 드라이브로 {selected.Count}건의 인증서 복사 진행 중...";
+            StatusMessage = $"{targetDriveName} 드라이브로 사전 계획 실행 중 ({plan.Summary.PreviewSummaryText})...";
 
-            int success = 0;
-            int skipped = 0;
-            int failed = 0;
-            var errorList = new List<string>();
-            var successfulDestinations = new List<string>();
-            var copiedTargets = new List<CertificateItem>();
-            var processedDestDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            await Task.Run(() =>
+            try
             {
-                foreach (var cert in selected)
+                TransferBatchExecutionResult? batchResult = null;
+                await Task.Run(() =>
                 {
-                    try
+                    batchResult = _backupService.ExecuteUnifiedTransferPlan(plan);
+                });
+
+                int success = batchResult?.SuccessCount ?? 0;
+                int skipped = batchResult?.SkippedCount ?? 0;
+                int failed = batchResult?.FailedCount ?? 0;
+                var errorList = batchResult?.FailedMessages ?? new List<string>();
+                var successfulDestinations = batchResult?.SuccessfulDestinations ?? new List<string>();
+                var copiedTargets = new List<CertificateItem>();
+
+                if (batchResult != null)
+                {
+                    var selectedByPath = selected
+                        .Where(c => !string.IsNullOrWhiteSpace(c.DirectoryPath))
+                        .GroupBy(c => c.DirectoryPath!, StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var itemRes in batchResult.ItemResults.Where(r => r.IsSuccess && !r.WasSkipped))
                     {
-                        if (string.IsNullOrWhiteSpace(cert.DirectoryPath) || !Directory.Exists(cert.DirectoryPath))
+                        if (selectedByPath.TryGetValue(itemRes.PlanItem.Source.DirectoryPath, out var cert))
                         {
-                            failed++;
-                            errorList.Add($"{cert.CommonName}: 원본 폴더 없음");
-                            continue;
-                        }
-
-                        string relativePath = CertTransferEngine.ResolveRelativePath(cert.DirectoryPath);
-                        string destinationRoot = targetDriveRoot;
-
-                        // 대상이 C: 시스템 드라이브인 경우 표준 AppData\LocalLow로 안전 매핑
-                        if (string.Equals(cleanTarget, sysRoot, StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (cert.Category == CertCategory.GPKI)
-                            {
-                                destinationRoot = sysRoot + "\\";
-                            }
-                            else
-                            {
-                                var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                                destinationRoot = Path.Combine(userProfile, "AppData", "LocalLow");
-                            }
-                        }
-
-                        string destDir = Path.Combine(destinationRoot, relativePath);
-
-                        // 자가 복사 금지 검증: 원본 경로와 대상 경로가 완전히 동일한 경우 생략
-                        string fullSourceDir = Path.GetFullPath(cert.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                        string fullTargetDir = Path.GetFullPath(destDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                        if (fullSourceDir.Equals(fullTargetDir, StringComparison.OrdinalIgnoreCase))
-                        {
-                            skipped++;
-                            continue;
-                        }
-
-                        // 다중 원본 디스크에서 같은 대상 경로로 매핑되는 중복 항목은 이중 복사/건수 부풀림 방지
-                        if (processedDestDirs.Contains(fullTargetDir))
-                        {
-                            skipped++;
-                            continue;
-                        }
-
-                        if (Directory.Exists(destDir))
-                        {
-                            if (ConflictOption == "skip")
-                            {
-                                processedDestDirs.Add(fullTargetDir);
-                                skipped++;
-                                continue;
-                            }
-                            else if (ConflictOption == "rename")
-                            {
-                                string baseBackupName = $"{destDir}_backup_{DateTime.Now:yyyyMMdd_HHmmss}";
-                                string backupName = baseBackupName;
-                                int suffix = 1;
-                                while (Directory.Exists(backupName))
-                                {
-                                    backupName = $"{baseBackupName}_{suffix++}";
-                                }
-                                try
-                                {
-                                    Directory.Move(destDir, backupName);
-                                }
-                                catch (Exception ex)
-                                {
-                                    failed++;
-                                    errorList.Add($"{cert.CommonName}: 기존 폴더 백업 이동 실패 ({ex.Message})");
-                                    continue;
-                                }
-                            }
-                        }
-
-                        var transferResult = CertTransferEngine.Transfer(cert.DirectoryPath, destinationRoot, relativePath);
-                        if (transferResult.IsSuccess)
-                        {
-                            success++;
-                            copiedTargets.Add(cert);
                             cert.IsRecentlyCopied = true;
-                            processedDestDirs.Add(fullTargetDir);
-                            if (!string.IsNullOrWhiteSpace(transferResult.DestinationDirectory))
-                            {
-                                processedDestDirs.Add(Path.GetFullPath(transferResult.DestinationDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-                            }
-                            successfulDestinations.Add(transferResult.DestinationDirectory);
+                            copiedTargets.Add(cert);
                         }
-                        else
-                        {
-                            failed++;
-                            errorList.Add($"{cert.CommonName}: {transferResult.Message}");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        failed++;
-                        errorList.Add($"{cert.CommonName}: {ex.Message}");
                     }
                 }
-            });
 
-            IsBusy = false;
+                StatusMessage = $"복사 완료 ({targetDriveName}): {selected.Count}건 중 {success}건 성공" +
+                                (skipped > 0 ? $", {skipped}건 건너뜀" : string.Empty) +
+                                (failed > 0 ? $", {failed}건 실패" : string.Empty);
 
-            if (success > 0)
-            {
-                SoundService.PlayCompletionSound();
-                string targetDesc = isTargetUsb ? "USB 메모리" : "로컬 디스크";
-                var completeItems = copiedTargets.Select(c => new OperationCompleteItem
+                if (success > 0)
                 {
-                    Name = !string.IsNullOrWhiteSpace(c.CommonName) ? c.CommonName : "공동인증서",
-                    IssuerAndPolicy = $"{c.IssuerName} · 만료일: {c.NotAfter:yyyy-MM-dd}"
-                }).ToList();
+                    TransferCompleted?.Invoke();
+                }
 
-                string sourcePath = copiedTargets.FirstOrDefault()?.DirectoryPath ?? selected.FirstOrDefault()?.DirectoryPath ?? "내 컴퓨터 (NPKI/GPKI)";
-                string firstDest = successfulDestinations.FirstOrDefault(d => !string.IsNullOrEmpty(d)) ?? string.Empty;
-                var pathCandidates = copiedTargets.Any() ? copiedTargets : selected;
-                string gpkiClass = pathCandidates.Any(c => c.Category == CertCategory.GPKI && c.IsClass1Path) &&
-                                   !pathCandidates.Any(c => c.Category == CertCategory.GPKI && !c.IsClass1Path)
-                    ? "class1" : "class2";
-                string epkiClass = pathCandidates.Any(c => c.Category == CertCategory.EPKI && c.IsClass1Path) &&
-                                   !pathCandidates.Any(c => c.Category == CertCategory.EPKI && !c.IsClass1Path)
-                    ? "class1" : "class2";
+                if (failed == 0 && success > 0)
+                {
+                    SoundService.PlayCompletionSound();
+                    string targetDesc = isTargetUsb ? "USB 메모리" : "로컬 디스크";
+                    var completeItems = copiedTargets.Select(c => new OperationCompleteItem
+                    {
+                        Name = !string.IsNullOrWhiteSpace(c.CommonName) ? c.CommonName : "공동인증서",
+                        IssuerAndPolicy = $"{c.IssuerName} · 만료일: {c.NotAfter:yyyy-MM-dd}"
+                    }).ToList();
 
-                string targetPath = !string.IsNullOrEmpty(firstDest)
-                    ? firstDest
-                    : (pathCandidates.Any(c => c.Category == CertCategory.GPKI)
-                        ? Path.Combine(targetDriveRoot, "GPKI", "Certificate", gpkiClass)
-                        : (pathCandidates.Any(c => c.Category == CertCategory.EPKI)
-                            ? Path.Combine(targetDriveRoot, "EPKI", "Certificate", epkiClass)
-                            : Path.Combine(targetDriveRoot, "NPKI")));
+                    string sourcePath = copiedTargets.FirstOrDefault()?.DirectoryPath ?? selected.FirstOrDefault()?.DirectoryPath ?? "내 컴퓨터 (NPKI/GPKI)";
+                    string firstDest = successfulDestinations.FirstOrDefault(d => !string.IsNullOrEmpty(d)) ?? string.Empty;
+                    var pathCandidates = copiedTargets.Any() ? copiedTargets : selected;
+                    string gpkiClass = pathCandidates.Any(c => c.Category == CertCategory.GPKI && c.IsClass1Path) &&
+                                       !pathCandidates.Any(c => c.Category == CertCategory.GPKI && !c.IsClass1Path)
+                        ? "class1" : "class2";
+                    string epkiClass = pathCandidates.Any(c => c.Category == CertCategory.EPKI && c.IsClass1Path) &&
+                                       !pathCandidates.Any(c => c.Category == CertCategory.EPKI && !c.IsClass1Path)
+                        ? "class1" : "class2";
 
-                string subtitle = skipped > 0
-                    ? $"{targetDriveName} ({targetDesc})에 인증서 {success}개를 안전하게 복사했습니다. (중복 {skipped}개 건너뜀)"
-                    : $"{targetDriveName} ({targetDesc})에 인증서 {success}개를 안전하게 복사했습니다.";
+                    string targetPath = !string.IsNullOrEmpty(firstDest)
+                        ? firstDest
+                        : (pathCandidates.Any(c => c.Category == CertCategory.GPKI)
+                            ? Path.Combine(targetDriveRoot, "GPKI", "Certificate", gpkiClass)
+                            : (pathCandidates.Any(c => c.Category == CertCategory.EPKI)
+                                ? Path.Combine(targetDriveRoot, "EPKI", "Certificate", epkiClass)
+                                : Path.Combine(targetDriveRoot, "NPKI")));
 
-                UserFriendlyMessageHelper.ShowOperationComplete(
-                    "인증서 복사 완료!",
-                    subtitle,
-                    success,
-                    sourcePath,
-                    targetPath,
-                    completeItems,
-                    "• 다른 PC에서 USB를 꽂은 뒤 [이동식 디스크]를 선택해 로그인하세요.\n• 분리 전 작업 표시줄의 '하드웨어 안전하게 제거'를 눌러 주세요.");
+                    string subtitle = skipped > 0
+                        ? $"{targetDriveName} ({targetDesc})에 인증서 {success}개를 안전하게 복사했습니다. (중복·자가복사 {skipped}개 건너뜀)"
+                        : $"{targetDriveName} ({targetDesc})에 인증서 {success}개를 안전하게 복사했습니다.";
 
-                TransferCompleted?.Invoke();
+                    UserFriendlyMessageHelper.ShowOperationComplete(
+                        "인증서 복사 완료!",
+                        subtitle,
+                        success,
+                        sourcePath,
+                        targetPath,
+                        completeItems,
+                        "• 다른 PC에서 USB를 꽂은 뒤 [이동식 디스크]를 선택해 로그인하세요.\n• 분리 전 작업 표시줄의 '하드웨어 안전하게 제거'를 눌러 주세요.");
+                }
+                else if (failed == 0 && skipped > 0)
+                {
+                    UserFriendlyMessageHelper.ShowInfo(
+                        $"선택한 인증서 {skipped}개는 대상 드라이브({targetDriveName})에 이미 존재하여 중복 복사를 건너뛰었습니다.",
+                        "중복 인증서 건너뜀 안내");
+                }
+                else
+                {
+                    SoundService.PlayErrorSound();
+                    string detailText = errorList.Any() ? string.Join("\n", errorList) : "알 수 없는 쓰기 또는 경로 오류가 발생했습니다.";
+                    string errMsg = $"{targetDriveName}: {selected.Count}개 중 {success}개 성공, {failed}개 실패" +
+                                    (skipped > 0 ? $", {skipped}개 건너뜀" : string.Empty) +
+                                    $"\n\n원인:\n{detailText}";
+                    MessageBox.Show(errMsg, "복사 오류 안내", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
             }
-            else if (failed == 0 && skipped > 0)
+            catch (Exception ex)
             {
-                UserFriendlyMessageHelper.ShowInfo(
-                    $"선택한 인증서 {skipped}개는 대상 드라이브({targetDriveName})에 이미 존재하여 중복 복사를 건너뛰었습니다.",
-                    "중복 인증서 건너뜀 안내");
+                SoundService.PlayErrorSound();
+                StatusMessage = $"인증서 복사 중 오류: {ex.Message}";
+                UserFriendlyMessageHelper.ShowError(ex, "인증서 복사 처리");
             }
-            else
+            finally
             {
-                string detailText = errorList.Any() ? string.Join("\n", errorList) : "알 수 없는 쓰기 또는 경로 오류가 발생했습니다.";
-                string errMsg = $"인증서 복사에 실패하였습니다.\n\n원인:\n{detailText}";
-                MessageBox.Show(errMsg, "복사 오류 안내", MessageBoxButton.OK, MessageBoxImage.Warning);
+                IsBusy = false;
             }
         }
     }

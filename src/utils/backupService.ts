@@ -1,8 +1,10 @@
 import { CertificateItem, DiskDrive } from '../types';
 import { isSameDriveSelfCopy } from './driveFilter';
-import { extractDriveLetterChar } from './driveColors';
-import { extractDriveLetterFromPathOrLabel } from './certDiagnostics';
-import { isClass1Certificate } from './certPathUtils';
+import {
+  buildTransferPlan,
+  executeTransferPlan,
+  getUnifiedRelativeSubPath,
+} from './unifiedTransferEngine';
 
 /**
  * 인메모리 더미 DER/KEY 바이너리 생성 (실제 파일 데이터가 없는 경우 표준 포맷 시뮬레이션)
@@ -51,83 +53,37 @@ export interface DuplicateDetectionResult {
 }
 
 /**
- * 대상 드라이브에 이미 존재하는 동일한 이름/경로의 인증서 폴더 중복 검사
+ * 대상 드라이브에 이미 존재하는 동일한 이름/경로의 인증서 폴더 중복 검사 (통합 전송 엔진 계획기 위임)
  */
 export function detectDuplicateCertificates(
   selectedCerts: CertificateItem[],
   existingCerts: CertificateItem[],
   targetDrive: DiskDrive
 ): DuplicateDetectionResult {
-  // Find all certs currently residing on targetDrive
-  const targetLetterClean = extractDriveLetterChar(targetDrive.letter);
-  const targetDriveCerts = existingCerts.filter(c => {
-    const locDrive = extractDriveLetterFromPathOrLabel(c.sourceLocation);
-    const srcDrive = extractDriveLetterFromPathOrLabel(c.sourceDrive);
-    const sDrive = (c.sourceDrive || '').toUpperCase();
-    const sLoc = (c.sourceLocation || '').toUpperCase();
-    return (
-      locDrive === `${targetLetterClean}:` ||
-      srcDrive === `${targetLetterClean}:` ||
-      sDrive.startsWith(`${targetLetterClean}:`) ||
-      sDrive.includes(`(${targetLetterClean}:)`) ||
-      sLoc.startsWith(`${targetLetterClean}:`)
-    );
+  const plan = buildTransferPlan({
+    sources: selectedCerts,
+    targetDrive,
+    existingCertificates: existingCerts,
+    conflictStrategy: 'overwrite',
   });
 
   const conflicts: DuplicateConflictItem[] = [];
   const nonConflicting: CertificateItem[] = [];
 
-  for (const cert of selectedCerts) {
-    const stdPath = getStandardDirectoryPath(cert);
-    
-    // Check if targetDrive has the same certificate by path, SHA-256, serial+issuer, subjectDn, or category+name+issuer
-    const normalizedStdLower = stdPath.replace(/\//g, '\\').toLowerCase();
-    const certSha = (cert.files?.sha256 || '').trim().toLowerCase();
-    const match = targetDriveCerts.find(tc => {
-      if (tc.id === cert.id) return false;
-      const tcStdPath = getStandardDirectoryPath(tc);
-      const isPathMatch = tcStdPath.toLowerCase() === stdPath.toLowerCase();
-      const tcSha = (tc.files?.sha256 || '').trim().toLowerCase();
-      const isShaMatch =
-        Boolean(certSha && tcSha) &&
-        certSha.length >= 12 &&
-        certSha === tcSha;
-      const isSerialIssuerMatch =
-        Boolean(cert.serialNumber && tc.serialNumber) &&
-        (tc.serialNumber || '').trim().toUpperCase() === (cert.serialNumber || '').trim().toUpperCase() &&
-        (tc.issuer || '').trim().toUpperCase() === (cert.issuer || '').trim().toUpperCase();
-      const isSameCertNameAndIssuer =
-        tc.category === cert.category &&
-        (tc.name || '').trim() === (cert.name || '').trim() &&
-        (tc.issuer || '').trim() === (cert.issuer || '').trim();
-      const isDnMatch =
-        Boolean(cert.subjectDn && tc.subjectDn) &&
-        (tc.subjectDn || '').toLowerCase() === (cert.subjectDn || '').toLowerCase();
-      const normalizedTcLoc = (tc.sourceLocation || '').replace(/\//g, '\\').replace(/\\+$/, '').toLowerCase();
-      const isLocMatch =
-        Boolean(normalizedStdLower) &&
-        (normalizedTcLoc === normalizedStdLower || normalizedTcLoc.endsWith('\\' + normalizedStdLower));
-      return isPathMatch || isShaMatch || isSerialIssuerMatch || isSameCertNameAndIssuer || isDnMatch || isLocMatch;
-    });
+  for (const planned of plan.items) {
+    const cert = planned.source.originalCert;
+    if (!cert) continue;
 
-    if (match) {
-      const matchSha = (match.files?.sha256 || '').trim().toLowerCase();
-      const isSameHash = Boolean(certSha && matchSha) && certSha === matchSha;
-      const certValidTime = new Date(cert.validTo).getTime();
-      const matchValidTime = new Date(match.validTo).getTime();
-      const isNewer =
-        Number.isFinite(certValidTime) && Number.isFinite(matchValidTime)
-          ? certValidTime >= matchValidTime
-          : true;
+    if (planned.conflict) {
       conflicts.push({
         cert,
-        existingCert: match,
-        standardPath: stdPath,
-        isSameHash,
-        isNewer,
+        existingCert: planned.conflict.existingCert,
+        standardPath: planned.relativeSubPath,
+        isSameHash: planned.conflict.isSameHash,
+        isNewer: planned.conflict.isNewer,
         action: 'overwrite',
       });
-    } else {
+    } else if (planned.isExecutable) {
       nonConflicting.push(cert);
     }
   }
@@ -147,6 +103,7 @@ export interface BackupResult {
   checksum: string;
   copiedCertIds?: string[];
   skippedCount?: number;
+  resultCertificates?: CertificateItem[];
 }
 
 export interface DiskWriteCheckResult {
@@ -313,124 +270,40 @@ function sanitizePathSegment(segment: string): string {
 }
 
 /**
- * NPKI / GPKI 표준 디렉토리 경로 계산
+ * NPKI / GPKI 표준 디렉토리 경로 계산 (통합 전송 엔진 위임)
  */
 export function getStandardDirectoryPath(cert: CertificateItem): string {
-  const subjectDn = (cert.subjectDn || '').trim();
-  const cnMatch = subjectDn.match(/(?:^|,)\s*(cn\s*=\s*[^,]+)/i);
-  const extractedCn = cnMatch
-    ? `cn=${cnMatch[1].replace(/^cn\s*=\s*/i, '').trim()}`
-    : '';
-  const hasCn = Boolean(cnMatch);
-  const classTier = isClass1Certificate(cert) ? 'class1' : 'class2';
-
-  // 공무원 인증서 (GPKI)
-  if (cert.category === 'GPKI_GOV') {
-    const rawCn = extractedCn || `cn=${cert.name}`;
-    return `GPKI/Certificate/${classTier}/${sanitizePathSegment(rawCn)}`;
-  }
-
-  // 교육행정 인증서 (EPKI)
-  if (cert.category === 'EPKI_EDU') {
-    const rawCn = extractedCn || `cn=${cert.name}`;
-    return `EPKI/Certificate/${classTier}/${sanitizePathSegment(rawCn)}`;
-  }
-
-  // 은행/법인 공동인증서 (NPKI)
-  const issuer = cert.issuer || '';
-  const issuerUpper = issuer.toUpperCase();
-  const certName = cert.name || '사용자';
-  let caSubdir = 'yessign';
-  if (issuer.includes('코스콤') || issuerUpper.includes('SIGNKOREA')) {
-    caSubdir = 'SignKorea';
-  } else if (issuer.includes('한국정보인증') || issuerUpper.includes('KICA')) {
-    caSubdir = 'KICA';
-  } else if (issuer.includes('한국전자인증') || issuerUpper.includes('CROSSCERT')) {
-    caSubdir = 'CrossCert';
-  } else if (issuer.includes('한국무역정보') || issuerUpper.includes('TRADESIGN')) {
-    caSubdir = 'TradeSign';
-  }
-
-  const rawCn = hasCn
-    ? subjectDn
-    : `cn=${certName},ou=personal,o=${caSubdir},c=kr`;
-
-  return `NPKI/${caSubdir}/USER/${sanitizePathSegment(rawCn)}`;
+  return getUnifiedRelativeSubPath(cert);
 }
 
 /**
- * 선택된 인증서들을 대상 디스크 규격으로 복사 및 무결성 검증
+ * 선택된 인증서들을 대상 디스크 규격으로 복사 및 무결성 검증 (통합 전송 엔진 위임)
  */
 export async function copyCertificatesToDisk(
   certificates: CertificateItem[],
   targetDrive: DiskDrive,
   options: BackupOptions
 ): Promise<BackupResult> {
-  let totalFiles = 0;
-  const manifestItems: any[] = [];
-  const skippedIds = new Set(options.skippedCertIds || []);
-  const archivedIds = new Set(options.archivedCertIds || []);
+  const plan = buildTransferPlan({
+    sources: certificates,
+    targetDrive,
+    existingCertificates: [],
+    conflictStrategy: options.duplicateHandlingMode || 'overwrite',
+    includeManifest: options.includeManifest,
+    skippedCertIds: options.skippedCertIds,
+    archivedCertIds: options.archivedCertIds,
+  });
 
-  // 자기 자신 드라이브로의 자가 복사(Self-Copy) 차단 및 동일 대상 경로 중복 방지
-  const candidateCerts = certificates.filter(c => !skippedIds.has(c.id) && !isSameDriveSelfCopy(c, targetDrive));
-  const seenTargetPaths = new Set<string>();
-  const activeCerts: CertificateItem[] = [];
-  for (const cert of candidateCerts) {
-    const normPath = getStandardDirectoryPath(cert).replace(/\//g, '\\').toLowerCase();
-    if (seenTargetPaths.has(normPath)) continue;
-    seenTargetPaths.add(normPath);
-    activeCerts.push(cert);
-  }
-
-  for (const cert of activeCerts) {
-    const basePath = getStandardDirectoryPath(cert);
-    totalFiles++; // cert (.der)
-    if (cert.files.hasKey) totalFiles++; // key (.key)
-    if (cert.files.kmCertName) totalFiles++;
-    if (cert.files.kmKeyName) totalFiles++;
-
-    const isArchived = archivedIds.has(cert.id);
-
-    manifestItems.push({
-      userName: cert.name,
-      category: cert.category,
-      issuer: cert.issuer,
-      policy: cert.policy,
-      serialNumber: cert.serialNumber,
-      validPeriod: `${cert.validFrom} ~ ${cert.validTo}`,
-      targetRelativePath: basePath,
-      archivedExistingBackup: isArchived,
-      sha256Fingerprint: cert.files.sha256,
-      files: [
-        cert.files.certName,
-        cert.files.hasKey ? cert.files.keyName : null,
-        cert.files.kmCertName,
-        cert.files.kmKeyName,
-      ].filter(Boolean),
-    });
-  }
-
-  if (options.includeManifest) {
-    totalFiles += 2; // manifest & integrity logs
-  }
-
-  const skippedCount = certificates.length - activeCerts.length;
-  let summaryMsg = `${activeCerts.length}개의 인증서가 ${targetDrive.letter} 이동식 디스크 규격으로 안전하게 복사되었습니다.`;
-  if (skippedCount > 0) {
-    summaryMsg += ` (중복·자가복사 ${skippedCount}개 건너뜀)`;
-  }
-  if (archivedIds.size > 0) {
-    summaryMsg += ` (기존 ${archivedIds.size}개 백업 보존)`;
-  }
+  const execResult = await executeTransferPlan(plan);
 
   return {
-    success: true,
-    message: summaryMsg,
-    totalCertificates: activeCerts.length,
-    totalFiles,
-    checksum: (manifestItems[0]?.sha256Fingerprint || '').slice(0, 16) || 'SECURE_OK',
-    copiedCertIds: activeCerts.map(c => c.id),
-    skippedCount,
+    success: execResult.success,
+    message: execResult.message,
+    totalCertificates: execResult.executedCount,
+    totalFiles: execResult.totalFilesCopied,
+    checksum: execResult.checksum || 'SECURE_OK',
+    copiedCertIds: execResult.copiedCertIds,
+    skippedCount: execResult.skippedCount,
   };
 }
 
@@ -440,11 +313,12 @@ export async function copyCertificatesToDisk(
 export async function writeCertificatesToDirectoryHandle(
   certificates: CertificateItem[],
   dirHandle: any,
-  options?: { skippedCertIds?: string[]; archiveOldFolder?: boolean; targetDrive?: DiskDrive }
+  options?: { skippedCertIds?: string[]; archivedCertIds?: string[]; archiveOldFolder?: boolean; targetDrive?: DiskDrive }
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
     let count = 0;
     const skippedIds = new Set(options?.skippedCertIds || []);
+    const archivedIds = new Set(options?.archivedCertIds || []);
     const candidateCerts = certificates.filter(
       c => !skippedIds.has(c.id) && (!options?.targetDrive || !isSameDriveSelfCopy(c, options.targetDrive))
     );
@@ -457,14 +331,53 @@ export async function writeCertificatesToDirectoryHandle(
       activeCerts.push(cert);
     }
 
+    const dateTag = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+
     for (const cert of activeCerts) {
       const fullPath = getStandardDirectoryPath(cert);
       const pathSegments = fullPath.split('/');
       
+      let parentDir = dirHandle;
       let currentDir = dirHandle;
-      for (const segment of pathSegments) {
-        const safeSegment = sanitizePathSegment(segment);
+      let lastSafeSegment = 'CertUser';
+      for (let i = 0; i < pathSegments.length; i++) {
+        const safeSegment = sanitizePathSegment(pathSegments[i]);
+        parentDir = currentDir;
+        lastSafeSegment = safeSegment;
         currentDir = await currentDir.getDirectoryHandle(safeSegment, { create: true });
+      }
+
+      // Preserve existing cert files into sibling _backup_YYYYMMDD folder when requested
+      if ((options?.archiveOldFolder || archivedIds.has(cert.id)) && typeof currentDir.values === 'function') {
+        const existingFiles: any[] = [];
+        try {
+          for await (const entry of currentDir.values()) {
+            if (entry?.kind === 'file') {
+              existingFiles.push(entry);
+            }
+          }
+        } catch {
+          // Ignore if directory iteration is unavailable
+        }
+        if (existingFiles.length > 0 && typeof parentDir.getDirectoryHandle === 'function') {
+          const backupFolderName = sanitizePathSegment(`${lastSafeSegment}_backup_${dateTag}`);
+          const backupDir = await parentDir.getDirectoryHandle(backupFolderName, { create: true });
+          for (const fileEntry of existingFiles) {
+            try {
+              const fh = typeof fileEntry.getFile === 'function'
+                ? fileEntry
+                : await currentDir.getFileHandle(fileEntry.name);
+              const f = await fh.getFile();
+              const buf = await f.arrayBuffer();
+              const dstFile = await backupDir.getFileHandle(sanitizePathSegment(fileEntry.name), { create: true });
+              const w = await dstFile.createWritable();
+              await w.write(new Uint8Array(buf));
+              await w.close();
+            } catch {
+              // Best-effort archive copy
+            }
+          }
+        }
       }
 
       // cert file

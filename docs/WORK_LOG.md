@@ -17,6 +17,50 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 201] v2.2.0 5회 반복 자아성찰(Self-Reflection & Deep Audit) · 통합 전송 엔진 엣지케이스·수명주기·예외 전파 전면 교정 (Web & WPF)
+- **작업 일시**: 2026-11-26 03:15 KST
+- **요청 사항**:
+  - `자아성찰(Self-Reflection & Deep Audit) 과 오류 수정 5회 반복`
+- **5회 반복 심층 감사 및 결함 수정 내역**:
+  1. **1회차 — Web 통합 전송 엔진 및 디스크 기록 서비스 (`src/types.ts`, `src/utils/unifiedTransferEngine.ts`, `src/utils/backupService.ts`)**:
+     - `buildTransferPlan`에서 개별 항목(`skip`)이 먼저 거절될 때 `seenDestinationKeys`에 잘못 등록되어 후속 동일 목적지(`overwrite`/`archive_old`) 항목이 `SKIP_BATCH_DUPLICATE`로 차단되던 순서 결함 수정(`skip` 분기 이후에만 등록).
+     - `findMatchingExistingCert`가 부정확한 `sourceDrive` 라벨보다 `sourceLocation`에서 추출한 실제 드라이브 문자를 우선 기준으로 삼아 오탐 충돌을 방지하도록 보강.
+     - `writeCertificatesToDirectoryHandle`에서 `archivedCertIds` 기반 `_backup_YYYYMMDD` 기존 인증서 폴더 보존 복사 구현 및 디렉터리 엔트리 `getFile` 방어 폴백 추가.
+  2. **2회차 — Web 모달·UI 상태 동기화 (`src/components/BackupModal.tsx`, `src/components/UsbToPcModal.tsx`, `src/App.tsx`)**:
+     - `BackupModal` 중복 점검 폴링 시 사용자의 `customDuplicateDecisions` 선택이 `'overwrite'`로 초기화되지 않도록 보존하고, 불필요한 미사용 import/변수 제거 및 확인 버튼 건수를 `transferPlan.summary.executableCount`와 동기화.
+     - `UsbToPcModal`에서 전체 건너뛰기(`importedCount + updatedCount === 0`) 시 완료 효과음·축하 폭죽이 오발동하지 않도록 가드하고, `App.tsx` `handleBackupSuccess`가 `resultCertificates`를 직접 소비해 정확한 경로·메타데이터를 반영하도록 통일.
+  3. **3회차 — WPF 코어 엔진 및 백업 서비스 (`src-wpf/KCert.Core/Vault/UnifiedTransferEngine.cs`, `src-wpf/KCertManager.Wpf/Services/CertificateBackupService.cs`)**:
+     - `UnifiedTransferPlanner.ResolveDestinationRoot` 내 미사용 지역 변수(`gpkiClass`, `gpkiDir`) 정리.
+     - `BackupCertificateToDrive` 및 `CopyCertificateToLocalPc`가 `WasSkipped` 항목을 `IsSuccess = true`로 잘못 반환하지 않도록 `!itemResult.WasSkipped` 조건 추가.
+  4. **4회차 — WPF 뷰모델·다이얼로그·비동기 수명주기 (`CertificateDetailDialog.xaml.cs`, `TargetDrivePickerDialog.xaml.cs`, `PcToUsbTransferViewModel.cs`, `UsbTransferViewModel.cs`, `MainViewModel.cs`)**:
+     - `CertificateDetailDialog.BtnCopyCertificate_Click`의 un-awaited discard(`_ = ...`)를 `async void` + `await` 호출로 교정해 비동기 예외 삼킴 차단.
+     - `TargetDrivePickerDialog` 내 중복된 인라인 자가 복사 판별식을 `UnifiedTransferEngine` 기반 단일 `IsDriveAllSelfCopy` 헬퍼로 통합.
+     - `PcToUsbTransferViewModel.TransferToUsbAsync` 및 `UsbTransferViewModel.TransferToPcAsync`에 `try/catch/finally { IsBusy = false; }` 가드를 추가하고, `PcToUsbTransferViewModel` 부분 실패(`failed > 0 && success > 0`) 시 완료 창 오표시 대신 실패 상세 경고가 표시되도록 수정(`if (failed == 0 && success > 0)`). `MainViewModel.cs` 미사용 헬퍼 정리.
+  5. **5회차 — 최종 교차 검증 및 스트레스 테스트**:
+     - 개별 `skip` + 후속 `overwrite` 경합, 오기재 `sourceDrive` 판별, `_backup_YYYYMMDD` 실제 핸들 아카이빙, 4대 방향 10회 무작위 일괄 정합성 테스트 전부 통과 확인.
+- **문서 현행화 내역**:
+  - `README.md`, `docs/WORK_LOG.md`, `docs/PATCHNOTES.md`, `docs/README.md`에 작업 차수 201 반영.
+- **검증 결과**:
+  - Web `compile_applet` + `lint_applet` 통과, `npx tsx` 5차 감사 전 항목·10회 반복 일괄 검증 통과, `src-wpf` 70개 `.cs` / 20개 `.xaml` 정적 구문·XML·심볼 감사 통과.
+
+### 📝 [작업 차수 200] v2.2.0 PC↔USB 양방향 통합 단일 전송 엔진(Unified Bidirectional Transfer Engine) 전면 재작성 (Web & WPF)
+- **작업 일시**: 2026-11-26 03:00 KST
+- **요청 사항**:
+  - `복사로직 새로운 개념으로 코드 재 작성.`
+  - 설계 확정 범위: **Web 및 WPF 데스크톱 모두 적용** · **PC와 USB 양방향 통합 단일 전송 엔진** · **복사 전 실행 계획 미리보기 후 일괄 실행** · **기존 화면 유지 및 내부 엔진만 전면 교체**
+- **코드 재설계 및 구현 내역**:
+  1. **Web 통합 전송 엔진 신설 및 연동 (`src/utils/unifiedTransferEngine.ts`, `backupService.ts`, `usbToPcService.ts`, `BackupModal.tsx`, `UsbToPcModal.tsx`)**:
+     - `PC_TO_USB`, `USB_TO_PC`, `DISK_TO_DISK`, `USB_TO_USB` 4가지 전송 방향을 단일 정규화 모델(`UnifiedTransferSourceItem`, `TransferTargetSpec`)로 통합.
+     - **Phase 1 Dry-Run 계획기 (`buildTransferPlan`)**: 경로 순회 차단(`sanitizeTransferPathSegment`), 표준 목적지 해석(`resolveTransferEndpointPath`), 자가 복사(`SKIP_SELF_COPY`), 다중 디스크 동일 대상 경로 중복 병합(`SKIP_BATCH_DUPLICATE`), 기존 인증서 충돌 판별 및 전략(`COPY_NEW`, `OVERWRITE`, `ARCHIVE_AND_COPY`, `SKIP_DUPLICATE_CONFLICT`)을 불변 `TransferPlan`으로 산출.
+     - **Phase 2 일괄 실행기 (`executeTransferPlan`)**: `plan.executableItems`만 순차 커밋해 사전 미리보기 건수와 실제 복사/히스토리/로그 건수의 100% 일치를 보장. `BackupModal.tsx` 및 `UsbToPcModal.tsx` 기존 UI 내에 **"실행 계획 미리보기"** 요약 정보 연동.
+  2. **WPF 통합 전송 엔진 신설 및 연동 (`src-wpf/KCert.Core/Vault/UnifiedTransferEngine.cs`, `CertificateBackupService.cs`, `MainViewModel.cs`, `PcToUsbTransferViewModel.cs`, `UsbTransferViewModel.cs`, `TargetDrivePickerDialog.xaml(.cs)`)**:
+     - `UnifiedTransferPlanner` + `UnifiedTransferExecutor` 정적 엔진 구현(`_backup_yyyyMMdd_HHmmss` 폴더 보존, `GPKI` 시스템 루트/LocalLow 폴백, `CertTransferEngine.Transfer` SHA-256 검증/롤백 위임).
+     - `MainViewModel`, `PcToUsbTransferViewModel`, `UsbTransferViewModel`, `TargetDrivePickerDialog`가 모두 `BuildUnifiedTransferPlan` ➔ 실행 계획 미리보기(`PreviewSummaryText`) ➔ `ExecuteUnifiedTransferPlan` 파이프라인을 타도록 전면 교체하고, 라디오 버튼 변경 시에도 물리 디스크 충돌 검사 포함 실시간 계획 미리보기가 즉시 갱신되도록 보완.
+- **문서 현행화 내역**:
+  - `README.md`, `docs/WORK_LOG.md`, `docs/PATCHNOTES.md`, `docs/README.md`, `docs/ARCHITECTURE.md`에 작업 차수 200 반영 완료.
+- **검증 결과**:
+  - Web `compile_applet` + `lint_applet` 통과, `npx tsx` 기반 Web 통합 전송 엔진·래퍼·10회 반복 다중 디스크 양방향 검증 스위트 전 항목 통과, `src-wpf` 전체 `.cs`/`.xaml` XML 및 C# 구문·심볼 정적 감사 통과.
+
 ### 📝 [작업 차수 199] v2.2.0 8차 자아성찰(Self-Reflection & Deep Audit) · 다중 디스크 선택 복사 건수 정합화 · 선택 복사 엄격 격리 및 문서 최신화
 - **작업 일시**: 2026-11-25 03:40 KST
 - **요청 사항**:
