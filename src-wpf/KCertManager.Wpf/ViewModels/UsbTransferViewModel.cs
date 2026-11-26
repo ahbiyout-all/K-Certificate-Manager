@@ -518,15 +518,29 @@ namespace KCertManager.Wpf.ViewModels
 
             if (batchResult != null)
             {
-                var selectedByPath = selected
-                    .Where(c => !string.IsNullOrWhiteSpace(c.DirectoryPath))
-                    .GroupBy(c => c.DirectoryPath!, StringComparer.OrdinalIgnoreCase)
+                static string GetCertLookupKey(CertificateItem c) =>
+                    !string.IsNullOrWhiteSpace(c.DerFilePath) ? c.DerFilePath : (c.DirectoryPath ?? string.Empty);
+
+                var selectedByKey = selected
+                    .Where(c => c != null && !string.IsNullOrWhiteSpace(GetCertLookupKey(c)))
+                    .GroupBy(c => GetCertLookupKey(c), StringComparer.OrdinalIgnoreCase)
                     .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
                 foreach (var itemRes in batchResult.ItemResults.Where(r => r.IsSuccess && !r.WasSkipped))
                 {
                     destinationCategories.Add(itemRes.PlanItem.Source.Category);
-                    if (selectedByPath.TryGetValue(itemRes.PlanItem.Source.DirectoryPath, out var cert))
+                    selectedByKey.TryGetValue(itemRes.PlanItem.Source.Id, out var cert);
+                    if (cert == null && !string.IsNullOrWhiteSpace(itemRes.PlanItem.Source.DerFilePath))
+                    {
+                        selectedByKey.TryGetValue(itemRes.PlanItem.Source.DerFilePath, out cert);
+                    }
+                    if (cert == null && !string.IsNullOrWhiteSpace(itemRes.PlanItem.Source.DirectoryPath))
+                    {
+                        cert = selected.FirstOrDefault(c =>
+                            string.Equals(c.DirectoryPath, itemRes.PlanItem.Source.DirectoryPath, StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(c.CommonName, itemRes.PlanItem.Source.CommonName, StringComparison.OrdinalIgnoreCase));
+                    }
+                    if (cert != null)
                     {
                         copiedTargets.Add(cert);
                     }

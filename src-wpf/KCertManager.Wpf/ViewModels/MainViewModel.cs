@@ -2155,20 +2155,39 @@ namespace KCertManager.Wpf.ViewModels
                     return;
                 }
 
-                // 1. 사전 실행 계획에서 감지된 중복 충돌 항목 추출
-                var selectedByPath = selected
-                    .Where(c => !string.IsNullOrWhiteSpace(c?.DirectoryPath))
-                    .GroupBy(c => c!.DirectoryPath!, StringComparer.OrdinalIgnoreCase)
+                // 1. 사전 실행 계획에서 감지된 중복 충돌 항목 추출 (공유 GPKI/EPKI 폴더 충돌 방지를 위해 DerFilePath 우선 키 사용)
+                static string GetCertLookupKey(CertificateItem c) =>
+                    !string.IsNullOrWhiteSpace(c.DerFilePath) ? c.DerFilePath : (c.DirectoryPath ?? string.Empty);
+
+                var selectedByKey = selected
+                    .Where(c => c != null && !string.IsNullOrWhiteSpace(GetCertLookupKey(c)))
+                    .GroupBy(c => GetCertLookupKey(c!), StringComparer.OrdinalIgnoreCase)
                     .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
                 var duplicateConflicts = initialPlan.ConflictItems
-                    .Select(item => new Views.DuplicateConflictEntry
+                    .Select(item =>
                     {
-                        SourceCert = selectedByPath.TryGetValue(item.Source.DirectoryPath, out var certObj)
-                            ? certObj
-                            : new CertificateItem { CommonName = item.Source.CommonName, DirectoryPath = item.Source.DirectoryPath },
-                        TargetDirectoryPath = item.ExpectedDestinationDirectory,
-                        TargetDriveLetter = targetDriveName
+                        selectedByKey.TryGetValue(item.Source.Id, out var certObj);
+                        if (certObj == null && !string.IsNullOrWhiteSpace(item.Source.DerFilePath))
+                        {
+                            selectedByKey.TryGetValue(item.Source.DerFilePath, out certObj);
+                        }
+                        if (certObj == null && !string.IsNullOrWhiteSpace(item.Source.DirectoryPath))
+                        {
+                            certObj = selected.FirstOrDefault(c => string.Equals(c?.DirectoryPath, item.Source.DirectoryPath, StringComparison.OrdinalIgnoreCase));
+                        }
+                        return new Views.DuplicateConflictEntry
+                        {
+                            SourceCert = certObj ?? new CertificateItem
+                            {
+                                CommonName = item.Source.CommonName,
+                                DirectoryPath = item.Source.DirectoryPath,
+                                DerFilePath = item.Source.DerFilePath,
+                                KeyFilePath = item.Source.KeyFilePath
+                            },
+                            TargetDirectoryPath = item.ExpectedDestinationDirectory,
+                            TargetDriveLetter = targetDriveName
+                        };
                     })
                     .ToList();
 
@@ -2228,6 +2247,7 @@ namespace KCertManager.Wpf.ViewModels
                 string? lastSuccessDestPath = batchResult?.LastSuccessDestinationPath;
                 string? lastSuccessFileSize = batchResult?.LastSuccessFileSizeDetails;
                 var copiedTargets = new List<CertificateItem>();
+                var highlightDerPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var highlightDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 if (batchResult != null)
@@ -2235,7 +2255,17 @@ namespace KCertManager.Wpf.ViewModels
                     foreach (var itemRes in batchResult.ItemResults)
                     {
                         var planItem = itemRes.PlanItem;
-                        selectedByPath.TryGetValue(planItem.Source.DirectoryPath, out var cert);
+                        selectedByKey.TryGetValue(planItem.Source.Id, out var cert);
+                        if (cert == null && !string.IsNullOrWhiteSpace(planItem.Source.DerFilePath))
+                        {
+                            selectedByKey.TryGetValue(planItem.Source.DerFilePath, out cert);
+                        }
+                        if (cert == null && !string.IsNullOrWhiteSpace(planItem.Source.DirectoryPath))
+                        {
+                            cert = selected.FirstOrDefault(c =>
+                                string.Equals(c?.DirectoryPath, planItem.Source.DirectoryPath, StringComparison.OrdinalIgnoreCase) &&
+                                (string.IsNullOrWhiteSpace(planItem.Source.CommonName) || string.Equals(c?.CommonName, planItem.Source.CommonName, StringComparison.OrdinalIgnoreCase)));
+                        }
                         string opName = (planItem.Source.IsRemovableSource, isTargetUsb) switch
                         {
                             (false, true) => "디스크 ➔ USB 백업",
@@ -2313,10 +2343,25 @@ namespace KCertManager.Wpf.ViewModels
                         if (itemRes.IsSuccess)
                         {
                             if (cert != null) copiedTargets.Add(cert);
-                            var srcNorm = UnifiedTransferPlanner.NormalizeFullDirectoryPath(planItem.Source.DirectoryPath);
-                            if (!string.IsNullOrEmpty(srcNorm)) highlightDirs.Add(srcNorm);
-                            var dstNorm = UnifiedTransferPlanner.NormalizeFullDirectoryPath(itemRes.DestinationDirectory);
-                            if (!string.IsNullOrEmpty(dstNorm)) highlightDirs.Add(dstNorm);
+                            if (!string.IsNullOrWhiteSpace(planItem.Source.DerFilePath))
+                            {
+                                var srcDerNorm = UnifiedTransferPlanner.NormalizeFullDirectoryPath(planItem.Source.DerFilePath);
+                                if (!string.IsNullOrEmpty(srcDerNorm)) highlightDerPaths.Add(srcDerNorm);
+                                var dstDirNorm = UnifiedTransferPlanner.NormalizeFullDirectoryPath(itemRes.DestinationDirectory);
+                                if (!string.IsNullOrEmpty(dstDirNorm))
+                                {
+                                    var dstDerNorm = UnifiedTransferPlanner.NormalizeFullDirectoryPath(
+                                        Path.Combine(dstDirNorm, Path.GetFileName(planItem.Source.DerFilePath)));
+                                    if (!string.IsNullOrEmpty(dstDerNorm)) highlightDerPaths.Add(dstDerNorm);
+                                }
+                            }
+                            else
+                            {
+                                var srcNorm = UnifiedTransferPlanner.NormalizeFullDirectoryPath(planItem.Source.DirectoryPath);
+                                if (!string.IsNullOrEmpty(srcNorm)) highlightDirs.Add(srcNorm);
+                                var dstNorm = UnifiedTransferPlanner.NormalizeFullDirectoryPath(itemRes.DestinationDirectory);
+                                if (!string.IsNullOrEmpty(dstNorm)) highlightDirs.Add(dstNorm);
+                            }
 
                             string detailNote = planItem.Action == TransferPlanAction.Overwrite
                                 ? " (기존 동일 인증서 덮어쓰기 갱신 완료)"
@@ -2361,8 +2406,11 @@ namespace KCertManager.Wpf.ViewModels
 
                 // 새로고침된 라이브 목록(_allCertificates)에서 복사된 원본/사본 행 찾아 1.8초간 강조 효과 적용
                 var liveHighlighted = _allCertificates
-                    .Where(c => !string.IsNullOrWhiteSpace(c.DirectoryPath) &&
-                                highlightDirs.Contains(Path.GetFullPath(c.DirectoryPath).TrimEnd('\\', '/')))
+                    .Where(c =>
+                        (!string.IsNullOrWhiteSpace(c.DerFilePath) &&
+                         highlightDerPaths.Contains(UnifiedTransferPlanner.NormalizeFullDirectoryPath(c.DerFilePath))) ||
+                        (!string.IsNullOrWhiteSpace(c.DirectoryPath) &&
+                         highlightDirs.Contains(UnifiedTransferPlanner.NormalizeFullDirectoryPath(c.DirectoryPath))))
                     .ToList();
 
                 foreach (var liveCert in liveHighlighted)

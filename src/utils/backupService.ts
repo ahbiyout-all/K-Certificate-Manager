@@ -325,7 +325,9 @@ export async function writeCertificatesToDirectoryHandle(
     const seenTargetPaths = new Set<string>();
     const activeCerts: CertificateItem[] = [];
     for (const cert of candidateCerts) {
-      const normPath = getStandardDirectoryPath(cert).replace(/\//g, '\\').toLowerCase();
+      const certFileKey = (cert.files?.certName || 'signcert.der').trim().toLowerCase();
+      const serialFallback = certFileKey === 'signcert.der' ? (cert.serialNumber || '').trim().toLowerCase() : '';
+      const normPath = `${getStandardDirectoryPath(cert).replace(/\//g, '\\').toLowerCase()}|${certFileKey}|${serialFallback}`;
       if (seenTargetPaths.has(normPath)) continue;
       seenTargetPaths.add(normPath);
       activeCerts.push(cert);
@@ -349,11 +351,21 @@ export async function writeCertificatesToDirectoryHandle(
 
       // Preserve existing cert files into sibling _backup_YYYYMMDD folder when requested
       if ((options?.archiveOldFolder || archivedIds.has(cert.id)) && typeof currentDir.values === 'function') {
+        const certNameLower = (cert.files?.certName || '').trim().toLowerCase();
+        const isGenericName = !certNameLower || certNameLower === 'signcert.der' || certNameLower === 'signcert.cer';
+        const collidingFileNames = new Set(
+          [cert.files?.certName, cert.files?.keyName, cert.files?.kmCertName, cert.files?.kmKeyName]
+            .filter((n): n is string => Boolean(n))
+            .map(n => sanitizePathSegment(n).toLowerCase())
+        );
+
         const existingFiles: any[] = [];
         try {
           for await (const entry of currentDir.values()) {
             if (entry?.kind === 'file') {
-              existingFiles.push(entry);
+              if (isGenericName || collidingFileNames.has((entry.name || '').toLowerCase())) {
+                existingFiles.push(entry);
+              }
             }
           }
         } catch {

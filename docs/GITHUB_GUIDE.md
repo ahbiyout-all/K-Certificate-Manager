@@ -64,34 +64,29 @@
   3. **Web 콘솔 빌드**: `npm run build`를 통해 `dist/` 정적 번들 생성
   4. **C# WPF 데스크톱 컴파일**:
      * 순수 코어 라이브러리 `KCert.Core.dll` 및 암호화 라이브러리 `KCert.Crypto.dll` 빌드
-     * 정식 독립 실행형 데스크톱 앱 `KCertManager_v2.2.0.exe` (Self-Contained) 빌드
-     * 초경량 에디션 `KCertManager-Lite_v2.2.0.exe` (Framework-Dependent) 빌드
+      * 정식 독립 실행형 데스크톱 앱 `KCertManager_v2.3.0.exe` (Self-Contained) 빌드
+      * 초경량 에디션 `KCertManager-Lite_v2.3.0.exe` (Framework-Dependent) 빌드
   5. **Inno Setup 인스톨러 패키징**:
-     * Inno Setup 6 자동 다운로드 및 ISCC 컴파일
-     * 폴더 풀림(Unpacked Multi-File) 레이아웃 설치 프로그램 `kcert-manager-v2.2.0-setup.exe` 생성
-     * Windows 방화벽 인바운드 규칙 사전 등록 및 무인 설치 스위치 검증
+      * Inno Setup 6 자동 다운로드 및 ISCC 컴파일
+      * 폴더 풀림(Unpacked Multi-File) 레이아웃 설치 프로그램 `kcert-manager-v2.3.0-setup.exe` 생성
+      * Windows 방화벽 인바운드 규칙 사전 등록 및 무인 설치 스위치 검증
   6. **GitHub Release 자동 발행 (`softprops/action-gh-release@v2`)**:
-     * 태그 기반 Release 생성 및 릴리스 노트 자동 등록
-     * 공식 설치 파일(`dist/v2.2.0/installer/kcert-manager-v2.2.0-setup.exe`) 단독 첨부 배포
+      * 태그 기반 Release 생성 및 릴리스 노트 자동 등록
+      * 공식 설치 파일(`dist/v2.3.0/installer/kcert-manager-v2.3.0-setup.exe`) 단독 첨부 배포
 
 ---
 
-## 📦 4. 최신 v2.2.0 GitHub Release 배포 명세
+## 📦 4. 최신 v2.3.0 GitHub Release 배포 명세
 
-* **릴리스 태그**: `v2.2.0`
-* **릴리스 타이틀**: `K-Certificate Manager v2.2.0 (MINOR Release)`
+* **릴리스 태그**: `v2.3.0`
+* **릴리스 타이틀**: `K-Certificate Manager v2.3.0 (MINOR Release)`
 * **공식 첨부 자산 (Assets)**:
-  * `kcert-manager-v2.2.0-setup.exe` (~40MB, Inno Setup 윈도우 정식 설치 프로그램)
+  * `kcert-manager-v2.3.0-setup.exe` (~40MB, Inno Setup 윈도우 정식 설치 프로그램)
 * **핵심 기능 요약**:
-  1. **3단계 비차단 시작 스캔 & WMI 드라이브 하드닝**: `0단계 Local Fast-Pass` ➔ `1단계 Drive Fast-Pass` ➔ `2단계 Deep-Pass` 분리, OS `DriveType` 필터·바운디드 드라이브 준비 검사(`IsDriveReadyBounded`) 및 단일 `DrivesChanged` 디바운스로 앱 시작 직후 `응답없음` 원천 해소
-  2. **2026 국내 인증 동향 · RSA 3072-bit 보안강도 점검 & 7대 인증 체계 비교 (Web & WPF)**:
-     * 오프라인 X.509 ASN.1 파서 기반 공개키 비트 길이(1024/2048/3072/4096-bit, ECDSA) 및 서명 알고리즘(`3072-bit 권장` / `2048-bit 전환 대상` / `1024-bit·SHA-1 취약`) 진단
-     * `보안 수칙·동향`(`SecurityGuideModal`/`SecurityGuideDialog`), `진단 및 복구`(`보안강도 점검` 탭), `갱신 안내`에 2027.02.15 RSA 3072-bit, GPKI·EPKI 비액티브엑스, 2026.08.28 모바일 신분증 8종 동향 통합
-  3. **전수 감사 안정화 (작업 차수 191~193)**:
-     * 개인 성명 `(기관용)` 오분류 교정, `CertIntegrityDoctor` 동적 키 파일명 & `cn=` 표준 경로 정밀화, `RenewalGuidanceDialog`/`renewalStore` 발급기관(Issuer) 우선 매칭
-     * WPF `DispatchSafeAsync`·`SafeGetFullPath`·`OpenTargetDrivePickerForCertificatesAsync`·`SearchLocationsDialog` Fast-Pass 유지 및 Web 비동기 클립보드·새로고침 시퀀스·`targetDrive` 널 가드 적용
-  4. **인앱 자동 다운로드 · 다크 테마 Visual Parity · `Class1` 필터 기반 계승** (`v2.1.x`)
-  5. **빌드 파이프라인 `/dist/v2.2.0/` 분리 배포**: `/dist/v2.2.0/web`, `/win-x64`, `/core-dll`, `/unpacked`, `/installer`
+  1. **PC↔USB 양방향 통합 단일 전송 엔진 (`unifiedTransferEngine.ts`, `UnifiedTransferEngine.cs`)**: `PC_TO_USB`/`USB_TO_PC`/`DISK_TO_DISK`/`USB_TO_USB` 통합 2단계 Dry-Run 실행 계획 미리보기 ➔ 원자적 일괄 실행 파이프라인 적용
+  2. **공유 폴더형 GPKI·EPKI 인증서 선택 파일 단위 격리 복사**: `GPKI\Certificate\class1|class2` 등 공유 폴더에서 선택한 인증서·개인키·동반 `_env`/`_km` 파일만 선별 전송·아카이빙·강조 표시
+  3. **다중 디스크 선택 복사 건수 정합화·디스크 우선순위 정렬 & 5회+ 전수 감사 안정화**: `resolveSelectedBackupCerts` 교집합 격리, `ConnectedDrivesBar` 자동 정렬, 저눈부심 회색·베이지 테마, 상단 창 드래그 및 `v2.2.0` 핵심 기능(3단계 비차단 스캔, RSA 3072-bit 보안강도 진단, 2026 인증 동향) 완전 계승
+  4. **빌드 파이프라인 `/dist/v2.3.0/` 분리 배포**: `/dist/v2.3.0/web`, `/win-x64`, `/core-dll`, `/unpacked`, `/installer`
 
 ---
 
@@ -109,7 +104,7 @@ K-인증서 매니저는 사용자가 최신 버전을 놓치지 않도록 GitHu
 [ 3단계: /repos/:owner/:repo/tags (Git 태그 직결 엔드포인트) ]
        │
        ▼
-[ 최신 v2.2.0 버전 즉각 감지 & 확인 시 앱 내 자동 다운로드·무인 셀프 설치 실행 ]
+[ 최신 v2.3.0 버전 즉각 감지 & 확인 시 앱 내 자동 다운로드·무인 셀프 설치 실행 ]
 ```
 
 * **타임스탬프 캐시 버스팅**: `?_t=Date.now()` 파라미터 및 `Cache-Control: no-cache` 헤더를 적용하여 GitHub API의 로컬 브라우저/프록시 캐시 문제를 완전 해결
@@ -139,7 +134,7 @@ GitHub 공개 저장소 운영 시 민감한 개인 인증서 정보가 원격�
 
 1. **버그 제보 (Bug Report)**:
    * [GitHub Issues](https://github.com/AhBiYout-all/K-Certificate-Manager/issues)에서 새로운 이슈를 생성합니다.
-   * 운영체제 버전(Windows 10 / 11), 사용 중인 K-인증서 매니저 버전(예: `v2.2.0`), 오류 발생 경로 및 스크린샷을 첨부해 주시면 신속히 반영됩니다.
+   * 운영체제 버전(Windows 10 / 11), 사용 중인 K-인증서 매니저 버전(예: `v2.3.0`), 오류 발생 경로 및 스크린샷을 첨부해 주시면 신속히 반영됩니다.
 2. **기능 제안 (Feature Request)**:
    * 새로운 공인인증서 경로 지원, UI 편의 기능 등 다양한 아이디어를 Issue로 남겨주세요.
 3. **Pull Request (PR) 가이드**:

@@ -44,12 +44,16 @@ namespace KCertManager.Wpf.Services
                 .Where(c => c != null)
                 .Select(c => new TransferSourceSpec
                 {
-                    Id = c.DirectoryPath ?? string.Empty,
+                    Id = !string.IsNullOrWhiteSpace(c.DerFilePath)
+                        ? c.DerFilePath
+                        : (c.DirectoryPath ?? string.Empty),
                     CommonName = c.CommonName ?? string.Empty,
                     Category = c.Category.ToString(),
                     IssuerName = c.IssuerName ?? string.Empty,
                     SerialNumber = c.SerialNumber ?? string.Empty,
                     DirectoryPath = c.DirectoryPath ?? string.Empty,
+                    DerFilePath = c.DerFilePath ?? string.Empty,
+                    KeyFilePath = c.KeyFilePath ?? string.Empty,
                     DriveLetter = c.DriveLetter ?? string.Empty,
                     IsRemovableSource = c.IsRemovableMedia,
                     NotAfter = c.NotAfter
@@ -61,6 +65,7 @@ namespace KCertManager.Wpf.Services
                 .Select(c => new ExistingTargetCertSnapshot
                 {
                     DirectoryPath = c.DirectoryPath ?? string.Empty,
+                    DerFilePath = c.DerFilePath ?? string.Empty,
                     DriveLetter = c.DriveLetter ?? string.Empty,
                     Category = c.Category.ToString(),
                     CommonName = c.CommonName ?? string.Empty,
@@ -144,7 +149,13 @@ namespace KCertManager.Wpf.Services
             return result;
         }
 
-        public CertTransferResult CopyCertificateToLocalPc(string sourceDirectory, string targetCategory = "NPKI", string username = "", string targetDriveLetter = "C:")
+        public CertTransferResult CopyCertificateToLocalPc(
+            string sourceDirectory,
+            string targetCategory = "NPKI",
+            string username = "",
+            string targetDriveLetter = "C:",
+            string? specificDerFilePath = null,
+            string? specificKeyFilePath = null)
         {
             if (string.IsNullOrWhiteSpace(sourceDirectory))
             {
@@ -160,10 +171,12 @@ namespace KCertManager.Wpf.Services
             {
                 var spec = new TransferSourceSpec
                 {
-                    Id = sourceDirectory,
+                    Id = !string.IsNullOrWhiteSpace(specificDerFilePath) ? specificDerFilePath : sourceDirectory,
                     CommonName = Path.GetFileName(sourceDirectory.TrimEnd('\\', '/')),
                     Category = targetCategory ?? "NPKI",
                     DirectoryPath = sourceDirectory,
+                    DerFilePath = specificDerFilePath ?? string.Empty,
+                    KeyFilePath = specificKeyFilePath ?? string.Empty,
                     IsRemovableSource = true
                 };
 

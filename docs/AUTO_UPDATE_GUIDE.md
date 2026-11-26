@@ -14,13 +14,13 @@
 2. **브라우저/네트워크 캐싱**:
    - GitHub API 응답이 이전 404 상태로 로컬 캐시되어 새 릴리스가 등록된 직후에도 즉시 갱신되지 않는 현상.
 
-### 🛡️ 3계층(3-Tier) 다중 폴백 & 인앱 자동 셀프 설치 엔진 (`v2.1.0 ~ v2.2.0`)
+### 🛡️ 3계층(3-Tier) 다중 폴백 & 인앱 자동 셀프 설치 엔진 (`v2.1.0 ~ v2.3.0`)
 업데이트 체커는 **3단계 다계층 폴백(Fallback)**과 **타임스탬프 캐시 버스팅(`?_t=Date.now()`)**으로 신규 버전을 즉시 감지하며, 사용자가 업데이트 창에서 확인을 누르면 **GitHub 웹페이지로 이동하지 않고 앱 내부에서 직접 다운로드·검증 후 셀프 설치**를 수행합니다.
 
 ```
 [ 1단계: /releases/latest ] ──(404 발생 시 즉시 폴백)──►
 [ 2단계: /releases (전체 릴리스 목록) ] ──(비어있을 시 즉시 폴백)──►
-[ 3단계: /tags (Git 태그 직결 엔드포인트) ] ──► 최신 v2.2.0 태그 및 설치 에셋 즉시 감지!
+[ 3단계: /tags (Git 태그 직결 엔드포인트) ] ──► 최신 v2.3.0 태그 및 설치 에셋 즉시 감지!
 ```
 
 ---
@@ -29,15 +29,15 @@
 
 ```
 [ 개발자 PC ]
-  │ 1. v2.2.0 태그 및 소스 푸시
-  │ 2. GitHub Actions 자동 빌드 및 릴리스 인스톨러(kcert-manager-v2.2.0-setup.exe) 생성
+  │ 1. v2.3.0 태그 및 소스 푸시
+  │ 2. GitHub Actions 자동 빌드 및 릴리스 인스톨러(kcert-manager-v2.3.0-setup.exe) 생성
   ▼
 [ 사용자 환경 (WPF 데스크톱 & Web) ]
   │ 1. 앱 시작 1.2초 후 또는 [업데이트 확인] 클릭 시 3-Tier API 비동기 조회
   │ 2. 새 버전 감지 시 업데이트 알림 창 자동 표시
   ▼
 [ 확인 (자동 다운로드 · 설치) 클릭 시 ]
-  ├─ (WPF) 1) %TEMP%\KCertManager_AutoUpdate\v2.2.0\ 로 스트리밍 다운로드 + 실시간 진행률 표시
+  ├─ (WPF) 1) %TEMP%\KCertManager_AutoUpdate\v2.3.0\ 로 스트리밍 다운로드 + 실시간 진행률 표시
   ├─ (WPF) 2) PE 실행 파일(MZ) / ZIP(PK) 헤더 및 용량 무결성 검증
   ├─ (WPF) 3) 분리 PowerShell 업데이터(apply_self_update.ps1) 실행 → 앱 안전 종료 → /SILENT 무인 설치 → 자동 재시작
   └─ (Web) 스트림 다운로드 → WebCrypto SHA-256 검증 → Cache Storage 갱신 & 설치 버전 상태 즉시 반영
@@ -70,10 +70,10 @@
 ## 🚀 4. GitHub 릴리스 배포 가이드 (Step-by-Step)
 
 1. **Git 태그 및 소스 푸시**:
-   - 최신 소스와 `v2.2.0` 태그를 GitHub에 푸시합니다.
+   - 최신 소스와 `v2.3.0` 태그를 GitHub에 푸시합니다.
 2. **GitHub Releases 발행 확인**:
-   - `.github/workflows/build.yml`이 자동으로 Inno Setup 설치 프로그램(`kcert-manager-v2.2.0-setup.exe`)을 빌드해 Release 에셋으로 첨부합니다.
-   - 수동 발행 시에도 `https://github.com/AhBiYout-all/K-Certificate-Manager/releases/new`에서 `v2.2.0` 태그 선택 후 `kcert-manager-v2.2.0-setup.exe`를 첨부해 Publish 합니다.
+   - `.github/workflows/build.yml`이 자동으로 Inno Setup 설치 프로그램(`kcert-manager-v2.3.0-setup.exe`)을 빌드해 Release 에셋으로 첨부합니다.
+   - 수동 발행 시에도 `https://github.com/AhBiYout-all/K-Certificate-Manager/releases/new`에서 `v2.3.0` 태그 선택 후 `kcert-manager-v2.3.0-setup.exe`를 첨부해 Publish 합니다.
    - Publish 즉시 기존 버전 사용자 앱에서 자동 다운로드 및 무인 셀프 설치가 동작합니다.
 
 ---

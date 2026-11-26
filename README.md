@@ -1,9 +1,9 @@
-# K-Certificate Manager (K-인증서 매니저) v2.2.0
+# K-Certificate Manager (K-인증서 매니저) v2.3.0
 
 <div align="center">
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Version](https://img.shields.io/badge/Version-v2.2.0-green.svg)
+![Version](https://img.shields.io/badge/Version-v2.3.0-green.svg)
 ![React](https://img.shields.io/badge/React-19.0-61dafb.svg)
 ![Vite](https://img.shields.io/badge/Vite-6.2-646cff.svg)
 ![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512bd4.svg)
@@ -17,33 +17,22 @@
 
 ---
 
-## 🚀 최신 릴리스 정보 (Latest Release: v2.2.0)
+## 🚀 최신 릴리스 정보 (Latest Release: v2.3.0)
 
-> **버전**: `v2.2.0` (Semantic Versioning 2.0.0 MINOR Release)  
-> **출시일**: 2026-11-21  
+> **버전**: `v2.3.0` (Semantic Versioning 2.0.0 MINOR Release)  
+> **출시일**: 2026-11-26  
 > **상세 변경 내역**: [docs/PATCHNOTES.md](./docs/PATCHNOTES.md) • [GitHub 문서](./docs/GITHUB_DOCS.md) • [GitHub 배포 가이드](./docs/GITHUB_GUIDE.md) • [버전 관리 정책](./docs/VERSIONING_POLICY.md)
 
-### 🌟 v2.2.0 핵심 업데이트 및 신규 기능
-- **WPF 앱 시작 무응답(응답없음) 해소 & 3단계 비블로킹 초기 스캔 엔진 (`MainViewModel`, `CertLocationScanner`, `FastScanPipeline`, `UsbStorageGuard`)**:
-  - 시작 직후 UI 블로킹을 유발하던 `DriveInfo.GetDrives()`·네트워크 드라이브·대용량 디렉터리 동기 탐색을 제거하고 **Phase-0 Local Fast-Pass**(`ScanLocalFastAsync`)로 로컬 표준 보관함(`AppData\LocalLow\NPKI`, `C:\GPKI`, `C:\EPKI`)을 즉시 표출
-  - OS `DriveType` 사전 필터로 연결 끊긴 SMB 네트워크 드라이브·CD-ROM·RAM 드라이브를 `IsReady`/`CreateFile` 호출 전 즉시 제외하고, 드라이브별 시간제한 타임아웃 프로브, `ReparsePoint` 심볼릭 링크 순환 가드, `_scanCts` 스캔 취소 및 Deep-Pass 배치 UI 갱신 적용
-- **2026 RSA 3072-bit 상향(2027.02 의무화) 및 인증서 보안 강도 진단 스위트 (Web & WPF)**:
-  - `RSA-3072` / `ECDSA-256` 보안 강도 기준 검증, 취약 키 길이·갱신 대상 인증서 식별 및 2027년 2월 권고·의무화 일정 대응 안내 제공
-- **2026 국내 인증 동향·모바일 신분증(8종)·비액티브엑스 GPKI/EPKI·금융/간편인증 가이드 통합**:
-  - `SecurityGuideModal.tsx`·`koreanCertTrends2026.ts`·`RenewalGuidanceModal.tsx`(Web) 및 `SecurityGuideDialog.xaml`·`RenewalGuidanceDialog.xaml`(WPF)을 통해 행정·교육 Non-ActiveX 및 클라우드 전환, 금융인증서 vs. 민간 간편인증 비교/갱신, 모바일 신분증 8종 및 2026 전자서명 법령 동향을 앱 내 통합 제공
-- **v2.1.1 ~ v2.0.0 핵심 안정화 계승**:
-  - `Class1` 기관·특수목적 인증서 개인키 페어링 & 구분 배지, 비표준 경로 정위치 복구 + 안전 휴지통 격리(`SafetyTrash`), 복사 완료 폴더 드라이브 루트 탐색기 호출, 인앱 3-Tier 자동 업데이트·무인 셀프 설치, DPAPI/AES-256 보호 보관함 및 `/dist/v2.2.0/` 버전별 분리 배포 파이프라인 완비
-- **4차 심층 전수 감사 · 저눈부심 테마 & 선택 복사 격리 안정화 (Web & WPF)**:
-  - 눈부심을 억제한 **회색(*Misty Mineral Slate*)** · **베이지(*Warm Oat Paper*)** 저자극 고가독성 테마 적용 및 Tailwind v4 `@custom-variant dark`·WPF `DynamicResource` 브러시 전 창 대비 교정
-  - 보관함 체크박스 선택(`selectedIds`), 필터 표시 목록(`visibleCertificates` / `FilteredCertificates`), 단일 행 상세 클릭(`inspectedCert` / `SelectedCertificate`)을 엄격히 분리해 `선택 ∩ 현재 필터` 교집합만 정밀 복사하도록 개선
-  - WPF 시작 시 저장 테마 복원 및 Web 워크플로우·USB 마운트 최신 핸들러 동기화
-- **7~8차 심층 전수 감사 · 다중 디스크 선택 복사 건수 정합화 & 엄격 격리 (Web & WPF)**:
-  - 여러 디스크에 분산된 인증서 선택 복사 시 자가 복사(`isSameDriveSelfCopy`) 및 동일 대상 경로 중복을 제외한 실제 복사 ID(`copiedCertIds`) 기준으로 완료 건수·로그·드라이브 보관 배지 수치를 Web/WPF 양쪽에서 1:1 정합화하고, 새로고침 시 드라이브 배지 유실을 방지
-  - `resolveSelectedBackupCerts` 필터 결과(`selectedVisibleCertificates`)만 복사 실행 핸들러로 전달(단일 상세 행 fallback 제거), `Header.tsx` 상단 창 드래그 지원 및 `MainWindow.xaml.cs` 비동기 `await` 예외 전파 보강 완료
-- **PC↔USB 양방향 통합 단일 전송 엔진 전면 재설계 & 5회 심층 전수 감사 (Web & WPF)**:
-  - PC➔USB, USB➔PC, 디스크➔디스크, USB➔USB 복사를 단일 **2단계 사전 실행 계획(`TransferPlan`) ➔ 원자적 일괄 실행(`TransferExecutor`)** 아키텍처로 통합(`unifiedTransferEngine.ts`, `UnifiedTransferEngine.cs`)
-  - 복사 실행 전 자가 복사(`SKIP_SELF_COPY`), 다중 디스크 동일 대상 경로 병합(`SKIP_BATCH_DUPLICATE`), 기존 중복 충돌 정책(`overwrite` / `archive_old`·`rename` / `skip`)을 먼저 확정·미리보기로 표시해 예측 건수와 실제 복사 결과를 100% 일치화
-  - 5회 반복 심층 감사를 통해 개별 항목 건너뛰기/덮어쓰기 경합, 직접 폴더 `_backup_YYYYMMDD` 아카이빙, WPF `WasSkipped`·부분 실패 처리·`try/catch/finally` 상태 복구까지 전 구간 교정 완료
+### 🌟 v2.3.0 핵심 업데이트 및 신규 기능
+- **PC↔USB 양방향 통합 단일 전송 엔진 전면 신설 (`unifiedTransferEngine.ts`, `UnifiedTransferEngine.cs`)**:
+  - `PC_TO_USB`, `USB_TO_PC`, `DISK_TO_DISK`, `USB_TO_USB` 4대 전송 방향을 **Phase 1 Dry-Run 실행 계획기(`TransferPlan`) ➔ Phase 2 원자적 일괄 실행기(`TransferExecutor`)** 단일 아키텍처로 통합
+  - 복사 실행 전 자가 복사(`SKIP_SELF_COPY`), 다중 디스크 동일 대상 경로 병합(`SKIP_BATCH_DUPLICATE`), 기존 중복 충돌 전략(`overwrite` / `archive_old`·`rename` / `skip`)을 실시간 **"실행 계획 미리보기"**로 확정해 예측 건수와 실제 복사 결과를 100% 일치화
+- **공유 폴더형 GPKI·EPKI 인증서 선택 파일 단위 격리 복사 완성 (`CertTransferEngine.cs`, `UnifiedTransferEngine.cs`, `unifiedTransferEngine.ts`, `backupService.ts`, `App.tsx`)**:
+  - 여러 인증서가 공존하는 `GPKI\Certificate\class1|class2` 등 공유 폴더에서 1건만 선택 복사해도 폴더 전체가 복사되던 문제를 해결해, 선택된 `.cer/.der` · 매칭된 `.key/.pri` · 동일 접두사 동반 `_env`/`_km` 파일만 선별 전송·아카이빙·하이라이트 처리
+- **다중 디스크 선택 복사 정합화 & 연결 디스크 우선순위 자동 정렬 (`ConnectedDrivesBar`, `BackupModal`, `MainViewModel`)**:
+  - 이동식/외장 드라이브 장치 종류 및 드라이브 문자 기준 자동 우선순위 정렬 적용, `resolveSelectedBackupCerts` 교집합(`selectedIds ∩ visibleCertificates`) 엄격 격리 및 다중 디스크 실제 복사 ID(`copiedCertIds`) 1:1 정합화
+- **저눈부심 회색(*Misty Mineral Slate*) · 베이지(*Warm Oat Paper*) 테마, 상단 창 드래그 & 5회+ 전수 감사 안정화**:
+  - Tailwind v4 `@custom-variant dark`·WPF `DynamicResource`/`WpfAnimatedBorderHelper` 휘도 적응형 전 창 대비 통일, `Header.tsx` 네이티브 창 드래그(`app-region: drag/no-drag`), WPF `try/catch/finally`·`WasSkipped`·부분 실패 처리·`_backup_YYYYMMDD` 아카이빙 보강 및 `v2.2.0` 핵심 기능(3단계 비차단 스캔, RSA 3072-bit 보안강도 진단, 2026 인증 동향) 완전 계승
 
 ---
 
@@ -135,7 +124,7 @@ npm run dev
 build.bat
 ```
 
-빌드가 완료되면 `dist/v2.2.0/` 폴더에 버전별 하위 디렉터리(`web`, `win-x64`, `core-dll`, `unpacked`, `installer`)로 배포용 포터블 실행 파일 및 Inno Setup 설치 프로그램(`kcert-manager-v2.2.0-setup.exe`)이 체계적으로 분리 생성됩니다.
+빌드가 완료되면 `dist/v2.3.0/` 폴더에 버전별 하위 디렉터리(`web`, `win-x64`, `core-dll`, `unpacked`, `installer`)로 배포용 포터블 실행 파일 및 Inno Setup 설치 프로그램(`kcert-manager-v2.3.0-setup.exe`)이 체계적으로 분리 생성됩니다.
 
 ---
 

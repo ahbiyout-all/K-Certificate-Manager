@@ -1570,13 +1570,25 @@ export default function App() {
     const nextList = [...liveCerts];
     const isSystemC = cleanTargetLetter.toUpperCase() === 'C:';
 
+    const isSameStoredCertInFolder = (existing: CertificateItem, candidate: CertificateItem, normDestLoc: string) => {
+      const existingLoc = (existing.sourceLocation || '').replace(/\//g, '\\').replace(/\\+$/, '').toUpperCase();
+      if (!existingLoc || existingLoc !== normDestLoc) return false;
+      const aFile = (existing.files?.certName || '').trim().toLowerCase();
+      const bFile = (candidate.files?.certName || '').trim().toLowerCase();
+      const aGeneric = !aFile || aFile === 'signcert.der' || aFile === 'signcert.cer';
+      const bGeneric = !bFile || bFile === 'signcert.der' || bFile === 'signcert.cer';
+      if (!aGeneric && !bGeneric && aFile !== bFile) return false;
+      if (existing.serialNumber && candidate.serialNumber) {
+        return existing.serialNumber.trim().toUpperCase() === candidate.serialNumber.trim().toUpperCase();
+      }
+      return true;
+    };
+
     if (record.resultCertificates && record.resultCertificates.length > 0) {
       for (const engineCert of record.resultCertificates) {
         const normDestLoc = (engineCert.sourceLocation || '').replace(/\//g, '\\').replace(/\\+$/, '').toUpperCase();
         const existingIdx = normDestLoc
-          ? nextList.findIndex(
-              c => (c.sourceLocation || '').replace(/\//g, '\\').replace(/\\+$/, '').toUpperCase() === normDestLoc
-            )
+          ? nextList.findIndex(c => isSameStoredCertInFolder(c, engineCert, normDestLoc))
           : -1;
         const destId =
           existingIdx >= 0
@@ -1608,9 +1620,7 @@ export default function App() {
             : `${cleanTargetLetter.toUpperCase()}\\${relSubPath}`;
         const normDestLoc = destLocation.replace(/\//g, '\\').replace(/\\+$/, '').toUpperCase();
 
-        const existingIdx = nextList.findIndex(
-          c => (c.sourceLocation || '').replace(/\//g, '\\').replace(/\\+$/, '').toUpperCase() === normDestLoc
-        );
+        const existingIdx = nextList.findIndex(c => isSameStoredCertInFolder(c, srcCert, normDestLoc));
         const destId =
           existingIdx >= 0
             ? nextList[existingIdx].id
@@ -1732,10 +1742,22 @@ export default function App() {
       const nextList = [...prev];
 
       for (const importedCert of importedCerts) {
-        // Strictly match by exact certificate ID or exact destination PC sourceLocation to prevent name-based co-deletion
-        const existingIdx = nextList.findIndex(
-          c => c.id === importedCert.id || (c.sourceLocation && c.sourceLocation.trim().toUpperCase() === importedCert.sourceLocation.trim().toUpperCase())
-        );
+        const normImpLoc = (importedCert.sourceLocation || '').replace(/\//g, '\\').replace(/\\+$/, '').trim().toUpperCase();
+        const impFile = (importedCert.files?.certName || '').trim().toLowerCase();
+        const impGeneric = !impFile || impFile === 'signcert.der' || impFile === 'signcert.cer';
+        // Strictly match by exact certificate ID or exact destination cert file + location to prevent shared-folder GPKI overwrite
+        const existingIdx = nextList.findIndex(c => {
+          if (c.id === importedCert.id) return true;
+          const cLoc = (c.sourceLocation || '').replace(/\//g, '\\').replace(/\\+$/, '').trim().toUpperCase();
+          if (!cLoc || !normImpLoc || cLoc !== normImpLoc) return false;
+          const cFile = (c.files?.certName || '').trim().toLowerCase();
+          const cGeneric = !cFile || cFile === 'signcert.der' || cFile === 'signcert.cer';
+          if (!cGeneric && !impGeneric && cFile !== impFile) return false;
+          if (c.serialNumber && importedCert.serialNumber) {
+            return c.serialNumber.trim().toUpperCase() === importedCert.serialNumber.trim().toUpperCase();
+          }
+          return true;
+        });
 
         if (existingIdx >= 0) {
           nextList[existingIdx] = importedCert;

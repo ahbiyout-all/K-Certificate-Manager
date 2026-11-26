@@ -427,6 +427,40 @@ function normalizePathForCompare(p: string): string {
   return (p || '').replace(/\//g, '\\').replace(/\\+$/, '').trim().toLowerCase();
 }
 
+function isGenericCertFileName(fileName?: string): boolean {
+  const n = (fileName || '').trim().toLowerCase();
+  return !n || n === 'signcert.der' || n === 'signcert.cer';
+}
+
+function isSharedClassFolderPath(pathValue?: string): boolean {
+  const norm = (pathValue || '').replace(/\//g, '\\').replace(/\\+$/, '');
+  return /(?:^|\\)(?:GPKI|EPKI|MPKI)\\Certificate(?:\\class[123])?$/i.test(norm);
+}
+
+function hasDistinctNonGenericCertFile(fileA?: string, fileB?: string): boolean {
+  if (isGenericCertFileName(fileA) || isGenericCertFileName(fileB)) return false;
+  return (fileA || '').trim().toLowerCase() !== (fileB || '').trim().toLowerCase();
+}
+
+function buildCanonicalDestinationKey(
+  normDstLoc: string,
+  src: UnifiedTransferSourceItem
+): string {
+  const certName = (src.files?.certName || '').trim().toLowerCase();
+  if (!isGenericCertFileName(certName)) {
+    return `${normDstLoc}|${certName}`;
+  }
+  if (
+    isSharedClassFolderPath(normDstLoc) ||
+    src.category === 'GPKI_GOV' ||
+    src.category === 'EPKI_EDU'
+  ) {
+    const disc = (src.serialNumber || src.name || src.id).trim().toLowerCase();
+    return `${normDstLoc}|${disc}`;
+  }
+  return normDstLoc;
+}
+
 function findMatchingExistingCert(
   source: UnifiedTransferSourceItem,
   relativeSubPath: string,
@@ -462,8 +496,9 @@ function findMatchingExistingCert(
 
   return targetDriveCerts.find(tc => {
     if (tc.id === source.id) return false;
+    const distinctCertFiles = hasDistinctNonGenericCertFile(tc.files?.certName, source.files?.certName);
     const tcStdPath = getUnifiedRelativeSubPath(tc);
-    const isPathMatch = tcStdPath.toLowerCase() === relativeSubPath.toLowerCase();
+    const isPathMatch = !distinctCertFiles && tcStdPath.toLowerCase() === relativeSubPath.toLowerCase();
     const tcSha = (tc.files?.sha256 || '').trim().toLowerCase();
     const isShaMatch = Boolean(srcSha && tcSha) && srcSha.length >= 12 && srcSha === tcSha;
     const isSerialIssuerMatch =
@@ -471,17 +506,22 @@ function findMatchingExistingCert(
       (tc.serialNumber || '').trim().toUpperCase() === (source.serialNumber || '').trim().toUpperCase() &&
       (tc.issuer || '').trim().toUpperCase() === (source.issuer || '').trim().toUpperCase();
     const isSameCertNameAndIssuer =
+      !distinctCertFiles &&
       tc.category === source.category &&
       (tc.name || '').trim() === (source.name || '').trim() &&
       (tc.issuer || '').trim() === (source.issuer || '').trim();
     const isDnMatch =
+      !distinctCertFiles &&
       Boolean(source.subjectDn && tc.subjectDn) &&
       (tc.subjectDn || '').toLowerCase() === (source.subjectDn || '').toLowerCase();
     const normalizedTcLoc = normalizePathForCompare(tc.sourceLocation || '');
+    const sharedFolder = isSharedClassFolderPath(normalizedTcLoc) || isSharedClassFolderPath(normalizedExpectedFullLower);
     const isLocMatch =
-      normalizedTcLoc === normalizedExpectedFullLower ||
-      (Boolean(normalizedStdLower) &&
-        (normalizedTcLoc === normalizedStdLower || normalizedTcLoc.endsWith('\\' + normalizedStdLower)));
+      !distinctCertFiles &&
+      !sharedFolder &&
+      (normalizedTcLoc === normalizedExpectedFullLower ||
+        (Boolean(normalizedStdLower) &&
+          (normalizedTcLoc === normalizedStdLower || normalizedTcLoc.endsWith('\\' + normalizedStdLower))));
     return isPathMatch || isShaMatch || isSerialIssuerMatch || isSameCertNameAndIssuer || isDnMatch || isLocMatch;
   });
 }
@@ -539,6 +579,7 @@ export function buildTransferPlan(request: TransferPlanRequest): TransferPlan {
     const endpoint = resolveTransferEndpointPath(src, target.driveLetter, safeUser);
     const normSrcLoc = normalizePathForCompare(src.sourceLocation);
     const normDstLoc = normalizePathForCompare(endpoint.destinationFullPath);
+    const canonicalDestKey = buildCanonicalDestinationKey(normDstLoc, src);
 
     const sameDrive =
       !selfCopyByExactPathOnly &&
@@ -562,15 +603,15 @@ export function buildTransferPlan(request: TransferPlanRequest): TransferPlan {
         relativeSubPath: endpoint.relativeSubPath,
         destinationRoot: endpoint.destinationRoot,
         destinationFullPath: endpoint.destinationFullPath,
-        canonicalDestinationKey: normDstLoc,
+        canonicalDestinationKey: canonicalDestKey,
         estimatedFileCount: 0,
         reason: `이미 대상 드라이브(${target.driveLetter})의 동일 위치에 보관 중 (자가 복사 제외)`,
       });
       continue;
     }
 
-    // Batch deduplication across multi-disk sources resolving to the identical target directory
-    if (seenDestinationKeys.has(normDstLoc)) {
+    // Batch deduplication across multi-disk sources resolving to the identical target certificate & path
+    if (seenDestinationKeys.has(canonicalDestKey)) {
       items.push({
         source: src,
         action: 'SKIP_BATCH_DUPLICATE',
@@ -578,7 +619,7 @@ export function buildTransferPlan(request: TransferPlanRequest): TransferPlan {
         relativeSubPath: endpoint.relativeSubPath,
         destinationRoot: endpoint.destinationRoot,
         destinationFullPath: endpoint.destinationFullPath,
-        canonicalDestinationKey: normDstLoc,
+        canonicalDestinationKey: canonicalDestKey,
         estimatedFileCount: 0,
         reason: `동일 작업 내 이미 선택된 대상 경로(${endpoint.destinationFullPath})와 중복되어 자동 병합 생략`,
       });
@@ -628,7 +669,7 @@ export function buildTransferPlan(request: TransferPlanRequest): TransferPlan {
         relativeSubPath: endpoint.relativeSubPath,
         destinationRoot: endpoint.destinationRoot,
         destinationFullPath: endpoint.destinationFullPath,
-        canonicalDestinationKey: normDstLoc,
+        canonicalDestinationKey: canonicalDestKey,
         conflict: conflictDetail,
         estimatedFileCount: 0,
         reason: `대상 드라이브(${target.driveLetter})에 동일 인증서가 이미 존재하여 건너뛰기(Skip)`,
@@ -636,7 +677,7 @@ export function buildTransferPlan(request: TransferPlanRequest): TransferPlan {
       continue;
     }
 
-    seenDestinationKeys.add(normDstLoc);
+    seenDestinationKeys.add(canonicalDestKey);
 
     if (conflictDetail && itemStrategy === 'archive_old') {
       const archivedDest =
@@ -650,7 +691,7 @@ export function buildTransferPlan(request: TransferPlanRequest): TransferPlan {
         relativeSubPath: endpoint.relativeSubPath,
         destinationRoot: endpoint.destinationRoot,
         destinationFullPath: archivedDest,
-        canonicalDestinationKey: normDstLoc,
+        canonicalDestinationKey: canonicalDestKey,
         conflict: conflictDetail,
         estimatedFileCount: filesForItem,
         reason:
@@ -669,7 +710,7 @@ export function buildTransferPlan(request: TransferPlanRequest): TransferPlan {
         relativeSubPath: endpoint.relativeSubPath,
         destinationRoot: endpoint.destinationRoot,
         destinationFullPath: endpoint.destinationFullPath,
-        canonicalDestinationKey: normDstLoc,
+        canonicalDestinationKey: canonicalDestKey,
         conflict: conflictDetail,
         estimatedFileCount: filesForItem,
         reason: `대상 드라이브(${target.driveLetter}) 기존 인증서를 최신 파일로 덮어쓰기`,
@@ -684,7 +725,7 @@ export function buildTransferPlan(request: TransferPlanRequest): TransferPlan {
       relativeSubPath: endpoint.relativeSubPath,
       destinationRoot: endpoint.destinationRoot,
       destinationFullPath: endpoint.destinationFullPath,
-      canonicalDestinationKey: normDstLoc,
+      canonicalDestinationKey: canonicalDestKey,
       estimatedFileCount: filesForItem,
       reason: `신규 복사 (${endpoint.destinationFullPath})`,
     });

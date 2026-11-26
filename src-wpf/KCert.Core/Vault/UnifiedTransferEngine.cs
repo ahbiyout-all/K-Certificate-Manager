@@ -32,6 +32,8 @@ namespace KCert.Core.Vault
         public string IssuerName { get; init; } = string.Empty;
         public string SerialNumber { get; init; } = string.Empty;
         public string DirectoryPath { get; init; } = string.Empty;
+        public string DerFilePath { get; init; } = string.Empty;
+        public string KeyFilePath { get; init; } = string.Empty;
         public string DriveLetter { get; init; } = string.Empty;
         public bool IsRemovableSource { get; init; }
         public DateTime NotAfter { get; init; }
@@ -40,6 +42,7 @@ namespace KCert.Core.Vault
     public record ExistingTargetCertSnapshot
     {
         public string DirectoryPath { get; init; } = string.Empty;
+        public string DerFilePath { get; init; } = string.Empty;
         public string DriveLetter { get; init; } = string.Empty;
         public string Category { get; init; } = string.Empty;
         public string CommonName { get; init; } = string.Empty;
@@ -225,6 +228,16 @@ namespace KCert.Core.Vault
             }
         }
 
+        private static bool IsSharedClassFolder(string? dirPath)
+        {
+            if (string.IsNullOrWhiteSpace(dirPath)) return false;
+            var norm = dirPath.Replace('/', '\\').TrimEnd('\\');
+            return Regex.IsMatch(
+                norm,
+                @"(?:^|\\)(?:GPKI|EPKI|MPKI)\\Certificate(?:\\class[123])?$",
+                RegexOptions.IgnoreCase);
+        }
+
         public static TransferPlan BuildPlan(
             IEnumerable<TransferSourceSpec> sources,
             TransferTargetEndpoint targetEndpoint,
@@ -271,6 +284,16 @@ namespace KCert.Core.Vault
                 string expectedDstDir = NormalizeFullDirectoryPath(Path.Combine(destRoot, relSubPath));
                 string currentSrcDir = NormalizeFullDirectoryPath(src.DirectoryPath);
 
+                string srcDerFileName = !string.IsNullOrWhiteSpace(src.DerFilePath)
+                    ? Path.GetFileName(src.DerFilePath.Trim())
+                    : string.Empty;
+                bool isSharedTargetDir = IsSharedClassFolder(expectedDstDir);
+                string normalizedDestKey = !string.IsNullOrWhiteSpace(srcDerFileName)
+                    ? expectedDstDir + "\\" + srcDerFileName
+                    : (isSharedTargetDir && !string.IsNullOrWhiteSpace(src.CommonName)
+                        ? expectedDstDir + "\\" + src.CommonName.Trim()
+                        : expectedDstDir);
+
                 // 1. Self-Copy Guard
                 if (!string.IsNullOrEmpty(currentSrcDir) &&
                     string.Equals(currentSrcDir, expectedDstDir, StringComparison.OrdinalIgnoreCase))
@@ -282,14 +305,14 @@ namespace KCert.Core.Vault
                         RelativeSubPath = relSubPath,
                         DestinationRoot = destRoot,
                         ExpectedDestinationDirectory = expectedDstDir,
-                        NormalizedDestinationKey = expectedDstDir,
+                        NormalizedDestinationKey = normalizedDestKey,
                         Reason = $"이미 대상 드라이브({cleanDrivePrefix})의 동일 폴더에 보관 중 (자가 복사 제외)"
                     });
                     continue;
                 }
 
-                // 2. Multi-disk Batch Deduplication Guard
-                if (seenDestDirs.Contains(expectedDstDir))
+                // 2. Multi-disk Batch Deduplication Guard (공유 GPKI/EPKI 폴더에서는 개별 인증서 파일 기준으로 중복 판별)
+                if (seenDestDirs.Contains(normalizedDestKey))
                 {
                     items.Add(new TransferPlanItem
                     {
@@ -298,8 +321,8 @@ namespace KCert.Core.Vault
                         RelativeSubPath = relSubPath,
                         DestinationRoot = destRoot,
                         ExpectedDestinationDirectory = expectedDstDir,
-                        NormalizedDestinationKey = expectedDstDir,
-                        Reason = $"동일 작업 내 중복 대상 경로({expectedDstDir}) 자동 병합 생략"
+                        NormalizedDestinationKey = normalizedDestKey,
+                        Reason = $"동일 작업 내 중복 대상 경로({normalizedDestKey}) 자동 병합 생략"
                     });
                     continue;
                 }
@@ -312,10 +335,24 @@ namespace KCert.Core.Vault
                     {
                         if (Directory.Exists(expectedDstDir))
                         {
-                            hasPhysicalConflict = Directory.GetFiles(expectedDstDir)
-                                .Any(f => f.EndsWith(".der", StringComparison.OrdinalIgnoreCase) ||
-                                          f.EndsWith(".cer", StringComparison.OrdinalIgnoreCase) ||
-                                          f.EndsWith(".key", StringComparison.OrdinalIgnoreCase));
+                            string? expectedTargetDerPath = !string.IsNullOrWhiteSpace(srcDerFileName)
+                                ? Path.Combine(expectedDstDir, srcDerFileName)
+                                : null;
+                            bool sharedDiskFolder = isSharedTargetDir ||
+                                                    CertTransferEngine.HasOtherSigningCertsInDirectory(expectedDstDir, expectedTargetDerPath);
+
+                            if (sharedDiskFolder && !string.IsNullOrWhiteSpace(srcDerFileName))
+                            {
+                                hasPhysicalConflict = Directory.GetFiles(expectedDstDir)
+                                    .Any(f => string.Equals(Path.GetFileName(f), srcDerFileName, StringComparison.OrdinalIgnoreCase));
+                            }
+                            else if (!sharedDiskFolder)
+                            {
+                                hasPhysicalConflict = Directory.GetFiles(expectedDstDir)
+                                    .Any(f => f.EndsWith(".der", StringComparison.OrdinalIgnoreCase) ||
+                                              f.EndsWith(".cer", StringComparison.OrdinalIgnoreCase) ||
+                                              f.EndsWith(".key", StringComparison.OrdinalIgnoreCase));
+                            }
                         }
                     }
                     catch
@@ -326,8 +363,15 @@ namespace KCert.Core.Vault
 
                 bool hasSnapshotConflict = existingList.Any(c =>
                 {
-                    if (string.Equals(NormalizeFullDirectoryPath(c.DirectoryPath), currentSrcDir, StringComparison.OrdinalIgnoreCase))
+                    if (!string.IsNullOrWhiteSpace(c.DerFilePath) && !string.IsNullOrWhiteSpace(src.DerFilePath))
+                    {
+                        if (string.Equals(NormalizeFullDirectoryPath(c.DerFilePath), NormalizeFullDirectoryPath(src.DerFilePath), StringComparison.OrdinalIgnoreCase))
+                            return false;
+                    }
+                    else if (string.Equals(NormalizeFullDirectoryPath(c.DirectoryPath), currentSrcDir, StringComparison.OrdinalIgnoreCase))
+                    {
                         return false;
+                    }
 
                     string cDrive = (c.DriveLetter ?? string.Empty).Trim().TrimEnd('\\', '/').ToUpperInvariant();
                     string cPath = (c.DirectoryPath ?? string.Empty).ToUpperInvariant();
@@ -336,7 +380,16 @@ namespace KCert.Core.Vault
                     if (!onTargetDrive) return false;
 
                     if (string.Equals(NormalizeFullDirectoryPath(c.DirectoryPath), expectedDstDir, StringComparison.OrdinalIgnoreCase))
-                        return true;
+                    {
+                        if (!isSharedTargetDir)
+                            return true;
+
+                        if (!string.IsNullOrWhiteSpace(srcDerFileName) && !string.IsNullOrWhiteSpace(c.DerFilePath) &&
+                            string.Equals(Path.GetFileName(c.DerFilePath), srcDerFileName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return true;
+                        }
+                    }
 
                     if (!string.IsNullOrWhiteSpace(src.SerialNumber) &&
                         string.Equals(c.SerialNumber, src.SerialNumber, StringComparison.OrdinalIgnoreCase) &&
@@ -349,7 +402,7 @@ namespace KCert.Core.Vault
                 });
 
                 bool isConflict = hasPhysicalConflict || hasSnapshotConflict;
-                seenDestDirs.Add(expectedDstDir);
+                seenDestDirs.Add(normalizedDestKey);
 
                 TransferPlanAction action;
                 string reason;
@@ -363,7 +416,7 @@ namespace KCert.Core.Vault
                             break;
                         case TransferConflictStrategy.RenameBackup:
                             action = TransferPlanAction.ArchiveAndCopy;
-                            reason = "기존 폴더를 _backup 으로 안전 보존한 뒤 새 인증서 복사";
+                            reason = "기존 인증서를 _backup 으로 안전 보존한 뒤 새 인증서 복사";
                             break;
                         default:
                             action = TransferPlanAction.Overwrite;
@@ -374,7 +427,7 @@ namespace KCert.Core.Vault
                 else
                 {
                     action = TransferPlanAction.CopyNew;
-                    reason = $"신규 복사 ({expectedDstDir})";
+                    reason = $"신규 복사 ({normalizedDestKey})";
                 }
 
                 items.Add(new TransferPlanItem
@@ -385,7 +438,7 @@ namespace KCert.Core.Vault
                     RelativeSubPath = relSubPath,
                     DestinationRoot = destRoot,
                     ExpectedDestinationDirectory = expectedDstDir,
-                    NormalizedDestinationKey = expectedDstDir,
+                    NormalizedDestinationKey = normalizedDestKey,
                     Reason = reason
                 });
             }
@@ -517,7 +570,7 @@ namespace KCert.Core.Vault
 
                 string archiveBackupPath = string.Empty;
 
-                // Archive existing directory before copy if strategy == ArchiveAndCopy
+                // Archive existing directory (or colliding cert files in shared GPKI/EPKI folders) before copy
                 if (item.Action == TransferPlanAction.ArchiveAndCopy &&
                     !string.IsNullOrWhiteSpace(item.ExpectedDestinationDirectory) &&
                     Directory.Exists(item.ExpectedDestinationDirectory))
@@ -531,7 +584,13 @@ namespace KCert.Core.Vault
                         {
                             backupDir = $"{baseBackupDir}_{suffix++}";
                         }
-                        Directory.Move(item.ExpectedDestinationDirectory, backupDir);
+                        string? collidingDerName = !string.IsNullOrWhiteSpace(item.Source.DerFilePath)
+                            ? Path.GetFileName(item.Source.DerFilePath)
+                            : null;
+                        CertTransferEngine.ArchiveTargetForCopy(
+                            item.ExpectedDestinationDirectory,
+                            collidingDerName,
+                            backupDir);
                         archiveBackupPath = backupDir;
                     }
                     catch (Exception ex)
@@ -574,7 +633,9 @@ namespace KCert.Core.Vault
                 var transfer = CertTransferEngine.Transfer(
                     item.Source.DirectoryPath,
                     effectiveDestRoot,
-                    item.RelativeSubPath);
+                    item.RelativeSubPath,
+                    item.Source.DerFilePath,
+                    item.Source.KeyFilePath);
 
                 string sizeDetails = transfer.CopiedFiles.Count > 0
                     ? string.Join(", ", transfer.CopiedFiles.Select(f => $"{f.FileName} ({f.FileSizeBytes:N0} bytes)"))

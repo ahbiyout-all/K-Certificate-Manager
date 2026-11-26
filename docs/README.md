@@ -7,7 +7,7 @@
 ## 📌 프로젝트 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v2.2.0` (Semantic Versioning: `2.2.0`)
+- **현재 버전**: `v2.3.0` (Semantic Versioning: `2.3.0`)
 - **개발자**: AhBiYout
 - **GitHub 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
 - **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
@@ -22,7 +22,7 @@
 | 파일명 | 설명 |
 | :--- | :--- |
 | [`VERSIONING_POLICY.md`](./VERSIONING_POLICY.md) | **버전 관리 표준 정책**: SemVer 2.0.0 (MAJOR.MINOR.PATCH) 3단계 분류, 의사결정 트리 및 동기화 체크리스트 |
-| [`PATCHNOTES.md`](./PATCHNOTES.md) | **버전 릴리스 패치노트**: v1.0.0부터 최신 **v2.2.0**까지의 상세 기능 변경, 보안 패치 및 감사 이력 |
+| [`PATCHNOTES.md`](./PATCHNOTES.md) | **버전 릴리스 패치노트**: v1.0.0부터 최신 **v2.3.0**까지의 상세 기능 변경, 보안 패치 및 감사 이력 |
 | [`GITHUB_DOCS.md`](./GITHUB_DOCS.md) | **GitHub 공식 기술/운영 레퍼런스**: v2.2.0 기능 명세, 빌드/린트 검증, Inno Setup 및 방화벽 자동 등록 통합 안내 |
 | [`BLOG_v2.2.0.md`](./BLOG_v2.2.0.md) | **공식 구글 블로그 배포 통합 문서 (최신)**: v2.2.0 블로그 게시용 전용 문서 (`[작성 모드]` & `[HTML 편집 모드]` 듀얼 제공) |
 | [`BLOGGER_POST_COMPOSE_MODE.md`](./BLOGGER_POST_COMPOSE_MODE.md) | **구글 블로그 전용 원고 [작성 모드 (서식 있는 텍스트)]**: Blogger 에디터에 그대로 복사·붙여넣기하는 최신 **v2.2.0** 서식 지원 마크다운 원고 |
@@ -48,7 +48,7 @@
 | [`KCERT_CRYPTO_DLL_SPECIFICATION.md`](./KCERT_CRYPTO_DLL_SPECIFICATION.md) | **KCert.Crypto.dll 순수 창작 암호화 & 전자서명 엔진 기술 명세서**: KISA SEED-128 (RFC 4269), KISA ARIA (RFC 5794), PKCS#8 signPri.key 복호화, VID 영지식 본인확인, RSA-SHA256 전자서명 시뮬레이션 동작 원리 및 기존 DLL 결함 교정 상세서 |
 | [`KCERT_CORE_DLL_DESIGN_SPECIFICATION.md`](./KCERT_CORE_DLL_DESIGN_SPECIFICATION.md) | **KCert.Core.dll 주요 설계 사양서**: 5대 핵심 영역(기능 명세, 동작 원리, 데이터 흐름, 에러 처리 전략, .NET 8 WPF 환경과의 연동 방식)을 총망라한 엔지니어링 종합 설계서 |
 | [`KCERT_CORE_DLL_SPEC.md`](./KCERT_CORE_DLL_SPEC.md) | **KCert.Core.dll 기술 명세서**: 순수 창작 코어 라이브러리 동작 원리, OID 역해석, 화이트리스트 안전 전송, WMI 가드 및 C#/C++/Rust/Python 타 언어 연동 명세 |
-| [`WORK_LOG.md`](./WORK_LOG.md) | **공식 작업 일지**: 개발 요구사항, 차수별 구현 내역(작업 차수 201 포함), 보안 감사 및 검증 이력 |
+| [`WORK_LOG.md`](./WORK_LOG.md) | **공식 작업 일지**: 개발 요구사항, 차수별 구현 내역(작업 차수 203 포함), 보안 감사 및 검증 이력 |
 
 ---
 
@@ -149,11 +149,11 @@
     - **3단계 비차단 시작 스캔 파이프라인**: 앱 시작 시 `0단계 Local Fast-Pass` ➔ `1단계 Drive Fast-Pass` ➔ `2단계 Deep-Pass` 분리 및 OS `DriveType` 기반 네트워크/가상/광학 드라이브 WMI I/O 차단·바운디드 드라이브 준비 검사(`IsDriveReadyBounded`)로 시작 직후 `응답없음` 현상을 원천 해소했습니다.
     - **전수 감사 결함 수정**: 개인 성명(`김지원`, `이정원` 등)의 `(기관용)` 오분류 교정, `CertIntegrityDoctor` 동적 키 파일명 및 `GPKI`/`EPKI` `cn=` 표준 경로 정밀화, `RenewalGuidanceDialog`·`renewalStore` 발급기관(Issuer) 우선 매칭으로 `NPKI` 인증서 오분류 차단, Web 비동기 클립보드·새로고침 시퀀스 가드·`targetDrive` 널 안전성 및 콜센터 번호 정합성을 완성했습니다.
     - **저눈부심 회색·베이지 테마, 전역 대비 & 3중 선택 복사 격리(작업 차수 194~195)**: 회색(*Misty Mineral Slate*) · 베이지(*Warm Oat Paper*) 저눈부심 배색, Tailwind v4 `@custom-variant dark`·WPF `DynamicResource` 브러시 및 6대 `DataGrid`·`WpfAnimatedBorderHelper` 휘도 적응형 카드·`DataTrigger` 전 창 대비 통일, `selectedIds ∩ visibleCertificates` 교집합 정밀 복사, WPF `UsbTransferViewModel` `IDisposable` 및 `CurrentTheme` 테두리 실시간 동기화를 적용했습니다.
-34. **다중 디스크 선택 복사 건수 정합화 · 선택 격리 & 7~8차 심층 전수 감사(작업 차수 196~199, `v2.2.0`)**
+34. **다중 디스크 선택 복사 건수 정합화 · 선택 격리 & 7~8차 심층 전수 감사(작업 차수 196~199, `v2.3.0`)**
     - **다중 디스크 선택 복사 건수 일치화**: 여러 물리 디스크에서 선택한 인증서를 복사할 때 자가 복사 및 동일 대상 경로 중복을 제외한 실제 복사 ID(`copiedCertIds`) 기준으로 완료 건수, 로그, 드라이브 보관 배지 수치를 Web/WPF 양쪽에서 1:1 정합화하고 새로고침 시 드라이브 배지 유실을 방지했습니다.
     - **선택 복사 엄격 격리 & 네이티브 드래그 헤더**: `resolveSelectedBackupCerts` 필터 결과(`selectedVisibleCertificates`)만 복사 대상에 전달해 상세 보기 단일 행 fallback을 원천 차단했고, `Header.tsx` 상단 드래그 이동(`app-region: drag/no-drag`) 및 `MainWindow.xaml.cs` `await` 예외 전파 보강을 완료했습니다.
-35. **PC↔USB 양방향 통합 단일 전송 엔진 전면 재작성(작업 차수 200, `v2.2.0`, Web & WPF 동시 적용)**
+35. **PC↔USB 양방향 통합 단일 전송 엔진 전면 신설 · 5회 심층 감사 & 공유 폴더 GPKI 격리(작업 차수 200~203, `v2.3.0`, Web & WPF 동시 적용)**
     - **2단계 사전 실행 계획(`TransferPlan`) ➔ 원자적 일괄 실행(`TransferExecutor`) 아키텍처**: `unifiedTransferEngine.ts`(Web) 및 `UnifiedTransferEngine.cs`(WPF)를 신설해 PC➔USB, USB➔PC, 디스크➔디스크, USB➔USB 모든 전송 방향을 단일 엔진으로 통합했습니다.
-    - **실행 계획 미리보기 & 100% 건수 정합성**: 자가 복사 차단(`SKIP_SELF_COPY`), 다중 디스크 동일 대상 경로 자동 병합(`SKIP_BATCH_DUPLICATE`), 중복 충돌 전략을 복사 전 미리보기로 산출·표시하고, 실행기는 확정된 `ExecutableItems`만 처리해 예측 건수와 실제 복사 건수가 항상 일치합니다.
+    - **공유 폴더 GPKI·EPKI 선별 격리 & 100% 건수 정합성**: `GPKI\Certificate\class1|class2` 등 공유 폴더에서 선택한 인증서·개인키·동반 `_env`/`_km` 파일만 선별 복사/아카이빙/하이라이트하도록 개선하고, 실행 계획 미리보기 건수와 실제 복사 결과를 100% 일치시켰습니다.
 
 

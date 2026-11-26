@@ -14,6 +14,36 @@
 
 ---
 
+## 🚀 최신 변경 내역 (Latest Release Notes)
+
+### 🚀 [v2.3.0] - 2026-11-26
+**변경 구분**: `MINOR` (PC↔USB 양방향 통합 단일 전송 엔진(Unified Bidirectional Transfer Engine) 전면 신설, 공유 폴더형 GPKI·EPKI 인증서 선택 파일 단위 격리 복사, 연결 디스크 자동 우선순위 정렬·다중 디스크 건수 정합화, 저눈부심 회색·베이지 테마 개편 및 4~8차·5회 반복 심층 전수 감사 반영)
+
+#### ✨ 주요 신규 기능 및 아키텍처 혁신 (Unified Transfer Engine & Core Features)
+- **PC↔USB 양방향 통합 단일 전송 엔진 전면 재작성 (`src/utils/unifiedTransferEngine.ts`, `src-wpf/KCert.Core/Vault/UnifiedTransferEngine.cs`)**:
+  - `PC_TO_USB`, `USB_TO_PC`, `DISK_TO_DISK`, `USB_TO_USB` 4가지 전송 방향을 단일 정규화 소스/타겟 모델(`UnifiedTransferSourceItem`/`TransferTargetSpec`, `TransferSourceSpec`/`TransferTargetEndpoint`)로 통합.
+  - **2단계 Plan ➔ Execute 파이프라인**: Phase 1 Dry-Run 계획기(`buildTransferPlan` / `UnifiedTransferPlanner.BuildPlan`)가 경로 순회 차단, 표준 목적지 계산, 자가 복사(`SKIP_SELF_COPY`), 다중 디스크 동일 대상 중복 병합(`SKIP_BATCH_DUPLICATE`), 기존 중복 충돌 전략(`COPY_NEW`, `OVERWRITE`, `ARCHIVE_AND_COPY`, `SKIP_DUPLICATE_CONFLICT`)을 불변 `TransferPlan`으로 먼저 확정하고 실시간 **"실행 계획 미리보기"** 요약 텍스트를 제공.
+  - Phase 2 일괄 실행기(`executeTransferPlan` / `UnifiedTransferExecutor.ExecutePlan`)가 확정된 실행 가능 항목(`executableItems`)만 원자적으로 처리해 사전 미리보기 건수와 실제 복사·히스토리·활동 로그 건수의 100% 일치를 보장.
+  - 기존 모달 및 뷰모델(`BackupModal.tsx`, `UsbToPcModal.tsx`, `backupService.ts`, `usbToPcService.ts`, `CertificateBackupService.cs`, `MainViewModel.cs`, `PcToUsbTransferViewModel.cs`, `UsbTransferViewModel.cs`, `TargetDrivePickerDialog.xaml(.cs)`)의 화면을 유지한 채 내부 엔진을 전면 교체하고 라디오 버튼 전환 시 물리 디스크 충돌 포함 계획 미리보기를 즉시 재계산하도록 연동.
+- **공유 폴더형 GPKI·EPKI 인증서 선택 파일 단위 격리 복사 (`CertTransferEngine.cs`, `UnifiedTransferEngine.cs`, `CertificateBackupService.cs`, `MainViewModel.cs`, `PcToUsbTransferViewModel.cs`, `UsbTransferViewModel.cs`, `unifiedTransferEngine.ts`, `backupService.ts`, `App.tsx`)**:
+  - **WPF 선별 파일 격리 전송**: 다수 사용자의 인증서가 `GPKI\Certificate\class1|class2` 단일 공유 폴더에 혼재하는 환경에서 1건만 선택 복사해도 폴더 전체가 복사되던 문제를 해결하기 위해 `CertTransferEngine.Transfer(..., specificDerFilePath, specificKeyFilePath)` 오버로드와 `HasOtherSigningCertsInDirectory`, `ResolveSourceFilesForCertificate`, `ArchiveTargetForCopy`, `BuildCompanionCertStems`, `BuildCompanionKeyStems`를 신설. 공유 폴더에서는 선택된 `.cer/.der`, 매칭된 `.key/.pri`, 동일 접두사(`_sig` ➔ `_env`/`_km`) 동반 암호화 키·인증서만 선별 복사·아카이빙하고 `specificDerFilePath` 우선 SHA-256 해시를 검증.
+  - **WPF/Web 식별자 및 충돌·상태 정합화**: WPF `TransferSourceSpec`/`ExistingTargetCertSnapshot`에 `DerFilePath`/`KeyFilePath`와 `IsSharedClassFolder` 판별을 추가하고 뷰모델 결과 매핑(`selectedByKey`) 및 강조 표시(`highlightDerPaths`)를 파일 단위 키로 전환. Web에서도 `buildCanonicalDestinationKey`, `findMatchingExistingCert`, `writeCertificatesToDirectoryHandle`(`seenTargetPaths` 및 선별 아카이빙), `App.tsx` `isSameStoredCertInFolder`에 비표준 `files.certName`·`serialNumber` 정밀 매칭을 적용해 동일 폴더 내 타 GPKI 인증서의 일괄 생략·허위 충돌·상태 덮어쓰기를 차단.
+- **연결 디스크 자동 우선순위 정렬 & 상단 헤더 네이티브 창 드래그 (`ConnectedDrivesBar.tsx`, `driveFilter.ts`, `Header.tsx`)**:
+  - `ConnectedDrivesBar` 및 드라이브 정렬 유틸리티가 장치 종류(USB·외장 SSD·로컬 디스크)와 드라이브 문자(`Drive Letter`) 기준으로 이동식 디스크 목록을 자동 우선순위 정렬하도록 개선.
+  - `Header.tsx` 상단 헤더에 `-webkit-app-region: drag;` 및 우측 스크롤/액션 영역 `-webkit-app-region: no-drag;`를 적용해 데스크톱 앱 환경과 동일한 창 드래그 이동 지원.
+
+#### 🛡️ 다중 디스크·엣지케이스·수명주기·UI/UX 심층 감사 및 안정화 (4~8차 & 5회 반복 감사)
+- **다중 디스크 선택 복사 건수 정합화 & 선택 복사 3중 격리 (`App.tsx`, `CertificateList.tsx`, `BackupModal.tsx`, `TargetDrivePickerModal.tsx`, `MainWindow.xaml.cs`, `MainViewModel.cs`)**:
+  - `resolveSelectedBackupCerts`가 항상 `selectedIds ∩ visibleCertificates` 교집합만 반환하고 `handleOpenGeneralBackupModal`에서 `0건` 선택 시 `inspectedCert` 대체 fallback을 제거해 `selectedVisibleCertificates`만 전달. WPF `FilteredCertificates.Where(x => x.IsSelected)` 및 행 클릭 비연동 격리 적용.
+  - 다중 디스크 분산 복사 시 `copiedCertIds` 기준 완료 건수·드라이브 보관 배지 수치를 1:1 정합화하고, 드라이브 새로고침 시 기존 배지 수치가 초기화되지 않도록 보존.
+- **통합 전송 엔진 5회 반복 감사 엣지케이스·비동기 수명주기 교정 (`unifiedTransferEngine.ts`, `backupService.ts`, `UsbToPcModal.tsx`, `CertificateBackupService.cs`, `CertificateDetailDialog.xaml.cs`, `TargetDrivePickerDialog.xaml.cs`, `PcToUsbTransferViewModel.cs`, `UsbTransferViewModel.cs`)**:
+  - Web `buildTransferPlan`에서 개별 `skip` 분기 이후에만 `seenDestinationKeys`를 등록하도록 교정해 후속 `overwrite`/`archive_old` 항목 오차단을 방지하고, `sourceLocation` 드라이브 문자 우선 판별·`customDuplicateDecisions` 보존·0건 건너뜀 시 완료 효과음/축하 모션 차단·direct folder `_backup_YYYYMMDD` 아카이빙을 보완.
+  - WPF `BackupCertificateToDrive`/`CopyCertificateToLocalPc`의 `WasSkipped` 성공 오보고 방지, `CertificateDetailDialog.BtnCopyCertificate_Click`·`MainWindow.OpenTargetDrivePickerForCertificatesAsync` 비동기 `await` 전환, `TargetDrivePickerDialog.IsDriveAllSelfCopy` 단일화, `PcToUsbTransferViewModel`/`UsbTransferViewModel` `try/catch/finally { IsBusy = false; }` 가드 및 부분 실패 시 상세 오류 표출 구현.
+- **저눈부심 회색·베이지 테마 개편 & 전 화면 명도 대비·UX 폴리시 (`src/index.css`, `App.tsx`, `Sidebar.tsx`, `CertificateList.tsx`, `WpfAnimatedBorderHelper.cs`, WPF 8종 다이얼로그·6대 `DataGrid`)**:
+  - 저자극 **회색(*Misty Mineral Slate*, `#CCD4DF`/`#DFE5EC`)** 및 저블루라이트 **베이지(*Warm Oat Paper*, `#E6DFD1`/`#F1ECE1`)** 테마와 Tailwind v4 `@custom-variant dark`를 적용하고, `WpfAnimatedBorderHelper` 휘도 적응형 카드·WPF `DynamicResource`/`DataTrigger`·Web CSS 변수 토큰화로 4대 테마 전 창 명도 대비를 통일. 검색 초기화(`X`) 버튼 및 `SafetyTrashManager` 안전 경로 검증·`CertificateDetailDialog` `using` 컴파일 오류 수정 완료.
+
+---
+
 ### 🚀 [v2.2.0] - 2026-11-21
 **변경 구분**: `MINOR` (2026 국내 인증서 정책·RSA 3072-bit 보안 강도 진단 및 4대 동향 가이드 통합(Web & WPF), WPF 앱 시작 무응답(응답없음) 해소 3단계 비블로킹 초기 스캔 엔진 탑재, 8대 영역 `v2.2.0` 버전 동기화)
 #### ✨ 주요 신규 기능 및 성능·안정화 (Features, Security Posture & Startup Engine)
@@ -25,68 +55,8 @@
   - `RSA-3072` / `ECDSA-256` 보안 강도 기준 평가, `RSA-2048` 이하 또는 취약 해시/만료 예정 인증서 식별 및 갱신 안내 배지·진단 리포트 제공 (`certParser.ts`, `SecurityPostureCard`, `KoreanCertPolicyOids.cs`, `CertificateItem.cs`).
 - **2026 국내 인증 동향 4대 핵심 주제 통합 (Web & WPF & 가이드 문서)**:
   - **1) RSA 3072-bit 상향 및 보안강도 진단**, **2) GPKI·EPKI 비액티브엑스(Non-ActiveX) 및 클라우드 전환 안내**, **3) 금융인증서·민간 간편인증 비교 및 갱신 가이드**, **4) 모바일 신분증(8종) 전자서명 및 2026 법령 동향**을 Web 모달(`SecurityGuideModal.tsx`, `DiagnosticsRepairModal.tsx`, `RenewalGuidanceModal.tsx`)과 WPF 다이얼로그(`SecurityGuideDialog.xaml`, `DiagnosticsRepairDialog.xaml`, `RenewalGuidanceDialog.xaml`)·툴바에 동시 반영.
-- **8대 영역 `v2.2.0` 공식 버전 동기화**:
-  - `package.json`, `src/version.ts`, `TrashModal.tsx`, WPF 3종 `.csproj`, `UpdateCheckerService.cs`, XAML/CS UI(`MainWindow`, `AboutDialog`, `UpdateNotificationDialog`), `installer.iss`, `build.ps1/.bat/.cmd`, `.github/workflows/build.yml`, `README.md` 및 `/docs` 문서 전체를 `v2.2.0`으로 동기화.
-
-#### 🛠️ 최신 안정화 · 4차 심층 전수 감사 반영 (2026-11-23)
-- **눈이 편안한 저눈부심 회색·베이지 테마 개편 & 전 화면 대비 교정 (Web & WPF)**:
-  - **회색 테마 (*Misty Mineral Slate*, `#CCD4DF` / `#DFE5EC`)** 및 **베이지 테마 (*Warm Oat Paper*, `#E6DFD1` / `#F1ECE1`)**로 눈부심과 블루라이트 피로를 줄이고 고가독성 잉크·에스프레소 텍스트 대비 확보 (`src/index.css`, `App.tsx`, `MainViewModel.ApplyTheme`).
-  - Web Tailwind CSS v4 `@custom-variant dark` 선언 추가로 OS 다크 모드에서 화이트/회색/베이지 테마 사용 시 `dark:` 클래스가 잘못 적용되던 현상 차단 및 `Sidebar.tsx`·`CertificateList.tsx` 하드코딩 색상 토큰화.
-  - WPF `App.xaml` `AccentAmberBrush` 신설 및 `MainWindow.xaml`, `ExpiredCleanupDialog`, `CertificateDetailDialog`, `RenewalGuidanceDialog`, `DiagnosticsRepairDialog`, `SecurityGuideDialog`, `AboutDialog`, `TrashDialog` 내 하드코딩 밝은/어두운 hex 색상을 `DynamicResource` 테마 브러시로 전환.
-- **인증서 보관함 선택 복사 · 필터 보기 · 단일 행 클릭 3중 격리 (Web & WPF)**:
-  - Web `resolveSelectedBackupCerts` 및 `CertificateList` 필터 전체선택이 항상 **체크된 ID(`selectedIds`) ∩ 현재 표시 목록(`visibleCertificates`)** 교집합만 반환·토글하도록 재구성해 숨은 필터 항목이나 단일 행 상세 클릭(`inspectedCert`)이 의도치 않게 섞여 복사되는 오류 차단.
-  - WPF `NextGuidedStep`, `ExecuteGuidedCopy`, `CertDataGrid_SelectionChanged`, `BackupAllAsync`, `BackupAll_Click`에서도 행 클릭만으로 체크박스(`IsSelected`)가 자동 변경되거나 필터 밖 `_allCertificates`로 fallback되던 동작을 제거하고 현재 `FilteredCertificates` 기준으로 일원화.
-- **시작 테마 복원 및 워크플로우·수명주기 교정 (Web & WPF)**:
-  - WPF `App.xaml.cs`, `MainWindow.xaml.cs` 시작 시 하드코딩 `"dark"` 대신 `SettingsService`에 저장된 사용자 테마 즉시 적용 및 `SettingsDialog.xaml.cs` 레거시 파스텔 별칭(`pastel-*`, `classic`) 매핑 보완.
-  - Web `SettingsModal.tsx` 기본 테마 정합화 및 `App.tsx` `handleSelectWorkflow('pc_to_usb')` 0건 안내 유지·USB 마운트 리스너 `handleRefreshRef` 최신 참조 호출 교정.
-
-#### 🛠️ 5차 심층 전수 감사 · 수명주기 및 라이트/회색/베이지 전 창 대비 완성 (2026-11-23)
-- **WPF 선택 카드 유동 테두리·사이드바·이벤트 수명주기 결함 수정 (`WpfAnimatedBorderHelper.cs`, `MainWindow.xaml.cs`, `UsbTransferViewModel.cs`, `UsbTransferDialog.xaml.cs`, `MainViewModel.cs`)**:
-  - `WpfAnimatedBorderHelper.ApplyBorderGlow`가 `BgCardBrush` 휘도를 판별해 회색/베이지/화이트 테마의 선택 드라이브 카드에 `SelectedRowBgBrush`(`#DBEAFE` 계열)와 부드러운 `0.28` 글로우를 적용함으로써 어두운 텍스트가 짙은 남색 배경에 묻히던 현상을 완전 해결.
-  - `MainWindow.xaml.cs`가 `CurrentTheme` 변경 시 `SidebarTargetDriveBorder`를 즉시 재렌더링하도록 보강하고, `UsbTransferViewModel`에 `IDisposable`·`DetachCertEvents()`를 구현해 `UsbTransferDialog` 종료 시 인증서 `PropertyChanged` 핸들러 누수를 차단.
-- **WPF 6대 `DataGrid` + 8종 다이얼로그·모델 전 창 테마 브러시 통일**:
-  - `PcToUsbTransferDialog`, `UsbTransferDialog`, `TrashDialog`, `SearchLocationsDialog`, `BackupHistoryDialog`, `ActivityLogDialog` DataGrid 선택 스타일을 `SelectedRowBgBrush`/`SelectedRowTextBrush` 기반으로 일원화.
-  - `OperationCompleteDialog`, `DuplicateConflictDialog`, `TargetDrivePickerDialog`, `CertificateDetailDialog`, `MainWindow`, `DiagnosticsRepairDialog`, `RenewalGuidanceDialog` 및 `CertificateItem`·`AppLogItem`·`RenewalInstitutionItem`의 파스텔 hex 텍스트를 `DynamicResource` 브러시 및 `DataTrigger`(`Posture`, `SummaryTone`, `SecurityPosture`)로 전환.
-- **Web 7대 컴포넌트 CSS 토큰 일원화 (`SimpleTransferHero`, `ConnectedDrivesBar`, `Header`, `Sidebar`, `CertificateList`, `CertificateDetailSidebar`, `DiagnosticsRepairModal`)**:
-  - 모든 하드코딩 파스텔 녹색/호박/적색/청색 hex 값을 `var(--wpf-accent-green)`, `var(--wpf-accent-text)`, `var(--wpf-badge-expiring-text)`, `var(--wpf-accent-rose)`, `var(--wpf-selected-row-secondary)`로 이관해 4대 테마 전 구간에서 명도 대비를 일관되게 보장.
-
-#### 🛠️ 6차 심층 전수 감사 · 경로 안전성 및 WPF 빌드 정합성 완성 (2026-11-23)
-- **WPF 핵심 코어 경로 검증 결함 수정 (`SafetyTrashManager.cs`)**:
-  - `IsSafeCertificateDirectoryPath`가 기존에 무조건 `NPKI`, `GPKI`, `EPKI`, `MPKI`, `CERT`, `인증서`, `공인인증` 하드코딩 토큰이 포함된 경로만 허용해 비표준 사용자 폴더(`C:\Users\Admin\Desktop\개인백업` 등)나 수동 복원 폴더에서 휴지통 `Restore()`와 `Undo`가 영구 실패하던 문제를 교정. 엄격한 OS 중요 시스템/드라이브 루트/프로필 루트/휴지통 볼륨 차단 리스트 검증 방식으로 전환해 안전한 사용자 백업 폴더 휴지통 격리 및 복원을 완벽 지원하도록 개선.
-- **WPF 상세 창 C# 컴파일 에러 수정 (`CertificateDetailDialog.xaml.cs`)**:
-  - `CryptoSecurityPosture` 열거형 참조 누락으로 발생한 CS0103 빌드 에러를 해결하기 위해 누락된 `using KCert.Core.Parser;` 네임스페이스 지시문을 추가하여 `dotnet build` 파이프라인 정합성 확보.
-
-#### 🛠️ UI 및 사용자 경험(UX) 고도화 · 인터페이스 폴리시 (2026-11-24)
-- **인증서 목록 및 검색 UX 고도화 (`CertificateList.tsx`, `src/index.css`)**:
-  - 상단 툴바와 검색 바 영역의 반응형 간격 및 포커스 링을 세련되게 다듬고, 키워드 검색 시 즉시 초기화(`X`) 버튼 및 필터 초기화 가시성 강화.
-  - 다크, 회색(*Misty Mineral Slate*), 베이지(*Warm Oat Paper*), 화이트 4대 테마 전반에서 카드 호버, 선택 행, 배지 텍스트의 명도 대비와 부드러운 전환 효과 보강.
-
-#### 🛠️ 상단 헤더 네이티브 창 드래그 기능 구현 및 7차 심층 감사 (2026-11-24)
-- **상단 헤더 네이티브 창 드래그 구현 (`Header.tsx`)**:
-  - 상단 헤더 컨테이너 `<header>`에 `-webkit-app-region: drag;` 및 `app-region: drag;`를 적용하여 데스크톱 웹 환경(Electron 등)에서 네이티브 창과 동일한 마우스 드래그 이동 편의성을 제공하고, 우측 액션 버튼 및 메뉴 컨테이너에는 `-webkit-app-region: no-drag;`를 적용하여 클릭 및 상호작용 장애를 원천 차단.
-- **선택 복사 정합성 최종 재확인 (`App.tsx`, `CertificateList.tsx`, `MainViewModel.cs`)**:
-  - `resolveSelectedBackupCerts`와 `visibleCertificates` 간 교집합 계산 및 WPF `FilteredCertificates.Where(x => x.IsSelected)` 일원화 상태 최종 감사 완료.
-
-#### 🛠️ 8차 심층 전수 감사 · 다중 디스크 선택 복사 건수 정합화 및 안정화 (2026-11-25)
-- **다중 디스크 선택 복사 건수 오차 및 대상 경로 중복 해소 (Web & WPF)**:
-  - 서로 다른 디스크(`C:`, `D:`, `USB`)에 분산된 인증서를 선택해 복사할 때 `backupService.ts`(`copyCertificatesToDisk`, `writeCertificatesToDirectoryHandle`)가 `copiedCertIds` 및 중복 제거된 대상 표준 경로 기준 실제 복사 건수를 반환하도록 일원화하고, `BackupModal.tsx` 중복 로그(`seenLogTargetPaths`)·실패 카운트(`actualCopyable.length`)·자가 복사(`isSameDriveSelfCopy`) 필터와 `App.tsx` `handleBackupSuccess` 드라이브별 반영 건수를 정확히 동기화.
-  - WPF `MainViewModel.cs`, `PcToUsbTransferViewModel.cs`, `UsbTransferViewModel.cs`, `TargetDrivePickerDialog.xaml.cs`에서 자가 복사·동일 대상 경로 중복 제외 기준 실제 복사 성공 건수·진행률·완료 안내와 `UpdateDriveCertificateCounts` 보관 배지 수치를 일치시키고, 드라이브 새로고침 시 기존 보관 건수 배지가 유지되도록 교정.
-- **선택 복사 엄격 격리 & 비동기 예외/상태 가드 (`App.tsx`, `TargetDrivePickerModal.tsx`, `MainWindow.xaml.cs`)**:
-  - `handleOpenGeneralBackupModal`에서 선택 항목이 `0건`일 때 상세 보기(`inspectedCert`)로 대체 복사되던 fallback을 제거해 `resolveSelectedBackupCerts`로 걸러진 `selectedVisibleCertificates`만 전달.
-  - `TargetDrivePickerModal.tsx` 자가 복사 항목의 중복 충돌 오표시 제거 및 `MainWindow.xaml.cs` `OpenTargetDrivePickerForCertificatesAsync` 비동기 `await` 보강.
-
-#### 🚀 PC↔USB 양방향 통합 단일 전송 엔진(Unified Bidirectional Transfer Engine) 전면 재작성 (2026-11-26)
-- **Web & WPF 단일 2단계(Plan ➔ Execute) 양방향 전송 아키텍처 구축 (`unifiedTransferEngine.ts`, `UnifiedTransferEngine.cs`)**:
-  - `PC_TO_USB`, `USB_TO_PC`, `DISK_TO_DISK`, `USB_TO_USB` 방향을 하나의 `TransferPlan` 파이프라인으로 통합해 경로 해석·자가 복사(`SKIP_SELF_COPY`)·다중 디스크 동일 대상 병합(`SKIP_BATCH_DUPLICATE`)·중복 충돌 전략(`overwrite`, `archive_old`/`rename`, `skip`)을 실행 전 불변 계획으로 사전 확정합니다.
-  - 기존 모달 및 다이얼로그(`BackupModal`, `UsbToPcModal`, `MainViewModel`, `PcToUsbTransferViewModel`, `UsbTransferViewModel`, `TargetDrivePickerDialog`)의 화면 구조는 유지한 채 내부 엔진만 전면 교체하고, 실행 전 **"실행 계획 미리보기"** 요약과 실제 복사 건수가 100% 일치하도록 일원화했습니다.
-
-#### 🛡️ 5회 반복 심층 자아성찰 · 통합 전송 엔진 엣지케이스 & 수명주기 교정 (2026-11-26)
-- **Web 계획·핸들 아카이빙·UI 피드백 정교화 (`unifiedTransferEngine.ts`, `backupService.ts`, `BackupModal.tsx`, `UsbToPcModal.tsx`, `App.tsx`)**:
-  - `buildTransferPlan`에서 개별 `skip` 항목이 후속 `overwrite`/`archive_old` 동일 목적지 항목을 차단하지 않도록 목적지 키 등록 순서를 교정하고, `sourceLocation` 드라이브 문자 우선 판별 및 `writeCertificatesToDirectoryHandle` `_backup_YYYYMMDD` 기존 파일 아카이빙을 보완했습니다.
-  - `BackupModal` 사용자별 중복 결정(`customDuplicateDecisions`) 보존, `UsbToPcModal` 0건 건너뜀 시 축하 모션 차단 및 `App.tsx` `resultCertificates` 직접 동기화를 반영했습니다.
-- **WPF 비동기 예외·부분 실패·`WasSkipped` 정합화 (`UnifiedTransferEngine.cs`, `CertificateBackupService.cs`, `CertificateDetailDialog.xaml.cs`, `TargetDrivePickerDialog.xaml.cs`, `PcToUsbTransferViewModel.cs`, `UsbTransferViewModel.cs`, `MainViewModel.cs`)**:
-  - 단일 복사 Wrapper(`BackupCertificateToDrive`, `CopyCertificateToLocalPc`)가 `WasSkipped`를 성공으로 오보고하지 않도록 교정하고, `CertificateDetailDialog` 비동기 `await` 적용 및 `TargetDrivePickerDialog` `IsDriveAllSelfCopy` 단일화를 적용했습니다.
-  - `PcToUsbTransferViewModel`과 `UsbTransferViewModel` 실행부에 `try/catch/finally { IsBusy = false; }` 안전 가드를 추가하고, 부분 실패 시 거짓 완료 창 대신 실패 상세 안내를 표출하도록 수정했습니다.
+- **8대 영역 `v2.2.0` 공식 버전 동기화 & 1~3차 심층 감사 반영**:
+  - `package.json`, `src/version.ts`, `TrashModal.tsx`, WPF 3종 `.csproj`, `UpdateCheckerService.cs`, XAML/CS UI(`MainWindow`, `AboutDialog`, `UpdateNotificationDialog`), `installer.iss`, `build.ps1/.bat/.cmd`, `.github/workflows/build.yml`, `README.md` 및 `/docs` 문서 전체를 `v2.2.0`으로 동기화하고 개인 성명 `(기관용)` 오탐·갱신 기관 오매칭·`Dispatcher` 안전성·고객센터 번호 정합화 완료.
 
 ---
 

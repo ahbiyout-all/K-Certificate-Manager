@@ -7,7 +7,7 @@
 ## 📌 프로젝트 기본 정보
 
 - **소프트웨어 명칭**: K-인증서 매니저 (K-Certificate Manager)
-- **현재 버전**: `v2.2.0` (Semantic Versioning 2.0.0 MINOR Release)
+- **현재 버전**: `v2.3.0` (Semantic Versioning 2.0.0 MINOR Release)
 - **개발자**: AhBiYout (GitHub: [AhBiYout-all](https://github.com/AhBiYout-all))
 - **구글 공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **공식 홈페이지**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr) ((주)청운정보시스템)
@@ -16,6 +16,40 @@
 ---
 
 ## 📅 작업 기록 상세 내역
+
+### 📝 [작업 차수 203] v2.3.0 MINOR 시맨틱 버전 승격 & 8대 영역 전역 동기화 · PATCHNOTES 최신 변경 내역 갱신
+- **작업 일시**: 2026-11-26 04:02 KST
+- **요청 사항**:
+  - `코드 변경 사항을 분석하여 docs/patchnotes.md 파일의 '최신 변경 내역' 섹션에 자동으로 상세 업데이트하고, 버전 번호를 시맨틱 버전에 맞춰 인상하세요.`
+- **시맨틱 버전 판정 근거 (`VERSIONING_POLICY.md`)**:
+  - `v2.2.0` 릴리스 이후 하위 호환성을 유지하면서 **PC↔USB 양방향 통합 단일 전송 엔진(Unified Bidirectional Transfer Engine)** 전면 신설, 실시간 실행 계획 미리보기, 공유 폴더형 GPKI·EPKI 선택 파일 단위 격리 복사, 연결 디스크 자동 우선순위 정렬, 저눈부심 회색·베이지 테마 개편 및 상단 헤더 창 드래그 등 핵심 엔진·기능 확장이 이루어졌으므로 SemVer 2.0.0 기준 **`MINOR` 버전(`v2.2.0` ➔ `v2.3.0`)**으로 승격.
+- **전역 동기화 내역 (8대 필수 영역)**:
+  1. Web 콘솔 (`package.json`, `src/version.ts`, `src/components/TrashModal.tsx`) `2.3.0` / 출시일 `2026-11-26` 갱신.
+  2. WPF 솔루션 3종 프로젝트(`KCertManager.Wpf.csproj`, `KCert.Core.csproj`, `KCert.Crypto.csproj`) `Version=2.3.0`, `AssemblyVersion/FileVersion=2.3.0.0` 및 `UpdateCheckerService.cs`, `AboutDialog.xaml(.cs)`, `UpdateNotificationDialog.xaml`, `MainWindow.xaml` `v2.3.0` 동기화.
+  3. 빌드·배포 스크립트(`installer.iss`, `build.ps1`, `build.bat`, `build.cmd`, `.github/workflows/build.yml`) 기본/대상 버전 `2.3.0` 갱신.
+  4. 공식 문서(`docs/PATCHNOTES.md` `최신 변경 내역` & `[v2.3.0]`, `README.md`, `docs/README.md`, `docs/WORK_LOG.md`) 최신화.
+
+### 📝 [작업 차수 202] v2.2.0 공유 폴더형 GPKI·EPKI 인증서 선택 복사 격리 수정 (WPF & Web)
+- **작업 일시**: 2026-11-26 03:45 KST
+- **요청 사항**:
+  - `npki 선택 복사는 성공. gpki 선택 복사는 전체 복사로 진행됨`
+- **원인 분석**:
+  - NPKI 인증서는 인증서마다 개별 `cn=...` 폴더에 저장되는 반면, 표준 GPKI·EPKI 인증서는 `GPKI\Certificate\class1|class2` 단일 공유 폴더에 다수 사용자의 인증서(`.cer/.der`, `.key`, `_env.cer`, `_env.key`)가 혼재함.
+  - 기존 WPF 전송 엔진(`CertTransferEngine.Transfer`)이 `DirectoryPath` 단위로 폴더 내 모든 파일을 일괄 복사하고, `UnifiedTransferEngine` 및 뷰모델(`MainViewModel`, `PcToUsbTransferViewModel`, `UsbTransferViewModel`)도 `DirectoryPath` 기준 중복 병합·충돌 판정·결과/하이라이트 매핑을 수행해 GPKI 1건만 선택해도 동일 폴더의 전체 GPKI 인증서가 함께 복사되거나 충돌/하이라이트가 뒤섞이는 문제가 발생함.
+- **수정 내역**:
+  1. **WPF 선택 파일 단위 격리 복사 (`src-wpf/KCert.Core/Vault/CertTransferEngine.cs`)**:
+     - `Transfer(..., string? specificDerFilePath, string? specificKeyFilePath = null)` 오버로드 및 `HasOtherSigningCertsInDirectory`, `ResolveSourceFilesForCertificate`, `ArchiveTargetForCopy`, `BuildCompanionCertStems`, `BuildCompanionKeyStems` 신설.
+     - 공유 폴더(`class1`/`class2` 등 다중 서명 인증서 공존 폴더)에서 복사 시 선택된 `.cer/.der`, 매칭된 개인키(`.key/.pri`), 동일 접두사(`_sig` ➔ `_env`/`_km`) 동반 암호화 키·인증서만 선별 복사하고, 아카이빙 시에도 충돌 인증서 파일만 격리 이동하도록 교정(`specificDerFilePath` 우선 SHA-256 해시 계산).
+  2. **WPF 통합 전송 엔진·서비스·뷰모델 식별자 세분화 (`UnifiedTransferEngine.cs`, `CertificateBackupService.cs`, `MainViewModel.cs`, `PcToUsbTransferViewModel.cs`, `UsbTransferViewModel.cs`)**:
+     - `TransferSourceSpec` 및 `ExistingTargetCertSnapshot`에 `DerFilePath`/`KeyFilePath` 필드를 추가하고 `IsSharedClassFolder` 판별을 도입해 동일 폴더 내 타 GPKI 인증서 간 일괄 중복 병합(`SkipBatchDuplicate`) 및 허위 충돌 오탐을 방지.
+     - `MainViewModel`, `PcToUsbTransferViewModel`, `UsbTransferViewModel`의 `selectedByKey` 및 복사 완료 하이라이트(`highlightDerPaths`)를 `DerFilePath` 우선 키로 전환해 선택한 GPKI 인증서 1건만 정확히 추적·강조.
+  3. **Web 공유 폴더 GPKI 정합화 (`src/utils/unifiedTransferEngine.ts`, `src/utils/backupService.ts`, `src/App.tsx`)**:
+     - `buildCanonicalDestinationKey` 및 `findMatchingExistingCert`가 비표준(`signCert.der` 외) 파일명과 공유 `class1/class2` 폴더를 인지해 동일 폴더 내 상이한 GPKI 인증서를 일괄 병합·허위 충돌 처리하지 않도록 보완(다중 디스크 동일 인증서 중복 병합은 유지).
+     - `writeCertificatesToDirectoryHandle`의 `seenTargetPaths`에 `files.certName` 키를 반영하고 아카이빙 시 충돌 파일만 선별 백업하며, `App.tsx` 상태 동기화(`handleBackupSuccess`, `handleImportFromUsbSuccess`)에서 동일 경로 내 타 GPKI 인증서 덮어쓰기 방지.
+- **문서 현행화 내역**:
+  - `docs/WORK_LOG.md`, `docs/PATCHNOTES.md`에 작업 차수 202 반영.
+- **검증 결과**:
+  - Web `compile_applet` + `lint_applet` 통과, `npx tsx` GPKI/NPKI 선택 복사·공유 폴더 격리 시나리오 검증 통과, `src-wpf` 수정 6개 C# 파일 구문·구분자·심볼 정합성 정적 감사 통과.
 
 ### 📝 [작업 차수 201] v2.2.0 5회 반복 자아성찰(Self-Reflection & Deep Audit) · 통합 전송 엔진 엣지케이스·수명주기·예외 전파 전면 교정 (Web & WPF)
 - **작업 일시**: 2026-11-26 03:15 KST
