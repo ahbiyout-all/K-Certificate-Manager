@@ -124,17 +124,17 @@ export function getDriveBadgeStyle(drive: DiskDrive | null | undefined): DriveBa
     };
   }
 
-  // 6. Secondary Internal Fixed Disk (D:, E: HDD/SSD) (Indigo)
+  // 6. Secondary Internal Fixed Disk (D: HDD/SSD) (Violet Purple)
   return {
-    letterBadgeClass: 'bg-indigo-700 text-white font-extrabold text-sm px-2.5 py-1 rounded-lg font-mono shadow-xs border border-indigo-800',
-    typeBadgeClass: 'bg-indigo-100 text-indigo-950 border border-indigo-300 font-extrabold text-[11px] px-2 py-0.5 rounded-md shadow-2xs',
-    cardSelectedClass: 'border-indigo-600 bg-indigo-50/90 text-indigo-950 ring-2 ring-indigo-500/40 shadow-md',
-    cardNormalClass: 'border-indigo-200 bg-indigo-50/30 hover:bg-indigo-50/70 hover:border-indigo-400',
+    letterBadgeClass: 'bg-violet-700 text-white font-extrabold text-sm px-2.5 py-1 rounded-lg font-mono shadow-xs border border-violet-800',
+    typeBadgeClass: 'bg-violet-100 text-violet-950 border border-violet-300 font-extrabold text-[11px] px-2 py-0.5 rounded-md shadow-2xs',
+    cardSelectedClass: 'border-violet-600 bg-violet-50/90 text-violet-950 ring-2 ring-violet-500/40 shadow-md',
+    cardNormalClass: 'border-violet-200 bg-violet-50/30 hover:bg-violet-50/70 hover:border-violet-400',
     typeLabel: '💽 내장 보조 디스크',
     driveCategory: 'secondary_fixed',
-    textColorClass: 'text-indigo-950 font-extrabold',
-    subtextColorClass: 'text-indigo-900 font-semibold',
-    iconBgClass: 'bg-indigo-600 text-white shadow-2xs',
+    textColorClass: 'text-violet-950 font-extrabold',
+    subtextColorClass: 'text-violet-900 font-semibold',
+    iconBgClass: 'bg-violet-600 text-white shadow-2xs',
     iconColorClass: 'text-white',
   };
 }
@@ -164,9 +164,9 @@ export function getInlineDriveBadge(letter: string): { bgClass: string; textClas
   }
   if (driveChar === 'D') {
     return {
-      bgClass: 'bg-indigo-700',
+      bgClass: 'bg-violet-700',
       textClass: 'text-white font-extrabold',
-      fullBadgeClass: 'bg-indigo-700 text-white font-extrabold text-xs px-2 py-0.5 rounded font-mono shadow-2xs inline-flex items-center gap-1',
+      fullBadgeClass: 'bg-violet-700 text-white font-extrabold text-xs px-2 py-0.5 rounded font-mono shadow-2xs inline-flex items-center gap-1',
     };
   }
   // USB drives E:, F:, G:, H: etc.
