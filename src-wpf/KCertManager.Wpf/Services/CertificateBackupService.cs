@@ -116,10 +116,11 @@ namespace KCertManager.Wpf.Services
                     throw new ArgumentException("대상 드라이브가 지정되지 않았습니다.", nameof(targetDriveLetter));
                 }
 
+                bool isTargetRemovable = KCert.Core.Discovery.CertLocationScanner.IsRemovableDrive(targetDriveLetter);
                 var plan = BuildUnifiedTransferPlan(
                     new[] { cert },
                     targetDriveLetter,
-                    isTargetRemovable: false,
+                    isTargetRemovable: isTargetRemovable,
                     conflictOption: "overwrite",
                     checkPhysicalDiskForDuplicates: false);
 

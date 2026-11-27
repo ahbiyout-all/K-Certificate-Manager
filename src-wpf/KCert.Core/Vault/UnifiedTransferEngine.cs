@@ -70,6 +70,7 @@ namespace KCert.Core.Vault
         public string RelativeSubPath { get; init; } = string.Empty;
         public string DestinationRoot { get; init; } = string.Empty;
         public string ExpectedDestinationDirectory { get; init; } = string.Empty;
+        public string CollidingTargetDerFilePath { get; init; } = string.Empty;
         public string NormalizedDestinationKey { get; init; } = string.Empty;
         public string Reason { get; init; } = string.Empty;
     }
@@ -152,12 +153,16 @@ namespace KCert.Core.Vault
             }
 
             string trimmed = targetDriveLetter.Trim();
+            if (trimmed.Length == 1 && char.IsLetter(trimmed[0]))
+            {
+                return char.ToUpperInvariant(trimmed[0]) + ":\\";
+            }
             if (trimmed.Length >= 2 && char.IsLetter(trimmed[0]) && trimmed[1] == ':')
             {
                 return char.ToUpperInvariant(trimmed[0]) + ":\\";
             }
 
-            var match = Regex.Match(trimmed, @"\b([A-Za-z]):");
+            var match = Regex.Match(trimmed, @"(?:^|[^A-Za-z])([A-Za-z]):");
             if (match.Success)
             {
                 return match.Groups[1].Value.ToUpperInvariant() + ":\\";
@@ -275,7 +280,11 @@ namespace KCert.Core.Vault
                     continue;
                 }
 
-                string relSubPath = CertTransferEngine.ResolveRelativePath(src.DirectoryPath);
+                string relSubPath = CertTransferEngine.ResolveRelativePath(
+                    src.DirectoryPath,
+                    src.Category,
+                    src.CommonName,
+                    src.DerFilePath);
                 string destRoot = ResolveDestinationRoot(
                     cleanDriveRoot,
                     src.Category,
@@ -329,6 +338,7 @@ namespace KCert.Core.Vault
 
                 // 3. Conflict Detection (Physical disk files + loaded certificate snapshots)
                 bool hasPhysicalConflict = false;
+                string collidingTargetDerFilePath = string.Empty;
                 if (checkPhysicalDiskForDuplicates && !string.IsNullOrEmpty(expectedDstDir))
                 {
                     try
@@ -343,15 +353,26 @@ namespace KCert.Core.Vault
 
                             if (sharedDiskFolder && !string.IsNullOrWhiteSpace(srcDerFileName))
                             {
-                                hasPhysicalConflict = Directory.GetFiles(expectedDstDir)
-                                    .Any(f => string.Equals(Path.GetFileName(f), srcDerFileName, StringComparison.OrdinalIgnoreCase));
+                                var physicalHit = Directory.GetFiles(expectedDstDir)
+                                    .FirstOrDefault(f => string.Equals(Path.GetFileName(f), srcDerFileName, StringComparison.OrdinalIgnoreCase));
+                                if (!string.IsNullOrEmpty(physicalHit))
+                                {
+                                    hasPhysicalConflict = true;
+                                    collidingTargetDerFilePath = physicalHit;
+                                }
                             }
                             else if (!sharedDiskFolder)
                             {
-                                hasPhysicalConflict = Directory.GetFiles(expectedDstDir)
-                                    .Any(f => f.EndsWith(".der", StringComparison.OrdinalIgnoreCase) ||
-                                              f.EndsWith(".cer", StringComparison.OrdinalIgnoreCase) ||
-                                              f.EndsWith(".key", StringComparison.OrdinalIgnoreCase));
+                                var physicalHit = Directory.GetFiles(expectedDstDir)
+                                    .FirstOrDefault(f => f.EndsWith(".der", StringComparison.OrdinalIgnoreCase) ||
+                                                         f.EndsWith(".cer", StringComparison.OrdinalIgnoreCase) ||
+                                                         f.EndsWith(".crt", StringComparison.OrdinalIgnoreCase) ||
+                                                         f.EndsWith(".key", StringComparison.OrdinalIgnoreCase));
+                                if (!string.IsNullOrEmpty(physicalHit))
+                                {
+                                    hasPhysicalConflict = true;
+                                    collidingTargetDerFilePath = physicalHit;
+                                }
                             }
                         }
                     }
@@ -361,7 +382,7 @@ namespace KCert.Core.Vault
                     }
                 }
 
-                bool hasSnapshotConflict = existingList.Any(c =>
+                var matchedSnapshot = existingList.FirstOrDefault(c =>
                 {
                     if (!string.IsNullOrWhiteSpace(c.DerFilePath) && !string.IsNullOrWhiteSpace(src.DerFilePath))
                     {
@@ -379,13 +400,17 @@ namespace KCert.Core.Vault
                                          cPath.StartsWith(cleanDrivePrefix.ToUpperInvariant() + "\\");
                     if (!onTargetDrive) return false;
 
+                    string cDerFileName = !string.IsNullOrWhiteSpace(c.DerFilePath)
+                        ? Path.GetFileName(c.DerFilePath.Trim())
+                        : string.Empty;
+
                     if (string.Equals(NormalizeFullDirectoryPath(c.DirectoryPath), expectedDstDir, StringComparison.OrdinalIgnoreCase))
                     {
                         if (!isSharedTargetDir)
                             return true;
 
-                        if (!string.IsNullOrWhiteSpace(srcDerFileName) && !string.IsNullOrWhiteSpace(c.DerFilePath) &&
-                            string.Equals(Path.GetFileName(c.DerFilePath), srcDerFileName, StringComparison.OrdinalIgnoreCase))
+                        if (!string.IsNullOrWhiteSpace(srcDerFileName) && !string.IsNullOrWhiteSpace(cDerFileName) &&
+                            string.Equals(cDerFileName, srcDerFileName, StringComparison.OrdinalIgnoreCase))
                         {
                             return true;
                         }
@@ -396,11 +421,37 @@ namespace KCert.Core.Vault
                         string.Equals(c.IssuerName, src.IssuerName, StringComparison.OrdinalIgnoreCase))
                         return true;
 
+                    bool hasDistinctSerials = !string.IsNullOrWhiteSpace(src.SerialNumber) &&
+                                              !string.IsNullOrWhiteSpace(c.SerialNumber) &&
+                                              !string.Equals(c.SerialNumber.Trim(), src.SerialNumber.Trim(), StringComparison.OrdinalIgnoreCase);
+                    if (hasDistinctSerials)
+                    {
+                        return false;
+                    }
+
+                    bool hasDistinctNonGenericFile =
+                        isSharedTargetDir &&
+                        !string.IsNullOrWhiteSpace(srcDerFileName) &&
+                        !string.IsNullOrWhiteSpace(cDerFileName) &&
+                        !string.Equals(srcDerFileName, "signCert.der", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(cDerFileName, "signCert.der", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(srcDerFileName, cDerFileName, StringComparison.OrdinalIgnoreCase);
+                    if (hasDistinctNonGenericFile)
+                    {
+                        return false;
+                    }
+
                     return string.Equals(c.Category, src.Category, StringComparison.OrdinalIgnoreCase) &&
                            string.Equals(c.CommonName, src.CommonName, StringComparison.OrdinalIgnoreCase) &&
                            string.Equals(c.IssuerName, src.IssuerName, StringComparison.OrdinalIgnoreCase);
                 });
 
+                if (string.IsNullOrEmpty(collidingTargetDerFilePath) && matchedSnapshot != null && !string.IsNullOrWhiteSpace(matchedSnapshot.DerFilePath))
+                {
+                    collidingTargetDerFilePath = matchedSnapshot.DerFilePath;
+                }
+
+                bool hasSnapshotConflict = matchedSnapshot != null;
                 bool isConflict = hasPhysicalConflict || hasSnapshotConflict;
                 seenDestDirs.Add(normalizedDestKey);
 
@@ -438,6 +489,7 @@ namespace KCert.Core.Vault
                     RelativeSubPath = relSubPath,
                     DestinationRoot = destRoot,
                     ExpectedDestinationDirectory = expectedDstDir,
+                    CollidingTargetDerFilePath = collidingTargetDerFilePath,
                     NormalizedDestinationKey = normalizedDestKey,
                     Reason = reason
                 });
@@ -584,9 +636,11 @@ namespace KCert.Core.Vault
                         {
                             backupDir = $"{baseBackupDir}_{suffix++}";
                         }
-                        string? collidingDerName = !string.IsNullOrWhiteSpace(item.Source.DerFilePath)
-                            ? Path.GetFileName(item.Source.DerFilePath)
-                            : null;
+                        string? collidingDerName = !string.IsNullOrWhiteSpace(item.CollidingTargetDerFilePath)
+                            ? Path.GetFileName(item.CollidingTargetDerFilePath)
+                            : (!string.IsNullOrWhiteSpace(item.Source.DerFilePath)
+                                ? Path.GetFileName(item.Source.DerFilePath)
+                                : null);
                         CertTransferEngine.ArchiveTargetForCopy(
                             item.ExpectedDestinationDirectory,
                             collidingDerName,
@@ -610,10 +664,14 @@ namespace KCert.Core.Vault
                     }
                 }
 
-                // Ensure GPKI target folder exists on system drive if needed, otherwise fallback cleanly
+                // Ensure GPKI target folder exists & is writable on system drive, otherwise fallback cleanly to LocalLow
                 string effectiveDestRoot = item.DestinationRoot;
-                if (string.Equals(item.Source.Category, "GPKI", StringComparison.OrdinalIgnoreCase) &&
-                    !string.IsNullOrWhiteSpace(effectiveDestRoot))
+                bool isGpkiCategory = string.Equals(item.Source.Category, "GPKI", StringComparison.OrdinalIgnoreCase) ||
+                                      string.Equals(item.Source.Category, "GPKI_GOV", StringComparison.OrdinalIgnoreCase);
+                string sysRoot = UnifiedTransferPlanner.NormalizeDriveRoot(Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\");
+                if (isGpkiCategory &&
+                    !string.IsNullOrWhiteSpace(effectiveDestRoot) &&
+                    string.Equals(UnifiedTransferPlanner.NormalizeDriveRoot(effectiveDestRoot), sysRoot, StringComparison.OrdinalIgnoreCase))
                 {
                     try
                     {
@@ -622,6 +680,10 @@ namespace KCert.Core.Vault
                             : "class2";
                         var gpkiDir = Path.Combine(effectiveDestRoot, "GPKI", "Certificate", gpkiClass);
                         if (!Directory.Exists(gpkiDir)) Directory.CreateDirectory(gpkiDir);
+
+                        string probePath = Path.Combine(gpkiDir, $".kcert_probe_{Guid.NewGuid():N}.tmp");
+                        using (File.Create(probePath)) { }
+                        File.Delete(probePath);
                     }
                     catch
                     {
@@ -636,6 +698,28 @@ namespace KCert.Core.Vault
                     item.RelativeSubPath,
                     item.Source.DerFilePath,
                     item.Source.KeyFilePath);
+
+                if (!transfer.IsSuccess &&
+                    isGpkiCategory &&
+                    (transfer.Message.Contains("권한", StringComparison.OrdinalIgnoreCase) ||
+                     transfer.Message.Contains("denied", StringComparison.OrdinalIgnoreCase)))
+                {
+                    var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                    string fallbackRoot = Path.Combine(userProfile, "AppData", "LocalLow");
+                    if (!string.Equals(effectiveDestRoot, fallbackRoot, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var fallbackTransfer = CertTransferEngine.Transfer(
+                            item.Source.DirectoryPath,
+                            fallbackRoot,
+                            item.RelativeSubPath,
+                            item.Source.DerFilePath,
+                            item.Source.KeyFilePath);
+                        if (fallbackTransfer.IsSuccess)
+                        {
+                            transfer = fallbackTransfer;
+                        }
+                    }
+                }
 
                 string sizeDetails = transfer.CopiedFiles.Count > 0
                     ? string.Join(", ", transfer.CopiedFiles.Select(f => $"{f.FileName} ({f.FileSizeBytes:N0} bytes)"))

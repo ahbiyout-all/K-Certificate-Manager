@@ -17,6 +17,28 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 204] v2.3.0 복사엔진 자아성찰(Self-Reflection & Deep Audit) · 양방향 전송 엔진·공유 폴더·동반 파일·모달 동기화 결함 전면 교정 (Web & WPF)
+- **작업 일시**: 2026-11-27 01:12 KST
+- **요청 사항**:
+  - `복사엔진 자아성찰(Self-Reflection & Deep Audit) 과 오류 수정`
+- **심층 감사 및 결함 수정 내역**:
+  1. **WPF 핵심 전송 엔진·아카이빙·경로 해석 보강 (`CertTransferEngine.cs`, `UnifiedTransferEngine.cs`)**:
+     - `CertTransferEngine.ArchiveTargetForCopy`가 공유 `GPKI/EPKI/MPKI\Certificate\class1|2|3` 폴더나 하위 폴더(`Root`/`CA`/`cn=...`)가 있는 디렉터리에 대해 `Directory.Move`를 실행해 공유 폴더 전체가 이동되던 잠재 결함을 차단하고, 충돌 파일만 안전하게 격리 백업하도록 수정.
+     - `UnifiedTransferEngine`에 `CollidingTargetDerFilePath` 추적을 신설해 소스 파일명이 기존 대상 파일명과 달라도 실제 충돌 대상 DER/동반 파일을 정확히 백업 아카이빙하도록 교정.
+     - `CertTransferEngine.ResolveRelativePath(fullPath, category, commonName, derFilePath)` 오버로드를 신설해 비표준 백업 폴더의 GPKI/EPKI 인증서가 `NPKI\yessign\User`로 오배치되지 않고 `GPKI|EPKI\Certificate\class1|2`로 정확히 배치되도록 개선.
+     - 상이한 비어 있지 않은 일련번호(`SerialNumber`)를 가진 동명이인 인증서가 허위 스냅샷 충돌로 판별되던 조건을 차단하고, `C:\GPKI` 쓰기 권한 거부 시 실제 파일 쓰기 프로브 및 `UnauthorizedAccessException` 폴백(`LocalLow`)을 강화.
+  2. **WPF 서비스·USB 가져오기 뷰모델 보강 (`CertificateBackupService.cs`, `UsbTransferViewModel.cs`)**:
+     - `BackupCertificateToDrive`의 `isTargetRemovable: false` 하드코딩을 `CertLocationScanner.IsRemovableDrive(targetDriveLetter)` 동적 판별로 교정.
+     - `UsbTransferViewModel`에 `ConflictOption`, `checkPhysicalDiskForDuplicates: true`, `DuplicateConflictDialog` 연동을 추가해 USB ➔ PC 복사에서도 물리 디스크 중복 검사 및 덮어쓰기/보관/건너뛰기 선택이 일관되게 작동하도록 개선.
+  3. **Web 통합 전송 엔진·동반 파일 매칭·직접 쓰기·모달 동기화 보강 (`certParser.ts`, `usbToPcService.ts`, `unifiedTransferEngine.ts`, `backupService.ts`, `BackupModal.tsx`, `UsbToPcModal.tsx`)**:
+     - `findCompanionEnvPairInFolder` 헬퍼를 신설해 `scanDirectoryHandle`, `groupUploadedCertFiles`, `scanDirectoryHandleForCertificates`가 공유 폴더에서도 인증서 스템(`_sig` ➔ `_env`/`_km`)별로 동반 암호화 키·인증서를 정밀 매칭하고 실제 `certSize`/`keySize`를 보존하도록 수정.
+     - `unifiedTransferEngine.ts`에서 상이한 일련번호 동명이인 허위 충돌을 방지하고, `legacyArchivedIds` 단독 보존 요청, `dirHandle` 기반 `USB_DETECTED` 직접 기록 및 매니페스트 파일 건수 계산 정확도를 보완.
+     - `backupService.ts` `BackupOptions.existingCertificates` 전달 및 `writeCertificatesToDirectoryHandle`에서 사용자가 `NPKI`/`GPKI` 폴더 자체를 선택한 경우 중복 중첩(`NPKI\NPKI`)이 생기지 않도록 루트 세그먼트를 정규화하고 공유 `class1`/`class2` 아카이빙을 격리.
+     - `BackupModal.tsx` 자동 재시도 루프에서 `showDirectoryPicker` 핸들을 재사용해 중복 팝업을 방지하고 최신 `writeCheck` 결과로 잠금 오류 안내를 일원화하며, `UsbToPcModal.tsx` 테이블 중복 배지를 `transferPlan` 기준(`conflictCertIdSet`)으로 통일.
+- **검증 결과**:
+  - `npx tsx` Web 복사엔진 감사 테스트 스위트(동반 키 격리, 동명이인 일련번호 구분, `archive_old`/`skip`, `dirHandle` 중첩 방지, 10회 반복 다중 디스크/혼합 방향 스트레스) 100% 통과.
+  - `src-wpf` 70개 `.cs` / 20개 `.xaml` 정적 구문·XML·심볼 감사 통과.
+
 ### 📝 [작업 차수 203] v2.3.0 MINOR 시맨틱 버전 승격 & 8대 영역 전역 동기화 · PATCHNOTES 최신 변경 내역 갱신
 - **작업 일시**: 2026-11-26 04:02 KST
 - **요청 사항**:

@@ -31,6 +31,7 @@ namespace KCertManager.Wpf.ViewModels
         private CertificateItem? _selectedCertificate;
         private string _targetUsername = Environment.UserName;
         private string _targetCategory = "NPKI";
+        private string _conflictOption = "overwrite";
         private bool _isBusy;
         private bool _hasUsbDrives;
         private int _scanGeneration;
@@ -146,6 +147,18 @@ namespace KCertManager.Wpf.ViewModels
         {
             get => _targetCategory;
             set => SetProperty(ref _targetCategory, value);
+        }
+
+        public string ConflictOption
+        {
+            get => _conflictOption;
+            set
+            {
+                if (SetProperty(ref _conflictOption, value))
+                {
+                    UpdateSelectionStatus();
+                }
+            }
         }
 
         public bool IsBusy
@@ -444,9 +457,9 @@ namespace KCertManager.Wpf.ViewModels
                     selected,
                     targetDrive,
                     isTargetRemovable: false,
-                    conflictOption: "overwrite",
+                    conflictOption: ConflictOption,
                     targetUsername: effectiveUsername,
-                    checkPhysicalDiskForDuplicates: false);
+                    checkPhysicalDiskForDuplicates: true);
 
                 if (checkedCount == 1)
                 {
@@ -478,16 +491,16 @@ namespace KCertManager.Wpf.ViewModels
                 : targetDrive.TrimEnd(':', '\\', '/')).ToUpperInvariant() + ":";
             string effectiveUsername = string.IsNullOrWhiteSpace(TargetUsername) ? Environment.UserName : TargetUsername;
 
-            var plan = _backupService.BuildUnifiedTransferPlan(
+            var initialPlan = _backupService.BuildUnifiedTransferPlan(
                 selected,
                 selectedDriveShort,
                 isTargetRemovable: false,
-                conflictOption: "overwrite",
+                conflictOption: ConflictOption,
                 targetUsername: effectiveUsername,
-                checkPhysicalDiskForDuplicates: false);
+                checkPhysicalDiskForDuplicates: true);
 
             // 0. 자가 복사(동일 위치 복사) 사전 전체 검증
-            if (plan.Summary.IsAllSelfCopy)
+            if (initialPlan.Summary.IsAllSelfCopy)
             {
                 try { System.Media.SystemSounds.Hand.Play(); } catch { }
                 MessageBox.Show(
@@ -497,6 +510,63 @@ namespace KCertManager.Wpf.ViewModels
                     MessageBoxImage.Warning);
                 return;
             }
+
+            string actualConflictOption = ConflictOption;
+            if (initialPlan.ConflictItems.Any())
+            {
+                var duplicateConflicts = initialPlan.ConflictItems.Select(item =>
+                {
+                    var certObj = selected.FirstOrDefault(c =>
+                        (!string.IsNullOrWhiteSpace(item.Source.DerFilePath) &&
+                         string.Equals(c.DerFilePath, item.Source.DerFilePath, StringComparison.OrdinalIgnoreCase)) ||
+                        (string.Equals(c.DirectoryPath, item.Source.DirectoryPath, StringComparison.OrdinalIgnoreCase) &&
+                         string.Equals(c.CommonName, item.Source.CommonName, StringComparison.OrdinalIgnoreCase)));
+
+                    return new DuplicateConflictEntry
+                    {
+                        SourceCert = certObj ?? new CertificateItem
+                        {
+                            CommonName = item.Source.CommonName,
+                            DirectoryPath = item.Source.DirectoryPath,
+                            DerFilePath = item.Source.DerFilePath,
+                            KeyFilePath = item.Source.KeyFilePath
+                        },
+                        TargetDirectoryPath = item.ExpectedDestinationDirectory,
+                        TargetDriveLetter = selectedDriveShort
+                    };
+                }).ToList();
+
+                var targetDriveModel = SelectedTargetDrive ?? new DriveItem
+                {
+                    Name = selectedDriveShort + "\\",
+                    VolumeLabel = "내 컴퓨터",
+                    IsRemovable = false
+                };
+
+                var dupDialog = new DuplicateConflictDialog(duplicateConflicts, targetDriveModel);
+                if (Application.Current?.MainWindow != null && Application.Current.MainWindow.IsVisible)
+                {
+                    dupDialog.Owner = Application.Current.MainWindow;
+                }
+
+                if (dupDialog.ShowDialog() != true)
+                {
+                    StatusMessage = $"[가져오기 취소] 대상 PC({selectedDriveShort}) 중복 방지 확인에서 사용자가 작업을 취소했습니다.";
+                    return;
+                }
+
+                actualConflictOption = dupDialog.SelectedAction;
+            }
+
+            var plan = string.Equals(actualConflictOption, ConflictOption, StringComparison.OrdinalIgnoreCase)
+                ? initialPlan
+                : _backupService.BuildUnifiedTransferPlan(
+                    selected,
+                    selectedDriveShort,
+                    isTargetRemovable: false,
+                    conflictOption: actualConflictOption,
+                    targetUsername: effectiveUsername,
+                    checkPhysicalDiskForDuplicates: true);
 
             IsBusy = true;
             StatusMessage = $"PC 보관함({selectedDriveShort}) 사전 계획 실행 중 ({plan.Summary.PreviewSummaryText})...";

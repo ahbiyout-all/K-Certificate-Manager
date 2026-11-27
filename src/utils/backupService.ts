@@ -5,6 +5,7 @@ import {
   executeTransferPlan,
   getUnifiedRelativeSubPath,
 } from './unifiedTransferEngine';
+import { ENGINE_IO_BUFFER_BYTES, recordEngineStreamMetric } from './engineDebug';
 
 /**
  * 인메모리 더미 DER/KEY 바이너리 생성 (실제 파일 데이터가 없는 경우 표준 포맷 시뮬레이션)
@@ -35,6 +36,7 @@ export interface BackupOptions {
   duplicateHandlingMode?: 'overwrite' | 'skip' | 'archive_old';
   skippedCertIds?: string[];
   archivedCertIds?: string[];
+  existingCertificates?: CertificateItem[];
 }
 
 export interface DuplicateConflictItem {
@@ -287,7 +289,7 @@ export async function copyCertificatesToDisk(
   const plan = buildTransferPlan({
     sources: certificates,
     targetDrive,
-    existingCertificates: [],
+    existingCertificates: options.existingCertificates || [],
     conflictStrategy: options.duplicateHandlingMode || 'overwrite',
     includeManifest: options.includeManifest,
     skippedCertIds: options.skippedCertIds,
@@ -304,6 +306,7 @@ export async function copyCertificatesToDisk(
     checksum: execResult.checksum || 'SECURE_OK',
     copiedCertIds: execResult.copiedCertIds,
     skippedCount: execResult.skippedCount,
+    resultCertificates: execResult.resultCertificates,
   };
 }
 
@@ -335,13 +338,21 @@ export async function writeCertificatesToDirectoryHandle(
 
     const dateTag = new Date().toISOString().slice(0, 10).replace(/-/g, '');
 
+    const selectedHandleName = (dirHandle?.name || '').trim().toLowerCase();
+
     for (const cert of activeCerts) {
       const fullPath = getStandardDirectoryPath(cert);
-      const pathSegments = fullPath.split('/');
-      
+      const rawSegments = fullPath.split('/').filter(Boolean);
+      const pathSegments =
+        selectedHandleName &&
+        rawSegments.length > 1 &&
+        rawSegments[0].toLowerCase() === selectedHandleName
+          ? rawSegments.slice(1)
+          : rawSegments;
+
       let parentDir = dirHandle;
       let currentDir = dirHandle;
-      let lastSafeSegment = 'CertUser';
+      let lastSafeSegment = sanitizePathSegment(dirHandle?.name || 'CertUser');
       for (let i = 0; i < pathSegments.length; i++) {
         const safeSegment = sanitizePathSegment(pathSegments[i]);
         parentDir = currentDir;
@@ -349,7 +360,11 @@ export async function writeCertificatesToDirectoryHandle(
         currentDir = await currentDir.getDirectoryHandle(safeSegment, { create: true });
       }
 
-      // Preserve existing cert files into sibling _backup_YYYYMMDD folder when requested
+      const isSharedClassDir =
+        /^(?:class[123]|certificate)$/i.test(lastSafeSegment) ||
+        /(?:^|\/)(?:GPKI|EPKI|MPKI)\/Certificate(?:\/class[123])?$/i.test(fullPath);
+
+      // Preserve existing cert files into _backup_YYYYMMDD folder when requested
       if ((options?.archiveOldFolder || archivedIds.has(cert.id)) && typeof currentDir.values === 'function') {
         const certNameLower = (cert.files?.certName || '').trim().toLowerCase();
         const isGenericName = !certNameLower || certNameLower === 'signcert.der' || certNameLower === 'signcert.cer';
@@ -363,7 +378,7 @@ export async function writeCertificatesToDirectoryHandle(
         try {
           for await (const entry of currentDir.values()) {
             if (entry?.kind === 'file') {
-              if (isGenericName || collidingFileNames.has((entry.name || '').toLowerCase())) {
+              if ((isGenericName && !isSharedClassDir) || collidingFileNames.has((entry.name || '').toLowerCase())) {
                 existingFiles.push(entry);
               }
             }
@@ -371,60 +386,89 @@ export async function writeCertificatesToDirectoryHandle(
         } catch {
           // Ignore if directory iteration is unavailable
         }
-        if (existingFiles.length > 0 && typeof parentDir.getDirectoryHandle === 'function') {
-          const backupFolderName = sanitizePathSegment(`${lastSafeSegment}_backup_${dateTag}`);
-          const backupDir = await parentDir.getDirectoryHandle(backupFolderName, { create: true });
-          for (const fileEntry of existingFiles) {
-            try {
-              const fh = typeof fileEntry.getFile === 'function'
-                ? fileEntry
-                : await currentDir.getFileHandle(fileEntry.name);
-              const f = await fh.getFile();
-              const buf = await f.arrayBuffer();
-              const dstFile = await backupDir.getFileHandle(sanitizePathSegment(fileEntry.name), { create: true });
-              const w = await dstFile.createWritable();
-              await w.write(new Uint8Array(buf));
-              await w.close();
-            } catch {
-              // Best-effort archive copy
+        if (existingFiles.length > 0) {
+          const backupContainerParent = isSharedClassDir ? currentDir : parentDir;
+          const backupFolderBase = isSharedClassDir
+            ? `_backup_${sanitizePathSegment(cert.name || 'cert')}_${dateTag}`
+            : `${lastSafeSegment}_backup_${dateTag}`;
+          if (typeof backupContainerParent?.getDirectoryHandle === 'function') {
+            const backupDir = await backupContainerParent.getDirectoryHandle(
+              sanitizePathSegment(backupFolderBase),
+              { create: true }
+            );
+            for (const fileEntry of existingFiles) {
+              try {
+                const fh = typeof fileEntry.getFile === 'function'
+                  ? fileEntry
+                  : await currentDir.getFileHandle(fileEntry.name);
+                const f = await fh.getFile();
+                const buf = await f.arrayBuffer();
+                const dstFile = await backupDir.getFileHandle(sanitizePathSegment(fileEntry.name), { create: true });
+                const w = await dstFile.createWritable();
+                await w.write(new Uint8Array(buf));
+                await w.close();
+              } catch {
+                // Best-effort archive copy
+              }
             }
           }
         }
       }
 
+      const shaPrefix = (cert.files?.sha256 || '').slice(0, 12) || undefined;
+      const writeMeasuredFile = async (fileName: string, payload: Uint8Array) => {
+        const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        const fileHandle = await currentDir.getFileHandle(fileName, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(payload);
+        await writable.close();
+        const t1 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        recordEngineStreamMetric({
+          fileName,
+          certName: cert.name,
+          byteLength: payload.byteLength,
+          bufferAllocatedBytes: Math.min(
+            ENGINE_IO_BUFFER_BYTES,
+            Math.max(payload.byteLength, 4096)
+          ),
+          elapsedMs: Math.max(0.01, t1 - t0),
+          mode: 'FS_WRITABLE',
+          status: 'DONE',
+          sha256Prefix: shaPrefix,
+        });
+      };
+
       // cert file
       const safeCertFileName = sanitizePathSegment(cert.files.certName || 'signCert.der');
-      const certFileHandle = await currentDir.getFileHandle(safeCertFileName, { create: true });
-      const writableCert = await certFileHandle.createWritable();
-      await writableCert.write(createSyntheticCertData(cert));
-      await writableCert.close();
+      await writeMeasuredFile(safeCertFileName, createSyntheticCertData(cert));
       count++;
 
       // key file
       if (cert.files.hasKey) {
         const safeKeyFileName = sanitizePathSegment(cert.files.keyName || 'signPri.key');
-        const keyFileHandle = await currentDir.getFileHandle(safeKeyFileName, { create: true });
-        const writableKey = await keyFileHandle.createWritable();
-        await writableKey.write(createSyntheticKeyData(cert));
-        await writableKey.close();
+        await writeMeasuredFile(safeKeyFileName, createSyntheticKeyData(cert));
         count++;
       }
 
       // companion encryption cert/key pair (GPKI/EPKI kmCert/kmPri or _env)
       if (cert.files.kmCertName) {
         const safeKmCertName = sanitizePathSegment(cert.files.kmCertName);
-        const kmCertHandle = await currentDir.getFileHandle(safeKmCertName, { create: true });
-        const writableKmCert = await kmCertHandle.createWritable();
-        await writableKmCert.write(createSyntheticCertData(cert));
-        await writableKmCert.close();
+        const encoder = new TextEncoder();
+        const kmPayload =
+          cert.files.certData instanceof Uint8Array
+            ? cert.files.certData
+            : encoder.encode(`--- KM/ENV ENCRYPTION CERT (${cert.category}) ---\nSubject: ${cert.subjectDn}\nSerial: ${cert.serialNumber}\n`);
+        await writeMeasuredFile(safeKmCertName, kmPayload);
         count++;
       }
       if (cert.files.kmKeyName) {
         const safeKmKeyName = sanitizePathSegment(cert.files.kmKeyName);
-        const kmKeyHandle = await currentDir.getFileHandle(safeKmKeyName, { create: true });
-        const writableKmKey = await kmKeyHandle.createWritable();
-        await writableKmKey.write(createSyntheticKeyData(cert));
-        await writableKmKey.close();
+        const encoder = new TextEncoder();
+        const kmKeyPayload =
+          cert.files.keyData instanceof Uint8Array
+            ? cert.files.keyData
+            : encoder.encode(`--- KM/ENV ENCRYPTION KEY (${cert.category}) ---\nSubject: ${cert.subjectDn}\n`);
+        await writeMeasuredFile(safeKmKeyName, kmKeyPayload);
         count++;
       }
     }

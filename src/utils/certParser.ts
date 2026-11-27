@@ -845,6 +845,96 @@ export function findMatchingKeyInFolder<T extends { name: string }>(
 }
 
 /**
+ * 동일 폴더 내 다중 인증서 혼재(class1/class2) 환경에서도 주 서명 인증서 스템에 정확히 대응하는
+ * 동반 암호화(env/km) 인증서 및 암호화 개인키 쌍을 선별합니다.
+ */
+export function findCompanionEnvPairInFolder<T extends { name: string }>(
+  certFileName: string,
+  rawCertFiles: T[],
+  keyFiles: T[],
+  siblingSignCertCount: number
+): { kmCert?: T; kmKey?: T } {
+  const lower = certFileName.toLowerCase();
+  const baseStem = lower.replace(/\.(der|cer|crt)$/i, '');
+
+  const envCertStems = new Set<string>();
+  if (baseStem.endsWith('_sig') && baseStem.length > 4) {
+    const prefix = baseStem.slice(0, -4);
+    envCertStems.add(`${prefix}_env`);
+    envCertStems.add(`${prefix}_km`);
+    envCertStems.add(`${prefix}_envcert`);
+    envCertStems.add(`${prefix}_kmcert`);
+    envCertStems.add(`${prefix}_enc`);
+  } else if (baseStem.endsWith('_sign') && baseStem.length > 5) {
+    const prefix = baseStem.slice(0, -5);
+    envCertStems.add(`${prefix}_env`);
+    envCertStems.add(`${prefix}_km`);
+    envCertStems.add(`${prefix}_envcert`);
+    envCertStems.add(`${prefix}_kmcert`);
+    envCertStems.add(`${prefix}_enc`);
+  } else if (baseStem.startsWith('sig_') && baseStem.length > 4) {
+    const suffix = baseStem.slice(4);
+    envCertStems.add(`env_${suffix}`);
+    envCertStems.add(`km_${suffix}`);
+  } else if (baseStem.startsWith('sign_') && baseStem.length > 5) {
+    const suffix = baseStem.slice(5);
+    envCertStems.add(`env_${suffix}`);
+    envCertStems.add(`km_${suffix}`);
+  } else {
+    envCertStems.add(`${baseStem}_env`);
+    envCertStems.add(`${baseStem}_km`);
+    envCertStems.add(`${baseStem}_envcert`);
+    envCertStems.add(`${baseStem}_kmcert`);
+    envCertStems.add(`${baseStem}_enc`);
+  }
+
+  let kmCert = rawCertFiles.find(c => {
+    const stem = c.name.toLowerCase().replace(/\.(der|cer|crt)$/i, '');
+    return envCertStems.has(stem);
+  });
+
+  const envKeyStems = new Set<string>();
+  for (const cs of envCertStems) {
+    envKeyStems.add(cs);
+    envKeyStems.add(`${cs}_pri`);
+    envKeyStems.add(`${cs}_key`);
+    envKeyStems.add(`${cs}pri`);
+    envKeyStems.add(`${cs}key`);
+  }
+  if (baseStem.endsWith('_sig') && baseStem.length > 4) {
+    const prefix = baseStem.slice(0, -4);
+    envKeyStems.add(`${prefix}_kmpri`);
+    envKeyStems.add(`${prefix}_envpri`);
+  } else if (baseStem.endsWith('_sign') && baseStem.length > 5) {
+    const prefix = baseStem.slice(0, -5);
+    envKeyStems.add(`${prefix}_kmpri`);
+    envKeyStems.add(`${prefix}_envpri`);
+  }
+
+  let kmKey = keyFiles.find(k => {
+    const stem = k.name.toLowerCase().replace(/\.(key|pri)$/i, '');
+    return envKeyStems.has(stem);
+  });
+
+  if (siblingSignCertCount <= 1) {
+    if (!kmCert) {
+      kmCert = rawCertFiles.find(c => {
+        const l = c.name.toLowerCase();
+        return l === 'kmcert.der' || l === 'kmcert.cer';
+      });
+    }
+    if (!kmKey) {
+      kmKey = keyFiles.find(k => {
+        const l = k.name.toLowerCase();
+        return l === 'kmpri.key' || l === 'kmpri.pri';
+      });
+    }
+  }
+
+  return { kmCert, kmKey };
+}
+
+/**
  * FileSystemDirectoryHandle (Web File System Access API)로부터 인증서 계층 재귀 탐색
  * - NPKI/GPKI/EPKI 계층 구조 및 숨김 폴더(.NPKI, .certs, .backup 등) 지원
  * - GPKI/EPKI class1 폴더는 항상 탐색하되 개인키(.key) 쌍이 확인된 기관 인증서만 선별 등록
@@ -876,8 +966,6 @@ export async function scanDirectoryHandle(
   });
 
   const certFileHandles = filterSignCertNamesInFolder(rawCertHandles);
-  const kmCertHandle = fileEntries.find(e => e.name.toLowerCase() === 'kmcert.der');
-  const kmKeyHandle = fileEntries.find(e => e.name.toLowerCase() === 'kmpri.key');
 
   const normalizedDirPath = (currentPath || dirHandle.name || 'Root').replace(/\//g, '\\');
   const isClass1 = /(?:^|[\\/])class1(?:$|[\\/])/i.test(normalizedDirPath);
@@ -916,6 +1004,13 @@ export async function scanDirectoryHandle(
           }
         }
 
+        const { kmCert: matchedKmCertHandle, kmKey: matchedKmKeyHandle } = findCompanionEnvPairInFolder(
+          certFileHandle.name,
+          rawCertHandles,
+          keyHandles,
+          siblingSignCount
+        );
+
         const validity = extractDerValidityDates(bytes);
         const cryptoInfo = extractX509CryptoInfo(bytes);
         const isInstitutional = Boolean(parsed.isInstitutional) || (isClass1 && !parsed.isSystemCa && hasKey);
@@ -947,8 +1042,8 @@ export async function scanDirectoryHandle(
           files: {
             certName: certFileHandle.name,
             keyName: keyFileHandle ? keyFileHandle.name : 'signPri.key (없음)',
-            kmCertName: kmCertHandle?.name,
-            kmKeyName: kmKeyHandle?.name,
+            kmCertName: matchedKmCertHandle?.name,
+            kmKeyName: matchedKmKeyHandle?.name,
             hasKey,
             certSize: file.size,
             keySize,
@@ -984,7 +1079,7 @@ export async function scanDirectoryHandle(
  */
 export async function groupUploadedCertFiles(fileList: FileList): Promise<CertificateItem[]> {
   const certs: CertificateItem[] = [];
-  const dirMap = new Map<string, { certFiles: File[]; keyFiles: File[]; kmCertFile?: File; kmKeyFile?: File }>();
+  const dirMap = new Map<string, { rawCertFiles: File[]; certFiles: File[]; keyFiles: File[] }>();
 
   for (let i = 0; i < fileList.length; i++) {
     const file = fileList[i];
@@ -994,20 +1089,16 @@ export async function groupUploadedCertFiles(fileList: FileList): Promise<Certif
     const dirPath = parts.join('/') || 'Root';
 
     if (!dirMap.has(dirPath)) {
-      dirMap.set(dirPath, { certFiles: [], keyFiles: [] });
+      dirMap.set(dirPath, { rawCertFiles: [], certFiles: [], keyFiles: [] });
     }
     const current = dirMap.get(dirPath)!;
 
     const lower = fileName.toLowerCase();
     if (isCandidateCertFileName(fileName)) {
+      current.rawCertFiles.push(file);
       current.certFiles.push(file);
     } else if (lower.endsWith('.key') || lower.endsWith('.pri')) {
       current.keyFiles.push(file);
-    }
-    if (lower === 'kmcert.der') {
-      current.kmCertFile = file;
-    } else if (lower === 'kmpri.key') {
-      current.kmKeyFile = file;
     }
   }
 
@@ -1045,6 +1136,13 @@ export async function groupUploadedCertFiles(fileList: FileList): Promise<Certif
           keyData = new Uint8Array(await matchedKeyFile.arrayBuffer());
         }
 
+        const { kmCert: matchedKmCertFile, kmKey: matchedKmKeyFile } = findCompanionEnvPairInFolder(
+          certFile.name,
+          group.rawCertFiles,
+          group.keyFiles,
+          siblingSignCount
+        );
+
         const validity = extractDerValidityDates(certBytes);
         const cryptoInfo = extractX509CryptoInfo(certBytes);
         const isInstitutional = Boolean(parsed.isInstitutional) || (isClass1 && !parsed.isSystemCa && hasKey);
@@ -1076,8 +1174,8 @@ export async function groupUploadedCertFiles(fileList: FileList): Promise<Certif
           files: {
             certName: certFile.name,
             keyName: matchedKeyFile ? matchedKeyFile.name : 'signPri.key (없음)',
-            kmCertName: group.kmCertFile?.name,
-            kmKeyName: group.kmKeyFile?.name,
+            kmCertName: matchedKmCertFile?.name,
+            kmKeyName: matchedKmKeyFile?.name,
             hasKey,
             certSize: certFile.size,
             keySize,

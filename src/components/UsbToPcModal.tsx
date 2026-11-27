@@ -41,7 +41,6 @@ import { playCompletionSound, playErrorSound } from '../utils/audioFeedback';
 import { SuccessCelebration } from './SuccessCelebration';
 import { getDriveBadgeStyle } from '../utils/driveBadgeUtils';
 import { CopyErrorAlertModal, CopyErrorContext } from './CopyErrorAlertModal';
-import { isPcCertificate } from '../utils/driveFilter';
 import { extractDriveLetterChar } from '../utils/driveColors';
 import { extractDriveLetterFromPathOrLabel } from '../utils/certDiagnostics';
 
@@ -294,6 +293,20 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
     }
   }, [isOpen, initialDriveLetter]);
 
+  const prevAvailableDrivesRef = useRef(availableDrives);
+  useEffect(() => {
+    if (prevAvailableDrivesRef.current === availableDrives) return;
+    prevAvailableDrivesRef.current = availableDrives;
+    if (!isOpen || sourceTab !== 'drives') return;
+    const refreshed = getAvailableUsbCertificates(availableDrives, selectedUsbDrive);
+    setDetectedCerts(refreshed);
+    setSelectedCertIds(prev => {
+      if (prev.length === 0) return [];
+      const validIds = new Set(refreshed.map(c => c.id));
+      return prev.filter(id => validIds.has(id));
+    });
+  }, [isOpen, sourceTab, availableDrives, selectedUsbDrive]);
+
   const handleSelectDrive = (driveKey: string) => {
     setSelectedUsbDrive(driveKey);
     selectedUsbDriveRef.current = driveKey;
@@ -510,6 +523,26 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
       selfCopyByExactPathOnly: true,
     });
   }, [isOpen, selectedCerts, cleanTargetPcDrive, selectedTargetDriveObj, targetUsername, existingCertificates, duplicateStrategy]);
+
+  const conflictCertIdSet = useMemo(() => {
+    if (!isOpen || detectedCerts.length === 0) return new Set<string>();
+    const fullPreview = buildTransferPlan({
+      sources: detectedCerts,
+      targetDrive: {
+        driveLetter: cleanTargetPcDrive,
+        driveName: selectedTargetDriveObj?.name || `${cleanTargetPcDrive} (로컬 디스크)`,
+        isRemovable: false,
+        isSystemDrive: cleanTargetPcDrive === 'C:',
+        targetUsername,
+      },
+      existingCertificates,
+      conflictStrategy: duplicateStrategy,
+      targetUsername,
+      restrictConflictScanToPcOnly: true,
+      selfCopyByExactPathOnly: true,
+    });
+    return new Set(fullPreview.conflictItems.map(item => item.source.id));
+  }, [isOpen, detectedCerts, cleanTargetPcDrive, selectedTargetDriveObj, targetUsername, existingCertificates, duplicateStrategy]);
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
@@ -1078,15 +1111,7 @@ export const UsbToPcModal: React.FC<UsbToPcModalProps> = ({
                       <tbody className="divide-y divide-slate-200 text-slate-800">
                         {detectedCerts.map((cert, index) => {
                           const isSelected = selectedCertIds.includes(cert.id);
-                          const isAlreadyInPc = existingCertificates.some(c => {
-                            if (!isPcCertificate(c)) return false;
-                            const resolvedDrive =
-                              extractDriveLetterFromPathOrLabel(c.sourceLocation || '') ||
-                              extractDriveLetterFromPathOrLabel(c.sourceDrive || '');
-                            const onTargetDrive = resolvedDrive === cleanTargetPcDrive;
-                            if (!onTargetDrive) return false;
-                            return c.serialNumber === cert.serialNumber || (c.name === cert.name && c.category === cert.category);
-                          });
+                          const isAlreadyInPc = conflictCertIdSet.has(cert.id);
 
                           return (
                             <tr

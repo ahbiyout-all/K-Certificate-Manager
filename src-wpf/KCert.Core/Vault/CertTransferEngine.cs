@@ -317,21 +317,47 @@ namespace KCert.Core.Vault
             return false;
         }
 
+        private static bool IsSharedClassDirectory(string? dir)
+        {
+            if (string.IsNullOrWhiteSpace(dir)) return false;
+            var norm = dir.Replace('/', '\\').TrimEnd('\\');
+            return Regex.IsMatch(
+                norm,
+                @"(?:^|\\)(?:GPKI|EPKI|MPKI)\\Certificate(?:\\class[123])?$",
+                RegexOptions.IgnoreCase);
+        }
+
+        private static bool HasSubdirectories(string dir)
+        {
+            try
+            {
+                return Directory.Exists(dir) && Directory.EnumerateDirectories(dir).Any();
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         /// <summary>
-        /// ArchiveAndCopy 정책 실행 시 공유 폴더(class1/class2)라면 타 인증서를 건드리지 않고
-        /// 충돌하는 인증서의 파일만 백업 폴더로 이동하며, 단독 인증서 폴더는 전체 디렉터리를 이동합니다.
+        /// ArchiveAndCopy 정책 실행 시 공유 폴더(class1/class2) 또는 하위 폴더가 있는 디렉터리라면
+        /// 전체 디렉터리를 이동하지 않고 충돌하는 인증서의 파일만 백업 폴더로 이동하며,
+        /// 단독 인증서 폴더는 전체 디렉터리를 안전하게 이동합니다.
         /// </summary>
         public static void ArchiveTargetForCopy(string targetDir, string? specificDerFileName, string backupDir)
         {
             if (string.IsNullOrWhiteSpace(targetDir) || !Directory.Exists(targetDir)) return;
 
+            bool isSharedOrParent = IsSharedClassDirectory(targetDir) || HasSubdirectories(targetDir);
             string? candidateTargetDer = !string.IsNullOrWhiteSpace(specificDerFileName)
                 ? Path.Combine(targetDir, specificDerFileName)
                 : null;
 
-            if (!string.IsNullOrEmpty(candidateTargetDer) &&
-                HasOtherSigningCertsInDirectory(targetDir, candidateTargetDer))
+            if (isSharedOrParent ||
+                (!string.IsNullOrEmpty(candidateTargetDer) && HasOtherSigningCertsInDirectory(targetDir, candidateTargetDer)))
             {
+                if (string.IsNullOrEmpty(candidateTargetDer)) return;
+
                 var filesToArchive = ResolveSourceFilesForCertificate(targetDir, candidateTargetDer, null);
                 if (filesToArchive.Length == 0) return;
 
@@ -592,6 +618,14 @@ namespace KCert.Core.Vault
         /// </summary>
         public static string ResolveRelativePath(string? fullPath)
         {
+            return ResolveRelativePath(fullPath, null, null, null);
+        }
+
+        /// <summary>
+        /// 원본 경로와 인증서 카테고리/이름 메타데이터를 결합해 비표준 폴더에서도 정확한 NPKI/GPKI/EPKI 표준 상대 경로를 도출합니다.
+        /// </summary>
+        public static string ResolveRelativePath(string? fullPath, string? category, string? commonName = null, string? derFilePath = null)
+        {
             if (string.IsNullOrEmpty(fullPath)) return string.Empty;
 
             string normalized = fullPath.Replace('/', '\\');
@@ -617,17 +651,42 @@ namespace KCert.Core.Vault
                 }
             }
 
-            // 3. 마커가 없는 경우 (예: 임의 백업 폴더) 체계 감지 후 표준 경로 배치
+            // 3. 마커가 없는 경우 (예: 임의 백업/바탕화면 폴더) 경로 단서 + 인증서 카테고리 기반 표준 경로 배치
             var folderName = Path.GetFileName(fullPath.TrimEnd('\\', '/'));
-            var upper = fullPath.ToUpperInvariant();
-            string classTier = Regex.IsMatch(upper, @"(?:^|[\\/])CLASS1(?:$|[\\/])") ? "class1" : "class2";
-            if (Regex.IsMatch(upper, @"(?:^|[\\/])GPKI(?:$|[\\/])"))
+            if (string.IsNullOrWhiteSpace(folderName) && !string.IsNullOrWhiteSpace(commonName))
             {
-                return Path.Combine("GPKI", "Certificate", classTier, folderName);
+                folderName = "cn=" + commonName.Trim();
             }
-            if (Regex.IsMatch(upper, @"(?:^|[\\/])EPKI(?:$|[\\/])"))
+
+            var upperPath = normalized.ToUpperInvariant();
+            var upperDer = (derFilePath ?? string.Empty).ToUpperInvariant();
+            var upperCat = (category ?? string.Empty).Trim().ToUpperInvariant();
+
+            bool isClass1 = Regex.IsMatch(upperPath, @"(?:^|[\\/])CLASS1(?:$|[\\/])") ||
+                            Regex.IsMatch(upperDer, @"(?:^|[\\/]|_)SVR\d*(?:[._-]|$)") ||
+                            upperDer.Contains("CLASS1");
+            string classTier = isClass1 ? "class1" : "class2";
+
+            if (Regex.IsMatch(upperPath, @"(?:^|[\\/])GPKI(?:$|[\\/])") ||
+                upperCat == "GPKI" ||
+                upperCat == "GPKI_GOV")
             {
-                return Path.Combine("EPKI", "Certificate", classTier, folderName);
+                string leafFolder = !string.IsNullOrWhiteSpace(commonName) &&
+                                    !folderName.StartsWith("cn=", StringComparison.OrdinalIgnoreCase)
+                    ? "cn=" + commonName.Trim()
+                    : folderName;
+                return Path.Combine("GPKI", "Certificate", classTier, leafFolder);
+            }
+
+            if (Regex.IsMatch(upperPath, @"(?:^|[\\/])EPKI(?:$|[\\/])") ||
+                upperCat == "EPKI" ||
+                upperCat == "EPKI_EDU")
+            {
+                string leafFolder = !string.IsNullOrWhiteSpace(commonName) &&
+                                    !folderName.StartsWith("cn=", StringComparison.OrdinalIgnoreCase)
+                    ? "cn=" + commonName.Trim()
+                    : folderName;
+                return Path.Combine("EPKI", "Certificate", classTier, leafFolder);
             }
 
             return Path.Combine("NPKI", "yessign", "User", folderName);

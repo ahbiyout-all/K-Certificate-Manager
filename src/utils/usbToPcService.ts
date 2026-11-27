@@ -6,6 +6,7 @@ import {
   extractDerValidityDates,
   filterSignCertNamesInFolder,
   findMatchingKeyInFolder,
+  findCompanionEnvPairInFolder,
 } from './certParser';
 import {
   buildTransferPlan,
@@ -37,6 +38,8 @@ export interface UsbDetectedCert {
     kmCertName?: string;
     kmKeyName?: string;
     hasKey: boolean;
+    certSize?: number;
+    keySize?: number;
     sha256: string;
     certData?: Uint8Array;
     keyData?: Uint8Array;
@@ -389,12 +392,6 @@ export async function scanDirectoryHandleForCertificates(dirHandle: any): Promis
       });
 
       const certFileEntries = filterSignCertNamesInFolder(rawCertEntries);
-      const kmCertFileEntry = fileEntries.find(
-        e => e.kind === 'file' && (e.name.toLowerCase() === 'kmcert.der' || e.name.toLowerCase() === 'kmcert.cer')
-      );
-      const kmKeyFileEntry = fileEntries.find(
-        e => e.kind === 'file' && (e.name.toLowerCase() === 'kmpri.key' || e.name.toLowerCase() === 'kmpri.pri')
-      );
 
       const formattedPath = `USB:\\${currentPath.replace(/^\//, '').replace(/\//g, '\\')}`;
       const isClass1 = /(?:^|[\\/])class1(?:$|[\\/])/i.test(formattedPath);
@@ -506,6 +503,13 @@ export async function scanDirectoryHandleForCertificates(dirHandle: any): Promis
             }
           }
 
+          const { kmCert: kmCertFileEntry, kmKey: kmKeyFileEntry } = findCompanionEnvPairInFolder(
+            certFileEntry.name,
+            rawCertEntries,
+            keyEntries,
+            siblingSignCount
+          );
+
           // 중복 추가 방지 (경로 + 파일명 또는 SHA-256 기준)
           const isDuplicate = found.some(
             c => c.usbPath === formattedPath && (c.files.certName === certFileEntry.name || (sha256 !== 'fs-verified-sha256' && c.files.sha256 === sha256))
@@ -534,6 +538,8 @@ export async function scanDirectoryHandleForCertificates(dirHandle: any): Promis
                 kmCertName: kmCertFileEntry?.name,
                 kmKeyName: kmKeyFileEntry?.name,
                 hasKey,
+                certSize: certBytes?.byteLength ?? 2048,
+                keySize: keyBytes?.byteLength ?? (hasKey ? 1024 : 0),
                 sha256,
                 certData: certBytes,
                 keyData: keyBytes,

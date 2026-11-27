@@ -17,6 +17,7 @@ import {
   FolderOpen,
   ChevronDown,
   ChevronRight,
+  Terminal,
 } from 'lucide-react';
 import {
   getSoundSettings,
@@ -30,6 +31,11 @@ import {
 } from '../utils/audioFeedback';
 import { AppTheme } from '../types';
 import { THEME_OPTIONS } from '../data/themes';
+import {
+  getEngineDebugEnabled,
+  setEngineDebugEnabled,
+  ENGINE_DEBUG_CHANGED_EVENT,
+} from '../utils/engineDebug';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -40,6 +46,8 @@ interface SettingsModalProps {
   onToggleAppViewMode?: (mode: 'simple' | 'advanced') => void;
   dontShowStartupAgain?: boolean;
   onToggleDontShowStartupAgain?: (val: boolean) => void;
+  engineDebugEnabled?: boolean;
+  onToggleEngineDebug?: (val: boolean) => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -51,6 +59,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onToggleAppViewMode,
   dontShowStartupAgain = false,
   onToggleDontShowStartupAgain,
+  engineDebugEnabled,
+  onToggleEngineDebug,
 }) => {
   const [soundSettings, setSoundSettingsState] = useState<SoundSettings>(getSoundSettings);
   const [isPlayingTest, setIsPlayingTest] = useState(false);
@@ -58,6 +68,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const volumeDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const testTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveBadgeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const unlockClickCountRef = React.useRef<number>(0);
+  const unlockResetTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [localEngineDebug, setLocalEngineDebug] = useState<boolean>(() =>
+    engineDebugEnabled ?? getEngineDebugEnabled()
+  );
+  const [isEngineDebugUnlocked, setIsEngineDebugUnlocked] = useState<boolean>(() =>
+    Boolean(engineDebugEnabled ?? getEngineDebugEnabled())
+  );
 
   // 접이식 환경 설정 섹션 오픈/접힘 상태 (기본값: 사운드 피드백만 펼침, 나머지는 접힘)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -104,6 +123,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setSoundSettingsState(getSoundSettings());
+      const effectiveDebug = engineDebugEnabled ?? getEngineDebugEnabled();
+      setLocalEngineDebug(effectiveDebug);
+      if (effectiveDebug) {
+        setIsEngineDebugUnlocked(true);
+      }
     }
 
     const handleSettingsChanged = (e: Event) => {
@@ -113,9 +137,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       }
     };
 
+    const handleEngineDebugChanged = (e: Event) => {
+      const customEvent = e as CustomEvent<boolean>;
+      if (typeof customEvent.detail === 'boolean') {
+        setLocalEngineDebug(customEvent.detail);
+        if (customEvent.detail) {
+          setIsEngineDebugUnlocked(true);
+        }
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isOpen && e.altKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        setIsEngineDebugUnlocked(prev => !prev);
+      }
+    };
+
     window.addEventListener(SOUND_SETTINGS_CHANGED_EVENT, handleSettingsChanged);
+    window.addEventListener(ENGINE_DEBUG_CHANGED_EVENT, handleEngineDebugChanged);
+    window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener(SOUND_SETTINGS_CHANGED_EVENT, handleSettingsChanged);
+      window.removeEventListener(ENGINE_DEBUG_CHANGED_EVENT, handleEngineDebugChanged);
+      window.removeEventListener('keydown', handleKeyDown);
       if (volumeDebounceRef.current) {
         clearTimeout(volumeDebounceRef.current);
         volumeDebounceRef.current = null;
@@ -128,8 +173,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         clearTimeout(saveBadgeTimerRef.current);
         saveBadgeTimerRef.current = null;
       }
+      if (unlockResetTimerRef.current) {
+        clearTimeout(unlockResetTimerRef.current);
+        unlockResetTimerRef.current = null;
+      }
     };
-  }, [isOpen]);
+  }, [isOpen, engineDebugEnabled]);
 
   if (!isOpen) return null;
 
@@ -199,11 +248,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     triggerSaveBadge();
   };
 
+  const handleToggleEngineDebug = (checked: boolean) => {
+    setLocalEngineDebug(checked);
+    setEngineDebugEnabled(checked);
+    if (onToggleEngineDebug) {
+      onToggleEngineDebug(checked);
+    }
+    triggerSaveBadge();
+  };
+
+  const handleHeaderUnlockClick = () => {
+    if (unlockResetTimerRef.current) {
+      clearTimeout(unlockResetTimerRef.current);
+    }
+    unlockClickCountRef.current += 1;
+    if (unlockClickCountRef.current >= 5) {
+      unlockClickCountRef.current = 0;
+      setIsEngineDebugUnlocked(true);
+      return;
+    }
+    unlockResetTimerRef.current = setTimeout(() => {
+      unlockClickCountRef.current = 0;
+      unlockResetTimerRef.current = null;
+    }, 2500);
+  };
+
   const handleResetToDefaults = () => {
     const reset = saveSoundSettings(DEFAULT_SOUND_SETTINGS);
     setSoundSettingsState(reset);
     setExcludeLocalLowGpki(true);
     setAutoOpenUsbFolder(false);
+    setLocalEngineDebug(false);
+    setEngineDebugEnabled(false);
+    setIsEngineDebugUnlocked(false);
+    if (onToggleEngineDebug) {
+      onToggleEngineDebug(false);
+    }
     try {
       localStorage.setItem('kcert_exclude_locallow_gpki', 'true');
       localStorage.setItem('kcert_auto_open_usb_folder', 'false');
@@ -245,12 +325,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Header */}
         <div className="px-6 py-4.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-400 shadow-inner">
+            <div
+              onClick={handleHeaderUnlockClick}
+              data-testid="settings-engine-debug-unlock-trigger"
+              className="w-10 h-10 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-400 shadow-inner select-none cursor-default"
+            >
               <Sliders className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-bold">환경 설정</h3>
+                <h3
+                  onClick={handleHeaderUnlockClick}
+                  className="text-base sm:text-lg font-bold select-none"
+                >
+                  환경 설정
+                </h3>
                 {justSavedNotification && (
                   <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full font-medium animate-fadeIn">
                     <Check className="w-3 h-3" /> 저장됨
@@ -836,6 +925,51 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* HIDDEN SECTION: Engine Debug Toggle (Unlocked via 5x header click or Alt+Shift+D) */}
+          {isEngineDebugUnlocked && (
+            <div
+              data-testid="settings-engine-debug-section"
+              className="bg-slate-900 text-slate-100 border border-slate-700 rounded-2xl overflow-hidden shadow-xs animate-fadeIn"
+            >
+              <div className="p-4 flex items-center justify-between gap-4">
+                <div className="flex items-start gap-2.5">
+                  <div className="p-2 rounded-lg bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 shrink-0">
+                    <Terminal className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-white text-sm flex items-center gap-2">
+                      <span>Engine Debug</span>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                          localEngineDebug
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                        }`}
+                      >
+                        {localEngineDebug ? 'ON' : 'OFF'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                      활동 로그 창에 내부 복사 엔진 원시 상태, 버퍼 크기 및 현재 전송 세션 파일 스트림 처리량 패널을 표시합니다.
+                    </p>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer select-none shrink-0">
+                  <input
+                    type="checkbox"
+                    aria-label="Engine Debug"
+                    data-testid="engine-debug-toggle"
+                    checked={localEngineDebug}
+                    onChange={(e) => handleToggleEngineDebug(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-12 h-6.5 bg-slate-700 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2.5px] after:start-[3px] after:bg-white after:border-slate-400 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500 shadow-inner"></div>
+                </label>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer Actions */}

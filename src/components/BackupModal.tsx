@@ -409,6 +409,23 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         `[작업 중단] 대상 드라이브(${targetDrive.letter})가 '쓰기 금지(Read-Only)' 상태이므로 인증서 손상 방지를 위해 복사를 즉시 중단했습니다.`,
       ]);
       setWriteProtectionError(writeCheck);
+      setCopyErrorModalInfo({
+        title: 'USB 드라이브 쓰기 금지(Write-Protected) 감지',
+        summary: `${targetDrive.letter} (${targetDrive.name}) 드라이브가 '쓰기 금지(잠금)' 상태로 보호되어 있어 인증서를 복사할 수 없습니다.`,
+        category: 'WRITE_PROTECTED',
+        solutions: [
+          'USB 메모리 측면의 물리 LOCK 스위치가 잠금 위치인지 확인하고 UNLOCK으로 전환하세요.',
+          '윈도우 탐색기에서 USB 드라이브 우클릭 ➔ [속성] ➔ [읽기 전용] 체크를 해제하세요.',
+          '사내 보안 DLP(USB 쓰기 차단) 소프트웨어 사용 시 관리자에게 쓰기 권한 승인을 요청하세요.',
+          '다른 잠기지 않은 정상 USB 드라이브를 선택하여 복사하세요.',
+        ],
+        driveLetter: targetDrive?.letter,
+        driveName: targetDrive?.name,
+        direction: 'PC_TO_USB',
+        failedCount: effectiveSelectedCerts.length,
+        certNames: effectiveSelectedCerts.map(c => c.name),
+        technicalDetail: writeCheck.message || 'Drive status: WRITE_PROTECTED',
+      });
       setIsProcessing(false);
       setProgress(0);
       return;
@@ -430,27 +447,6 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         failedCount: effectiveSelectedCerts.length,
         certNames: effectiveSelectedCerts.map(c => c.name),
         technicalDetail: 'DeviceError: MEDIA_TYPE_OPTICAL_READONLY (0x80070013)',
-      });
-      return;
-    }
-
-    if (isCurrentTargetLocked) {
-      setCopyErrorModalInfo({
-        title: 'USB 드라이브 쓰기 금지(Write-Protected) 감지',
-        summary: `${targetDrive.letter} (${targetDrive.name}) 드라이브가 '쓰기 금지(잠금)' 상태로 보호되어 있어 인증서를 복사할 수 없습니다.`,
-        category: 'WRITE_PROTECTED',
-        solutions: [
-          'USB 메모리 측면의 물리 LOCK 스위치가 잠금 위치인지 확인하고 UNLOCK으로 전환하세요.',
-          '윈도우 탐색기에서 USB 드라이브 우클릭 ➔ [속성] ➔ [읽기 전용] 체크를 해제하세요.',
-          '사내 보안 DLP(USB 쓰기 차단) 소프트웨어 사용 시 관리자에게 쓰기 권한 승인을 요청하세요.',
-          '다른 잠기지 않은 정상 USB 드라이브를 선택하여 복사하세요.',
-        ],
-        driveLetter: targetDrive?.letter,
-        driveName: targetDrive?.name,
-        direction: 'PC_TO_USB',
-        failedCount: effectiveSelectedCerts.length,
-        certNames: effectiveSelectedCerts.map(c => c.name),
-        technicalDetail: writeProtectionError?.message || 'Drive status: WRITE_PROTECTED',
       });
       return;
     }
@@ -522,6 +518,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     // 복사 시작음 제거 요구사항 반영 (playStartSound 제거)
 
     try {
+      let persistedDirHandle: any = undefined;
+      let dirPickerCancelled = false;
+
       const retryResult = await executeUsbOperationWithRetry<BackupResult>(
         `USB ${targetDrive.letter} 인증서 복사 및 파일 검사`,
         async (attempt) => {
@@ -544,11 +543,11 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           await new Promise(r => setTimeout(r, 300));
           setProgress(attempt === 1 ? 30 : 45);
 
-          let pickedDirHandle: any = undefined;
-          let shouldWriteDirect = false;
+          let pickedDirHandle: any = persistedDirHandle;
+          let shouldWriteDirect = Boolean(persistedDirHandle);
 
-          // If user chose direct Web File System writing to real USB
-          if (writeDirectToDisk && 'showDirectoryPicker' in window) {
+          // If user chose direct Web File System writing to real USB (prompt only once across retries)
+          if (writeDirectToDisk && 'showDirectoryPicker' in window && !persistedDirHandle && !dirPickerCancelled) {
             setLogs(prev => [...prev, '[디스크 쓰기] 대상 USB 드라이브 폴더 선택 대기 중...']);
             try {
               // @ts-ignore
@@ -566,10 +565,12 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               }
 
               setLogs(prev => [...prev, `[디스크 쓰기] 선택된 폴더: ${dirHandle.name}에 NPKI/GPKI 구조 직접 기록 시작...`]);
+              persistedDirHandle = dirHandle;
               pickedDirHandle = dirHandle;
               shouldWriteDirect = true;
             } catch (err: any) {
               if (err?.name === 'AbortError') {
+                dirPickerCancelled = true;
                 setLogs(prev => [...prev, '[안내] 실제 USB 폴더 선택이 취소되어 앱 내 보관함 동기화만 진행합니다.']);
               } else {
                 throw err;

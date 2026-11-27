@@ -73,6 +73,11 @@ import { getStandardDirectoryPath } from './utils/backupService';
 import { isNonStandardCertPath, isClass1Certificate } from './utils/certPathUtils';
 import { isCertificateExpired } from './utils/certParser';
 import { getStoredActivityLogs, logActivity, clearAllActivityLogs, formatCurrentTimestamp } from './utils/activityLogger';
+import {
+  ENGINE_DEBUG_CHANGED_EVENT,
+  getEngineDebugEnabled,
+  setEngineDebugEnabled,
+} from './utils/engineDebug';
 import { 
   CheckCircle2, 
   ShieldCheck,
@@ -201,6 +206,29 @@ export default function App() {
       return false;
     }
   });
+  const [engineDebugEnabled, setEngineDebugEnabledState] = useState<boolean>(() =>
+    getEngineDebugEnabled()
+  );
+
+  useEffect(() => {
+    const handleEngineDebugChange = (e: Event) => {
+      const customEvent = e as CustomEvent<boolean>;
+      if (typeof customEvent.detail === 'boolean') {
+        setEngineDebugEnabledState(customEvent.detail);
+      } else {
+        setEngineDebugEnabledState(getEngineDebugEnabled());
+      }
+    };
+    window.addEventListener(ENGINE_DEBUG_CHANGED_EVENT, handleEngineDebugChange);
+    return () => {
+      window.removeEventListener(ENGINE_DEBUG_CHANGED_EVENT, handleEngineDebugChange);
+    };
+  }, []);
+
+  const handleToggleEngineDebug = useCallback((val: boolean) => {
+    setEngineDebugEnabledState(val);
+    setEngineDebugEnabled(val);
+  }, []);
   const [activeWorkflow, setActiveWorkflow] = useState<WorkflowType | null>(null);
 
   const handleToggleDontShowStartupAgain = (val: boolean) => {
@@ -2527,6 +2555,7 @@ export default function App() {
         onClose={() => setIsActivityLogModalOpen(false)}
         logs={activityLogs}
         onClearLogs={handleClearActivityLogs}
+        engineDebugEnabled={engineDebugEnabled}
       />
 
       {/* KCert.Core.dll Pure Creative Core Specification Modal */}
@@ -2672,6 +2701,8 @@ export default function App() {
         onToggleAppViewMode={handleToggleAppViewMode}
         dontShowStartupAgain={dontShowStartupAgain}
         onToggleDontShowStartupAgain={handleToggleDontShowStartupAgain}
+        engineDebugEnabled={engineDebugEnabled}
+        onToggleEngineDebug={handleToggleEngineDebug}
       />
 
       {/* 중복 인증서 정리 & 비표준 폴더 자동 복구 모달 */}

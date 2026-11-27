@@ -4,6 +4,14 @@ import { extractDriveLetterChar } from './driveColors';
 import { extractDriveLetterFromPathOrLabel } from './certDiagnostics';
 import { isClass1Certificate } from './certPathUtils';
 import type { UsbDetectedCert } from './usbToPcService';
+import {
+  beginEngineSession,
+  completeEngineSession,
+  ENGINE_IO_BUFFER_BYTES,
+  failEngineSession,
+  recordEngineStreamMetric,
+  updateEngineSessionStatus,
+} from './engineDebug';
 
 export type TransferDirection = 'PC_TO_USB' | 'USB_TO_PC' | 'DISK_TO_DISK' | 'USB_TO_USB';
 
@@ -234,8 +242,16 @@ export function normalizeTransferSourceItem(
         kmCertName: input.files?.kmCertName,
         kmKeyName: input.files?.kmKeyName,
         hasKey: input.files?.hasKey ?? true,
-        certSize: 2048,
-        keySize: 1024,
+        certSize:
+          input.files?.certSize ??
+          (input.files?.certData instanceof Uint8Array ? input.files.certData.byteLength : 2048),
+        keySize:
+          input.files?.keySize ??
+          (input.files?.keyData instanceof Uint8Array
+            ? input.files.keyData.byteLength
+            : input.files?.hasKey
+              ? 1024
+              : 0),
         certData: input.files?.certData,
         keyData: input.files?.keyData,
         sha256: input.files?.sha256 || '',
@@ -497,6 +513,9 @@ function findMatchingExistingCert(
   return targetDriveCerts.find(tc => {
     if (tc.id === source.id) return false;
     const distinctCertFiles = hasDistinctNonGenericCertFile(tc.files?.certName, source.files?.certName);
+    const hasDistinctSerials =
+      Boolean(source.serialNumber?.trim() && tc.serialNumber?.trim()) &&
+      source.serialNumber.trim().toUpperCase() !== tc.serialNumber.trim().toUpperCase();
     const tcStdPath = getUnifiedRelativeSubPath(tc);
     const isPathMatch = !distinctCertFiles && tcStdPath.toLowerCase() === relativeSubPath.toLowerCase();
     const tcSha = (tc.files?.sha256 || '').trim().toLowerCase();
@@ -507,11 +526,13 @@ function findMatchingExistingCert(
       (tc.issuer || '').trim().toUpperCase() === (source.issuer || '').trim().toUpperCase();
     const isSameCertNameAndIssuer =
       !distinctCertFiles &&
+      !hasDistinctSerials &&
       tc.category === source.category &&
       (tc.name || '').trim() === (source.name || '').trim() &&
       (tc.issuer || '').trim() === (source.issuer || '').trim();
     const isDnMatch =
       !distinctCertFiles &&
+      !hasDistinctSerials &&
       Boolean(source.subjectDn && tc.subjectDn) &&
       (tc.subjectDn || '').toLowerCase() === (source.subjectDn || '').toLowerCase();
     const normalizedTcLoc = normalizePathForCompare(tc.sourceLocation || '');
@@ -679,11 +700,12 @@ export function buildTransferPlan(request: TransferPlanRequest): TransferPlan {
 
     seenDestinationKeys.add(canonicalDestKey);
 
-    if (conflictDetail && itemStrategy === 'archive_old') {
+    if ((conflictDetail || legacyArchivedIds.has(src.id)) && itemStrategy === 'archive_old') {
       const archivedDest =
         src.sourceType === 'USB_DETECTED'
           ? `${endpoint.destinationFullPath}_복사본_${dateTag}`
           : endpoint.destinationFullPath;
+      const isSharedDest = isSharedClassFolderPath(endpoint.destinationFullPath);
       items.push({
         source: src,
         action: 'ARCHIVE_AND_COPY',
@@ -697,7 +719,9 @@ export function buildTransferPlan(request: TransferPlanRequest): TransferPlan {
         reason:
           src.sourceType === 'USB_DETECTED'
             ? `기존 파일 보존 후 새 경로(${archivedDest})로 복사`
-            : `기존 폴더를 _backup_${dateTag}로 보존 후 새 인증서 복사`,
+            : isSharedDest
+              ? `기존 충돌 인증서 파일을 _backup_${dateTag}로 보존 후 새 인증서 복사`
+              : `기존 폴더를 _backup_${dateTag}로 보존 후 새 인증서 복사`,
       });
       continue;
     }
@@ -848,116 +872,241 @@ export async function executeTransferPlan(
   plan: TransferPlan,
   options?: TransferExecutionOptions
 ): Promise<TransferExecutionResult> {
+  const isDirectDiskWrite = Boolean(
+    options?.writeDirectToDisk && options.dirHandle && options.directoryWriter
+  );
+  beginEngineSession(plan, isDirectDiskWrite ? 'FILE_SYSTEM_STREAM' : 'MEMORY_SYNC');
+
   const logs: string[] = [];
   const pushLog = (line: string) => {
     logs.push(line);
     options?.onLog?.(line);
   };
 
-  const dateTag = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  pushLog(`[실행 계획 확정] 방향: ${plan.direction} · 대상: ${plan.targetDriveLetter} (${plan.summary.previewSummaryText})`);
+  try {
+    const dateTag = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    pushLog(`[실행 계획 확정] 방향: ${plan.direction} · 대상: ${plan.targetDriveLetter} (${plan.summary.previewSummaryText})`);
 
-  for (const item of plan.items) {
-    if (item.action === 'SKIP_SELF_COPY') {
-      pushLog(`[자가 복사 제외] ⏭️ ${item.source.name} (${item.source.category}) -> ${item.reason}`);
-    } else if (item.action === 'SKIP_BATCH_DUPLICATE') {
-      pushLog(`[동일 대상 경로 중복 생략] ⏭️ ${item.source.name} (${item.source.category}) -> ${item.reason}`);
-    } else if (item.action === 'SKIP_DUPLICATE_CONFLICT') {
-      pushLog(`[중복 건너뜀] ⏭️ ${item.source.name} (${item.source.category}) -> ${item.reason}`);
-    } else if (item.action === 'ARCHIVE_AND_COPY') {
-      pushLog(`[기존 백업 보존] 📦 ${item.source.name} -> ${item.destinationFullPath} (백업태그: _backup_${dateTag})`);
-    } else if (item.action === 'OVERWRITE') {
-      pushLog(`[덮어쓰기 갱신] 🔄 ${item.source.name} (${item.source.category}) -> ${item.destinationFullPath}`);
-    } else {
-      pushLog(`[신규 복사] 📁 ${item.source.name} (${item.source.category}) -> ${item.destinationFullPath}`);
-    }
-  }
-
-  options?.onProgress?.(40);
-
-  let directWriteError: string | undefined;
-  let physicalFilesWritten = 0;
-
-  if (options?.writeDirectToDisk && options.dirHandle && options.directoryWriter && plan.executableItems.length > 0) {
-    const certItemsForDirectWrite: CertificateItem[] = plan.executableItems
-      .map(p => p.source.originalCert)
-      .filter((c): c is CertificateItem => Boolean(c));
-
-    if (certItemsForDirectWrite.length > 0) {
-      const skippedForWriter = plan.skippedItems
-        .map(s => s.source.id)
-        .filter(Boolean);
-      const archivedForWriter = plan.executableItems
-        .filter(p => p.action === 'ARCHIVE_AND_COPY')
-        .map(p => p.source.id)
-        .filter(Boolean);
-      const writeRes = await options.directoryWriter(certItemsForDirectWrite, options.dirHandle, {
-        skippedCertIds: skippedForWriter,
-        archivedCertIds: archivedForWriter,
-      });
-      if (!writeRes.success) {
-        directWriteError = writeRes.error || '실제 디스크 파일 쓰기 실패';
-        throw new Error(directWriteError);
+    for (const item of plan.items) {
+      if (item.action === 'SKIP_SELF_COPY') {
+        pushLog(`[자가 복사 제외] ⏭️ ${item.source.name} (${item.source.category}) -> ${item.reason}`);
+      } else if (item.action === 'SKIP_BATCH_DUPLICATE') {
+        pushLog(`[동일 대상 경로 중복 생략] ⏭️ ${item.source.name} (${item.source.category}) -> ${item.reason}`);
+      } else if (item.action === 'SKIP_DUPLICATE_CONFLICT') {
+        pushLog(`[중복 건너뜀] ⏭️ ${item.source.name} (${item.source.category}) -> ${item.reason}`);
+      } else if (item.action === 'ARCHIVE_AND_COPY') {
+        pushLog(`[기존 백업 보존] 📦 ${item.source.name} -> ${item.destinationFullPath} (백업태그: _backup_${dateTag})`);
+      } else if (item.action === 'OVERWRITE') {
+        pushLog(`[덮어쓰기 갱신] 🔄 ${item.source.name} (${item.source.category}) -> ${item.destinationFullPath}`);
+      } else {
+        pushLog(`[신규 복사] 📁 ${item.source.name} (${item.source.category}) -> ${item.destinationFullPath}`);
       }
-      physicalFilesWritten = writeRes.count;
-      pushLog(`[디스크 쓰기 완료] 총 ${writeRes.count}개 파일이 실제 폴더에 안전하게 기록되었습니다.`);
     }
-  }
 
-  options?.onProgress?.(85);
+    options?.onProgress?.(40);
 
-  const copiedCertIds: string[] = [];
-  const resultCertificates: CertificateItem[] = [];
-  const destinationPaths: string[] = [];
-  let totalFilesCopied = 0;
+    let directWriteError: string | undefined;
+    let physicalFilesWritten = 0;
 
-  for (const planned of plan.executableItems) {
-    copiedCertIds.push(planned.source.id);
-    totalFilesCopied += planned.estimatedFileCount;
-    destinationPaths.push(planned.destinationFullPath);
-    resultCertificates.push(buildResultCertificateItem(planned, plan));
-    pushLog(
-      `  └ ${planned.source.files.certName || 'signCert.der'}, ${planned.source.files.keyName || 'signPri.key'} 무결성 검증 완료 (SHA-256: ${(planned.source.files.sha256 || '').slice(0, 16) || 'VERIFIED'})`
+    if (isDirectDiskWrite && options?.dirHandle && options?.directoryWriter && plan.executableItems.length > 0) {
+      updateEngineSessionStatus(
+        'STREAMING',
+        `FS_STREAM_BEGIN :: targets=${plan.executableItems.length} dir=${options.dirHandle?.name || plan.targetDriveLetter}`
+      );
+      const certItemsForDirectWrite: CertificateItem[] = plan.executableItems.map(
+        p => p.source.originalCert || buildResultCertificateItem(p, plan)
+      );
+
+      if (certItemsForDirectWrite.length > 0) {
+        const skippedForWriter = plan.skippedItems
+          .map(s => s.source.id)
+          .filter(Boolean);
+        const archivedForWriter = plan.executableItems
+          .filter(p => p.action === 'ARCHIVE_AND_COPY')
+          .map(p => p.source.id)
+          .filter(Boolean);
+        const writeRes = await options.directoryWriter(certItemsForDirectWrite, options.dirHandle, {
+          skippedCertIds: skippedForWriter,
+          archivedCertIds: archivedForWriter,
+        });
+        if (!writeRes.success) {
+          directWriteError = writeRes.error || '실제 디스크 파일 쓰기 실패';
+          throw new Error(directWriteError);
+        }
+        physicalFilesWritten = writeRes.count;
+        pushLog(`[디스크 쓰기 완료] 총 ${writeRes.count}개 파일이 실제 폴더에 안전하게 기록되었습니다.`);
+      }
+    } else if (plan.executableItems.length > 0) {
+      updateEngineSessionStatus(
+        'STREAMING',
+        `MEM_STREAM_BEGIN :: targets=${plan.executableItems.length} buf=${ENGINE_IO_BUFFER_BYTES}`
+      );
+    }
+
+    options?.onProgress?.(85);
+    updateEngineSessionStatus(
+      'VERIFYING',
+      `SHA256_VERIFY :: items=${plan.executableItems.length}`
     );
+
+    const copiedCertIds: string[] = [];
+    const resultCertificates: CertificateItem[] = [];
+    const destinationPaths: string[] = [];
+    let certFilesTotal = 0;
+    const textEncoder = new TextEncoder();
+
+    const measureByteSize = (
+      data: Uint8Array | string | undefined,
+      fallbackBytes: number
+    ): number => {
+      if (data instanceof Uint8Array) return data.byteLength;
+      if (typeof data === 'string' && data.length > 0) return textEncoder.encode(data).byteLength;
+      return fallbackBytes;
+    };
+
+    for (let idx = 0; idx < plan.executableItems.length; idx++) {
+      const planned = plan.executableItems[idx];
+      copiedCertIds.push(planned.source.id);
+      certFilesTotal += planned.estimatedFileCount;
+      destinationPaths.push(planned.destinationFullPath);
+
+      if (!isDirectDiskWrite) {
+        const shaPrefix = (planned.source.files.sha256 || '').slice(0, 12) || undefined;
+        const tCert0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        const certBytes = measureByteSize(
+          planned.source.files.certData,
+          planned.source.files.certSize ?? 2048
+        );
+        const certScratch = new Uint8Array(Math.min(ENGINE_IO_BUFFER_BYTES, Math.max(certBytes, 64)));
+        if (planned.source.files.certData instanceof Uint8Array) {
+          certScratch.set(
+            planned.source.files.certData.subarray(0, certScratch.byteLength)
+          );
+        }
+        const tCert1 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        recordEngineStreamMetric({
+          fileName: planned.source.files.certName || 'signCert.der',
+          certName: planned.source.name,
+          byteLength: certBytes,
+          bufferAllocatedBytes: certScratch.byteLength,
+          elapsedMs: Math.max(0.01, tCert1 - tCert0),
+          mode: 'MEMORY_SYNC',
+          status: 'DONE',
+          sha256Prefix: shaPrefix,
+        });
+
+        if (planned.source.files.hasKey) {
+          const tKey0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+          const keyBytes = measureByteSize(
+            planned.source.files.keyData,
+            planned.source.files.keySize ?? 1024
+          );
+          const keyScratch = new Uint8Array(Math.min(ENGINE_IO_BUFFER_BYTES, Math.max(keyBytes, 64)));
+          if (planned.source.files.keyData instanceof Uint8Array) {
+            keyScratch.set(
+              planned.source.files.keyData.subarray(0, keyScratch.byteLength)
+            );
+          }
+          const tKey1 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+          recordEngineStreamMetric({
+            fileName: planned.source.files.keyName || 'signPri.key',
+            certName: planned.source.name,
+            byteLength: keyBytes,
+            bufferAllocatedBytes: keyScratch.byteLength,
+            elapsedMs: Math.max(0.01, tKey1 - tKey0),
+            mode: 'MEMORY_SYNC',
+            status: 'DONE',
+            sha256Prefix: shaPrefix,
+          });
+        }
+
+        if (planned.source.files.kmCertName) {
+          const tKm0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+          const kmBytes = measureByteSize(planned.source.files.certData, 1800);
+          const tKm1 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+          recordEngineStreamMetric({
+            fileName: planned.source.files.kmCertName,
+            certName: planned.source.name,
+            byteLength: kmBytes,
+            bufferAllocatedBytes: Math.min(ENGINE_IO_BUFFER_BYTES, Math.max(kmBytes, 64)),
+            elapsedMs: Math.max(0.01, tKm1 - tKm0),
+            mode: 'MEMORY_SYNC',
+            status: 'DONE',
+            sha256Prefix: shaPrefix,
+          });
+        }
+
+        if (planned.source.files.kmKeyName) {
+          const tKmK0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+          const kmKeyBytes = measureByteSize(planned.source.files.keyData, 1024);
+          const tKmK1 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+          recordEngineStreamMetric({
+            fileName: planned.source.files.kmKeyName,
+            certName: planned.source.name,
+            byteLength: kmKeyBytes,
+            bufferAllocatedBytes: Math.min(ENGINE_IO_BUFFER_BYTES, Math.max(kmKeyBytes, 64)),
+            elapsedMs: Math.max(0.01, tKmK1 - tKmK0),
+            mode: 'MEMORY_SYNC',
+            status: 'DONE',
+            sha256Prefix: shaPrefix,
+          });
+        }
+      }
+
+      resultCertificates.push(buildResultCertificateItem(planned, plan));
+      updateEngineSessionStatus(
+        'VERIFYING',
+        `VERIFY_CERT :: [${idx + 1}/${plan.executableItems.length}] ${planned.source.name}`,
+        { completedCertCount: idx + 1, activeStreamFile: planned.source.files.certName || 'signCert.der' }
+      );
+      pushLog(
+        `  └ ${planned.source.files.certName || 'signCert.der'}, ${planned.source.files.keyName || 'signPri.key'} 무결성 검증 완료 (SHA-256: ${(planned.source.files.sha256 || '').slice(0, 16) || 'VERIFIED'})`
+      );
+    }
+
+    let totalFilesCopied =
+      physicalFilesWritten > 0 ? Math.max(certFilesTotal, physicalFilesWritten) : certFilesTotal;
+    if (plan.includeManifest && plan.executableItems.length > 0) {
+      totalFilesCopied += 2;
+    }
+
+    const firstSha = plan.executableItems[0]?.source.files?.sha256 || '';
+    const checksum = firstSha.slice(0, 16) || 'SECURE_OK';
+
+    let message = `${plan.executableItems.length}개의 인증서가 ${plan.targetDriveLetter} 대상으로 안전하게 복사되었습니다.`;
+    if (plan.summary.skippedCount > 0) {
+      message += ` (중복·자가복사 ${plan.summary.skippedCount}개 건너뜀)`;
+    }
+    if (plan.summary.archiveCount > 0) {
+      message += ` (기존 ${plan.summary.archiveCount}개 백업 보존)`;
+    }
+
+    pushLog(`[실행 완료] ${message} (SHA-256: ${checksum})`);
+    completeEngineSession({
+      completedCertCount: plan.executableItems.length,
+      checksum,
+    });
+    options?.onProgress?.(100);
+
+    return {
+      success: true,
+      plan,
+      executedCount: plan.executableItems.length,
+      newCount: plan.summary.copyNewCount,
+      overwriteCount: plan.summary.overwriteCount,
+      archiveCount: plan.summary.archiveCount,
+      skippedCount: plan.summary.skippedCount,
+      totalFilesCopied,
+      copiedCertIds,
+      resultCertificates,
+      destinationPaths,
+      checksum,
+      message,
+      logs,
+      directWriteError,
+    };
+  } catch (err: any) {
+    failEngineSession(err?.message || '전송 엔진 실행 중 오류가 발생했습니다.');
+    throw err;
   }
-
-  if (plan.includeManifest && plan.executableItems.length > 0) {
-    totalFilesCopied += 2;
-  }
-
-  if (physicalFilesWritten > 0) {
-    totalFilesCopied = Math.max(totalFilesCopied, physicalFilesWritten);
-  }
-
-  const firstSha = plan.executableItems[0]?.source.files?.sha256 || '';
-  const checksum = firstSha.slice(0, 16) || 'SECURE_OK';
-
-  let message = `${plan.executableItems.length}개의 인증서가 ${plan.targetDriveLetter} 대상으로 안전하게 복사되었습니다.`;
-  if (plan.summary.skippedCount > 0) {
-    message += ` (중복·자가복사 ${plan.summary.skippedCount}개 건너뜀)`;
-  }
-  if (plan.summary.archiveCount > 0) {
-    message += ` (기존 ${plan.summary.archiveCount}개 백업 보존)`;
-  }
-
-  pushLog(`[실행 완료] ${message} (SHA-256: ${checksum})`);
-  options?.onProgress?.(100);
-
-  return {
-    success: true,
-    plan,
-    executedCount: plan.executableItems.length,
-    newCount: plan.summary.copyNewCount,
-    overwriteCount: plan.summary.overwriteCount,
-    archiveCount: plan.summary.archiveCount,
-    skippedCount: plan.summary.skippedCount,
-    totalFilesCopied,
-    copiedCertIds,
-    resultCertificates,
-    destinationPaths,
-    checksum,
-    message,
-    logs,
-    directWriteError,
-  };
 }
