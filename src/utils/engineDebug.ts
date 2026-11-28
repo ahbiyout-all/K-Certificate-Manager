@@ -250,12 +250,12 @@ export function recordEngineStreamMetric(input: {
   sha256Prefix?: string;
 }): void {
   const safeBytes = Math.max(0, Math.round(input.byteLength));
-  const safeBufferBytes = Math.max(
-    safeBytes,
-    Math.min(
-      ENGINE_IO_BUFFER_BYTES,
-      input.bufferAllocatedBytes ?? Math.max(safeBytes, Math.min(ENGINE_STREAM_CHUNK_BYTES, safeBytes))
-    )
+  const rawBufferTarget =
+    input.bufferAllocatedBytes ??
+    Math.max(safeBytes, Math.min(ENGINE_STREAM_CHUNK_BYTES, safeBytes));
+  const safeBufferBytes = Math.min(
+    ENGINE_IO_BUFFER_BYTES,
+    Math.max(64, Math.round(rawBufferTarget))
   );
   const safeElapsedMs = Math.max(0.01, Number(input.elapsedMs.toFixed(2)));
   const fileThroughput = Math.round((safeBytes / safeElapsedMs) * 1000);
@@ -461,7 +461,11 @@ export function exportEngineDebugSessionAsJson(
   const payload = buildEngineDebugTelemetryExportPayload(snapshot);
   const jsonContent = JSON.stringify(payload, null, 2);
 
-  if (typeof document !== 'undefined' && typeof URL !== 'undefined') {
+  if (
+    typeof document !== 'undefined' &&
+    typeof URL !== 'undefined' &&
+    typeof Blob !== 'undefined'
+  ) {
     const safeSession = (snapshot.sessionId || 'idle').replace(/[^a-zA-Z0-9_-]/g, '_');
     const dateTag = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8' });

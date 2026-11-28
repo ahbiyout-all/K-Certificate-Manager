@@ -37,18 +37,18 @@
 | [`BLOG_v1.6.5.md`](./BLOG_v1.6.5.md) | **공식 구글 블로그 배포 문서**: v1.6.5 구글 블로그(Blogger) 게시용 전용 문서 ([작성 모드] & [HTML 편집 모드] 듀얼 제공) |
 | [`BLOG_v1.5.0.md`](./BLOG_v1.5.0.md) | **공식 구글 블로그 배포 문서**: v1.5.0 공식 구글 블로그(Blogger) 게시용 10단계 표준 마크다운 원고 |
 | [`LICENSE.md`](./LICENSE.md) | **소프트웨어 라이선스 & 법적 고지**: 한국어(`LICENSE_KR.txt`)·영어(`LICENSE_EN.txt`) 2종 라이선스 정의, 무상 이용 조건 및 보증 부인 |
-| [`USER_GUIDE.md`](./USER_GUIDE.md) | **사용자 매뉴얼**: 쉬운 일상 표현 UI, 반응형 카드 레이아웃, `Class1` 기관 배지·필터, 2026 동향·RSA 3072-bit 보안강도 점검 및 USB 백업/복구 가이드 |
+| [`USER_GUIDE.md`](./USER_GUIDE.md) | **사용자 매뉴얼**: 쉬운 일상 표현 UI, 반응형 카드 레이아웃, `Class1` 기관 배지·필터, 2026 동향·RSA 3072-bit 보안강도 점검, USB 백업/복구, 드라이브 배색 및 `Engine Debug` 가이드 |
 | [`KOREA_CERT_TRENDS_2026.md`](./KOREA_CERT_TRENDS_2026.md) | **2026 대한민국 인증서·전자서명 동향 가이드**: RSA 3072-bit 상향(2027.02.15), GPKI·EPKI 비액티브엑스 전환, 금융·간편인증 비교, 2026.08.28 모바일 신분증 시행령 안내 |
 | [`BUILD_GUIDE.md`](./BUILD_GUIDE.md) | **빌드 및 배포 가이드**: .NET 10 / .NET 8 자동 감지 빌드(`build.bat`/`build.ps1`), 버전별 분리 출력(`dist/v2.2.0/`), Inno Setup(`kcert-manager-v2.2.0-setup.exe`) 안내 |
 | [`GITHUB_GUIDE.md`](./GITHUB_GUIDE.md) | **GitHub 운영·CI/CD 및 릴리스 배포 가이드**: 저장소 구조, GitHub Actions 매트릭스(`build.yml`), v2.2.0 릴리스 배포 파이프라인, 이슈/PR 기여 가이드 |
 | [`AUTO_UPDATE_GUIDE.md`](./AUTO_UPDATE_GUIDE.md) | **자동 업데이트 가이드**: GitHub 이동 없는 인앱 자동 다운로드·무인 셀프 설치(`DownloadAndInstallAsync`, `apply_self_update.ps1`, Web 3단계 업데이트) 명세 |
 | [`WPF_NATIVE_GUIDE.md`](./WPF_NATIVE_GUIDE.md) | **C# WPF 데스크톱 개발 가이드**: v2.2.0 MVVM 아키텍처, 3단계 비블로킹 시작 스캔, RSA 3072-bit 보안강도 진단, `Class1` 필터/배지, Dispatcher 안전성 명세 |
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | **시스템 아키텍처**: 인증서 파일 쌍·`class1` 경로 규격, 3단계 스캔 파이프라인, RSA 3072-bit 정책 진단, 5대 서브시스템, 7대 보안 하드닝 및 JSON 스키마 설계 |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | **시스템 아키텍처**: 인증서 파일 쌍·`class1` 경로 규격, 3단계 스캔 파이프라인, RSA 3072-bit 정책 진단, 5대 서브시스템, 7대 보안 하드닝, `Engine Debug` 텔레메트리 및 JSON 스키마 설계 |
 | [`PURE_CREATIVE_DLL_ARCHITECTURE.md`](./PURE_CREATIVE_DLL_ARCHITECTURE.md) | **순수 창작 DLL 아키텍처 및 세부 동작 원리서**: 100% C# 순수 창작 `KCert.Core.dll` 및 `KCert.Crypto.dll`의 5대 서브시스템, ASN.1 바이너리 파서, PKCS#8 키 분석기, 중복 탐지, PFX 변환 엔진 기술 명세 |
 | [`KCERT_CRYPTO_DLL_SPECIFICATION.md`](./KCERT_CRYPTO_DLL_SPECIFICATION.md) | **KCert.Crypto.dll 순수 창작 암호화 & 전자서명 엔진 기술 명세서**: KISA SEED-128 (RFC 4269), KISA ARIA (RFC 5794), PKCS#8 signPri.key 복호화, VID 영지식 본인확인, RSA-SHA256 전자서명 시뮬레이션 동작 원리 및 기존 DLL 결함 교정 상세서 |
 | [`KCERT_CORE_DLL_DESIGN_SPECIFICATION.md`](./KCERT_CORE_DLL_DESIGN_SPECIFICATION.md) | **KCert.Core.dll 주요 설계 사양서**: 5대 핵심 영역(기능 명세, 동작 원리, 데이터 흐름, 에러 처리 전략, .NET 8 WPF 환경과의 연동 방식)을 총망라한 엔지니어링 종합 설계서 |
 | [`KCERT_CORE_DLL_SPEC.md`](./KCERT_CORE_DLL_SPEC.md) | **KCert.Core.dll 기술 명세서**: 순수 창작 코어 라이브러리 동작 원리, OID 역해석, 화이트리스트 안전 전송, WMI 가드 및 C#/C++/Rust/Python 타 언어 연동 명세 |
-| [`WORK_LOG.md`](./WORK_LOG.md) | **공식 작업 일지**: 개발 요구사항, 차수별 구현 내역(작업 차수 203 포함), 보안 감사 및 검증 이력 |
+| [`WORK_LOG.md`](./WORK_LOG.md) | **공식 작업 일지**: 개발 요구사항, 차수별 구현 내역(작업 차수 205 포함), 보안 감사 및 검증 이력 |
 
 ---
 
@@ -155,5 +155,9 @@
 35. **PC↔USB 양방향 통합 단일 전송 엔진 전면 신설 · 5회 심층 감사 & 공유 폴더 GPKI 격리(작업 차수 200~203, `v2.3.0`, Web & WPF 동시 적용)**
     - **2단계 사전 실행 계획(`TransferPlan`) ➔ 원자적 일괄 실행(`TransferExecutor`) 아키텍처**: `unifiedTransferEngine.ts`(Web) 및 `UnifiedTransferEngine.cs`(WPF)를 신설해 PC➔USB, USB➔PC, 디스크➔디스크, USB➔USB 모든 전송 방향을 단일 엔진으로 통합했습니다.
     - **공유 폴더 GPKI·EPKI 선별 격리 & 100% 건수 정합성**: `GPKI\Certificate\class1|class2` 등 공유 폴더에서 선택한 인증서·개인키·동반 `_env`/`_km` 파일만 선별 복사/아카이빙/하이라이트하도록 개선하고, 실행 계획 미리보기 건수와 실제 복사 결과를 100% 일치시켰습니다.
+36. **숨겨진 `Engine Debug` 텔레메트리 · JSON 내보내기, `D:`/`E:` 고대비 배색 분리 & 심층 감사(작업 차수 204~205, `v2.3.0`)**
+    - **Engine Debug 실시간 진단 & JSON 내보내기 (`Web`)**: `환경 설정` 숨겨진 토글(헤더 5회 클릭 또는 `Alt+Shift+D`) 해제 시 `앱 작업 및 감사 로그`에 원시 엔진 상태, 64 KB 바운디드 버퍼/16 KB 청크, 파일 스트림 처리량 패널 및 `schemaVersion: '1.0'` JSON 다운로드 버튼을 제공합니다.
+    - **`D:` vs `E:` 드라이브 색상 구분 및 심층 감사 보강**: `D:`(로열 바이올렛 퍼플 `#6D28D9`)와 `E:`(에메랄드 그린 `#047857`) 색상을 명확히 분리해 `TargetDrivePickerModal`까지 일괄 적용하고, 버퍼 상한 클램핑·동반 `kmCert`/`kmKey` 계측·모달 스크롤 안정화를 완료했습니다.
+
 
 

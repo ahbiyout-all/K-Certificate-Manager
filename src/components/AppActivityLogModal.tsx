@@ -61,6 +61,8 @@ export const AppActivityLogModal: React.FC<AppActivityLogModalProps> = ({
   const [expandedEvidenceIds, setExpandedEvidenceIds] = useState<Record<string, boolean>>({});
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
   const copiedTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [jsonExported, setJsonExported] = useState<boolean>(false);
+  const jsonExportTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [localEngineDebugEnabled, setLocalEngineDebugEnabled] = useState<boolean>(() =>
     engineDebugEnabled ?? getEngineDebugEnabled()
   );
@@ -104,8 +106,24 @@ export const AppActivityLogModal: React.FC<AppActivityLogModalProps> = ({
         clearTimeout(copiedTimerRef.current);
         copiedTimerRef.current = null;
       }
+      if (jsonExportTimerRef.current) {
+        clearTimeout(jsonExportTimerRef.current);
+        jsonExportTimerRef.current = null;
+      }
     };
   }, [isOpen, engineDebugEnabled]);
+
+  const handleExportEngineJson = () => {
+    exportEngineDebugSessionAsJson(engineSession);
+    setJsonExported(true);
+    if (jsonExportTimerRef.current) {
+      clearTimeout(jsonExportTimerRef.current);
+    }
+    jsonExportTimerRef.current = setTimeout(() => {
+      jsonExportTimerRef.current = null;
+      setJsonExported(false);
+    }, 2000);
+  };
 
   const toggleEvidence = (logId: string) => {
     setExpandedEvidenceIds(prev => ({
@@ -225,7 +243,7 @@ export const AppActivityLogModal: React.FC<AppActivityLogModalProps> = ({
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-slate-800 text-white flex items-center justify-center shadow-xs">
               <FileText className="w-5 h-5" />
@@ -275,7 +293,7 @@ export const AppActivityLogModal: React.FC<AppActivityLogModalProps> = ({
         </div>
 
         {/* Filter Controls Bar */}
-        <div className="px-6 py-3 border-b border-slate-100 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="px-6 py-3 border-b border-slate-100 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           {/* Category Tabs */}
           <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
             {categories.map(cat => (
@@ -318,11 +336,13 @@ export const AppActivityLogModal: React.FC<AppActivityLogModalProps> = ({
           </div>
         </div>
 
+        {/* Scrollable Modal Body (Engine Debug Panel + Activity Logs Feed) */}
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 bg-slate-50/50 space-y-4">
         {/* Engine Debug Telemetry Panel (Visible only when hidden Engine Debug toggle is enabled) */}
         {isEngineDebugActive && (
           <div
             data-testid="engine-debug-panel"
-            className="mx-6 mt-4 rounded-xl bg-slate-950 text-slate-100 border border-slate-800 overflow-hidden shadow-sm shrink-0"
+            className="rounded-xl bg-slate-950 text-slate-100 border border-slate-800 overflow-hidden shadow-sm"
           >
             <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -353,12 +373,25 @@ export const AppActivityLogModal: React.FC<AppActivityLogModalProps> = ({
                 <button
                   type="button"
                   data-testid="engine-debug-export-json-btn"
-                  onClick={() => exportEngineDebugSessionAsJson(engineSession)}
+                  onClick={handleExportEngineJson}
                   title="현재 전송 세션의 버퍼 및 파일 스트림 처리량 데이터를 JSON 파일로 내보냅니다"
-                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-200 text-[10px] font-sans font-semibold cursor-pointer transition-colors"
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded border text-[10px] font-sans font-semibold cursor-pointer transition-colors ${
+                    jsonExported
+                      ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                      : 'bg-cyan-500/20 hover:bg-cyan-500/30 border-cyan-500/40 text-cyan-200'
+                  }`}
                 >
-                  <Download className="w-3 h-3" />
-                  <span>JSON 내보내기</span>
+                  {jsonExported ? (
+                    <>
+                      <Check className="w-3 h-3" />
+                      <span>JSON 저장됨</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-3 h-3" />
+                      <span>JSON 내보내기</span>
+                    </>
+                  )}
                 </button>
                 <button
                   type="button"
@@ -519,7 +552,7 @@ export const AppActivityLogModal: React.FC<AppActivityLogModalProps> = ({
         )}
 
         {/* Logs Feed Container */}
-        <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 space-y-2.5">
+        <div className="space-y-2.5">
           {filteredLogs.length === 0 ? (
             <div className="py-16 text-center">
               <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
@@ -729,10 +762,11 @@ export const AppActivityLogModal: React.FC<AppActivityLogModalProps> = ({
               );
             })
           )}
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-slate-200 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500">
+        <div className="px-6 py-3 border-t border-slate-200 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500 shrink-0">
           <div className="flex items-center gap-2">
             <Database className="w-3.5 h-3.5 text-slate-400" />
             <span>로컬 스토리지에 안전하게 보관되며 최대 250건까지 유지됩니다.</span>

@@ -17,6 +17,29 @@
 
 ## 📅 작업 기록 상세 내역
 
+### 📝 [작업 차수 205] v2.3.0 숨겨진 Engine Debug 텔레메트리·JSON 내보내기, D:/E: 배색 분리 및 심층 전수 감사 · 문서 현행화 (Web)
+- **작업 일시**: 2026-11-28 00:30 KST
+- **요청 사항**:
+  - `Engine Debug` 숨겨진 토글(SettingsModal) 및 전송 텔레메트리 패널(AppActivityLogModal) 추가
+  - `Engine Debug` 패널 내 현재 전송 세션 버퍼/처리량 JSON 파일 내보내기 버튼 추가
+  - 저장 위치 `D:` vs `E:` 드라이브 색상 구분 강화
+  - 자아성찰(Self-Reflection & Deep Audit) 과 오류 수정 및 `docs/` 문서 일괄 업데이트
+- **구현 및 심층 감사 결함 수정 내역**:
+  1. **숨겨진 `Engine Debug` 토글 · 실시간 복사 엔진 텔레메트리 & JSON 내보내기 (`src/utils/engineDebug.ts`, `SettingsModal.tsx`, `AppActivityLogModal.tsx`, `unifiedTransferEngine.ts`, `backupService.ts`, `App.tsx`)**:
+     - `SettingsModal` 헤더 아이콘/제목 5회 클릭 또는 `Alt+Shift+D` 단축키로 `Engine Debug` 토글을 잠금 해제하고 `localStorage`(`kcert_engine_debug_enabled`) 및 `kcert:engine-debug-changed` 이벤트로 동기화.
+     - `AppActivityLogModal` 내 `Engine Debug — Raw Copy Engine Telemetry` 다크 터미널 패널을 신설해 원시 엔진 상태, 64 KB I/O 버퍼 · 16 KB 청크 윈도우 · 누적 할당량, 세션/피크 처리량(`B/s`, `KB/s`, `MB/s`), 최근 60건 파일 스트림 기록, 그리고 `schemaVersion: '1.0'` 기반 **`[JSON 내보내기]`**(`kcert-engine-telemetry-*.json`) 다운로드를 구현.
+  2. **저장 위치 `D:` vs `E:` 고대비 색상 분리 (`src/utils/driveColors.ts`, `src/utils/driveBadgeUtils.ts`, `TargetDrivePickerModal.tsx`)**:
+     - 기존 딥 틸(`#0F766E`)로 에메랄드 그린(`E:`)과 혼동되던 `D:` 드라이브를 **로열 바이올렛 퍼플(`#6D28D9`, `violet-700`)**로 변경하고 `E:`(`#047857`), `G:`(`#BE185D`), `H:`(`#0F766E`) 간 시각 대비를 확대했으며 `TargetDrivePickerModal` 드라이브 배지 색상도 통일.
+  3. **심층 전수 감사(Deep Audit) 4대 결함 교정**:
+     - `engineDebug.ts` / `unifiedTransferEngine.ts`: `recordEngineStreamMetric` 버퍼 할당량 상한을 `ENGINE_IO_BUFFER_BYTES`(64 KB)로 엄격 클램핑, `exportEngineDebugSessionAsJson` 내 `typeof Blob !== 'undefined'` 가드 추가, `MEMORY_SYNC` 분기 동반 파일(`kmCertName`/`kmKeyName`) 스크래치 버퍼 계측 추가.
+     - `AppActivityLogModal.tsx`: 헤더·필터 바·푸터에 `shrink-0`를 적용하고 `Engine Debug` 패널을 단일 본문 스크롤 컨테이너(`flex-1 overflow-y-auto min-h-0`) 내부로 이동해 소형 뷰포트 압축 결함 제거 및 `[JSON 저장됨]` 2초 확인 배지(타이머 해제 포함) 추가.
+     - `SettingsModal.tsx`: `localEngineDebug`가 활성(`true`)일 때 `Alt+Shift+D` 입력으로 토글 영역이 숨겨지지 않도록 상태 유지 가드 보강.
+     - `TargetDrivePickerModal.tsx`: 미사용 `getDriveColorInfo` import를 활용하도록 드라이브 문자 배지에 `dColor` 스타일을 적용해 메인 목록·상단 바 색상 체계와 100% 일치화.
+  4. **`docs/` 공식 문서 일괄 현행화**:
+     - `docs/PATCHNOTES.md`, `docs/WORK_LOG.md`, `docs/USER_GUIDE.md`, `docs/ARCHITECTURE.md`, `docs/README.md`를 `v2.3.0` 최신 코드·드라이브 팔레트·Engine Debug 명세 기준으로 동기화.
+- **검증 결과**:
+  - `npx tsx` 단기 검증 스크립트(64 KB 버퍼 상한 클램핑, `kmCert`/`kmKey` 계측 및 `v1.0` JSON 페이로드, `D:` `#6D28D9` vs `E:` `#047857` 분리) 통과 및 `compile_applet` · `lint_applet` 무결성 통과.
+
 ### 📝 [작업 차수 204] v2.3.0 복사엔진 자아성찰(Self-Reflection & Deep Audit) · 양방향 전송 엔진·공유 폴더·동반 파일·모달 동기화 결함 전면 교정 (Web & WPF)
 - **작업 일시**: 2026-11-27 01:12 KST
 - **요청 사항**:

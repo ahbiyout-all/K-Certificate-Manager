@@ -150,7 +150,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isOpen && e.altKey && e.shiftKey && e.key.toLowerCase() === 'd') {
         e.preventDefault();
-        setIsEngineDebugUnlocked(prev => !prev);
+        setIsEngineDebugUnlocked(prev => (localEngineDebug ? true : !prev));
       }
     };
 

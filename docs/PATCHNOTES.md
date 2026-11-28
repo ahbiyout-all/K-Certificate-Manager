@@ -41,6 +41,14 @@
   - WPF `BackupCertificateToDrive`/`CopyCertificateToLocalPc`의 `WasSkipped` 성공 오보고 방지, `CertificateDetailDialog.BtnCopyCertificate_Click`·`MainWindow.OpenTargetDrivePickerForCertificatesAsync` 비동기 `await` 전환, `TargetDrivePickerDialog.IsDriveAllSelfCopy` 단일화, `PcToUsbTransferViewModel`/`UsbTransferViewModel` `try/catch/finally { IsBusy = false; }` 가드 및 부분 실패 시 상세 오류 표출 구현.
 - **저눈부심 회색·베이지 테마 개편 & 전 화면 명도 대비·UX 폴리시 (`src/index.css`, `App.tsx`, `Sidebar.tsx`, `CertificateList.tsx`, `WpfAnimatedBorderHelper.cs`, WPF 8종 다이얼로그·6대 `DataGrid`)**:
   - 저자극 **회색(*Misty Mineral Slate*, `#CCD4DF`/`#DFE5EC`)** 및 저블루라이트 **베이지(*Warm Oat Paper*, `#E6DFD1`/`#F1ECE1`)** 테마와 Tailwind v4 `@custom-variant dark`를 적용하고, `WpfAnimatedBorderHelper` 휘도 적응형 카드·WPF `DynamicResource`/`DataTrigger`·Web CSS 변수 토큰화로 4대 테마 전 창 명도 대비를 통일. 검색 초기화(`X`) 버튼 및 `SafetyTrashManager` 안전 경로 검증·`CertificateDetailDialog` `using` 컴파일 오류 수정 완료.
+- **숨겨진 `Engine Debug` 토글, 실시간 전송 텔레메트리 패널 & JSON 내보내기 (Web 콘솔: `engineDebug.ts`, `SettingsModal.tsx`, `AppActivityLogModal.tsx`, `unifiedTransferEngine.ts`, `backupService.ts`, `App.tsx`)**:
+  - `환경 설정(SettingsModal)` 상단 아이콘/제목 5회 연속 클릭 또는 `Alt+Shift+D` 단축키로 숨겨진 **`Engine Debug`** 개발자 스위치를 잠금 해제(`localStorage` 영구 저장)할 수 있습니다.
+  - 활성화 시 `앱 작업 및 감사 로그(AppActivityLogModal)` 상단에 실시간 **Raw Copy Engine Telemetry** 패널이 노출되어 원시 엔진 상태(`IDLE`/`PLANNING`/`STREAMING`/`VERIFYING`/`COMPLETED`/`ERROR`), 64 KB I/O 버퍼·16 KB 청크 윈도우·누적 버퍼 할당량, 파일 스트림별 처리량(`B/s`, `KB/s`, `MB/s`), 최근 스트림 이력 및 스키마 `v1.0` 기반 **`[JSON 내보내기]`** 다운로드 기능을 제공합니다.
+- **저장 위치 `D:` vs `E:` 고대비 색상 분리 및 모달 배지 통일 (`driveColors.ts`, `driveBadgeUtils.ts`, `TargetDrivePickerModal.tsx`)**:
+  - 유사한 청록·초록 계열로 혼동되기 쉬웠던 `D:`와 `E:` 드라이브 색상을 **보색·고대비 팔레트**로 분리(`D:` 로열 바이올렛 퍼플 `#6D28D9` · `violet-700`, `E:` 에메랄드 그린 `#047857`, `G:` 비비드 로즈 마젠타 `#BE185D`, `H:` 딥 틸 시안 `#0F766E`)하고 `TargetDrivePickerModal` 드라이브 배지에도 동일 색상을 일괄 적용했습니다.
+- **심층 전수 감사(Self-Reflection & Deep Audit) 추가 안정화 (`engineDebug.ts`, `unifiedTransferEngine.ts`, `AppActivityLogModal.tsx`, `SettingsModal.tsx`, `TargetDrivePickerModal.tsx`)**:
+  - `recordEngineStreamMetric`의 버퍼 할당량 상한을 `ENGINE_IO_BUFFER_BYTES`(64 KB)로 엄격 클램핑하고, `MEMORY_SYNC` 분기 동반 파일(`kmCertName`/`kmKeyName`) 스크래치 버퍼 계측 및 `exportEngineDebugSessionAsJson` 내 `typeof Blob !== 'undefined'` 안전 가드를 추가했습니다.
+  - `AppActivityLogModal` 모달 본문·텔레메트리·로그 피드를 단일 스크롤 영역으로 통합(`shrink-0` 헤더/필터/푸터 고정)해 소형 화면 레이아웃 압축을 방지하고, `[JSON 저장됨]` 2초 확인 배지·`Alt+Shift+D` 활성 상태 유지 가드·`TargetDrivePickerModal` 미사용 import 및 배지 색상 불일치를 교정했습니다.
 
 ---
 

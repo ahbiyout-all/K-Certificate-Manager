@@ -226,11 +226,25 @@
 
 ---
 
-## 16. 메타데이터 & 개발자
+## 16. Engine Debug 실시간 텔레메트리 · JSON 내보내기 & 디스크 배색 분리 (`v2.3.0`, Web)
+
+1. **숨겨진 개발자 진단 잠금 해제 (`SettingsModal.tsx`, `engineDebug.ts`)**:
+   - `SettingsModal` 헤더 5회 연속 클릭 또는 `Alt+Shift+D` 단축키로 `Engine Debug` 스위치를 동적 노출하며, `localStorage`(`kcert_engine_debug_enabled`) 및 `kcert:engine-debug-changed` 커스텀 이벤트로 `App.tsx`·`AppActivityLogModal.tsx`와 즉시 동기화합니다(활성 상태에서 단축키 재입력 시 스위치가 임의로 숨겨지지 않도록 보호).
+2. **바운디드 버퍼 계측 및 파일 스트림 텔레메트리 (`engineDebug.ts`, `unifiedTransferEngine.ts`, `backupService.ts`)**:
+   - 전송 계획 수립(`beginEngineSession`)부터 파일 쓰기 스트림(`recordEngineStreamMetric`) 및 완료/오류(`completeEngineSession`, `failEngineSession`)까지 실시간 구독 모델(`subscribeEngineDebugSession`)로 추적합니다.
+   - `ENGINE_IO_BUFFER_BYTES`(64 KB) 상한과 `ENGINE_STREAM_CHUNK_BYTES`(16 KB) 청크 윈도우를 기준으로 각 파일(`signCert.der`, `signPri.key`, 동반 `kmCert`/`kmKey`)의 버퍼 할당량을 `[64 B, 64 KB]` 범위로 엄격 클램핑하여 과할당 오측을 방지하고, `FILE_SYSTEM_STREAM`과 `MEMORY_SYNC` 경로 모두에서 세션/피크 처리량(`B/s`)을 산출합니다.
+   - `buildEngineDebugTelemetryExportPayload` 및 `exportEngineDebugSessionAsJson`은 `schemaVersion: '1.0'` 구조의 JSON 보고서를 생성·다운로드하며, `AppActivityLogModal`에서는 단일 스크롤 본문(`flex-1 overflow-y-auto min-h-0`) 내에 패널을 배치해 소형 뷰포트 레이아웃 붕괴를 방지합니다.
+3. **고대비 드라이브 문자 팔레트 분리 (`driveColors.ts`, `driveBadgeUtils.ts`, `TargetDrivePickerModal.tsx`)**:
+   - 로컬 디스크(`C:` `#1E3A8A`), 보조 디스크(`D:` `#6D28D9` 로열 바이올렛 퍼플), 이동식 USB(`E:` `#047857` 에메랄드 그린), 외장(`F:` `#B45309`, `G:` `#BE185D`, `H:` `#0F766E`) 간 색상 거리를 극대화해 메인 목록·상단 드라이브 바·대상 디스크 선택 모달 전체에서 혼동 없는 즉각 식별을 보장합니다.
+
+---
+
+## 17. 메타데이터 & 개발자
 - **개발자**: AhBiYout
 - **GitHub 저장소**: [https://github.com/AhBiYout-all/K-Certificate-Manager](https://github.com/AhBiYout-all/K-Certificate-Manager)
 - **공식 구글 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 - **소속**: [https://www.cisnet.co.kr](https://www.cisnet.co.kr)
 - **소속회사**: (주)청운정보시스템 ( cisnet.co.kr )
-- **버전**: `v2.2.0` (SemVer 2.0.0)
+- **버전**: `v2.3.0` (SemVer 2.0.0)
+
 

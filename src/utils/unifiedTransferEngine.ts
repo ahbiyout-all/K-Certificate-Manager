@@ -1023,12 +1023,18 @@ export async function executeTransferPlan(
         if (planned.source.files.kmCertName) {
           const tKm0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
           const kmBytes = measureByteSize(planned.source.files.certData, 1800);
+          const kmScratch = new Uint8Array(Math.min(ENGINE_IO_BUFFER_BYTES, Math.max(kmBytes, 64)));
+          if (planned.source.files.certData instanceof Uint8Array) {
+            kmScratch.set(
+              planned.source.files.certData.subarray(0, kmScratch.byteLength)
+            );
+          }
           const tKm1 = typeof performance !== 'undefined' ? performance.now() : Date.now();
           recordEngineStreamMetric({
             fileName: planned.source.files.kmCertName,
             certName: planned.source.name,
             byteLength: kmBytes,
-            bufferAllocatedBytes: Math.min(ENGINE_IO_BUFFER_BYTES, Math.max(kmBytes, 64)),
+            bufferAllocatedBytes: kmScratch.byteLength,
             elapsedMs: Math.max(0.01, tKm1 - tKm0),
             mode: 'MEMORY_SYNC',
             status: 'DONE',
@@ -1039,12 +1045,18 @@ export async function executeTransferPlan(
         if (planned.source.files.kmKeyName) {
           const tKmK0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
           const kmKeyBytes = measureByteSize(planned.source.files.keyData, 1024);
+          const kmKeyScratch = new Uint8Array(Math.min(ENGINE_IO_BUFFER_BYTES, Math.max(kmKeyBytes, 64)));
+          if (planned.source.files.keyData instanceof Uint8Array) {
+            kmKeyScratch.set(
+              planned.source.files.keyData.subarray(0, kmKeyScratch.byteLength)
+            );
+          }
           const tKmK1 = typeof performance !== 'undefined' ? performance.now() : Date.now();
           recordEngineStreamMetric({
             fileName: planned.source.files.kmKeyName,
             certName: planned.source.name,
             byteLength: kmKeyBytes,
-            bufferAllocatedBytes: Math.min(ENGINE_IO_BUFFER_BYTES, Math.max(kmKeyBytes, 64)),
+            bufferAllocatedBytes: kmKeyScratch.byteLength,
             elapsedMs: Math.max(0.01, tKmK1 - tKmK0),
             mode: 'MEMORY_SYNC',
             status: 'DONE',

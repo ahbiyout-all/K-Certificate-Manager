@@ -168,6 +168,7 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
                 : { hasDuplicates: false, conflicts: [] };
 
               const style = getDriveBadgeStyle(drive);
+              const dColor = getDriveColorInfo(drive.letter);
               const badgeLabel = drive.deviceKindLabel || style.typeLabel;
 
               return (
@@ -197,8 +198,15 @@ export const TargetDrivePickerModal: React.FC<TargetDrivePickerModalProps> = ({
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={style.letterBadgeClass}>
-                          {drive.letter}
+                        <span
+                          className="font-extrabold text-sm px-2.5 py-0.5 rounded-lg font-mono shadow-xs border"
+                          style={{
+                            backgroundColor: dColor.bgHex,
+                            borderColor: dColor.borderHex,
+                            color: dColor.textHex,
+                          }}
+                        >
+                          {dColor.letter}
                         </span>
                         <span className="text-xs font-extrabold text-slate-950 dark:text-slate-100 truncate max-w-[180px]">
                           {drive.name}
